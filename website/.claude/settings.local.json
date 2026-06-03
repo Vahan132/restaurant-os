@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -o /tmp/p.html -w \"HTTP %{http_code}\\\\n\" \"http://localhost:4000/legal/privacy\")",
+      "Read(//tmp/**)"
+    ]
+  }
+}

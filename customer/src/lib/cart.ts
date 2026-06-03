@@ -1,0 +1,81 @@
+import type {
+  CreateOrderRequestItemDto,
+  PublicMenuItemResponse,
+} from '@/api/generated/model';
+
+/** A single selected modifier option, snapshotted at add-to-cart time. */
+export interface CartModifierSelection {
+  modifierGroupId: string;
+  modifierOptionId: string;
+  name: string;
+  priceDelta: number; // minor units
+}
+
+/** A line in the cart. Prices are snapshots in minor units. */
+export interface CartLine {
+  id: string; // unique per line (same item with different mods = different lines)
+  menuItemId: string;
+  nameSnapshot: string;
+  basePriceAmount: number; // minor units
+  modifiers: CartModifierSelection[];
+  quantity: number;
+  note: string | null;
+  lineTotal: number; // computed: unitPrice * quantity (minor units)
+}
+
+/** Unit price = base + sum of selected modifier deltas (minor units). */
+export function unitPrice(basePriceAmount: number, modifiers: CartModifierSelection[]): number {
+  return modifiers.reduce((sum, m) => sum + m.priceDelta, basePriceAmount);
+}
+
+export function lineTotal(
+  basePriceAmount: number,
+  modifiers: CartModifierSelection[],
+  quantity: number,
+): number {
+  return unitPrice(basePriceAmount, modifiers) * quantity;
+}
+
+export function cartSubtotal(lines: CartLine[]): number {
+  return lines.reduce((sum, l) => sum + l.lineTotal, 0);
+}
+
+export function cartCount(lines: CartLine[]): number {
+  return lines.reduce((sum, l) => sum + l.quantity, 0);
+}
+
+/** Build a cart line from an item + the picker's selections. */
+export function buildCartLine(
+  item: Pick<PublicMenuItemResponse, 'id' | 'name' | 'priceAmount'>,
+  modifiers: CartModifierSelection[],
+  quantity: number,
+  note: string | null,
+): CartLine {
+  const id =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${item.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return {
+    id,
+    menuItemId: item.id,
+    nameSnapshot: item.name,
+    basePriceAmount: item.priceAmount,
+    modifiers,
+    quantity,
+    note: note && note.trim() ? note.trim() : null,
+    lineTotal: lineTotal(item.priceAmount, modifiers, quantity),
+  };
+}
+
+/** Map cart lines to the POST /public/order-requests items payload. */
+export function toOrderItems(lines: CartLine[]): CreateOrderRequestItemDto[] {
+  return lines.map((l) => ({
+    menuItemId: l.menuItemId,
+    quantity: l.quantity,
+    modifiers: l.modifiers.map((m) => ({
+      modifierGroupId: m.modifierGroupId,
+      modifierOptionId: m.modifierOptionId,
+    })),
+    ...(l.note ? { note: l.note } : {}),
+  }));
+}

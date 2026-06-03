@@ -1,0 +1,4 @@
+node_modules
+.next
+src/api/generated
+openapi.json

@@ -1,0 +1,66 @@
+export const metadata = {
+  title: "Reports & dashboard",
+  description:
+    "Read your sales, covers, and best-sellers in real time, and export everything for deeper analysis.",
+};
+
+<span className="eyebrow">Grow & manage</span>
+
+# Reports & dashboard
+
+Every order, payment, and table flows into your dashboard as service happens — so you can read the
+night while it’s still in front of you, not the morning after.
+
+## The live dashboard
+
+The dashboard summarizes the key numbers at a glance:
+
+- **Sales** — revenue so far, by hour and by category
+- **Covers** — how many guests you’ve served
+- **Average check** — spend per cover and per table
+- **Best-sellers** — what’s moving and what isn’t
+
+<Callout tone="tip" title="Built for your phone">
+  The dashboard is designed to be readable on a phone between shifts, not just on a big screen in the
+  office.
+</Callout>
+
+## Reports
+
+Go deeper with reports you can filter by date range, section, server, or category:
+
+| Report | Answers |
+| --- | --- |
+| Sales summary | How much did we make, and when? |
+| Menu performance | Which items earn their place on the menu? |
+| Labor vs. sales | Are we staffed to demand? |
+| Payments | How are guests paying? |
+
+## Exports and the API
+
+Export any report as CSV for your accountant or your own spreadsheets. On the **Pro** plan, the
+[API & webhooks](#api-access) give you live access to the same data.
+
+### API access
+
+Pro plans can read sales, menu, and order data programmatically and subscribe to webhooks for events
+like *order completed* or *table closed* — useful for accounting, loyalty, or BI tools.
+
+```bash
+curl https://your-place.restaurantos.app/api/v1/reports/sales \
+  -H "Authorization: Bearer $RESTAURANT_OS_TOKEN"
+```
+
+<Note>
+  Real-time reports are included on Growth and Pro. Starter includes a daily sales summary. Advanced
+  analytics, exports, and the API are Pro features — see [Pricing](/pricing).
+</Note>
+
+## Multi-location
+
+Operators with several venues get consolidated reporting that rolls everything up, while still letting
+you drill into a single location.
+
+## Next: manage your account
+
+Handle your plan, invoices, and team in [Account & billing](/docs/account-billing).

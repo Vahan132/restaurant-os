@@ -1,0 +1,32 @@
+/**
+ * Known action codes offered in the filter select. The readable labels live in
+ * i18n under `audit.actionLabel.<CODE>`; unknown codes fall back to humanize().
+ */
+export const KNOWN_ACTIONS = [
+  'USER_LOGGED_IN',
+  'USER_LOGGED_OUT',
+  'USER_CREATED',
+  'USER_UPDATED',
+  'USER_BLOCKED',
+  'USER_UNBLOCKED',
+  'USER_PASSWORD_RESET',
+  'ROLE_CREATED',
+  'ROLE_UPDATED',
+  'ROLE_DELETED',
+  'MENU_ITEM_CREATED',
+  'MENU_ITEM_UPDATED',
+  'MENU_ITEM_DELETED',
+  'MENU_ITEM_PRICE_CHANGED',
+  'ORDER_CREATED',
+  'ORDER_CLOSED',
+  'ORDER_CANCELLED',
+  'ORDER_ITEM_CANCELLED',
+  'DISCOUNT_APPLIED',
+  'PAYMENT_RECORDED',
+  'PAYMENT_VOIDED',
+  'RESERVATION_CREATED',
+  'RESERVATION_CANCELLED',
+  'TABLE_STATUS_CHANGED',
+  'SETTINGS_UPDATED',
+  'ORGANIZATION_PROVISIONED',
+];

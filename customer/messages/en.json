@@ -1,0 +1,70 @@
+{
+  "header": {
+    "table": "Table {name}"
+  },
+  "language": {
+    "label": "Language"
+  },
+  "search": {
+    "placeholder": "Search the menu",
+    "noResults": "No items match \"{query}\"."
+  },
+  "menu": {
+    "unavailableBadge": "Unavailable",
+    "emptyTitle": "Menu coming soon",
+    "emptyBody": "This restaurant hasn't published any items yet. Please check back later.",
+    "loading": "Loading menu…"
+  },
+  "item": {
+    "modifiers": "Options",
+    "required": "Required",
+    "pickOne": "Pick one",
+    "pickMany": "Pick any",
+    "pickOneOptional": "Optional",
+    "pickManyMin": "Choose at least {min}",
+    "pickManyRange": "Choose {min}–{max}",
+    "noteLabel": "Note (optional)",
+    "notePlaceholder": "e.g. no onions",
+    "addToOrder": "Add to order",
+    "quantity": "Quantity"
+  },
+  "error": {
+    "unavailableTitle": "Menu unavailable",
+    "unavailableBody": "We couldn't find a menu for this address. The restaurant may be unknown or its QR menu is turned off.",
+    "genericTitle": "Something went wrong",
+    "genericBody": "We couldn't load the menu. Please try again."
+  },
+  "common": {
+    "close": "Close"
+  },
+  "gating": {
+    "scanToOrder": "Scan your table’s QR to order."
+  },
+  "cart": {
+    "viewOrder": "View order",
+    "title": "Your order",
+    "empty": "Your order is empty.",
+    "clearAll": "Clear all",
+    "remove": "Remove",
+    "quantity": "Quantity",
+    "namePlaceholder": "Your name (optional)",
+    "notePlaceholder": "Note for the kitchen (optional)",
+    "total": "Total",
+    "placeOrder": "Place order",
+    "placing": "Placing order…",
+    "placeError": "We couldn’t place your order. Please try again.",
+    "backToMenu": "Back to menu"
+  },
+  "status": {
+    "sendingTitle": "Sending your order…",
+    "pendingTitle": "Sent to staff",
+    "pendingBody": "Waiting for confirmation…",
+    "confirmedTitle": "Confirmed!",
+    "confirmedBody": "Your order is being prepared.",
+    "rejectedTitle": "Order declined",
+    "rejectedBody": "Sorry, this order was declined.",
+    "errorTitle": "Couldn’t load status",
+    "errorBody": "Please head back and try again.",
+    "backToMenu": "Back to menu"
+  }
+}

@@ -1,0 +1,5 @@
+node_modules
+.next
+src/api/generated
+pnpm-lock.yaml
+openapi.json

@@ -1,0 +1,133 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '../../../../shared/application/pagination';
+import { ItemAvailability, MenuStatus, PreparationStation } from '../../domain/enums';
+
+export class CreateMenuItemDto {
+  @ApiProperty()
+  @IsString()
+  @MinLength(1)
+  name!: string;
+
+  @ApiProperty({ description: 'Category id (must belong to your restaurant).' })
+  @IsString()
+  @MinLength(1)
+  categoryId!: string;
+
+  @ApiProperty({ description: 'Price in integer minor units (>= 0).', minimum: 0 })
+  @IsInt()
+  @Min(0)
+  priceAmount!: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @ApiPropertyOptional({ enum: PreparationStation, default: PreparationStation.KITCHEN })
+  @IsOptional()
+  @IsEnum(PreparationStation)
+  preparationStation?: PreparationStation;
+
+  @ApiPropertyOptional({ minimum: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  prepTimeMinutes?: number;
+}
+
+export class UpdateMenuItemDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Reassign to another category in your restaurant.' })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional({ enum: PreparationStation })
+  @IsOptional()
+  @IsEnum(PreparationStation)
+  preparationStation?: PreparationStation;
+
+  @ApiPropertyOptional({ minimum: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  prepTimeMinutes?: number;
+}
+
+export class ChangeItemPriceDto {
+  @ApiProperty({ minimum: 0 })
+  @IsInt()
+  @Min(0)
+  priceAmount!: number;
+}
+
+export class SetItemStatusDto {
+  @ApiProperty({ enum: MenuStatus })
+  @IsEnum(MenuStatus)
+  status!: MenuStatus;
+}
+
+export class SetItemAvailabilityDto {
+  @ApiProperty({ enum: ItemAvailability })
+  @IsEnum(ItemAvailability)
+  availability!: ItemAvailability;
+}
+
+export class ListMenuItemsQuery {
+  @ApiPropertyOptional({ default: DEFAULT_PAGE, minimum: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page: number = DEFAULT_PAGE;
+
+  @ApiPropertyOptional({ default: DEFAULT_LIMIT, minimum: 1, maximum: MAX_LIMIT })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(MAX_LIMIT)
+  limit: number = DEFAULT_LIMIT;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional({ enum: MenuStatus })
+  @IsOptional()
+  @IsEnum(MenuStatus)
+  status?: MenuStatus;
+
+  @ApiPropertyOptional({ enum: ItemAvailability })
+  @IsOptional()
+  @IsEnum(ItemAvailability)
+  availability?: ItemAvailability;
+
+  @ApiPropertyOptional({ description: 'Search by name (case-insensitive).' })
+  @IsOptional()
+  @IsString()
+  q?: string;
+}

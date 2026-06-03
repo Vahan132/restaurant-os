@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- Touch-first base for tablet POS --- */
+html,
+body {
+  height: 100%;
+  /* Prevent rubber-band / pull-to-refresh on tablets. */
+  overscroll-behavior: none;
+}
+
+body {
+  /* Snappy tap feedback, no tap-highlight flash. */
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+}
+
+/* Disable text selection on interactive controls (waiters tap, they don't select). */
+button,
+a,
+[role='button'],
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Inputs still allow selection/typing. */
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Remove iOS input zoom by keeping font-size >= 16px (handled in components too). */
+input,
+button,
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* --- Print: show only the receipt, hide all on-screen chrome --- */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .receipt-print,
+  .receipt-print * {
+    visibility: visible;
+  }
+  .receipt-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    max-height: none;
+    overflow: visible;
+    padding: 4mm;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

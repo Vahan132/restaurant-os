@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: restaurantos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: restaurantos
+      POSTGRES_PASSWORD: restaurantos
+      POSTGRES_DB: restaurantos
+    ports:
+      - '5432:5432'
+    volumes:
+      - restaurantos_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U restaurantos -d restaurantos']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: restaurantos-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - restaurantos_redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  restaurantos_pgdata:
+  restaurantos_redisdata:

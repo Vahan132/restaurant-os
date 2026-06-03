@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+}
+
+/* Print isolation for the QR codes print grid: hide admin chrome, show only
+   the print root, and keep each card on one page. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .qr-print-root,
+  .qr-print-root * {
+    visibility: visible;
+  }
+  .qr-print-root {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+  }
+  .qr-no-print {
+    display: none !important;
+  }
+  .qr-card {
+    break-inside: avoid;
+  }
+}

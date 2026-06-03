@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat __TRACKED_VAR__/.env.example)",
+      "Bash(cat __TRACKED_VAR__/.env)",
+      "Bash(cat __TRACKED_VAR__/.env.local)"
+    ]
+  }
+}

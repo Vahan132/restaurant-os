@@ -1,0 +1,63 @@
+export const metadata = {
+  title: "Kitchen Display (KDS)",
+  description:
+    "Route orders to the right stations, track prep times, and keep the line on pace with the Kitchen Display.",
+};
+
+<span className="eyebrow">Run service</span>
+
+# Kitchen Display (KDS)
+
+The Kitchen Display replaces paper tickets and the printer that always jams. Orders arrive the instant
+they’re sent, organized so the line always knows what’s next.
+
+## Set up a display
+
+Any screen with a browser can be a kitchen display. Open Restaurant OS on it, sign in with a kitchen
+role, and choose which stations it should show.
+
+<Steps>
+  <Step title="Open the display">
+    Sign in on the kitchen screen and switch to Kitchen Display mode.
+  </Step>
+  <Step title="Assign stations">
+    Choose which stations this screen handles — e.g. *Grill*, *Cold*, *Pass*.
+  </Step>
+  <Step title="Start service">
+    New tickets appear automatically, oldest first, with a running prep timer.
+  </Step>
+</Steps>
+
+## Routing by station
+
+Menu items can be tagged with a station so each screen only shows what it’s responsible for. The grill
+sees grill items; the pass sees the whole order coming together.
+
+<Callout tone="tip" title="All-day counts">
+  The KDS keeps a live “all-day” tally — how many of each item are in the queue right now — so the
+  line can batch and prep ahead.
+</Callout>
+
+## Timers and colors
+
+Each ticket shows how long it’s been open, shifting color as it ages so nothing slips:
+
+| Color | Meaning |
+| --- | --- |
+| Green | Fresh — within target time |
+| Amber | Approaching the limit |
+| Terracotta | Over time — needs attention |
+
+## Bumping and recall
+
+When a ticket is done, **bump** it to clear it from the screen. Made a mistake? **Recall** the last
+bumped ticket to bring it back instantly.
+
+<Note>
+  Unlimited kitchen displays are included on Growth and Pro. The Starter plan includes one. See
+  [Pricing](/pricing).
+</Note>
+
+## Next: manage the room
+
+Keep the front of house flowing with [Reservations](/docs/reservations).

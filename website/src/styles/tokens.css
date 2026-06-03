@@ -1,0 +1,62 @@
+/* =============================================================================
+   Restaurant OS — Design Tokens
+   -----------------------------------------------------------------------------
+   The single source of truth for the brand. Every color, radius, shadow and
+   motion value in the product derives from a token defined here, then surfaced
+   through tailwind.config.ts. Edit values here to re-skin the entire site.
+
+   Colors are stored as space-separated RGB channels so Tailwind can apply
+   opacity modifiers (e.g. `bg-cream/70`) via `rgb(var(--token) / <alpha>)`.
+   When using a token directly in CSS, wrap it: `rgb(var(--color-cream))`.
+
+   Aesthetic: warm · food-forward · premium-minimal · light & airy.
+============================================================================= */
+
+:root {
+  /* ---- Color · surfaces (RGB channels) ----------------------------------- */
+  --color-cream: 250 246 238; /* #faf6ee — page bg, warm linen, never stark white */
+  --color-paper: 255 252 246; /* #fffcf6 — raised surfaces / cards */
+  --color-sand: 243 236 223; /* #f3ecdf — recessed / alternating bands */
+
+  /* ---- Color · text ------------------------------------------------------ */
+  --color-ink: 35 32 26; /* #23201a — primary text (AA on cream) */
+  --color-ink-soft: 66 60 50; /* #423c32 — strong secondary text */
+  --color-muted: 92 84 70; /* #5c5446 — muted body / captions (AA on cream) */
+
+  /* ---- Color · structure ------------------------------------------------- */
+  --color-line: 231 222 207; /* #e7decf — hairlines, borders, dividers */
+
+  /* ---- Color · brand ----------------------------------------------------- */
+  --color-terracotta: 190 77 43; /* #be4d2b — primary accent (AA white text) */
+  --color-terracotta-ink: 158 61 30; /* #9e3d1e — accent for text-on-light (AA on cream) */
+  --color-terracotta-soft: 244 227 218; /* #f4e3da — tinted accent surface */
+  --color-saffron: 224 145 60; /* #e0913c — warm highlight, never small text */
+  --color-sage: 107 119 88; /* #6b7758 — fresh secondary */
+  --color-sage-deep: 79 90 64; /* #4f5a40 — sage for text-on-light */
+  --color-sage-soft: 230 235 221; /* #e6ebdd — tinted sage surface */
+
+  /* ---- Radii — soft, restrained ----------------------------------------- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+  --radius-2xl: 36px;
+  --radius-pill: 999px;
+
+  /* ---- Shadows — warm, soft, low-contrast -------------------------------- */
+  --shadow-xs: 0 1px 2px rgba(48, 33, 14, 0.05);
+  --shadow-sm: 0 2px 8px rgba(48, 33, 14, 0.06);
+  --shadow-md: 0 10px 30px -12px rgba(48, 33, 14, 0.18);
+  --shadow-lg: 0 30px 60px -24px rgba(48, 33, 14, 0.24);
+  --shadow-glow: 0 18px 48px -16px rgba(190, 77, 43, 0.32);
+
+  /* ---- Motion ------------------------------------------------------------ */
+  --dur-fast: 160ms;
+  --dur-base: 320ms;
+  --dur-slow: 620ms;
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-soft: cubic-bezier(0.33, 0.8, 0.25, 1);
+
+  /* ---- Layout ------------------------------------------------------------ */
+  --header-h: 72px;
+}

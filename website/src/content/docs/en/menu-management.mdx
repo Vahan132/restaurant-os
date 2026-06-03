@@ -1,0 +1,60 @@
+export const metadata = {
+  title: "Menu management",
+  description:
+    "Structure your menu with categories, items, modifiers and prices — once, shared across POS, KDS and QR ordering.",
+};
+
+<span className="eyebrow">Build your menu & floor</span>
+
+# Menu management
+
+Your menu is the single source of truth across the whole platform. Build it once and it powers the
+POS, the kitchen, your QR menu, and your reports — all at the same time.
+
+## How the menu is structured
+
+A menu is organized into three layers:
+
+- **Categories** group items (e.g. *Antipasti*, *Pasta*, *Cocktails*).
+- **Items** are the dishes and drinks themselves, each with a name, price, and description.
+- **Modifiers** capture choices and add-ons (e.g. *extra cheese*, *no onions*, *medium-rare*).
+
+## Add your first items
+
+<Steps>
+  <Step title="Create a category">
+    Give it a name and an order position. Categories appear in this order on the POS and QR menu.
+  </Step>
+  <Step title="Add items">
+    Set a name, price, and an optional description and photo. Photos show on the QR menu.
+  </Step>
+  <Step title="Attach modifiers">
+    Build reusable modifier groups (like *Temperature* or *Add-ons*) and attach them to any item.
+  </Step>
+</Steps>
+
+<Callout tone="tip" title="Reuse modifier groups">
+  Define a modifier group once and attach it to many items. Editing the group updates every item that
+  uses it — no hunting through the menu.
+</Callout>
+
+## 86’ing and availability
+
+When you run out of something, mark it **86’d**. It instantly greys out on the POS and disappears
+from the QR menu, so guests and staff never order what you can’t make. Bring it back with one tap.
+
+## Pricing and tax
+
+Prices are stored per item and combined with the tax rules from your
+[restaurant setup](/docs/setup-restaurant). You can schedule price changes — useful for happy hour or
+seasonal menus.
+
+<Note>
+  Multi-location operators on the Pro plan can keep a shared base menu and override prices or
+  availability per venue. See [Reports & dashboard](/docs/reports-dashboard) to compare performance
+  across locations.
+</Note>
+
+## Next: design your room
+
+A menu needs a room to serve it in. Continue to [Tables & floor plan](/docs/tables-floor-plan).

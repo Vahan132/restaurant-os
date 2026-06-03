@@ -1,0 +1,600 @@
+{
+  "common": {
+    "brand": "Restaurant OS",
+    "getStartedFree": "Get started free",
+    "seePricing": "See pricing",
+    "readDocs": "Read the docs",
+    "skipToContent": "Skip to content",
+    "interval": "{interval, select, month {/mo} year {/yr} other {/{interval}}}"
+  },
+  "metadata": {
+    "defaultTitle": "Restaurant OS — The operating system for modern restaurants.",
+    "siteDescription": "Restaurant OS unifies point-of-sale, kitchen display, tables & reservations, QR ordering and live reporting in one warm, fast platform — so your team can focus on the food.",
+    "home": {
+      "description": "Restaurant OS unifies point-of-sale, kitchen display, tables & reservations, QR ordering and live reporting in one warm, fast platform — so your team can focus on the food."
+    },
+    "about": {
+      "title": "About",
+      "description": "Restaurant OS is built by people who’ve worked the line — software that respects the craft and the pace of a restaurant."
+    },
+    "pricing": {
+      "title": "Pricing",
+      "description": "Simple, flat monthly pricing for Restaurant OS — Starter, Growth and Pro. No per-sale fees, 14-day free trial."
+    },
+    "docs": {
+      "title": "Documentation",
+      "description": "Everything you need to set up and run Restaurant OS — from your first menu to live reporting."
+    },
+    "login": {
+      "title": "Log in",
+      "description": "Sign in to your Restaurant OS account."
+    },
+    "signup": {
+      "title": "Get started",
+      "description": "Create your Restaurant OS account and start serving today."
+    },
+    "forgot": {
+      "title": "Forgot password",
+      "description": "Request a link to reset your Restaurant OS password."
+    },
+    "reset": {
+      "title": "Reset password",
+      "description": "Choose a new password for your Restaurant OS account."
+    },
+    "account": {
+      "title": "Account",
+      "description": "Manage your Restaurant OS account, subscription and billing."
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "description": "How Restaurant OS collects, uses and protects personal data under Armenian data-protection law. Draft pending legal review."
+    },
+    "terms": {
+      "title": "Terms & Conditions",
+      "description": "The agreement governing use of the Restaurant OS platform, including the 7-day free trial and billing terms. Draft pending legal review."
+    }
+  },
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "docs": "Docs",
+    "about": "About",
+    "login": "Log in",
+    "getStarted": "Get started",
+    "goToAccount": "Go to account",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "primary": "Primary",
+    "homeAria": "{brand} — home"
+  },
+  "footer": {
+    "tagline": "The operating system for modern restaurants.",
+    "blurb": "Built for restaurateurs who care about both the food and the flow of service.",
+    "copyright": "© {year} {brand}. A demo marketing site.",
+    "chooseLanguage": "Choose language",
+    "columns": {
+      "product": "Product",
+      "documentation": "Documentation",
+      "company": "Company"
+    },
+    "links": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "howItWorks": "How it works",
+      "getStarted": "Get started",
+      "gettingStarted": "Getting started",
+      "pos": "POS order taking",
+      "kds": "Kitchen Display",
+      "reports": "Reports & dashboard",
+      "about": "About",
+      "login": "Log in",
+      "privacy": "Privacy",
+      "terms": "Terms"
+    }
+  },
+  "home": {
+    "hero": {
+      "badge": "POS · KDS · Reservations · QR ordering — in one place",
+      "title": "Run your restaurant the way it should <em>taste</em>.",
+      "body": "{brand} brings order-taking, the kitchen line, tables, reservations and live sales into one calm, fast platform — so your team spends less time fighting software and more time on the food.",
+      "ctaPrimary": "Get started free",
+      "ctaSecondary": "Read the docs",
+      "trialNote": "14-day free trial · No card required · Be serving in an afternoon"
+    },
+    "pillars": {
+      "eyebrow": "One platform, end to end",
+      "title": "Everything service needs, nothing it doesn’t",
+      "intro": "Five tightly-connected pillars share one menu, one floor and one source of truth — so changing a price or 86’ing a dish updates everywhere at once.",
+      "pos": {
+        "eyebrow": "Point of sale",
+        "title": "Take orders at the speed of a busy night",
+        "body": "A POS built for muscle memory. Big tappable categories, modifiers that make sense, and split checks that never slow the line down.",
+        "points": ["One-tap modifiers & courses", "Split, merge & transfer checks", "Works offline, syncs instantly"]
+      },
+      "kds": {
+        "eyebrow": "Kitchen display",
+        "title": "A kitchen line that never loses a ticket",
+        "body": "Orders fly from the floor to the pass in real time. Color-coded timers keep every station on pace, and bumped tickets clear cleanly.",
+        "points": ["Live tickets with prep timers", "Route by station automatically", "Recall & all-day counts"]
+      },
+      "tables": {
+        "eyebrow": "Tables & reservations",
+        "title": "See the whole room at a glance",
+        "body": "Design your floor, track turn times, and take reservations and walk-ins from the same view. Seat smarter, wait less.",
+        "points": ["Drag-and-drop floor plan", "Reservations & waitlist", "Turn-time insights"]
+      },
+      "qr": {
+        "eyebrow": "QR menu & ordering",
+        "title": "Let guests order from the table",
+        "body": "Publish a beautiful menu to a QR code in minutes. Guests browse, order, and pay — orders land straight on the line, no app required.",
+        "points": ["Branded, no-app web menu", "Order & pay at the table", "Live 86’ing & specials"]
+      },
+      "reports": {
+        "eyebrow": "Reports & dashboard",
+        "title": "Know your numbers without the spreadsheet",
+        "body": "Sales, covers, best-sellers and labor — updated as service happens. Clear enough to read on your phone between shifts.",
+        "points": ["Real-time sales & covers", "Best-seller & menu insights", "Export anywhere as CSV"]
+      }
+    },
+    "howItWorks": {
+      "eyebrow": "How it works",
+      "title": "From sign-up to first order in an afternoon",
+      "intro": "No long onboarding, no consultants. Three steps and you’re live.",
+      "steps": {
+        "signup": { "title": "Sign up", "body": "Create your account in a couple of minutes. No hardware to buy and nothing to install." },
+        "subdomain": { "title": "Set your subdomain", "body": "Claim your-place.restaurantos.app, add your menu and design your floor — we’ll guide you through it." },
+        "serving": { "title": "Start serving", "body": "Open the POS, print your QR codes, and send your first ticket to the kitchen. That’s service." }
+      }
+    },
+    "testimonials": {
+      "eyebrow": "Loved by operators",
+      "title": "Kitchens and dining rooms run calmer on Restaurant OS",
+      "items": {
+        "0": { "quote": "We switched mid-summer and our tickets times dropped within a week. The kitchen display alone was worth it.", "name": "Lena Petrosyan", "role": "Owner · Olive & Ember" },
+        "1": { "quote": "QR ordering took the pressure off the floor on weekends. Guests love it and our covers went up.", "name": "Marco Ferraro", "role": "GM · Trattoria Nonna" },
+        "2": { "quote": "Finally I can read my numbers from my phone between shifts. It just makes sense.", "name": "Aïda Khoury", "role": "Chef-owner · Za’atar House" }
+      }
+    },
+    "closing": {
+      "eyebrow": "Ready when you are",
+      "title": "Bring your whole service together",
+      "body": "Start free, set up your menu and floor, and run real orders today. No card, no contracts — just a calmer night of service.",
+      "ctaPrimary": "Get started free",
+      "ctaSecondary": "See pricing"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Pricing",
+    "title": "One flat price. Everything to run service.",
+    "intro": "No per-order fees and no surprises — just a plan that scales with your room. Every plan starts with a 14-day free trial.",
+    "footnote": "Prices shown per location, billed monthly. Save two months on annual billing.",
+    "compareEyebrow": "Compare",
+    "compareTitle": "Every feature, side by side",
+    "compareIntro": "See exactly what’s included in each plan.",
+    "faqEyebrow": "FAQ",
+    "faqTitle": "Questions, answered",
+    "ctaTitle": "Try {brand} free for 14 days",
+    "ctaBody": "Set up your menu, design your floor, and run real orders before you pay a cent.",
+    "ctaButton": "Get started free"
+  },
+  "plans": {
+    "popularBadge": "Most popular",
+    "priceSuffix": "/ {interval, select, month {month} year {year} other {{interval}}}",
+    "items": {
+      "starter": {
+        "name": "Starter",
+        "tagline": "For new spots & single counters finding their rhythm.",
+        "limit": "1 location · up to 2 terminals",
+        "cta": "Start with Starter"
+      },
+      "growth": {
+        "name": "Growth",
+        "tagline": "For busy dining rooms running full service.",
+        "limit": "1 location · up to 6 terminals",
+        "cta": "Choose Growth"
+      },
+      "pro": {
+        "name": "Pro",
+        "tagline": "For groups & multi-location operators.",
+        "limit": "Multi-location · unlimited terminals",
+        "cta": "Talk to us"
+      }
+    },
+    "features": {
+      "fastPos": "Fast POS order taking",
+      "menuMgmt": "Digital menu management",
+      "qrOrdering": "QR menu & customer ordering",
+      "oneKds": "1 kitchen display screen",
+      "dailySummary": "Daily sales summary",
+      "emailSupport": "Email support",
+      "everythingStarter": "Everything in Starter",
+      "tablesFloor": "Tables & floor plan",
+      "reservationsWaitlist": "Reservations & waitlist",
+      "unlimitedKds": "Unlimited kitchen displays",
+      "realtimeReports": "Real-time sales reports",
+      "staffRoles": "Staff roles & permissions",
+      "priorityChat": "Priority chat support",
+      "everythingGrowth": "Everything in Growth",
+      "multiLocation": "Multi-location management",
+      "consolidatedReporting": "Consolidated reporting",
+      "menuSync": "Menu sync across venues",
+      "advancedAnalytics": "Advanced analytics & exports",
+      "apiWebhooks": "API & webhooks access",
+      "dedicatedManager": "Dedicated success manager"
+    },
+    "comparison": {
+      "caption": "Feature comparison across Restaurant OS plans",
+      "header": "Compare plans",
+      "included": "Included",
+      "notIncluded": "Not included",
+      "groups": {
+        "service": "Service",
+        "insights": "Insights",
+        "team": "Team & platform"
+      },
+      "rows": {
+        "posOrderTaking": "POS order taking",
+        "kdsScreens": "Kitchen display screens",
+        "tablesFloor": "Tables & floor plan",
+        "reservationsWaitlist": "Reservations & waitlist",
+        "qrOrdering": "QR menu & customer ordering",
+        "dailySummary": "Daily sales summary",
+        "realtimeReports": "Real-time reports",
+        "advancedAnalytics": "Advanced analytics & exports",
+        "consolidatedReporting": "Consolidated multi-location reporting",
+        "terminals": "Terminals included",
+        "staffRoles": "Staff roles & permissions",
+        "apiWebhooks": "API & webhooks",
+        "support": "Support"
+      },
+      "values": {
+        "unlimited": "Unlimited",
+        "email": "Email",
+        "priorityChat": "Priority chat",
+        "dedicatedManager": "Dedicated manager"
+      }
+    },
+    "faq": {
+      "trial": {
+        "q": "Is there a free trial?",
+        "a": "Yes — every plan starts with a 14-day free trial. No card required to explore the platform, set up your menu, and run a few test orders."
+      },
+      "change": {
+        "q": "Can I change plans later?",
+        "a": "Anytime. Upgrade or downgrade from your dashboard and we prorate the difference automatically. Your menu, floor plan, and history stay intact."
+      },
+      "hardware": {
+        "q": "What hardware do I need?",
+        "a": "Restaurant OS runs in the browser, so any reasonably modern tablet, laptop, or POS terminal works. Kitchen displays only need a screen and a browser."
+      },
+      "cut": {
+        "q": "Do you take a cut of my sales?",
+        "a": "No. Your subscription is a flat monthly price. Payment processing fees are passed through at cost from your chosen processor."
+      },
+      "portable": {
+        "q": "Is my data portable?",
+        "a": "Always. Export your menu, orders, and reports as CSV at any time, and Pro plans add full API access for live integrations."
+      }
+    }
+  },
+  "about": {
+    "eyebrow": "Our story",
+    "title": "Built by people who’ve worked the line",
+    "lead": "{brand} started in a 32-seat trattoria where the POS crashed every Friday and the kitchen ran on torn paper tickets. We knew restaurant software could feel as considered as the food it serves — so we built it.",
+    "heroImageAlt": "A warm dining room at golden hour",
+    "missionEyebrow": "Our mission",
+    "mission": "To give every restaurant — from the corner café to the group of twenty — software that’s as warm, fast and dependable as a great dining room.",
+    "valuesEyebrow": "What we believe",
+    "valuesTitle": "Values on every screen",
+    "values": {
+      "craft": { "title": "Respect the craft", "body": "Great restaurants are made by people, not dashboards. Our job is to get out of the way so the team can do theirs." },
+      "calm": { "title": "Calm over clever", "body": "Service is chaotic enough. Every screen we make aims to lower the temperature, not raise it." },
+      "fast": { "title": "Fast where it counts", "body": "A second saved per ticket is hours back across a night. We obsess over the hot paths of service." },
+      "honest": { "title": "Honest by default", "body": "Flat pricing, portable data, no lock-in. We earn the renewal every month." }
+    },
+    "teamEyebrow": "Who we are",
+    "teamTitle": "A small team, a big appetite",
+    "teamIntro": "Operators, engineers and designers who care about both the food and the flow of service.",
+    "team": {
+      "0": { "name": "Sona Avetisyan", "role": "Co-founder · CEO", "from": "Ex line cook & GM" },
+      "1": { "name": "David Mkrtchyan", "role": "Co-founder · CTO", "from": "Ex payments infra" },
+      "2": { "name": "Hasmik Grigoryan", "role": "Head of Product", "from": "Ex hospitality ops" },
+      "3": { "name": "Levon Sargsyan", "role": "Head of Design", "from": "Ex editorial design" }
+    },
+    "ctaTitle": "Come build calmer service with us",
+    "ctaBody": "Whether you’re opening your first room or running your tenth, we’d love to help.",
+    "ctaPrimary": "Get started free",
+    "ctaSecondary": "See pricing"
+  },
+  "auth": {
+    "passwordStrength": {
+      "0": "Too short",
+      "1": "Weak",
+      "2": "Okay",
+      "3": "Good",
+      "4": "Strong"
+    },
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to manage your restaurant.",
+      "email": "Email",
+      "password": "Password",
+      "forgot": "Forgot password?",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "footer": "New to Restaurant OS? <link>Create an account</link>",
+      "toastSuccess": "Welcome back",
+      "toastError": "Couldn’t sign you in"
+    },
+    "forgot": {
+      "title": "Reset your password",
+      "subtitle": "Enter your email and we’ll send you a link to set a new password.",
+      "email": "Email",
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "backToSignin": "Back to sign in",
+      "toastError": "Couldn’t send the reset link",
+      "sentTitle": "Check your inbox",
+      "sentSubtitle": "If that email is associated with an account, we’ve sent a link to reset your password. The link expires in about an hour.",
+      "sentBody": "Didn’t get an email? Check your spam folder, or try again in a few minutes."
+    },
+    "reset": {
+      "title": "Set a new password",
+      "subtitle": "Choose a strong password you don’t use anywhere else.",
+      "newPassword": "New password",
+      "confirm": "Confirm password",
+      "submit": "Update password",
+      "submitting": "Updating…",
+      "backToSignin": "Back to sign in",
+      "invalidTitle": "Invalid reset link",
+      "invalidSubtitle": "This link is missing its token or has expired. Request a new one to continue.",
+      "requestNew": "Request a new link",
+      "toastSuccess": "Password updated",
+      "toastSuccessDesc": "You can now sign in with your new password.",
+      "toastError": "Couldn’t reset your password"
+    }
+  },
+  "signup": {
+    "eyebrow": "Create your account",
+    "steps": { "account": "Account", "plan": "Plan", "restaurant": "Restaurant" },
+    "account": {
+      "title": "Let’s set up your account",
+      "name": "Your name",
+      "businessName": "Business name",
+      "email": "Email",
+      "password": "Password",
+      "passwordHint": "At least 8 characters.",
+      "agree": "I agree to the <terms>Terms & Conditions</terms> and <privacy>Privacy Policy</privacy>."
+    },
+    "plan": {
+      "title": "Choose a plan",
+      "trialNote": "Every plan starts with a 14-day free trial — you won’t be charged today.",
+      "loadError": "We couldn’t load plans right now.",
+      "selected": "Selected",
+      "chooseToContinue": "Choose a plan to continue"
+    },
+    "restaurant": {
+      "title": "Your restaurant",
+      "name": "Restaurant name",
+      "subdomain": "Subdomain",
+      "subdomainHint": "Your menu will live at <url>{url}</url>",
+      "currency": "Currency",
+      "language": "Language",
+      "timezone": "Timezone",
+      "placeholder": "your-place"
+    },
+    "slug": {
+      "checking": "Checking availability…",
+      "available": "✓ Available",
+      "pick": "Pick an available subdomain"
+    },
+    "nav": { "back": "Back", "continue": "Continue", "create": "Create account", "creating": "Creating account…" },
+    "signin": "Already have an account? <link>Sign in</link>",
+    "toastSuccess": "Your account is ready",
+    "toastSuccessDesc": "Welcome to Restaurant OS.",
+    "toastError": "Couldn’t create your account"
+  },
+  "account": {
+    "eyebrow": "Your account",
+    "fallbackName": "Account",
+    "logout": "Log out",
+    "logoutToast": "Signed out",
+    "loadingAria": "Loading",
+    "nav": {
+      "overview": "Overview",
+      "profile": "Profile",
+      "subscription": "Subscription",
+      "billing": "Billing",
+      "settings": "Settings"
+    },
+    "query": {
+      "loading": "Loading…",
+      "forbiddenTitle": "You don’t have access",
+      "forbiddenBody": "Managing this account requires the <b>Account manage</b> permission. Ask an owner to grant it, or sign in with an owner account.",
+      "errorTitle": "Something went wrong",
+      "retry": "Try again"
+    },
+    "status": {
+      "TRIALING": "Trialing",
+      "ACTIVE": "Active",
+      "PAST_DUE": "Past due",
+      "CANCELED": "Canceled",
+      "EXPIRED": "Expired"
+    },
+    "overview": {
+      "menuLivesAt": "Your menu lives at <url>{url}</url>",
+      "plan": "Plan",
+      "status": "Status",
+      "trialEnds": "Trial ends",
+      "periodEnds": "Current period ends",
+      "manageSub": "Manage subscription",
+      "billing": "Billing",
+      "platformTitle": "Your platform",
+      "platformDesc": "Jump into the apps your team uses every day.",
+      "links": {
+        "admin": "Admin dashboard",
+        "adminDesc": "Menus, staff, reports",
+        "pos": "Point of sale",
+        "posDesc": "Take orders",
+        "kds": "Kitchen display",
+        "kdsDesc": "Run the line",
+        "customer": "Customer menu",
+        "customerDesc": "Your public QR menu"
+      },
+      "ownerTitle": "Owner",
+      "ownerName": "Name",
+      "ownerEmail": "Email",
+      "editProfile": "Edit profile"
+    },
+    "profile": {
+      "title": "Profile",
+      "desc": "Update your owner details.",
+      "fullName": "Full name",
+      "email": "Email",
+      "emailHint": "Contact support to change the email on your account.",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "toastSuccess": "Profile updated",
+      "toastError": "Couldn’t update your profile"
+    },
+    "billing": {
+      "title": "Billing details",
+      "desc": "Used on receipts and future invoices.",
+      "name": "Billing name",
+      "email": "Billing email",
+      "address": "Billing address",
+      "taxId": "Tax ID",
+      "save": "Save billing details",
+      "saving": "Saving…",
+      "toastSuccess": "Billing details saved",
+      "toastError": "Couldn’t save billing details",
+      "invoicesTitle": "Invoices",
+      "comingSoon": "Coming soon",
+      "invoicesBody": "Invoices appear here once online payments go live. For now, your subscription is on a free trial and nothing is charged.",
+      "historyTitle": "Subscription history"
+    },
+    "settings": {
+      "passwordTitle": "Change password",
+      "passwordDesc": "Choose a strong password you don’t reuse.",
+      "newPassword": "New password",
+      "confirm": "Confirm new password",
+      "update": "Update password",
+      "updating": "Updating…",
+      "toastSuccess": "Password changed",
+      "toastError": "Couldn’t change your password",
+      "noUser": "Couldn’t determine your account",
+      "prefsTitle": "Preferences",
+      "prefsDesc": "More controls are on the way.",
+      "prefUpdates": "Product updates by email",
+      "prefDigest": "Weekly sales digest",
+      "prefsNote": "Preference controls are placeholders for now."
+    },
+    "subscription": {
+      "currentTitle": "Current subscription",
+      "plan": "Plan",
+      "price": "Price",
+      "trialEnds": "Trial ends",
+      "periodEnds": "Current period ends",
+      "changeTitle": "Change plan",
+      "changeDesc": "Switch anytime. Plan changes don’t charge yet — billing is informational for now.",
+      "loadingPlans": "Loading plans…",
+      "current": "Current",
+      "currentPlan": "Current plan",
+      "choose": "Choose",
+      "switchedToast": "Switched to {plan}",
+      "switchedDesc": "No charge today — billing is informational for now.",
+      "changeError": "Couldn’t change your plan",
+      "historyTitle": "History",
+      "historyDesc": "Every change to your subscription.",
+      "dialogTitle": "Switch to {plan}?",
+      "dialogBody": "Your plan changes immediately. You won’t be charged today — payment is a future feature.",
+      "dialogAria": "Confirm plan change",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "switching": "Switching…"
+    },
+    "history": {
+      "empty": "No changes yet.",
+      "planStatusChanged": "Plan and status changed to {status}",
+      "planChanged": "Plan changed",
+      "statusChanged": "Status changed to {status}",
+      "started": "Subscription started ({status})",
+      "updated": "Subscription updated",
+      "by": { "SYSTEM": "System", "PLATFORM_USER": "Platform admin", "USER": "You" }
+    }
+  },
+  "validation": {
+    "email": { "required": "Email is required", "invalid": "Enter a valid email" },
+    "password": { "required": "Password is required", "min8": "Use at least 8 characters" },
+    "ownerName": "Tell us your name",
+    "fullName": "Enter your name",
+    "businessName": "Enter your business name",
+    "restaurantName": "Enter your restaurant name",
+    "timezone": "Select a timezone",
+    "confirm": { "required": "Please confirm your password", "mismatch": "Passwords don’t match" },
+    "agreeTerms": "Please accept the Terms & Privacy Policy to continue",
+    "slug": {
+      "required": "Enter a subdomain",
+      "tooShort": "At least {min} characters",
+      "tooLong": "At most {max} characters",
+      "charset": "Use lowercase letters, numbers and hyphens only",
+      "hyphenEdge": "Can’t start or end with a hyphen",
+      "consecutive": "No consecutive hyphens",
+      "reserved": "That subdomain is reserved",
+      "invalid": "That subdomain isn’t allowed",
+      "taken": "That subdomain is taken"
+    }
+  },
+  "docs": {
+    "index": {
+      "eyebrow": "Documentation",
+      "title": "Run Restaurant OS like a pro",
+      "intro": "Practical guides for every part of the platform — set up your restaurant, build your menu and floor, run service, and grow with your numbers. New here? Start with <link>Getting started</link>."
+    },
+    "sections": {
+      "getStarted": "Get started",
+      "build": "Build your menu & floor",
+      "runService": "Run service",
+      "grow": "Grow & manage"
+    },
+    "pages": {
+      "getting-started": "Getting started",
+      "setup-restaurant": "Set up your restaurant & subdomain",
+      "menu-management": "Menu management",
+      "tables-floor-plan": "Tables & floor plan",
+      "pos-order-taking": "POS order taking",
+      "kitchen-display": "Kitchen Display (KDS)",
+      "reservations": "Reservations",
+      "qr-menu": "QR menu & customer ordering",
+      "reports-dashboard": "Reports & dashboard",
+      "account-billing": "Account & billing"
+    },
+    "sidebar": {
+      "nav": "Documentation",
+      "search": "Search docs…",
+      "searchAria": "Search documentation",
+      "noMatch": "No pages match “{query}”."
+    },
+    "toc": "On this page",
+    "mobileNav": "Browse documentation",
+    "pager": { "prev": "Previous", "next": "Next" }
+  },
+  "legal": {
+    "eyebrow": "Legal",
+    "lastUpdated": "Last updated:",
+    "draftTitle": "Draft — pending legal review; not legal advice.",
+    "draftBody": "This document is an early draft prepared for review by a qualified Armenian lawyer. It has not been legally reviewed, is subject to change, and does not constitute legal advice. Items shown in <ph>[brackets]</ph> are placeholders to be completed by the company before publication.",
+    "controllingNote": "For users in Armenia, the <b>Armenian</b> version of this document is the controlling language once finalised. The Armenian translation is pending and must be reviewed by an Armenian lawyer before it takes effect.",
+    "translationDraftTitle": "Draft translation — pending professional review.",
+    "translationDraftBody": "This translation is a draft and has not been reviewed by a professional translator or lawyer. The English version remains authoritative until a reviewed translation is published; for Armenian users the Armenian version is the controlling language and must be confirmed by a qualified translator/lawyer.",
+    "onThisPage": "On this page",
+    "footerNote": "This page is a draft pending legal review and is not legal advice. Questions? See the contact details above."
+  },
+  "notFound": {
+    "code": "86’d",
+    "title": "We couldn’t find that page",
+    "body": "The page you’re looking for is off the menu. Let’s get you back to something good.",
+    "home": "Back to home",
+    "docs": "Browse the docs"
+  }
+}

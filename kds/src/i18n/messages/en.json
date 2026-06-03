@@ -1,0 +1,62 @@
+{
+  "app": {
+    "title": "Kitchen Display"
+  },
+  "login": {
+    "title": "Kitchen Sign In",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "invalid": "Invalid email or password.",
+    "error": "Could not sign in. Please try again."
+  },
+  "access": {
+    "noAccessTitle": "No kitchen access",
+    "noAccessBody": "This account does not have permission to use the Kitchen Display. Ask an administrator to grant KDS access.",
+    "logout": "Log out"
+  },
+  "station": {
+    "pickerTitle": "Choose your station",
+    "pickerHint": "Tickets for the selected station(s) will appear on this screen.",
+    "KITCHEN": "Kitchen",
+    "BAR": "Bar",
+    "DESSERT": "Dessert",
+    "OTHER": "Other",
+    "confirm": "Start",
+    "change": "Change station"
+  },
+  "board": {
+    "empty": "No active tickets right now.",
+    "loading": "Loading tickets…",
+    "error": "Could not load tickets.",
+    "takeaway": "Takeaway",
+    "start": "Start",
+    "ready": "Ready",
+    "markOrderReady": "Mark order ready",
+    "awaitingPickup": "Awaiting pickup",
+    "bump": "Bump",
+    "actionError": "Action failed. Please try again.",
+    "status": {
+      "SENT": "New",
+      "PREPARING": "Cooking",
+      "READY": "Ready",
+      "delayed": "Delayed"
+    }
+  },
+  "topbar": {
+    "logout": "Log out",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "language": "Language",
+    "sound": "Sound",
+    "muted": "Muted",
+    "mute": "Mute new-ticket sound",
+    "unmute": "Unmute new-ticket sound"
+  },
+  "connection": {
+    "connected": "Connected",
+    "connecting": "Connecting…",
+    "disconnected": "Connection lost — reconnecting. Tickets may be out of date."
+  }
+}

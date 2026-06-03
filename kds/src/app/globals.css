@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-kiosk-bg text-kiosk-text antialiased;
+  /* Kiosk: prevent accidental text selection from taps/swipes. */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  /* Avoid iOS tap highlight on a touchscreen kiosk. */
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* Allow selection inside inputs (login form). */
+input,
+textarea {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  user-select: text;
+}

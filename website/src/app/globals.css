@@ -1,0 +1,133 @@
+@import "../styles/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--header-h) + 24px);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: rgb(var(--color-cream));
+    color: rgb(var(--color-ink));
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv05";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Warm, subtle paper grain over the whole page for depth (no flat fills). */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.4;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 480;
+    color: rgb(var(--color-ink));
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background: rgb(var(--color-terracotta));
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--color-terracotta));
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* Honor reduced-motion across the board. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* The site lives above the grain layer. */
+  .layer-up {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Entrance reveal (driven by components/ui/Reveal.tsx). Visible by default;
+     only hidden/animated once JS sets data-anim, so no-JS users see content. */
+  @keyframes reveal-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .reveal[data-anim="hidden"] {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  .reveal[data-anim="show"] {
+    animation: reveal-fade-up var(--dur-slow) var(--ease-out-expo) both;
+    animation-delay: var(--reveal-delay, 0ms);
+  }
+
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgb(var(--color-terracotta-ink));
+  }
+
+  /* Decorative warm radial wash used behind heroes / CTAs. */
+  .wash-warm {
+    background:
+      radial-gradient(60% 50% at 18% 10%, rgba(224, 145, 60, 0.16), transparent 60%),
+      radial-gradient(50% 60% at 88% 0%, rgba(190, 77, 43, 0.12), transparent 55%);
+  }
+
+  .wash-sage {
+    background: radial-gradient(55% 60% at 85% 20%, rgba(107, 119, 88, 0.12), transparent 60%);
+  }
+
+  .hairline {
+    border-color: rgb(var(--color-line));
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}

@@ -1,0 +1,51 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { UseCase } from '../../../../shared/application/use-case';
+import { ID_GENERATOR, IdGenerator } from '../../../identity/application/ports/id-generator';
+import { ModifierOption } from '../../domain/entities/modifier-option';
+import {
+  MODIFIER_GROUP_REPOSITORY,
+  ModifierGroupRepository,
+} from '../../domain/repositories/modifier-group.repository';
+import {
+  MODIFIER_OPTION_REPOSITORY,
+  ModifierOptionRepository,
+} from '../../domain/repositories/modifier-option.repository';
+import { ModifierGroupNotFound, NoRestaurantInScope } from '../application.errors';
+
+export interface AddModifierOptionInput {
+  restaurantId: string | null;
+  groupId: string;
+  name: string;
+  priceDeltaAmount?: number;
+  displayOrder?: number;
+}
+
+/** Add an option to a modifier group (verifies the group belongs to the restaurant). */
+@Injectable()
+export class AddModifierOptionUseCase implements UseCase<AddModifierOptionInput, ModifierOption> {
+  constructor(
+    @Inject(MODIFIER_OPTION_REPOSITORY) private readonly options: ModifierOptionRepository,
+    @Inject(MODIFIER_GROUP_REPOSITORY) private readonly groups: ModifierGroupRepository,
+    @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
+  ) {}
+
+  async execute(input: AddModifierOptionInput): Promise<ModifierOption> {
+    if (!input.restaurantId) {
+      throw NoRestaurantInScope();
+    }
+    const group = await this.groups.findById(input.restaurantId, input.groupId);
+    if (!group) {
+      throw ModifierGroupNotFound();
+    }
+    const option = ModifierOption.create({
+      id: this.ids.generate(),
+      restaurantId: input.restaurantId,
+      modifierGroupId: input.groupId,
+      name: input.name,
+      priceDeltaAmount: input.priceDeltaAmount, // aggregate rejects negatives
+      displayOrder: input.displayOrder,
+    });
+    await this.options.create(option);
+    return option;
+  }
+}

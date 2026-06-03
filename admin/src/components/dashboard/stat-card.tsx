@@ -1,0 +1,20 @@
+export function StatCard({
+  label,
+  value,
+  loading,
+}: {
+  label: string;
+  value: string | number;
+  loading?: boolean;
+}) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <p className="text-sm font-medium text-gray-500">{label}</p>
+      {loading ? (
+        <div className="mt-2 h-8 w-24 animate-pulse rounded bg-gray-100" />
+      ) : (
+        <p className="mt-2 text-3xl font-semibold text-gray-900">{value}</p>
+      )}
+    </div>
+  );
+}

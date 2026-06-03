@@ -1,0 +1,70 @@
+{
+  "header": {
+    "table": "Стол {name}"
+  },
+  "language": {
+    "label": "Язык"
+  },
+  "search": {
+    "placeholder": "Поиск по меню",
+    "noResults": "Ничего не найдено по запросу «{query}»."
+  },
+  "menu": {
+    "unavailableBadge": "Нет в наличии",
+    "emptyTitle": "Меню скоро появится",
+    "emptyBody": "Этот ресторан ещё не опубликовал блюда. Загляните позже.",
+    "loading": "Загрузка меню…"
+  },
+  "item": {
+    "modifiers": "Опции",
+    "required": "Обязательно",
+    "pickOne": "Выберите одно",
+    "pickMany": "Выберите любые",
+    "pickOneOptional": "Необязательно",
+    "pickManyMin": "Выберите минимум {min}",
+    "pickManyRange": "Выберите {min}–{max}",
+    "noteLabel": "Комментарий (необязательно)",
+    "notePlaceholder": "напр. без лука",
+    "addToOrder": "Добавить в заказ",
+    "quantity": "Количество"
+  },
+  "error": {
+    "unavailableTitle": "Меню недоступно",
+    "unavailableBody": "Не удалось найти меню для этого адреса. Ресторан неизвестен или его QR-меню отключено.",
+    "genericTitle": "Что-то пошло не так",
+    "genericBody": "Не удалось загрузить меню. Попробуйте ещё раз."
+  },
+  "common": {
+    "close": "Закрыть"
+  },
+  "gating": {
+    "scanToOrder": "Отсканируйте QR-код стола, чтобы заказать."
+  },
+  "cart": {
+    "viewOrder": "Посмотреть заказ",
+    "title": "Ваш заказ",
+    "empty": "Ваш заказ пуст.",
+    "clearAll": "Очистить",
+    "remove": "Удалить",
+    "quantity": "Количество",
+    "namePlaceholder": "Ваше имя (необязательно)",
+    "notePlaceholder": "Комментарий для кухни (необязательно)",
+    "total": "Итого",
+    "placeOrder": "Оформить заказ",
+    "placing": "Оформляем…",
+    "placeError": "Не удалось оформить заказ. Попробуйте ещё раз.",
+    "backToMenu": "Назад в меню"
+  },
+  "status": {
+    "sendingTitle": "Отправляем заказ…",
+    "pendingTitle": "Отправлено персоналу",
+    "pendingBody": "Ожидаем подтверждения…",
+    "confirmedTitle": "Подтверждено!",
+    "confirmedBody": "Ваш заказ готовится.",
+    "rejectedTitle": "Заказ отклонён",
+    "rejectedBody": "К сожалению, заказ был отклонён.",
+    "errorTitle": "Не удалось загрузить статус",
+    "errorBody": "Вернитесь и попробуйте снова.",
+    "backToMenu": "Назад в меню"
+  }
+}

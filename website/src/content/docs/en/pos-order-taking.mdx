@@ -1,0 +1,64 @@
+export const metadata = {
+  title: "POS order taking",
+  description:
+    "Ring in orders fast: courses, modifiers, split and merged checks, and sending tickets to the kitchen.",
+};
+
+<span className="eyebrow">Run service</span>
+
+# POS order taking
+
+The POS is where most of service happens, so it’s built for speed and muscle memory. Big tappable
+targets, sensible defaults, and nothing between you and sending the order.
+
+## Start an order
+
+Pick a table from the [floor plan](/docs/tables-floor-plan) or start a quick counter order. Tap a
+category, tap an item, and it lands on the ticket. Adjust quantities inline.
+
+<Steps>
+  <Step title="Choose a table or counter">
+    Table orders attach to the floor plan; counter orders are for takeaway and quick service.
+  </Step>
+  <Step title="Add items and modifiers">
+    Tap to add. If an item has modifiers, you’ll be prompted — or skip straight through for the
+    defaults.
+  </Step>
+  <Step title="Send to the kitchen">
+    Hit **Send** and the ticket appears instantly on the [Kitchen Display](/docs/kitchen-display).
+  </Step>
+</Steps>
+
+## Courses and timing
+
+Group items into courses so the kitchen fires them in the right order. Hold a course and release it
+when the table’s ready — the line sees exactly when to start.
+
+<Callout tone="tip" title="Fire on your terms">
+  Sending the ticket and firing a course are separate actions. Send the whole order up front, then
+  release each course when the table is ready for it.
+</Callout>
+
+## Splitting and merging checks
+
+Service is messy, so the POS makes it easy to:
+
+- **Split** a check by guest, by item, or evenly
+- **Merge** checks when parties combine
+- **Transfer** items or whole checks between tables
+
+Every change keeps the kitchen and reporting in sync.
+
+## Payments
+
+Take payment at the table or counter. Restaurant OS records the tender type and updates your
+[reports](/docs/reports-dashboard) in real time. Payment processing fees are passed through at cost.
+
+<Note>
+  The POS works offline. If your connection drops mid-service, orders queue locally and sync the
+  moment you’re back online.
+</Note>
+
+## Next: the kitchen line
+
+See how those tickets land in the kitchen in [Kitchen Display (KDS)](/docs/kitchen-display).
