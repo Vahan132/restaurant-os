@@ -53,13 +53,16 @@ export function Header() {
       <Container className="flex h-[var(--header-h)] items-center justify-between gap-6">
         <Logo />
 
-        <nav aria-label={t("primary")} className="hidden items-center gap-1 md:flex">
+        <nav
+          aria-label={t("primary")}
+          className="hidden items-center gap-1 min-[1100px]:flex"
+        >
           {mainNav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "rounded-pill px-3.5 py-2 text-sm font-medium text-ink-soft transition-colors duration-fast hover:text-ink hover:bg-sand/60",
+                "inline-flex items-center justify-center rounded-pill px-3.5 py-2 text-sm font-medium text-ink-soft transition-colors duration-fast hover:text-ink hover:bg-sand/60",
                 isActive(item.href) && "text-terracotta-ink",
               )}
             >
@@ -68,7 +71,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2 min-[1100px]:flex">
           <LanguageSwitcher />
           {signedIn ? (
             <ButtonLink href="/account" size="sm">
@@ -78,7 +81,7 @@ export function Header() {
             <>
               <Link
                 href={site.routes.login}
-                className="rounded-pill px-3.5 py-2 text-sm font-semibold text-ink-soft transition-colors duration-fast hover:text-ink"
+                className="inline-flex items-center justify-center rounded-pill px-3.5 py-2 text-sm font-semibold text-ink-soft transition-colors duration-fast hover:text-ink"
               >
                 {t("login")}
               </Link>
@@ -92,7 +95,7 @@ export function Header() {
         {/* Mobile toggle */}
         <button
           type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-ink md:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-ink min-[1100px]:hidden"
           aria-label={open ? t("closeMenu") : t("openMenu")}
           aria-expanded={open}
           aria-controls="mobile-menu"
@@ -125,7 +128,7 @@ export function Header() {
       <div
         id="mobile-menu"
         className={cn(
-          "md:hidden",
+          "min-[1100px]:hidden",
           open ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
