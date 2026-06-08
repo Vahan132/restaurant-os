@@ -45,7 +45,7 @@ export function Footer() {
 
         <div className="mt-14 flex flex-col items-start justify-between gap-6 border-t border-line pt-8 sm:flex-row sm:items-center">
           <p className="text-sm text-muted">{t("copyright", { year, brand: site.name })}</p>
-          <LanguageSwitcher />
+          <LanguageSwitcher placement="up" />
         </div>
       </Container>
     </footer>
