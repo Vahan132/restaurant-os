@@ -38,93 +38,102 @@ export function Header() {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
   const isActive = (href: string) =>
     href.startsWith("/") && !href.includes("#") && pathname.startsWith(href);
 
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-base ease-out-soft",
-        scrolled
-          ? "border-b border-line/80 bg-cream/85 backdrop-blur-md supports-[backdrop-filter]:bg-cream/70"
-          : "border-b border-transparent bg-transparent",
-      )}
-    >
-      <Container className="flex h-[var(--header-h)] items-center justify-between gap-6">
-        <Logo />
+    <>
+      <header
+        className={cn(
+          "fixed inset-x-0 top-0 z-50 transition-all duration-base ease-out-soft",
+          scrolled
+            ? "bg-cream/85 backdrop-blur-md supports-[backdrop-filter]:bg-cream/70"
+            : "bg-transparent",
+        )}
+      >
+        <Container className="flex h-[var(--header-h)] items-center justify-between gap-6">
+          <Logo />
 
-        <nav
-          aria-label={t("primary")}
-          className="hidden items-center gap-1 min-[1100px]:flex"
-        >
-          {mainNav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "inline-flex items-center justify-center rounded-pill px-3.5 py-2 text-sm font-medium text-ink-soft transition-colors duration-fast hover:text-ink hover:bg-sand/60",
-                isActive(item.href) && "text-terracotta-ink",
-              )}
-            >
-              {t(item.key)}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="hidden items-center gap-2 min-[1100px]:flex">
-          <LanguageSwitcher />
-          {signedIn ? (
-            <ButtonLink href="/account" size="sm">
-              {t("goToAccount")}
-            </ButtonLink>
-          ) : (
-            <>
+          <nav
+            aria-label={t("primary")}
+            className="hidden items-center gap-1 min-[1100px]:flex"
+          >
+            {mainNav.map((item) => (
               <Link
-                href={site.routes.login}
-                className="inline-flex items-center justify-center rounded-pill px-3.5 py-2 text-sm font-semibold text-ink-soft transition-colors duration-fast hover:text-ink"
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "inline-flex items-center justify-center rounded-pill px-3.5 py-2 text-sm font-medium text-ink-soft transition-colors duration-fast hover:text-ink hover:bg-sand/60",
+                  isActive(item.href) && "text-terracotta-ink",
+                )}
               >
-                {t("login")}
+                {t(item.key)}
               </Link>
-              <ButtonLink href={site.routes.signup} size="sm">
-                {t("getStarted")}
+            ))}
+          </nav>
+
+          <div className="hidden items-center gap-2 min-[1100px]:flex">
+            <LanguageSwitcher />
+            {signedIn ? (
+              <ButtonLink href="/account" size="sm">
+                {t("goToAccount")}
               </ButtonLink>
-            </>
-          )}
-        </div>
+            ) : (
+              <>
+                <Link
+                  href={site.routes.login}
+                  className="inline-flex items-center justify-center rounded-pill px-3.5 py-2 text-sm font-semibold text-ink-soft transition-colors duration-fast hover:text-ink"
+                >
+                  {t("login")}
+                </Link>
+                <ButtonLink href={site.routes.signup} size="sm">
+                  {t("getStarted")}
+                </ButtonLink>
+              </>
+            )}
+          </div>
 
-        {/* Mobile toggle */}
-        <button
-          type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-ink min-[1100px]:hidden"
-          aria-label={open ? t("closeMenu") : t("openMenu")}
-          aria-expanded={open}
-          aria-controls="mobile-menu"
-          onClick={() => setOpen((v) => !v)}
-        >
-          <span className="relative block h-4 w-5">
-            <span
-              className={cn(
-                "absolute left-0 top-0 h-0.5 w-5 bg-ink transition-all duration-base ease-out-expo",
-                open && "top-1.5 rotate-45",
-              )}
-            />
-            <span
-              className={cn(
-                "absolute left-0 top-1.5 h-0.5 w-5 bg-ink transition-opacity duration-fast",
-                open && "opacity-0",
-              )}
-            />
-            <span
-              className={cn(
-                "absolute left-0 top-3 h-0.5 w-5 bg-ink transition-all duration-base ease-out-expo",
-                open && "top-1.5 -rotate-45",
-              )}
-            />
-          </span>
-        </button>
-      </Container>
+          <button
+            type="button"
+            className="relative z-50 inline-flex h-10 w-10 items-center justify-center rounded-full text-ink min-[1100px]:hidden"
+            aria-label={open ? t("closeMenu") : t("openMenu")}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+            onClick={() => setOpen((v) => !v)}
+          >
+            <span className="relative block h-4 w-5">
+              <span
+                className={cn(
+                  "absolute left-0 h-0.5 w-5 rounded-full bg-ink transition-all duration-base ease-out-expo",
+                  open ? "top-1/2 -translate-y-1/2 rotate-45" : "top-0",
+                )}
+              />
+              <span
+                className={cn(
+                  "absolute left-0 top-1/2 -translate-y-1/2 h-0.5 w-5 rounded-full bg-ink transition-opacity duration-fast",
+                  open && "opacity-0",
+                )}
+              />
+              <span
+                className={cn(
+                  "absolute left-0 h-0.5 w-5 rounded-full bg-ink transition-all duration-base ease-out-expo",
+                  open ? "top-1/2 -translate-y-1/2 -rotate-45" : "bottom-0",
+                )}
+              />
+            </span>
+          </button>
+        </Container>
+      </header>
 
-      {/* Mobile menu */}
       <div
         id="mobile-menu"
         className={cn(
@@ -132,9 +141,20 @@ export function Header() {
           open ? "pointer-events-auto" : "pointer-events-none",
         )}
       >
+        <button
+          type="button"
+          tabIndex={open ? 0 : -1}
+          aria-label={t("closeMenu")}
+          onClick={() => setOpen(false)}
+          className={cn(
+            "fixed inset-x-0 bottom-0 top-[var(--header-h)] z-40 w-full cursor-default bg-ink/25 backdrop-blur-sm transition-opacity duration-base ease-out-soft",
+            open ? "opacity-100" : "pointer-events-none opacity-0",
+          )}
+        />
+
         <div
           className={cn(
-            "absolute inset-x-0 top-[var(--header-h)] origin-top border-b border-line bg-cream/95 backdrop-blur-md transition-all duration-base ease-out-expo",
+            "fixed inset-x-0 top-[var(--header-h)] z-50 origin-top bg-cream/95 backdrop-blur-md transition-all duration-base ease-out-expo",
             open ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0",
           )}
         >
@@ -148,7 +168,7 @@ export function Header() {
                 {t(item.key)}
               </Link>
             ))}
-            <div className="mt-4 flex flex-col gap-3 border-t border-line pt-5">
+            <div className="flex flex-col gap-3 pt-5">
               {signedIn ? (
                 <ButtonLink href="/account" size="md">
                   {t("goToAccount")}
@@ -170,6 +190,6 @@ export function Header() {
           </Container>
         </div>
       </div>
-    </header>
+    </>
   );
 }
