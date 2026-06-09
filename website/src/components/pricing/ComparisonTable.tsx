@@ -41,16 +41,16 @@ export function ComparisonTable() {
   };
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[640px] border-separate border-spacing-0 text-left">
+    <div className="-mx-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
+      <table className="w-full min-w-[560px] border-separate border-spacing-0 text-left">
         <caption className="sr-only">{t("comparison.caption")}</caption>
         <thead>
           <tr>
-            <th scope="col" className="w-2/5 px-4 pb-4 align-bottom">
+            <th scope="col" className="w-2/5 px-3 pb-4 align-bottom sm:px-4">
               <span className="text-sm font-semibold text-muted">{t("comparison.header")}</span>
             </th>
             {plans.map((p) => (
-              <th key={p.id} scope="col" className="px-4 pb-4 text-center align-bottom">
+              <th key={p.id} scope="col" className="px-3 pb-4 text-center align-bottom sm:px-4">
                 <span
                   className={cn("font-display text-lg", p.popular ? "text-terracotta-ink" : "text-ink")}
                 >
@@ -67,7 +67,7 @@ export function ComparisonTable() {
                 <th
                   scope="colgroup"
                   colSpan={plans.length + 1}
-                  className="px-4 pb-2 pt-7 text-2xs font-semibold uppercase tracking-eyebrow text-terracotta-ink"
+                  className="px-3 pb-2 pt-7 text-2xs font-semibold uppercase tracking-eyebrow text-terracotta-ink sm:px-4"
                 >
                   {t(`comparison.groups.${group.groupKey}`)}
                 </th>
@@ -76,14 +76,14 @@ export function ComparisonTable() {
                 <tr key={row.featureKey} className={cn(ri % 2 === 1 && "bg-sand/40")}>
                   <th
                     scope="row"
-                    className="rounded-l-md border-b border-line px-4 py-3 text-left text-sm font-normal text-ink-soft"
+                    className="rounded-l-md border-b border-line px-3 py-3 text-left text-sm font-normal text-ink-soft sm:px-4"
                   >
                     {t(`comparison.rows.${row.featureKey}`)}
                   </th>
                   {plans.map((p) => (
                     <td
                       key={p.id}
-                      className="border-b border-line px-4 py-3 text-center last:rounded-r-md"
+                      className="border-b border-line px-3 py-3 text-center last:rounded-r-md sm:px-4"
                     >
                       <Cell value={row.values[p.id]} label={label} />
                     </td>

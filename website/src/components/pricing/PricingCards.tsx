@@ -28,7 +28,7 @@ export function PricingCards() {
           ) : null}
 
           <div className="flex flex-col gap-2">
-            <h3 className="font-display text-2xl">{t(`items.${plan.id}.name`)}</h3>
+            <h3 className="font-display text-2xl leading-[1.2]">{t(`items.${plan.id}.name`)}</h3>
             <p className="min-h-[2.75rem] text-pretty text-sm text-muted">
               {t(`items.${plan.id}.tagline`)}
             </p>

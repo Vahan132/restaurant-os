@@ -39,7 +39,9 @@ export default async function PricingPage({ params }: { params: Promise<{ locale
               <span className="eyebrow">{t("eyebrow")}</span>
             </Reveal>
             <Reveal trigger="mount" delay={1}>
-              <h1 className="text-balance font-display text-5xl sm:text-6xl">{t("title")}</h1>
+              <h1 className="text-balance font-display text-4xl leading-[1.2] sm:text-5xl/[1.2]">
+                {t("title")}
+              </h1>
             </Reveal>
             <Reveal trigger="mount" delay={2}>
               <p className="text-pretty text-lg text-muted">{t("intro")}</p>
@@ -59,11 +61,12 @@ export default async function PricingPage({ params }: { params: Promise<{ locale
       </section>
 
       {/* Comparison */}
-      <Section tone="cream" id="compare">
+      <Section tone="cream" id="compare" className="overflow-x-clip">
         <SectionHeading
           eyebrow={t("compareEyebrow")}
           title={t("compareTitle")}
           intro={t("compareIntro")}
+          titleClassName="leading-[1.2] sm:leading-[1.2]"
         />
         <Reveal className="mt-12">
           <ComparisonTable />
@@ -72,7 +75,7 @@ export default async function PricingPage({ params }: { params: Promise<{ locale
 
       {/* FAQ */}
       <Section tone="sand">
-        <SectionHeading eyebrow={t("faqEyebrow")} title={t("faqTitle")} />
+        <SectionHeading eyebrow={t("faqEyebrow")} title={t("faqTitle")} titleClassName="leading-[1.2] sm:leading-[1.2]" />
         <Reveal className="mt-12">
           <FAQ />
         </Reveal>
@@ -81,7 +84,7 @@ export default async function PricingPage({ params }: { params: Promise<{ locale
       {/* CTA */}
       <Section>
         <Reveal className="flex flex-col items-center gap-6 text-center">
-          <h2 className="text-balance font-display text-4xl sm:text-5xl">
+          <h2 className="text-balance font-display text-4xl leading-[1.2] sm:text-5xl/[1.2]">
             {t("ctaTitle", { brand: site.name })}
           </h2>
           <p className="max-w-xl text-pretty text-lg text-muted">{t("ctaBody")}</p>
