@@ -163,6 +163,7 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setOpen(false)}
                 className="rounded-md px-3 py-3 text-lg font-medium text-ink hover:bg-sand/70"
               >
                 {t(item.key)}
