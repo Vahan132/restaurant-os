@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { HashLink } from "@/components/site/HashLink";
 import { Container } from "@/components/ui/Container";
 import { Logo } from "@/components/ui/Logo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -29,12 +29,12 @@ export function Footer() {
                 <ul className="flex flex-col gap-2.5">
                   {col.links.map((link) => (
                     <li key={link.href}>
-                      <Link
+                      <HashLink
                         href={link.href}
                         className="text-sm text-muted transition-colors duration-fast hover:text-terracotta-ink"
                       >
                         {t(`links.${link.key}`)}
-                      </Link>
+                      </HashLink>
                     </li>
                   ))}
                 </ul>

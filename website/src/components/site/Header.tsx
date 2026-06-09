@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
+import { HashLink } from "@/components/site/HashLink";
 import { Logo } from "@/components/ui/Logo";
 import { ButtonLink } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
@@ -68,7 +69,7 @@ export function Header() {
             className="hidden items-center gap-1 min-[1100px]:flex"
           >
             {mainNav.map((item) => (
-              <Link
+              <HashLink
                 key={item.href}
                 href={item.href}
                 className={cn(
@@ -77,7 +78,7 @@ export function Header() {
                 )}
               >
                 {t(item.key)}
-              </Link>
+              </HashLink>
             ))}
           </nav>
 
@@ -160,14 +161,14 @@ export function Header() {
         >
           <Container className="flex flex-col gap-1 py-6">
             {mainNav.map((item) => (
-              <Link
+              <HashLink
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className="rounded-md px-3 py-3 text-lg font-medium text-ink hover:bg-sand/70"
               >
                 {t(item.key)}
-              </Link>
+              </HashLink>
             ))}
             <div className="flex flex-col gap-3 pt-5">
               {signedIn ? (
