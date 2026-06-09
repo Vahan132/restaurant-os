@@ -15,7 +15,12 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="layer-up bg-sand py-20 sm:py-28">
       <Container>
-        <SectionHeading eyebrow={t("eyebrow")} title={t("title")} intro={t("intro")} />
+        <SectionHeading
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          intro={t("intro")}
+          titleClassName="leading-[1.2] sm:leading-[1.2]"
+        />
 
         <ol className="relative mt-16 grid gap-10 lg:grid-cols-3 lg:gap-6">
           {/* connecting line */}
@@ -28,7 +33,7 @@ export function HowItWorks() {
               <span className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full border border-line bg-paper font-display text-xl text-terracotta-ink shadow-sm">
                 {s.n}
               </span>
-              <h3 className="hyphens-auto break-words font-display text-2xl">
+              <h3 className="hyphens-auto break-words font-display text-2xl/[1.2]">
                 {t(`steps.${s.id}.title`)}
               </h3>
               <p className="text-pretty text-muted">{t(`steps.${s.id}.body`)}</p>

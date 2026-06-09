@@ -161,6 +161,40 @@
       "body": "Start free, set up your menu and floor, and run real orders today. No card, no contracts — just a calmer night of service.",
       "ctaPrimary": "Get started free",
       "ctaSecondary": "See pricing"
+    },
+    "visuals": {
+      "hero": {
+        "alt": "A warm plate of food ready for service",
+        "newOrder": "New order",
+        "table": "Table {n}",
+        "sentToKitchen": "Sent to kitchen",
+        "today": "Today"
+      },
+      "pos": {
+        "alt": "Point-of-sale order screen with a live ticket",
+        "table": "Table {n}",
+        "total": "Total"
+      },
+      "kds": {
+        "alt": "Kitchen display showing live order tickets",
+        "table": "Table {n}",
+        "takeaway": "Takeaway"
+      },
+      "tables": {
+        "alt": "Floor plan with table availability",
+        "zones": "Patio · Main"
+      },
+      "qr": {
+        "alt": "Customer scanning a QR menu on a phone",
+        "order": "Order"
+      },
+      "reports": {
+        "alt": "Sales report dashboard with a weekly revenue chart",
+        "thisWeek": "This week",
+        "covers": "Covers",
+        "avgCheck": "Avg. check",
+        "topItem": "Top item"
+      }
     }
   },
   "pricing": {
