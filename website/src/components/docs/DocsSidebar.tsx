@@ -33,11 +33,11 @@ export function DocsSidebar({ onNavigate }: { onNavigate?: () => void }) {
         <svg
           aria-hidden
           viewBox="0 0 20 20"
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+          className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted"
           fill="none"
         >
-          <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6" />
-          <path d="m14 14 3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="2" />
+          <path d="m14 14 3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
         <input
           type="search"

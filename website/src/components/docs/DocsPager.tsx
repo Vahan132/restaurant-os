@@ -16,7 +16,7 @@ export function DocsPager() {
 
   return (
     <nav
-      aria-label="Pagination"
+      aria-label={t("pager.label")}
       className="mt-14 grid gap-4 border-t border-line pt-8 sm:grid-cols-2"
     >
       {prev ? (
@@ -24,8 +24,11 @@ export function DocsPager() {
           href={prev.href}
           className="group flex flex-col gap-1 rounded-xl border border-line bg-paper p-4 transition-colors hover:border-terracotta/40"
         >
-          <span className="text-2xs font-semibold uppercase tracking-eyebrow text-muted">
-            ← {t("pager.prev")}
+          <span className="flex items-center gap-1.5 text-2xs font-bold uppercase leading-none tracking-eyebrow text-muted">
+            <svg viewBox="0 0 12 12" className="h-3 w-3 shrink-0" fill="none" aria-hidden>
+              <path d="M10 6H2M5 3 2 6l3 3" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {t("pager.prev")}
           </span>
           <span className="font-medium text-ink group-hover:text-terracotta-ink">
             {t(`pages.${prev.slug}`)}
@@ -39,8 +42,11 @@ export function DocsPager() {
           href={next.href}
           className="group flex flex-col gap-1 rounded-xl border border-line bg-paper p-4 text-right transition-colors hover:border-terracotta/40 sm:col-start-2"
         >
-          <span className="text-2xs font-semibold uppercase tracking-eyebrow text-muted">
-            {t("pager.next")} →
+          <span className="flex items-center justify-end gap-1.5 text-2xs font-bold uppercase leading-none tracking-eyebrow text-muted">
+            {t("pager.next")}
+            <svg viewBox="0 0 12 12" className="h-3 w-3 shrink-0" fill="none" aria-hidden>
+              <path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </span>
           <span className="font-medium text-ink group-hover:text-terracotta-ink">
             {t(`pages.${next.slug}`)}

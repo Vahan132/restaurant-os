@@ -611,7 +611,8 @@
     },
     "toc": "On this page",
     "mobileNav": "Browse documentation",
-    "pager": { "prev": "Previous", "next": "Next" }
+    "pager": { "prev": "Previous", "next": "Next", "label": "Pagination" },
+    "callout": { "note": "Note", "tip": "Tip", "warning": "Heads up" }
   },
   "legal": {
     "eyebrow": "Legal",

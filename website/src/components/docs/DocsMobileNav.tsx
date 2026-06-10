@@ -25,11 +25,11 @@ export function DocsMobileNav() {
         {t("mobileNav")}
         <svg
           viewBox="0 0 20 20"
-          className={cn("h-4 w-4 text-muted transition-transform duration-base", open && "rotate-180")}
+          className={cn("h-5 w-5 text-muted transition-transform duration-base", open && "rotate-180")}
           fill="none"
           aria-hidden
         >
-          <path d="m5 8 5 5 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="m5 8 5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       <div
