@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import { useChangePassword } from "@/api/hooks";
 import { useSession } from "@/hooks/useSession";
 import { Card } from "@/components/account/ui";
-import { Field, Input } from "@/components/ui/Field";
+import { Field } from "@/components/ui/Field";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
 import { toast, toastError } from "@/lib/toast";
@@ -57,9 +58,8 @@ export default function SettingsPage() {
       <Card title={t("passwordTitle")} description={t("passwordDesc")}>
         <form onSubmit={onSubmit} className="flex max-w-md flex-col gap-5">
           <Field label={t("newPassword")} htmlFor="newPassword" error={error} required>
-            <Input
+            <PasswordInput
               id="newPassword"
-              type="password"
               autoComplete="new-password"
               value={newPassword}
               invalid={!!error}
@@ -70,9 +70,8 @@ export default function SettingsPage() {
             </div>
           </Field>
           <Field label={t("confirm")} htmlFor="confirm" required>
-            <Input
+            <PasswordInput
               id="confirm"
-              type="password"
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}

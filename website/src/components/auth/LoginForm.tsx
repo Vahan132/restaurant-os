@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { AuthShell } from "./AuthShell";
 import { Field, Input } from "@/components/ui/Field";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
 import { useLogin } from "@/api/hooks";
 import { useAuthStore, type SessionUser } from "@/stores/auth";
@@ -77,9 +78,8 @@ export function LoginForm() {
           />
         </Field>
         <Field label={t("password")} htmlFor="password" error={errors.password?.message} required>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
             invalid={!!errors.password}
             {...register("password")}

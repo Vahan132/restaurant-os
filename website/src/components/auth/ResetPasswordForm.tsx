@@ -8,7 +8,8 @@ import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { AuthShell } from "./AuthShell";
-import { Field, Input } from "@/components/ui/Field";
+import { Field } from "@/components/ui/Field";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
 import { PasswordStrength } from "./PasswordStrength";
 import { useResetPassword } from "@/api/hooks";
@@ -86,9 +87,8 @@ export function ResetPasswordForm() {
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
         <Field label={t("newPassword")} htmlFor="newPassword" error={errors.newPassword?.message} required>
-          <Input
+          <PasswordInput
             id="newPassword"
-            type="password"
             autoComplete="new-password"
             invalid={!!errors.newPassword}
             {...register("newPassword")}
@@ -98,9 +98,8 @@ export function ResetPasswordForm() {
           </div>
         </Field>
         <Field label={t("confirm")} htmlFor="confirm" error={errors.confirm?.message} required>
-          <Input
+          <PasswordInput
             id="confirm"
-            type="password"
             autoComplete="new-password"
             invalid={!!errors.confirm}
             {...register("confirm")}
