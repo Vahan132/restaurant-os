@@ -61,7 +61,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
         <aside className="mb-8 lg:mb-0">
           <nav
             aria-label={t("eyebrow")}
-            className="flex gap-1 overflow-x-auto border-b border-line pb-px lg:sticky lg:top-[calc(var(--header-h)+1.5rem)] lg:flex-col lg:border-b-0 lg:pb-0"
+            className="-mx-6 flex gap-1 overflow-x-auto border-b border-line px-6 pb-px [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-8 sm:px-8 lg:mx-0 lg:sticky lg:top-[calc(var(--header-h)+1.5rem)] lg:flex-col lg:border-b-0 lg:px-0 lg:pb-0"
           >
             {nav.map((item) => (
               <Link
@@ -69,7 +69,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
                 href={item.href}
                 aria-current={isActive(item.href) ? "page" : undefined}
                 className={cn(
-                  "whitespace-nowrap rounded-md px-3.5 py-2 text-sm font-medium transition-colors",
+                  "shrink-0 whitespace-nowrap rounded-md px-3.5 py-2 text-sm font-medium transition-colors",
                   isActive(item.href)
                     ? "bg-terracotta-soft text-terracotta-ink lg:bg-terracotta-soft"
                     : "text-ink-soft hover:bg-sand/70 hover:text-ink",
@@ -81,7 +81,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
             <button
               type="button"
               onClick={logout}
-              className="ml-auto whitespace-nowrap rounded-md px-3.5 py-2 text-sm font-medium text-muted transition-colors hover:text-terracotta-ink lg:ml-0 lg:mt-4 lg:border-t lg:border-line lg:pt-4 lg:text-left"
+              className="ml-auto shrink-0 whitespace-nowrap rounded-md px-3.5 py-2 text-sm font-medium text-muted transition-colors hover:text-terracotta-ink lg:ml-0 lg:mt-4 lg:border-t lg:border-line lg:pt-4 lg:text-left"
             >
               {t("logout")}
             </button>

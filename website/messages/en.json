@@ -437,7 +437,7 @@
   "account": {
     "eyebrow": "Your account",
     "fallbackName": "Account",
-    "logout": "Log out",
+    "logout": "Logout",
     "logoutToast": "Signed out",
     "loadingAria": "Loading",
     "nav": {
@@ -452,7 +452,7 @@
       "forbiddenTitle": "You don’t have access",
       "forbiddenBody": "Managing this account requires the <b>Account manage</b> permission. Ask an owner to grant it, or sign in with an owner account.",
       "errorTitle": "Something went wrong",
-      "retry": "Try again"
+      "retry": "Retry"
     },
     "status": {
       "TRIALING": "Trialing",
@@ -467,7 +467,7 @@
       "status": "Status",
       "trialEnds": "Trial ends",
       "periodEnds": "Current period ends",
-      "manageSub": "Manage subscription",
+      "manageSub": "Manage",
       "billing": "Billing",
       "platformTitle": "Your platform",
       "platformDesc": "Jump into the apps your team uses every day.",
@@ -484,7 +484,7 @@
       "ownerTitle": "Owner",
       "ownerName": "Name",
       "ownerEmail": "Email",
-      "editProfile": "Edit profile"
+      "editProfile": "Edit"
     },
     "profile": {
       "title": "Profile",
@@ -492,7 +492,7 @@
       "fullName": "Full name",
       "email": "Email",
       "emailHint": "Contact support to change the email on your account.",
-      "save": "Save changes",
+      "save": "Save",
       "saving": "Saving…",
       "toastSuccess": "Profile updated",
       "toastError": "Couldn’t update your profile"
@@ -504,7 +504,7 @@
       "email": "Billing email",
       "address": "Billing address",
       "taxId": "Tax ID",
-      "save": "Save billing details",
+      "save": "Save",
       "saving": "Saving…",
       "toastSuccess": "Billing details saved",
       "toastError": "Couldn’t save billing details",
@@ -518,7 +518,7 @@
       "passwordDesc": "Choose a strong password you don’t reuse.",
       "newPassword": "New password",
       "confirm": "Confirm new password",
-      "update": "Update password",
+      "update": "Update",
       "updating": "Updating…",
       "toastSuccess": "Password changed",
       "toastError": "Couldn’t change your password",
@@ -539,7 +539,7 @@
       "changeDesc": "Switch anytime. Plan changes don’t charge yet — billing is informational for now.",
       "loadingPlans": "Loading plans…",
       "current": "Current",
-      "currentPlan": "Current plan",
+      "currentPlan": "Current",
       "choose": "Choose",
       "switchedToast": "Switched to {plan}",
       "switchedDesc": "No charge today — billing is informational for now.",

@@ -24,11 +24,11 @@ export function Card({
     <section className={cn("rounded-2xl border border-line bg-paper p-6 shadow-sm sm:p-7", className)}>
       {(title || action) && (
         <header className="mb-5 flex items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             {title ? <h2 className="font-display text-xl text-ink">{title}</h2> : null}
             {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
           </div>
-          {action}
+          {action ? <div className="shrink-0">{action}</div> : null}
         </header>
       )}
       {children}
@@ -38,9 +38,9 @@ export function Card({
 
 export function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-0.5 border-b border-line py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
-      <dt className="text-sm text-muted">{label}</dt>
-      <dd className="text-sm font-medium text-ink">{children}</dd>
+    <div className="flex flex-col gap-0.5 border-b border-line py-3 last:border-0 sm:items-baseline sm:justify-between sm:gap-x-6">
+      <dt className="text-sm text-muted sm:shrink-0">{label}</dt>
+      <dd className="text-sm font-medium text-ink sm:min-w-0 sm:text-right">{children}</dd>
     </div>
   );
 }

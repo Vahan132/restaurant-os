@@ -38,11 +38,13 @@ function Overview({ data }: { data: NonNullable<ReturnType<typeof useAccountOver
       <Card
         title={data.organization.name}
         description={t.rich("menuLivesAt", {
-          url: () => <span className="font-medium text-ink-soft">{buildCustomerUrl(slug)}</span>,
+          url: () => (
+            <span className="break-all font-medium text-ink-soft">{buildCustomerUrl(slug)}</span>
+          ),
         })}
         action={<StatusBadge status={sub.status} />}
       >
-        <dl className="grid gap-x-10 sm:grid-cols-2">
+        <dl className="grid gap-x-6 sm:grid-cols-2 lg:gap-x-10">
           <Row label={t("plan")}>{sub.planName}</Row>
           <Row label={t("status")}>{<StatusBadge status={sub.status} />}</Row>
           {sub.trialEndsAt ? (
@@ -71,13 +73,13 @@ function Overview({ data }: { data: NonNullable<ReturnType<typeof useAccountOver
               rel="noreferrer"
               className="group flex items-center justify-between gap-3 rounded-xl border border-line bg-cream p-4 transition-all hover:-translate-y-0.5 hover:border-terracotta/40 hover:shadow-sm"
             >
-              <div>
+              <div className="min-w-0">
                 <div className="font-medium text-ink">{l.label}</div>
                 <div className="text-xs text-muted">{l.desc}</div>
               </div>
               <span
                 aria-hidden
-                className="text-terracotta-ink transition-transform group-hover:translate-x-1"
+                className="shrink-0 text-terracotta-ink transition-transform group-hover:translate-x-1"
               >
                 ↗
               </span>

@@ -92,12 +92,12 @@ export default function SettingsPage() {
           {prefs.map((pref) => (
             <li
               key={pref.label}
-              className="flex items-center justify-between rounded-xl border border-line bg-cream/60 px-4 py-3"
+              className="flex items-center justify-between gap-3 rounded-xl border border-line bg-cream/60 px-4 py-3"
             >
-              <span className="text-sm text-ink-soft">{pref.label}</span>
+              <span className="min-w-0 text-sm text-ink-soft">{pref.label}</span>
               <span
                 aria-hidden
-                className={`relative h-5 w-9 rounded-pill transition-colors ${
+                className={`relative h-5 w-9 shrink-0 rounded-pill transition-colors ${
                   pref.on ? "bg-terracotta/60" : "bg-line"
                 }`}
               >
