@@ -13,7 +13,9 @@ import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
 import { PasswordStrength } from "./PasswordStrength";
 import { useResetPassword } from "@/api/hooks";
-import { toast, toastError } from "@/lib/toast";
+import { toast } from "@/lib/toast";
+import { useApiError } from "@/hooks/useApiError";
+import { clearableRegister } from "@/lib/form";
 
 export function ResetPasswordForm() {
   const t = useTranslations("auth.reset");
@@ -22,6 +24,7 @@ export function ResetPasswordForm() {
   const params = useSearchParams();
   const token = params.get("token") ?? "";
   const reset = useResetPassword();
+  const { toastError } = useApiError();
 
   const schema = useMemo(
     () =>
@@ -42,8 +45,10 @@ export function ResetPasswordForm() {
     register,
     handleSubmit,
     watch,
+    clearErrors,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  } = useForm<Values>({ resolver: zodResolver(schema), reValidateMode: "onSubmit" });
+  const field = clearableRegister(register, errors, clearErrors);
 
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -91,7 +96,7 @@ export function ResetPasswordForm() {
             id="newPassword"
             autoComplete="new-password"
             invalid={!!errors.newPassword}
-            {...register("newPassword")}
+            {...field("newPassword")}
           />
           <div className="mt-2">
             <PasswordStrength value={watch("newPassword") ?? ""} />
@@ -102,7 +107,7 @@ export function ResetPasswordForm() {
             id="confirm"
             autoComplete="new-password"
             invalid={!!errors.confirm}
-            {...register("confirm")}
+            {...field("confirm")}
           />
         </Field>
         <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>

@@ -424,6 +424,10 @@
       "available": "✓ Available",
       "pick": "Pick an available subdomain"
     },
+    "email": {
+      "checking": "Checking availability…",
+      "available": "✓ Available"
+    },
     "nav": { "back": "Back", "continue": "Continue", "create": "Create account", "creating": "Creating account…" },
     "signin": "Already have an account? <link>Sign in</link>",
     "toastSuccess": "Your account is ready",
@@ -560,7 +564,7 @@
     }
   },
   "validation": {
-    "email": { "required": "Email is required", "invalid": "Enter a valid email" },
+    "email": { "required": "Email is required", "invalid": "Enter a valid email", "taken": "This email is already registered" },
     "password": { "required": "Password is required", "min8": "Use at least 8 characters" },
     "ownerName": "Tell us your name",
     "fullName": "Enter your name",
@@ -580,6 +584,30 @@
       "invalid": "That subdomain isn’t allowed",
       "taken": "That subdomain is taken"
     }
+  },
+  "errors": {
+    "INVALID_CREDENTIALS": "Invalid email or password.",
+    "ACCOUNT_BLOCKED": "Your account has been blocked. Please contact support.",
+    "ACCOUNT_SUSPENDED": "Your account is suspended. Please contact support.",
+    "INVALID_RESET_TOKEN": "This reset link is invalid or has expired.",
+    "EMAIL_TAKEN": "This email is already registered.",
+    "EMAIL_ALREADY_EXISTS": "This email is already registered.",
+    "SLUG_TAKEN": "This subdomain is already taken.",
+    "INVALID_SLUG": "That subdomain isn’t allowed.",
+    "PLAN_NOT_AVAILABLE": "That plan isn’t available.",
+    "PLAN_NOT_FOUND": "That plan could not be found.",
+    "NO_CHANGES": "Nothing to change — you’re already on this plan.",
+    "ACCOUNT_NOT_FOUND": "Account not found.",
+    "SUBSCRIPTION_NOT_FOUND": "Subscription not found.",
+    "VALIDATION_ERROR": "Please check the form and try again.",
+    "TOO_MANY_REQUESTS": "Too many attempts. Please wait a moment and try again.",
+    "UNAUTHORIZED": "Your session has expired. Please sign in again.",
+    "FORBIDDEN": "You don’t have permission to do that.",
+    "NOT_FOUND": "We couldn’t find what you were looking for.",
+    "CONFLICT": "That action conflicts with the current state.",
+    "INTERNAL_SERVER_ERROR": "Something went wrong on our end. Please try again.",
+    "NETWORK_ERROR": "Can’t reach the server. Check your connection and try again.",
+    "default": "Something went wrong. Please try again."
   },
   "docs": {
     "index": {

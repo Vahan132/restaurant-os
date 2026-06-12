@@ -13,7 +13,9 @@ import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
 import { useLogin } from "@/api/hooks";
 import { useAuthStore, type SessionUser } from "@/stores/auth";
-import { toast, toastError } from "@/lib/toast";
+import { toast } from "@/lib/toast";
+import { useApiError } from "@/hooks/useApiError";
+import { clearableRegister } from "@/lib/form";
 
 export function LoginForm() {
   const t = useTranslations("auth.login");
@@ -22,6 +24,7 @@ export function LoginForm() {
   const params = useSearchParams();
   const setSession = useAuthStore((s) => s.setSession);
   const login = useLogin();
+  const { toastError } = useApiError();
 
   const schema = useMemo(
     () =>
@@ -36,8 +39,10 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
+    clearErrors,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  } = useForm<Values>({ resolver: zodResolver(schema), reValidateMode: "onSubmit" });
+  const field = clearableRegister(register, errors, clearErrors);
 
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -74,7 +79,7 @@ export function LoginForm() {
             type="email"
             autoComplete="email"
             invalid={!!errors.email}
-            {...register("email")}
+            {...field("email")}
           />
         </Field>
         <Field label={t("password")} htmlFor="password" error={errors.password?.message} required>
@@ -82,7 +87,7 @@ export function LoginForm() {
             id="password"
             autoComplete="current-password"
             invalid={!!errors.password}
-            {...register("password")}
+            {...field("password")}
           />
         </Field>
         <div className="flex justify-end">

@@ -26,6 +26,8 @@ import type {
 
 import type {
   CreateOrderRequestDto,
+  EmailAvailableResponse,
+  PublicAccountControllerEmailAvailableParams,
   PublicAccountControllerSubdomainParams,
   PublicMenuResponse,
   PublicOrderRequestResponse,
@@ -648,6 +650,98 @@ export function usePublicAccountControllerSubdomain<TData = Awaited<ReturnType<t
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicAccountControllerSubdomainQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+/**
+ * @summary Check whether an email is valid + not already registered.
+ */
+export const publicAccountControllerEmailAvailable = (
+    params: PublicAccountControllerEmailAvailableParams,
+ options?: SecondParameter<typeof httpClient>,signal?: AbortSignal
+) => {
+      
+      
+      return httpClient<EmailAvailableResponse>(
+      {url: `/public/email-available`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+
+export const getPublicAccountControllerEmailAvailableQueryKey = (params?: PublicAccountControllerEmailAvailableParams,) => {
+    return [
+    `/public/email-available`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getPublicAccountControllerEmailAvailableQueryOptions = <TData = Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError = ErrorType<unknown>>(params: PublicAccountControllerEmailAvailableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPublicAccountControllerEmailAvailableQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>> = ({ signal }) => publicAccountControllerEmailAvailable(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PublicAccountControllerEmailAvailableQueryResult = NonNullable<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>>
+export type PublicAccountControllerEmailAvailableQueryError = ErrorType<unknown>
+
+
+export function usePublicAccountControllerEmailAvailable<TData = Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError = ErrorType<unknown>>(
+ params: PublicAccountControllerEmailAvailableParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>,
+          TError,
+          Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicAccountControllerEmailAvailable<TData = Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError = ErrorType<unknown>>(
+ params: PublicAccountControllerEmailAvailableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>,
+          TError,
+          Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicAccountControllerEmailAvailable<TData = Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError = ErrorType<unknown>>(
+ params: PublicAccountControllerEmailAvailableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Check whether an email is valid + not already registered.
+ */
+
+export function usePublicAccountControllerEmailAvailable<TData = Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError = ErrorType<unknown>>(
+ params: PublicAccountControllerEmailAvailableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPublicAccountControllerEmailAvailableQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

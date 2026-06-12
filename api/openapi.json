@@ -6036,6 +6036,37 @@
         ]
       }
     },
+    "/public/email-available": {
+      "get": {
+        "operationId": "PublicAccountController_emailAvailable",
+        "summary": "Check whether an email is valid + not already registered.",
+        "parameters": [
+          {
+            "name": "email",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailAvailableResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
     "/public/signup": {
       "post": {
         "operationId": "PublicAccountController_createAccount",
@@ -10459,6 +10490,22 @@
         ]
       },
       "SubdomainAvailableResponse": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "available",
+          "reason"
+        ]
+      },
+      "EmailAvailableResponse": {
         "type": "object",
         "properties": {
           "available": {

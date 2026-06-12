@@ -10,6 +10,7 @@ import { UpdateProfileUseCase } from './application/commands/update-profile.usec
 import { UpsertBillingUseCase } from './application/commands/upsert-billing.usecase';
 import { GetPlansUseCase } from './application/queries/get-plans.usecase';
 import { CheckSubdomainUseCase } from './application/queries/check-subdomain.usecase';
+import { CheckEmailUseCase } from './application/queries/check-email.usecase';
 import { GetAccountUseCase } from './application/queries/get-account.usecase';
 import { GetSubscriptionUseCase } from './application/queries/get-subscription.usecase';
 import { GetBillingUseCase } from './application/queries/get-billing.usecase';
@@ -31,6 +32,7 @@ import { PublicAccountController } from './presentation/http/public-account.cont
   providers: [
     GetPlansUseCase,
     CheckSubdomainUseCase,
+    CheckEmailUseCase,
     SignupUseCase,
     GetAccountUseCase,
     UpdateProfileUseCase,

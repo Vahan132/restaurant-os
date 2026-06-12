@@ -14,16 +14,19 @@ import { PasswordStrength } from "@/components/auth/PasswordStrength";
 import {
   usePlans,
   useSubdomainAvailability,
+  useEmailAvailability,
   useSignup,
   planFeatures,
   type PublicPlanResponse,
 } from "@/api/hooks";
+import { normalizeError } from "@/api/http-client";
 import { useAuthStore, type SessionUser } from "@/stores/auth";
 import { formatMoney } from "@/lib/money";
 import { validateSlugFormat, slugify, SLUG_MIN, SLUG_MAX, type SlugReason } from "@/lib/slug";
 import { buildCustomerUrl } from "@/lib/platform";
 import { cn } from "@/lib/cn";
-import { toast, toastError } from "@/lib/toast";
+import { toast } from "@/lib/toast";
+import { useApiError } from "@/hooks/useApiError";
 
 type Data = {
   ownerName: string;
@@ -38,6 +41,8 @@ type Data = {
   timezone: string;
   agreeTerms: boolean;
 };
+
+const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function useDebounced<T>(value: T, delay = 400): T {
   const [v, setV] = useState(value);
@@ -55,6 +60,7 @@ export function SignupWizard() {
   const params = useSearchParams();
   const setSession = useAuthStore((s) => s.setSession);
   const signup = useSignup();
+  const { message: errorMessage, toastError } = useApiError();
 
   const STEPS = [t("steps.account"), t("steps.plan"), t("steps.restaurant")];
 
@@ -95,7 +101,16 @@ export function SignupWizard() {
     agreeTerms: false,
   }));
 
-  const set = (patch: Partial<Data>) => setData((d) => ({ ...d, ...patch }));
+  const set = (patch: Partial<Data>) => {
+    setData((d) => ({ ...d, ...patch }));
+    setErrors((prev) => {
+      const touched = Object.keys(patch).filter((k) => prev[k]);
+      if (!touched.length) return prev;
+      const next = { ...prev };
+      for (const k of touched) delete next[k];
+      return next;
+    });
+  };
 
   useEffect(() => {
     setData((d) => ({ ...d, timezone: detectTimezone() }));
@@ -137,6 +152,20 @@ export function SignupWizard() {
     return { kind: "idle" as const };
   }, [data.slug, slugFormat, debouncedSlug, availabilityQuery.isFetching, availabilityQuery.data]);
 
+  const emailFormatValid = EMAIL_FORMAT.test(data.email.trim());
+  const debouncedEmail = useDebounced(data.email);
+  const emailCheckEnabled = emailFormatValid && debouncedEmail === data.email;
+  const emailQuery = useEmailAvailability(debouncedEmail.trim().toLowerCase(), emailCheckEnabled);
+
+  const emailState = useMemo<EmailStateValue>(() => {
+    if (!data.email || !emailFormatValid) return { kind: "idle" };
+    if (debouncedEmail !== data.email || emailQuery.isFetching) return { kind: "checking" };
+    if (emailQuery.data) {
+      return emailQuery.data.available ? { kind: "available" } : { kind: "unavailable" };
+    }
+    return { kind: "idle" };
+  }, [data.email, emailFormatValid, debouncedEmail, emailQuery.isFetching, emailQuery.data]);
+
   // --- Step navigation ---------------------------------------------------
   function validateStep(target: number): boolean {
     setErrors({});
@@ -144,6 +173,9 @@ export function SignupWizard() {
       const r = accountSchema.safeParse(data);
       if (!r.success) {
         setErrors(fieldErrors(r.error));
+        return false;
+      }
+      if (emailState.kind !== "available") {
         return false;
       }
       if (!data.agreeTerms) {
@@ -205,6 +237,17 @@ export function SignupWizard() {
       toast.success(t("toastSuccess"), { description: t("toastSuccessDesc") });
       router.replace("/account");
     } catch (err) {
+      const { code } = normalizeError(err);
+      if (code === "EMAIL_TAKEN") {
+        setErrors({ email: errorMessage(err) });
+        setStep(0);
+        return;
+      }
+      if (code === "SLUG_TAKEN" || code === "INVALID_SLUG") {
+        setErrors({ slug: errorMessage(err) });
+        setStep(2);
+        return;
+      }
       toastError(err, t("toastError"));
     }
   }
@@ -251,10 +294,11 @@ export function SignupWizard() {
                   id="email"
                   type="email"
                   value={data.email}
-                  invalid={!!errors.email}
+                  invalid={!!errors.email || emailState.kind === "unavailable"}
                   autoComplete="email"
                   onChange={(e) => set({ email: e.target.value })}
                 />
+                <EmailStatus state={emailState} />
               </Field>
               <Field
                 label={t("account.password")}
@@ -560,6 +604,31 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
       </Button>
     </div>
   );
+}
+
+type EmailStateValue =
+  | { kind: "idle" }
+  | { kind: "checking" }
+  | { kind: "available" }
+  | { kind: "unavailable" };
+
+function EmailStatus({ state }: { state: EmailStateValue }) {
+  const t = useTranslations("signup.email");
+  const tv = useTranslations("validation.email");
+  if (state.kind === "idle") return null;
+
+  let text = "";
+  let cls = "text-terracotta-ink";
+  if (state.kind === "checking") {
+    text = t("checking");
+    cls = "text-muted";
+  } else if (state.kind === "available") {
+    text = t("available");
+    cls = "text-sage-deep";
+  } else {
+    text = tv("taken");
+  }
+  return <p className={cn("mt-1.5 text-xs font-medium", cls)}>{text}</p>;
 }
 
 type SlugStateValue =

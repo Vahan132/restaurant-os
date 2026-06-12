@@ -9,13 +9,15 @@ import { Field } from "@/components/ui/Field";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
-import { toast, toastError } from "@/lib/toast";
+import { toast } from "@/lib/toast";
+import { useApiError } from "@/hooks/useApiError";
 
 export default function SettingsPage() {
   const t = useTranslations("account.settings");
   const tv = useTranslations("validation");
   const { user } = useSession();
   const changePassword = useChangePassword();
+  const { toastError } = useApiError();
 
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");

@@ -15,6 +15,11 @@ export class SubdomainAvailableResponse {
   @ApiProperty({ nullable: true, type: String }) reason!: string | null;
 }
 
+export class EmailAvailableResponse {
+  @ApiProperty() available!: boolean;
+  @ApiProperty({ nullable: true, type: String }) reason!: string | null;
+}
+
 export class SignupResponse {
   @ApiProperty() accessToken!: string;
   @ApiProperty() refreshToken!: string;

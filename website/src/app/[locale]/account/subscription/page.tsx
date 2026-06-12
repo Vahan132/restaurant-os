@@ -19,7 +19,8 @@ import { Button } from "@/components/ui/Button";
 import { formatMoney } from "@/lib/money";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import { toast, toastError } from "@/lib/toast";
+import { toast } from "@/lib/toast";
+import { useApiError } from "@/hooks/useApiError";
 
 export default function SubscriptionPage() {
   const t = useTranslations("account.subscription");
@@ -30,6 +31,7 @@ export default function SubscriptionPage() {
   const history = useSubscriptionHistory({ page: 1, limit: 20 });
   const plansQuery = usePlans();
   const changePlan = useChangePlan();
+  const { toastError } = useApiError();
 
   const [pending, setPending] = useState<PublicPlanResponse | null>(null);
 

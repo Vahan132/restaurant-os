@@ -10,6 +10,7 @@
 import {
   usePublicAccountControllerPlans,
   usePublicAccountControllerSubdomain,
+  usePublicAccountControllerEmailAvailable,
   usePublicAccountControllerCreateAccount,
   getPublicAccountControllerPlansQueryKey,
 } from "./generated/public/public";
@@ -43,6 +44,12 @@ export const usePlans = () => usePublicAccountControllerPlans();
 export const useSubdomainAvailability = (slug: string, enabled: boolean) =>
   usePublicAccountControllerSubdomain(
     { slug },
+    { query: { enabled, retry: false, staleTime: 30_000 } },
+  );
+
+export const useEmailAvailability = (email: string, enabled: boolean) =>
+  usePublicAccountControllerEmailAvailable(
+    { email },
     { query: { enabled, retry: false, staleTime: 30_000 } },
   );
 
