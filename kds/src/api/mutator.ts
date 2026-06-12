@@ -6,6 +6,7 @@ import axios, {
 } from 'axios';
 import { API_BASE_URL } from '@/lib/env';
 import { authStore } from '@/lib/auth/store';
+import { readPersistedTokens, withRefreshLock } from '@/lib/auth/refresh-lock';
 
 /**
  * Axios mutator used by every orval-generated hook.
@@ -98,28 +99,46 @@ function redirectToLogin(): void {
 }
 
 async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = authStore.getState().refreshToken;
-  if (!refreshToken) return null;
+  const triggerToken = authStore.getState().refreshToken;
+  if (!triggerToken) return null;
 
   // De-dupe concurrent refreshes into a single in-flight request.
   if (!refreshPromise) {
-    refreshPromise = rawAxios
-      .post('/auth/refresh', { refreshToken })
-      .then((res: AxiosResponse) => {
+    refreshPromise = withRefreshLock(async () => {
+      const persisted = readPersistedTokens();
+      const current = persisted?.refreshToken ?? null;
+      if (current && current !== triggerToken && persisted?.accessToken) {
+        authStore.getState().setTokens({
+          accessToken: persisted.accessToken,
+          refreshToken: current,
+        });
+        return persisted.accessToken;
+      }
+      const tokenToUse = current ?? triggerToken;
+      try {
+        const res: AxiosResponse = await rawAxios.post('/auth/refresh', {
+          refreshToken: tokenToUse,
+        });
         const data = unwrap<{ accessToken: string; refreshToken: string }>(res.data);
         authStore.getState().setTokens({
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
         });
         return data.accessToken;
-      })
-      .catch(() => {
-        authStore.getState().clear();
+      } catch {
+        const after = readPersistedTokens();
+        if (after?.refreshToken && after.refreshToken !== tokenToUse && after.accessToken) {
+          authStore.getState().setTokens({
+            accessToken: after.accessToken,
+            refreshToken: after.refreshToken,
+          });
+          return after.accessToken;
+        }
         return null;
-      })
-      .finally(() => {
-        refreshPromise = null;
-      });
+      }
+    }).finally(() => {
+      refreshPromise = null;
+    });
   }
   return refreshPromise;
 }

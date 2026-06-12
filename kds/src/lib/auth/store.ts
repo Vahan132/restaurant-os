@@ -65,3 +65,29 @@ export const useAuthStore = create<AuthState>()(
 
 /** Non-React accessor for use inside the axios mutator. */
 export const authStore = useAuthStore;
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key !== 'kds-auth') return;
+    const state = useAuthStore.getState();
+    let next: { accessToken?: string | null; refreshToken?: string | null } | null = null;
+    if (event.newValue) {
+      try {
+        next =
+          (JSON.parse(event.newValue) as {
+            state?: { accessToken?: string | null; refreshToken?: string | null };
+          }).state ?? null;
+      } catch {
+        next = null;
+      }
+    }
+    const nextAccess = next?.accessToken ?? null;
+    const nextRefresh = next?.refreshToken ?? null;
+    if (nextAccess === state.accessToken && nextRefresh === state.refreshToken) return;
+    if (nextAccess && nextRefresh) {
+      state.setTokens({ accessToken: nextAccess, refreshToken: nextRefresh });
+    } else {
+      state.clear();
+    }
+  });
+}

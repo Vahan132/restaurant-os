@@ -67,3 +67,29 @@ export const useAuthStore = create<AuthState>()(
 
 /** Convenience: is there an access token right now (non-reactive read). */
 export const isAuthenticated = () => Boolean(useAuthStore.getState().accessToken);
+
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key !== "ros-auth") return;
+    const state = useAuthStore.getState();
+    let next: { accessToken?: string | null; refreshToken?: string | null } | null = null;
+    if (event.newValue) {
+      try {
+        next =
+          (JSON.parse(event.newValue) as {
+            state?: { accessToken?: string | null; refreshToken?: string | null };
+          }).state ?? null;
+      } catch {
+        next = null;
+      }
+    }
+    const nextAccess = next?.accessToken ?? null;
+    const nextRefresh = next?.refreshToken ?? null;
+    if (nextAccess === state.accessToken && nextRefresh === state.refreshToken) return;
+    if (nextAccess && nextRefresh) {
+      state.setTokens(nextAccess, nextRefresh);
+    } else {
+      state.clear();
+    }
+  });
+}

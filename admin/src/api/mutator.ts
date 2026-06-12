@@ -6,6 +6,7 @@ import axios, {
 } from 'axios';
 
 import { useAuthStore } from '@/stores/auth';
+import { readPersistedTokens, withRefreshLock } from './refresh-lock';
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
@@ -148,24 +149,44 @@ async function handleResponseError(error: AxiosError): Promise<never | AxiosResp
   }
 
   try {
-    // Use a bare client so this request is never itself intercepted/refreshed.
-    const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-      refreshToken,
+    const newAccess = await withRefreshLock(async () => {
+      const persisted = readPersistedTokens();
+      const current = persisted?.refreshToken ?? null;
+      if (current && current !== refreshToken && persisted?.accessToken) {
+        useAuthStore.getState().setTokens(persisted.accessToken, current);
+        return persisted.accessToken;
+      }
+      const tokenToUse = current ?? refreshToken;
+      try {
+        // Use a bare client so this request is never itself intercepted/refreshed.
+        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+          refreshToken: tokenToUse,
+        });
+        const tokens = (data?.data ?? data) as {
+          accessToken: string;
+          refreshToken: string;
+        };
+        useAuthStore.getState().setTokens(tokens.accessToken, tokens.refreshToken);
+        return tokens.accessToken;
+      } catch {
+        const after = readPersistedTokens();
+        if (after?.refreshToken && after.refreshToken !== tokenToUse && after.accessToken) {
+          useAuthStore.getState().setTokens(after.accessToken, after.refreshToken);
+          return after.accessToken;
+        }
+        return null;
+      }
     });
-    const tokens = (data?.data ?? data) as {
-      accessToken: string;
-      refreshToken: string;
-    };
 
-    useAuthStore.getState().setTokens(tokens.accessToken, tokens.refreshToken);
-    flushQueue(tokens.accessToken);
+    if (!newAccess) {
+      flushQueue(null);
+      redirectToLogin();
+      return Promise.reject(normalizeError(error));
+    }
 
-    original.headers.set('Authorization', `Bearer ${tokens.accessToken}`);
+    flushQueue(newAccess);
+    original.headers.set('Authorization', `Bearer ${newAccess}`);
     return api(original);
-  } catch {
-    flushQueue(null);
-    redirectToLogin();
-    return Promise.reject(normalizeError(error));
   } finally {
     isRefreshing = false;
   }

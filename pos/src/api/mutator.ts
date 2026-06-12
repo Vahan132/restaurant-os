@@ -5,6 +5,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios';
 import { useAuthStore } from '@/stores/auth';
+import { readPersistedTokens, withRefreshLock } from './refresh-lock';
 
 /**
  * Custom axios mutator — mirrors the admin app.
@@ -85,21 +86,37 @@ function redirectToLogin(): void {
 
 /** Perform a single refresh, shared across all concurrent 401s. */
 async function refreshAccessToken(): Promise<string | null> {
-  const { refreshToken } = useAuthStore.getState();
-  if (!refreshToken) return null;
+  const triggerToken = useAuthStore.getState().refreshToken;
+  if (!triggerToken) return null;
 
-  try {
-    // Bare axios call — bypass interceptors to avoid recursion.
-    const res = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
-    const data = res.data?.data ?? res.data;
-    const newAccess: string | undefined = data?.accessToken;
-    const newRefresh: string | undefined = data?.refreshToken;
-    if (!newAccess) return null;
-    useAuthStore.getState().setTokens(newAccess, newRefresh ?? refreshToken);
-    return newAccess;
-  } catch {
-    return null;
-  }
+  return withRefreshLock(async () => {
+    const persisted = readPersistedTokens();
+    const current = persisted?.refreshToken ?? null;
+    if (current && current !== triggerToken && persisted?.accessToken) {
+      useAuthStore.getState().setTokens(persisted.accessToken, current);
+      return persisted.accessToken;
+    }
+    const tokenToUse = current ?? triggerToken;
+    try {
+      // Bare axios call — bypass interceptors to avoid recursion.
+      const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+        refreshToken: tokenToUse,
+      });
+      const data = res.data?.data ?? res.data;
+      const newAccess: string | undefined = data?.accessToken;
+      const newRefresh: string | undefined = data?.refreshToken;
+      if (!newAccess) return null;
+      useAuthStore.getState().setTokens(newAccess, newRefresh ?? tokenToUse);
+      return newAccess;
+    } catch {
+      const after = readPersistedTokens();
+      if (after?.refreshToken && after.refreshToken !== tokenToUse && after.accessToken) {
+        useAuthStore.getState().setTokens(after.accessToken, after.refreshToken);
+        return after.accessToken;
+      }
+      return null;
+    }
+  });
 }
 
 function normalizeError(error: unknown): ApiError {

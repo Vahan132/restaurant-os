@@ -4,6 +4,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 import { useAuthStore } from "@/stores/auth";
+import { readPersistedTokens, withRefreshLock } from "./refresh-lock";
 
 /**
  * Shared axios mutator used by every orval-generated hook.
@@ -51,23 +52,40 @@ function clearAndRedirect() {
 }
 
 async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = useAuthStore.getState().refreshToken;
-  if (!refreshToken) {
+  const triggerToken = useAuthStore.getState().refreshToken;
+  if (!triggerToken) {
     clearAndRedirect();
     return null;
   }
   if (!refreshPromise) {
-    // Use a bare axios call so the interceptors below don't recurse.
-    refreshPromise = axios
-      .post(`${API_BASE_URL}/auth/refresh`, { refreshToken })
-      .then((res) => {
+    refreshPromise = withRefreshLock(async () => {
+      const persisted = readPersistedTokens();
+      const current = persisted?.refreshToken ?? null;
+      if (current && current !== triggerToken && persisted?.accessToken) {
+        useAuthStore.getState().setTokens(persisted.accessToken, current);
+        return persisted.accessToken;
+      }
+      const tokenToUse = current ?? triggerToken;
+      try {
+        // Bare axios call so the interceptors below don't recurse.
+        const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+          refreshToken: tokenToUse,
+        });
         const data = unwrap<{ accessToken: string; refreshToken: string }>(res.data);
         useAuthStore.getState().setTokens(data.accessToken, data.refreshToken);
         return data.accessToken;
-      })
-      .catch(() => {
-        clearAndRedirect();
+      } catch {
+        const after = readPersistedTokens();
+        if (after?.refreshToken && after.refreshToken !== tokenToUse && after.accessToken) {
+          useAuthStore.getState().setTokens(after.accessToken, after.refreshToken);
+          return after.accessToken;
+        }
         return null;
+      }
+    })
+      .then((token) => {
+        if (!token) clearAndRedirect();
+        return token;
       })
       .finally(() => {
         refreshPromise = null;
