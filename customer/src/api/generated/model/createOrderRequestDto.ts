@@ -5,14 +5,12 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { CreateOrderRequestItemDto } from './createOrderRequestItemDto';
+import type { OrderRequestItemDto } from './orderRequestItemDto';
 
 export interface CreateOrderRequestDto {
-  /** The scanned table's QR identifier. */
+  /** The scanned table QR identifier (required). */
   qr: string;
-  /** @nullable */
-  customerName?: string | null;
-  /** @nullable */
-  note?: string | null;
-  items: CreateOrderRequestItemDto[];
+  customerName?: string;
+  note?: string;
+  items: OrderRequestItemDto[];
 }

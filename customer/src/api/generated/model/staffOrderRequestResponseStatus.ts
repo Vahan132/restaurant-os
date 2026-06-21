@@ -6,11 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type CreateOrderRequestResponseStatus = typeof CreateOrderRequestResponseStatus[keyof typeof CreateOrderRequestResponseStatus];
+export type StaffOrderRequestResponseStatus = typeof StaffOrderRequestResponseStatus[keyof typeof StaffOrderRequestResponseStatus];
 
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const CreateOrderRequestResponseStatus = {
+export const StaffOrderRequestResponseStatus = {
   PENDING: 'PENDING',
   CONFIRMED: 'CONFIRMED',
   REJECTED: 'REJECTED',

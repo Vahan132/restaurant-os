@@ -7,6 +7,6 @@
  */
 
 export interface OrderRequestModifierDto {
-  modifierGroupId: string;
+  modifierGroupId?: string;
   modifierOptionId: string;
 }

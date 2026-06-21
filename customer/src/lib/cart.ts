@@ -1,5 +1,5 @@
 import type {
-  CreateOrderRequestItemDto,
+  OrderRequestItemDto,
   PublicMenuItemResponse,
 } from '@/api/generated/model';
 
@@ -68,7 +68,7 @@ export function buildCartLine(
 }
 
 /** Map cart lines to the POST /public/order-requests items payload. */
-export function toOrderItems(lines: CartLine[]): CreateOrderRequestItemDto[] {
+export function toOrderItems(lines: CartLine[]): OrderRequestItemDto[] {
   return lines.map((l) => ({
     menuItemId: l.menuItemId,
     quantity: l.quantity,

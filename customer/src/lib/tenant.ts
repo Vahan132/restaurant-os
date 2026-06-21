@@ -62,3 +62,33 @@ export function resolveTableQr(): string | null {
   const trimmed = qr?.trim();
   return trimmed ? trimmed : null;
 }
+
+/**
+ * Resolve the chosen branch slug from the `?branch=` query param.
+ *
+ * Used only in the NO-TABLE flow (a plain menu or "book a table" link), where
+ * the customer picks a location. When a table is scanned, the branch is implied
+ * by the table (BR-9 returns it in table resolution) and this is ignored.
+ * Returns null when no branch has been chosen yet (show the location picker).
+ */
+export function resolveBranchSlug(): string | null {
+  if (typeof window === 'undefined') return null;
+  const branch = new URLSearchParams(window.location.search).get('branch');
+  const trimmed = branch?.trim();
+  return trimmed ? trimmed.toLowerCase() : null;
+}
+
+/**
+ * Build a basePath-relative URL for the current page with `?branch=` set to the
+ * given slug (preserving an existing `?qr=`). Suitable for `router.replace` so
+ * the chosen location is shareable/bookmarkable. `pathname` is Next's
+ * basePath-stripped path (from `usePathname()`).
+ */
+export function withBranchParam(pathname: string, branchSlug: string): string {
+  const params = new URLSearchParams(
+    typeof window !== 'undefined' ? window.location.search : '',
+  );
+  params.set('branch', branchSlug);
+  const qs = params.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
+}

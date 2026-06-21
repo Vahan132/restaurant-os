@@ -21,6 +21,6 @@ export interface PublicRestaurantResponse {
   phone: string | null;
   /** @nullable */
   openingHours: PublicRestaurantResponseOpeningHours;
-  /** Dine-in ordering available for this restaurant. */
+  /** enableQrMenu && enableCustomerOrdering. */
   orderingEnabled: boolean;
 }

@@ -1,21 +1,24 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { isNotFound, type ApiError } from '@/api/mutator';
 import {
-  usePublicStorefrontControllerMenu,
+  usePublicStorefrontBranchControllerMenu,
+  usePublicStorefrontBranchControllerBranches,
   usePublicStorefrontControllerRestaurant,
-  usePublicStorefrontControllerTable,
+  usePublicTableTokenControllerResolve,
 } from '@/api/generated/public/public';
 import type {
+  PublicBranchesResponse,
   PublicMenuItemResponse,
   PublicMenuResponse,
   PublicRestaurantResponse,
-  PublicTableResponse,
+  PublicTableTokenResponse,
 } from '@/api/generated/model';
-import { resolveTableQr } from '@/lib/tenant';
+import { resolveBranchSlug, resolveSlug, resolveTableQr, withBranchParam } from '@/lib/tenant';
 
 import BrandingHeader from './BrandingHeader';
 import CartBar from './cart/CartBar';
@@ -25,28 +28,68 @@ import OrderStatusScreen from './cart/OrderStatusScreen';
 import CategoryNav from './CategoryNav';
 import ItemCard from './ItemCard';
 import ItemDetailSheet from './ItemDetailSheet';
+import LocationPicker from './LocationPicker';
 import SearchBox from './SearchBox';
 import { MenuSkeleton } from './Skeletons';
 import { EmptyMenu, GenericError, MenuUnavailable } from './StateScreens';
 
 export default function MenuView() {
   const locale = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
   const tSearch = useTranslations('search');
   const tGate = useTranslations('gating');
+  const tLoc = useTranslations('location');
   const { addLine } = useCart();
+  const restaurantSlug = resolveSlug();
 
-  // Resolve the table from ?qr= after mount (avoids SSR/client hydration mismatch).
+  // Resolve the table (?qr=) and any pre-chosen branch (?branch=) after mount,
+  // to avoid an SSR/client hydration mismatch on the query string.
   const [qr, setQr] = useState<string | null>(null);
-  useEffect(() => setQr(resolveTableQr()), []);
+  const [qrReady, setQrReady] = useState(false);
+  const [pickedBranch, setPickedBranch] = useState<string | null>(null);
+  useEffect(() => {
+    setQr(resolveTableQr());
+    setPickedBranch(resolveBranchSlug());
+    setQrReady(true);
+  }, []);
+
+  const hasTable = qrReady && !!qr;
+  const noTable = qrReady && !qr;
 
   const restaurantQ = usePublicStorefrontControllerRestaurant<
     PublicRestaurantResponse,
     ApiError
   >();
-  const menuQ = usePublicStorefrontControllerMenu<PublicMenuResponse, ApiError>();
-  const tableQ = usePublicStorefrontControllerTable<PublicTableResponse, ApiError>(
-    { qr: qr ?? '' },
-    { query: { enabled: !!qr } },
+  // Dine-in: the scanned QR token resolves to its restaurant, branch, and table
+  // (BR-9). Never ask the customer to pick — the table implies the branch.
+  const tableQ = usePublicTableTokenControllerResolve<PublicTableTokenResponse, ApiError>(
+    qr ?? '',
+    { query: { enabled: hasTable } },
+  );
+  // No table: load the locations so the customer can pick one (and so we can
+  // show the chosen branch's name).
+  const branchesQ = usePublicStorefrontBranchControllerBranches<PublicBranchesResponse, ApiError>(
+    restaurantSlug,
+    { query: { enabled: noTable && !!restaurantSlug } },
+  );
+
+  const tableBranchSlug = hasTable ? (tableQ.data?.branchSlug ?? null) : null;
+  const pickedBranchSummary = useMemo(
+    () => branchesQ.data?.branches.find((b) => b.slug === pickedBranch) ?? null,
+    [branchesQ.data, pickedBranch],
+  );
+
+  // The branch we render the menu for: from the table (dine-in) or the picker.
+  const branchSlug = hasTable ? tableBranchSlug : (pickedBranchSummary?.slug ?? null);
+  // The lean table-token endpoint resolves the branch slug but not its display
+  // name; for dine-in we surface the table name instead of a branch label.
+  const branchName = hasTable ? null : (pickedBranchSummary?.name ?? null);
+
+  const menuQ = usePublicStorefrontBranchControllerMenu<PublicMenuResponse, ApiError>(
+    restaurantSlug,
+    branchSlug ?? '',
+    { query: { enabled: !!restaurantSlug && !!branchSlug } },
   );
 
   const [query, setQuery] = useState('');
@@ -96,20 +139,66 @@ export default function MenuView() {
     sectionRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  function chooseBranch(slug: string) {
+    setPickedBranch(slug);
+    router.replace(withBranchParam(pathname, slug));
+  }
+
+  function changeLocation() {
+    setPickedBranch(null);
+    const params = new URLSearchParams(window.location.search);
+    params.delete('branch');
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+  }
+
   // --- Top-level states -----------------------------------------------------
-  if (isNotFound(restaurantQ.error) || isNotFound(menuQ.error)) return <MenuUnavailable />;
-  if (restaurantQ.isError || menuQ.isError) return <GenericError />;
-  if (restaurantQ.isLoading || menuQ.isLoading || !restaurantQ.data) return <MenuSkeleton />;
+  if (isNotFound(restaurantQ.error)) return <MenuUnavailable />;
+  if (restaurantQ.isError) return <GenericError />;
+  if (!qrReady || restaurantQ.isLoading || !restaurantQ.data) return <MenuSkeleton />;
 
   const restaurant = restaurantQ.data;
   const currency = restaurant.currency;
-  const tableName = qr ? (tableQ.data?.name ?? null) : null;
+
+  // Dine-in: wait for the table to resolve its branch; a bad QR => unavailable.
+  if (hasTable) {
+    if (isNotFound(tableQ.error)) return <MenuUnavailable />;
+    if (tableQ.isError) return <GenericError />;
+    if (tableQ.isLoading || !tableQ.data) return <MenuSkeleton />;
+  }
+
+  // No table: pick a location first.
+  if (noTable) {
+    if (isNotFound(branchesQ.error)) return <MenuUnavailable />;
+    if (branchesQ.isError) return <GenericError />;
+    if (branchesQ.isLoading || !branchesQ.data) return <MenuSkeleton />;
+    // No branch chosen yet (or a stale ?branch= that no longer exists).
+    if (!pickedBranchSummary) {
+      return (
+        <div className="min-h-screen pb-12">
+          <BrandingHeader name={restaurant.name} logoUrl={restaurant.logoUrl} />
+          <LocationPicker
+            branches={branchesQ.data.branches}
+            title={tLoc('menuTitle')}
+            subtitle={tLoc('menuSubtitle')}
+            onSelect={chooseBranch}
+          />
+        </div>
+      );
+    }
+  }
+
+  if (isNotFound(menuQ.error)) return <MenuUnavailable />;
+  if (menuQ.isError) return <GenericError />;
+  if (menuQ.isLoading || !menuQ.data) return <MenuSkeleton />;
+
+  const tableName = hasTable ? (tableQ.data?.table.name ?? null) : null;
 
   // Ordering gate: orderingEnabled AND a table resolved from ?qr=.
-  const tableResolved = !!qr && !!tableQ.data;
+  const tableResolved = hasTable && !!tableQ.data;
   const orderingAvailable = restaurant.orderingEnabled && tableResolved;
   // Inline note only when ordering is enabled but no table is scanned.
-  const showScanNote = restaurant.orderingEnabled && !tableResolved && !tableQ.isLoading;
+  const showScanNote = restaurant.orderingEnabled && noTable;
 
   // The order status screen takes over the whole view while active.
   if (activeOrderId) {
@@ -120,7 +209,12 @@ export default function MenuView() {
 
   return (
     <div className="min-h-screen pb-24">
-      <BrandingHeader name={restaurant.name} logoUrl={restaurant.logoUrl} tableName={tableName} />
+      <BrandingHeader
+        name={restaurant.name}
+        logoUrl={restaurant.logoUrl}
+        tableName={tableName}
+        locationName={branchName}
+      />
 
       <div className="mx-auto max-w-2xl">
         <SearchBox value={query} onChange={setQuery} />
@@ -128,6 +222,15 @@ export default function MenuView() {
           <p className="mx-4 mb-1 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
             {tGate('scanToOrder')}
           </p>
+        ) : null}
+        {noTable ? (
+          <button
+            type="button"
+            onClick={changeLocation}
+            className="mx-4 mb-1 text-xs font-medium text-brand-accent underline-offset-2 hover:underline"
+          >
+            {tLoc('change')}
+          </button>
         ) : null}
       </div>
 

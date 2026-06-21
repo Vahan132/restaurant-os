@@ -40,6 +40,14 @@
   "gating": {
     "scanToOrder": "Scan your table’s QR to order."
   },
+  "location": {
+    "menuTitle": "Choose a location",
+    "menuSubtitle": "Pick a location to view its menu.",
+    "bookTitle": "Choose a location",
+    "bookSubtitle": "Pick a location to book a table.",
+    "none": "No locations are available right now.",
+    "change": "Change location"
+  },
   "cart": {
     "viewOrder": "View order",
     "title": "Your order",
@@ -66,5 +74,45 @@
     "errorTitle": "Couldn’t load status",
     "errorBody": "Please head back and try again.",
     "backToMenu": "Back to menu"
+  },
+  "reserve": {
+    "heading": "Book a table",
+    "subheading": "Request a reservation — we'll confirm it shortly.",
+    "subheadingAt": "Request a table at {location} — we'll confirm it shortly.",
+    "requestIntro": "This is a booking request. Your table is confirmed once the restaurant approves it.",
+    "nameLabel": "Name",
+    "namePlaceholder": "Your full name",
+    "phoneLabel": "Phone",
+    "phonePlaceholder": "Your phone number",
+    "emailLabel": "Email (optional)",
+    "emailPlaceholder": "you@example.com",
+    "partyLabel": "Party size",
+    "partyHint": "Up to {max} guests per request.",
+    "guests": "{count, plural, one {# guest} other {# guests}}",
+    "dateLabel": "Date",
+    "timeLabel": "Time",
+    "timezoneNote": "Times are in the restaurant's local time ({tz}).",
+    "noteLabel": "Note (optional)",
+    "notePlaceholder": "Occasion, seating preference, etc.",
+    "submit": "Request reservation",
+    "submitting": "Sending request…",
+    "submitDisclaimer": "You'll get a confirmation once the restaurant approves your request.",
+    "submitError": "We couldn't send your request. Please try again.",
+    "errName": "Please enter your name.",
+    "errPhone": "Please enter your phone number.",
+    "errEmail": "Please enter a valid email.",
+    "errDate": "Please choose a date.",
+    "errTime": "Please choose a time.",
+    "errPast": "Please choose a future date and time.",
+    "confirmTitle": "Request received",
+    "confirmBody": "Your reservation request has been received. The restaurant will confirm shortly.",
+    "summaryWhere": "Where",
+    "summaryWhen": "When",
+    "summaryParty": "Party",
+    "pendingBadge": "Pending confirmation",
+    "makeAnother": "Make another request",
+    "disabledTitle": "Online reservations aren't available right now",
+    "disabledBody": "Online booking is turned off for this restaurant. Please call to reserve a table.",
+    "callAction": "Call {phone}"
   }
 }
