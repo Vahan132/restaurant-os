@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { usePublicOrderRequestsControllerCreate } from '@/api/generated/public/public';
+import type { PublicOrderRequestResponse } from '@/api/generated/model';
 import { isApiError, type ApiError } from '@/api/mutator';
 import { toOrderItems } from '@/lib/cart';
 import { formatMoney } from '@/lib/money';
@@ -30,7 +31,9 @@ export default function CartView({ qr, currency, locale, onClose, onPlaced }: Pr
     mutation: {
       onSuccess: (res) => {
         clear(); // clear only after a successful submit
-        onPlaced(res.id);
+        // The spec types this 201 response as `unknown` (it only documents an
+        // example, no schema $ref), so narrow to the documented shape.
+        onPlaced((res as PublicOrderRequestResponse).id);
       },
       onError: (err) => {
         // Keep the cart so the customer can adjust (e.g. item became unavailable).

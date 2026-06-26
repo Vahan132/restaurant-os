@@ -7,11 +7,10 @@
  */
 import type { OrderRequestModifierDto } from './orderRequestModifierDto';
 
-export interface CreateOrderRequestItemDto {
+export interface OrderRequestItemDto {
   menuItemId: string;
   /** @minimum 1 */
   quantity: number;
-  modifiers: OrderRequestModifierDto[];
-  /** @nullable */
-  note?: string | null;
+  modifiers?: OrderRequestModifierDto[];
+  note?: string;
 }

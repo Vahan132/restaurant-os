@@ -6,15 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PublicOrderRequestResponseStatus } from './publicOrderRequestResponseStatus';
+import type { OrderRequestItemLine } from './orderRequestItemLine';
 
 export interface PublicOrderRequestResponse {
   id: string;
   status: PublicOrderRequestResponseStatus;
-  /**
-   * Set when status is REJECTED.
-   * @nullable
-   */
-  rejectionReason: string | null;
   /** @nullable */
-  createdAt?: string | null;
+  rejectedReason: string | null;
+  items: OrderRequestItemLine[];
 }

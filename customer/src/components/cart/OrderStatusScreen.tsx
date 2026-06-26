@@ -30,7 +30,7 @@ export default function OrderStatusScreen({ orderId, onBackToMenu }: Props) {
 
   const status = data?.status;
   const reason =
-    data?.rejectionReason ?? (data as { reason?: string } | undefined)?.reason ?? null;
+    data?.rejectedReason ?? (data as { reason?: string } | undefined)?.reason ?? null;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
