@@ -76,9 +76,27 @@ export class BranchResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
   @ApiProperty() name!: string;
+  @ApiProperty({ description: 'BR-9: public-facing, per-restaurant unique slug.' })
+  slug!: string;
+  @ApiProperty({ description: 'Whether this is the restaurant default branch.' })
+  isDefault!: boolean;
   @ApiProperty({ enum: ['ACTIVE', 'INACTIVE'] }) status!: string;
 
   static from(b: Branch): BranchResponse {
-    return { id: b.id, restaurantId: b.restaurantId, name: b.name, status: b.status };
+    return {
+      id: b.id,
+      restaurantId: b.restaurantId,
+      name: b.name,
+      slug: b.slug,
+      isDefault: b.isDefault,
+      status: b.status,
+    };
   }
+}
+
+/** Response for GET /branches/:id/my-access — effective perms at the active branch. */
+export class MyBranchAccessResponse {
+  @ApiProperty({ description: 'The active branch (from X-Branch-Id).' }) branchId!: string;
+  @ApiProperty({ type: [String], description: 'Effective permissions at this branch.' })
+  permissions!: string[];
 }

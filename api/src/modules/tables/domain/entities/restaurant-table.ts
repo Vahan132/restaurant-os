@@ -6,6 +6,7 @@ import { InvalidTableTransitionError, TableNotDeletableError } from '../tables.e
 
 export interface RestaurantTableProps {
   restaurantId: string;
+  branchId: string;
   floorId: string;
   name: string;
   seatCapacity: number;
@@ -19,6 +20,7 @@ export interface RestaurantTableProps {
 export interface CreateRestaurantTableInput {
   id: string;
   restaurantId: string;
+  branchId: string;
   floorId: string;
   name: string;
   seatCapacity: number;
@@ -41,6 +43,7 @@ export class RestaurantTable extends AggregateRoot<string> {
     const now = new Date();
     return new RestaurantTable(input.id, {
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       floorId: input.floorId,
       name: input.name,
       seatCapacity: input.seatCapacity,
@@ -58,6 +61,9 @@ export class RestaurantTable extends AggregateRoot<string> {
 
   get restaurantId(): string {
     return this.props.restaurantId;
+  }
+  get branchId(): string {
+    return this.props.branchId;
   }
   get floorId(): string {
     return this.props.floorId;
@@ -113,7 +119,14 @@ export class RestaurantTable extends AggregateRoot<string> {
     this.props.status = target;
     this.touch();
     this.addDomainEvent(
-      new TableStatusChangedEvent(this.id, this.props.restaurantId, from, target, source),
+      new TableStatusChangedEvent(
+        this.id,
+        this.props.restaurantId,
+        this.props.branchId,
+        from,
+        target,
+        source,
+      ),
     );
   }
 

@@ -14,6 +14,7 @@ import { ModifierGroupNotFound, NoRestaurantInScope } from '../application.error
 
 export interface AddModifierOptionInput {
   restaurantId: string | null;
+  branchId: string;
   groupId: string;
   name: string;
   priceDeltaAmount?: number;
@@ -33,13 +34,14 @@ export class AddModifierOptionUseCase implements UseCase<AddModifierOptionInput,
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const group = await this.groups.findById(input.restaurantId, input.groupId);
+    const group = await this.groups.findById(input.restaurantId, input.branchId, input.groupId);
     if (!group) {
       throw ModifierGroupNotFound();
     }
     const option = ModifierOption.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       modifierGroupId: input.groupId,
       name: input.name,
       priceDeltaAmount: input.priceDeltaAmount, // aggregate rejects negatives

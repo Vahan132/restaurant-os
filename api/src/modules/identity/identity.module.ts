@@ -1,13 +1,18 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 
+import { BRANCH_ACCESS_RESOLVER } from '../../shared/auth/branch-access.resolver';
+
 import { ROLE_REPOSITORY } from './domain/repositories/role.repository';
 import { USER_REPOSITORY } from './domain/repositories/user.repository';
+import { BRANCH_MEMBERSHIP_REPOSITORY } from './domain/repositories/branch-membership.repository';
 
 import { ACCOUNT_STATE_READER } from './application/ports/account-state.reader';
+import { BRANCH_DIRECTORY_READER } from './application/ports/branch-directory.reader';
 import { ID_GENERATOR } from './application/ports/id-generator';
 import { PASSWORD_HASHER } from './application/ports/password-hasher';
 import { REFRESH_TOKEN_REPOSITORY } from './application/ports/refresh-token.repository';
+import { RESTAURANT_KEY_PROVIDER } from './application/ports/restaurant-key.provider';
 import { TENANT_STRUCTURE_READER } from './application/ports/tenant-structure.reader';
 import { TOKEN_SERVICE } from './application/ports/token.service';
 
@@ -29,12 +34,18 @@ import { GetPermissionsUseCase } from './application/queries/get-permissions.use
 import { GetUserUseCase } from './application/queries/get-user.usecase';
 import { ListRolesUseCase } from './application/queries/list-roles.usecase';
 import { ListUsersUseCase } from './application/queries/list-users.usecase';
+import { UpsertBranchMembershipUseCase } from './application/commands/upsert-branch-membership.usecase';
+import { RemoveBranchMembershipUseCase } from './application/commands/remove-branch-membership.usecase';
+import { ListBranchMembershipsUseCase } from './application/queries/list-branch-memberships.usecase';
 import { AccountStateChecker } from './application/services/account-state.checker';
 import { AuthTokenIssuer } from './application/services/auth-token-issuer';
+import { EffectiveBranchAccessService } from './application/services/effective-branch-access.service';
 import { SystemRoleSeeder } from './application/services/system-role-seeder';
 import { UserFactory } from './application/services/user-factory';
 
 import { PrismaAccountStateReader } from './infrastructure/persistence/prisma-account-state.reader';
+import { PrismaBranchDirectoryReader } from './infrastructure/persistence/prisma-branch-directory.reader';
+import { PrismaBranchMembershipRepository } from './infrastructure/persistence/prisma-branch-membership.repository';
 import { PrismaRefreshTokenRepository } from './infrastructure/persistence/prisma-refresh-token.repository';
 import { PrismaRoleRepository } from './infrastructure/persistence/prisma-role.repository';
 import { PrismaTenantStructureReader } from './infrastructure/persistence/prisma-tenant-structure.reader';
@@ -46,8 +57,10 @@ import { PASSWORD_RESET_TOKEN_REPOSITORY } from './application/ports/password-re
 import { Argon2PasswordHasher } from './infrastructure/services/argon2-password-hasher';
 import { CuidIdGenerator } from './infrastructure/services/cuid-id-generator';
 import { JwtTokenService } from './infrastructure/services/jwt-token.service';
+import { PrismaRestaurantKeyProvider } from './infrastructure/services/prisma-restaurant-key.provider';
 
 import { AuthController } from './presentation/http/auth.controller';
+import { BranchMembershipsController } from './presentation/http/branch-memberships.controller';
 import { RolesController } from './presentation/http/roles.controller';
 import { UsersController } from './presentation/http/users.controller';
 
@@ -59,12 +72,16 @@ import { UsersController } from './presentation/http/users.controller';
  */
 @Module({
   imports: [JwtModule.register({})],
-  controllers: [AuthController, UsersController, RolesController],
+  controllers: [AuthController, UsersController, BranchMembershipsController, RolesController],
   providers: [
     AuthTokenIssuer,
     AccountStateChecker,
     UserFactory,
     SystemRoleSeeder,
+    EffectiveBranchAccessService,
+    UpsertBranchMembershipUseCase,
+    RemoveBranchMembershipUseCase,
+    ListBranchMembershipsUseCase,
     LoginUseCase,
     RefreshTokenUseCase,
     LogoutUseCase,
@@ -86,15 +103,35 @@ import { UsersController } from './presentation/http/users.controller';
 
     { provide: USER_REPOSITORY, useClass: PrismaUserRepository },
     { provide: ROLE_REPOSITORY, useClass: PrismaRoleRepository },
+    { provide: BRANCH_MEMBERSHIP_REPOSITORY, useClass: PrismaBranchMembershipRepository },
+    { provide: BRANCH_DIRECTORY_READER, useClass: PrismaBranchDirectoryReader },
+    { provide: BRANCH_ACCESS_RESOLVER, useExisting: EffectiveBranchAccessService },
     { provide: REFRESH_TOKEN_REPOSITORY, useClass: PrismaRefreshTokenRepository },
     { provide: TENANT_STRUCTURE_READER, useClass: PrismaTenantStructureReader },
     { provide: ACCOUNT_STATE_READER, useClass: PrismaAccountStateReader },
     { provide: PASSWORD_HASHER, useClass: Argon2PasswordHasher },
     { provide: TOKEN_SERVICE, useClass: JwtTokenService },
+    { provide: RESTAURANT_KEY_PROVIDER, useClass: PrismaRestaurantKeyProvider },
     { provide: ID_GENERATOR, useClass: CuidIdGenerator },
     { provide: EMAIL_SERVICE, useClass: ConsoleEmailService },
     { provide: PASSWORD_RESET_TOKEN_REPOSITORY, useClass: PrismaPasswordResetTokenRepository },
   ],
-  exports: [UserFactory, SystemRoleSeeder, ID_GENERATOR, LoginUseCase, USER_REPOSITORY],
+  exports: [
+    UserFactory,
+    SystemRoleSeeder,
+    ID_GENERATOR,
+    LoginUseCase,
+    USER_REPOSITORY,
+    // Exported so the restaurant module's CreateBranchUseCase can auto-grant the
+    // creator a membership at a newly created branch (FIX-BR-1).
+    BRANCH_MEMBERSHIP_REPOSITORY,
+    // Exported so SecurityModule's BranchAccessGuard (and the restaurant module's
+    // my-access use case) can resolve effective branch access.
+    BRANCH_ACCESS_RESOLVER,
+    // OFF-5: exported so the JwtAuthGuard (SecurityModule) and RealtimeGateway
+    // (RealtimeModule) can verify tokens with the per-restaurant key.
+    TOKEN_SERVICE,
+    RESTAURANT_KEY_PROVIDER,
+  ],
 })
 export class IdentityModule {}

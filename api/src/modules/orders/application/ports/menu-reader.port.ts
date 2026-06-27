@@ -2,6 +2,7 @@ export const MENU_READER = Symbol('OrdersMenuReader');
 
 export interface MenuItemForOrder {
   id: string;
+  branchId: string;
   name: string;
   priceAmount: number;
   preparationStation: string;

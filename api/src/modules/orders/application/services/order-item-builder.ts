@@ -3,6 +3,7 @@ import { ID_GENERATOR, IdGenerator } from '../../../identity/application/ports/i
 import { OrderItem } from '../../domain/entities/order-item';
 import { OrderItemModifier } from '../../domain/entities/order-item-modifier';
 import {
+  CrossBranchReference,
   InvalidModifierSelection,
   MenuItemNotFound,
   MenuItemNotOrderable,
@@ -11,6 +12,8 @@ import { MENU_READER, MenuReader, ModifierGroupForOrder } from '../ports/menu-re
 
 export interface BuildOrderItemInput {
   restaurantId: string;
+  /** The owning order's branch; the menu item must belong to it. */
+  branchId: string;
   orderId: string;
   menuItemId: string;
   quantity: number;
@@ -99,10 +102,15 @@ export class OrderItemBuilder {
 
   async build(input: BuildOrderItemInput): Promise<OrderItem> {
     const data = await this.loadOrderable(input.restaurantId, input.menuItemId);
+    // Intra-branch integrity: the menu item must live in the order's branch.
+    if (data.item.branchId !== input.branchId) {
+      throw CrossBranchReference('Menu item belongs to a different branch.');
+    }
     const modifiers = this.buildModifiersFor(data, input.selectedOptionIds);
     return OrderItem.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       orderId: input.orderId,
       menuItemId: data.item.id,
       nameSnapshot: data.item.name,

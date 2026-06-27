@@ -21,6 +21,12 @@ export interface AccessTokenPayload {
 export interface RefreshTokenPayload {
   sub: string;
   organizationId: string;
+  /**
+   * OFF-5: the restaurant whose per-restaurant key signed this token. Read
+   * UNVERIFIED on refresh to resolve the signing key, then the token is verified
+   * with it. Null for restaurant-less (org-level) principals → global fallback.
+   */
+  restaurantId: string | null;
   /** Random token id — makes each issued refresh token unique. */
   jti: string;
 }

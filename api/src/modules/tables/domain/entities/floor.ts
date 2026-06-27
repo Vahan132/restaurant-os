@@ -4,6 +4,7 @@ import { FloorHasTablesError } from '../tables.errors';
 
 export interface FloorProps {
   restaurantId: string;
+  branchId: string;
   name: string;
   description: string | null;
   displayOrder: number;
@@ -16,6 +17,7 @@ export interface FloorProps {
 export interface CreateFloorInput {
   id: string;
   restaurantId: string;
+  branchId: string;
   name: string;
   description?: string | null;
   displayOrder?: number;
@@ -34,6 +36,7 @@ export class Floor extends AggregateRoot<string> {
     const now = new Date();
     return new Floor(input.id, {
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       name: input.name,
       description: input.description ?? null,
       displayOrder: input.displayOrder ?? 0,
@@ -50,6 +53,9 @@ export class Floor extends AggregateRoot<string> {
 
   get restaurantId(): string {
     return this.props.restaurantId;
+  }
+  get branchId(): string {
+    return this.props.branchId;
   }
   get name(): string {
     return this.props.name;

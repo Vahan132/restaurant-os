@@ -12,6 +12,7 @@ const DEFAULT_DELAY_SECONDS = 900; // 15 min when the item has no prep-time esti
 
 export interface GetStationTicketsInput {
   restaurantId: string | null;
+  branchId: string;
   station: string;
 }
 
@@ -32,7 +33,11 @@ export class GetStationTicketsUseCase implements UseCase<
       throw NoRestaurantInScope();
     }
     const now = Date.now();
-    const tickets = await this.reader.getActiveTickets(input.restaurantId, input.station);
+    const tickets = await this.reader.getActiveTickets(
+      input.restaurantId,
+      input.branchId,
+      input.station,
+    );
 
     const mapped = tickets.map((t) => {
       const items = t.items.map((i) => this.toItem(i, now)).sort((a, b) => a.sentMs - b.sentMs);

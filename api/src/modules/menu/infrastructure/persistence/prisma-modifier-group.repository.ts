@@ -8,17 +8,25 @@ import { GroupMapper } from './menu.mappers';
 export class PrismaModifierGroupRepository implements ModifierGroupRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listByItem(restaurantId: string, menuItemId: string): Promise<ModifierGroup[]> {
+  async listByItem(
+    restaurantId: string,
+    branchId: string,
+    menuItemId: string,
+  ): Promise<ModifierGroup[]> {
     const records = await this.prisma.modifierGroup.findMany({
-      where: { restaurantId, menuItemId, deletedAt: null },
+      where: { restaurantId, branchId, menuItemId, deletedAt: null },
       orderBy: { displayOrder: 'asc' },
     });
     return records.map(GroupMapper.toDomain);
   }
 
-  async findById(restaurantId: string, id: string): Promise<ModifierGroup | null> {
+  async findById(
+    restaurantId: string,
+    branchId: string,
+    id: string,
+  ): Promise<ModifierGroup | null> {
     const r = await this.prisma.modifierGroup.findFirst({
-      where: { id, restaurantId, deletedAt: null },
+      where: { id, restaurantId, branchId, deletedAt: null },
     });
     return r ? GroupMapper.toDomain(r) : null;
   }
@@ -29,7 +37,7 @@ export class PrismaModifierGroupRepository implements ModifierGroupRepository {
 
   async update(group: ModifierGroup): Promise<void> {
     await this.prisma.modifierGroup.updateMany({
-      where: { id: group.id, restaurantId: group.restaurantId },
+      where: { id: group.id, restaurantId: group.restaurantId, branchId: group.branchId },
       data: GroupMapper.toUpdate(group),
     });
   }

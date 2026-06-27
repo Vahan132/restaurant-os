@@ -31,7 +31,15 @@ export class PublicRestaurantResolverGuard implements CanActivate {
     if (!resolved) {
       const headerSlug = request.headers['x-restaurant-slug'];
       const querySlug = (request.query?.restaurant as string | undefined) ?? undefined;
-      const slug = (Array.isArray(headerSlug) ? headerSlug[0] : headerSlug) || querySlug;
+      // Route-param slug (e.g. /public/:restaurantSlug/branch/:branchSlug/menu or
+      // the legacy /public/:slug/reservations) is also a trusted source — it is
+      // matched against Restaurant.slug, never used as an id.
+      const paramSlug =
+        (request.params?.restaurantSlug as string | undefined) ??
+        (request.params?.slug as string | undefined) ??
+        undefined;
+      const slug =
+        (Array.isArray(headerSlug) ? headerSlug[0] : headerSlug) || querySlug || paramSlug;
       if (slug) {
         resolved = await this.tenantResolver.fromSlug(slug);
       }
@@ -71,6 +79,32 @@ export class PublicRestaurantResolverGuard implements CanActivate {
       restaurantId: restaurant.id,
       organizationId: restaurant.organizationId,
     };
+
+    // BR-9: branch-explicit routes carry a `:branchSlug`. Resolve it against this
+    // restaurant's ACTIVE branches only (never a client-supplied id); an unknown
+    // slug is a 404. Restaurant-only routes have no branchSlug and skip this.
+    const branchSlugParam = request.params?.branchSlug as string | undefined;
+    if (branchSlugParam) {
+      const branch = await this.prisma.branch.findFirst({
+        where: {
+          restaurantId: restaurant.id,
+          slug: branchSlugParam.trim().toLowerCase(),
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+        select: { id: true, name: true, slug: true },
+      });
+      if (!branch) {
+        throw new NotFoundException({
+          code: 'BRANCH_NOT_FOUND',
+          message: 'No such branch for this restaurant.',
+        });
+      }
+      publicContext.branchId = branch.id;
+      publicContext.branchName = branch.name;
+      publicContext.branchSlug = branch.slug;
+    }
+
     request.public = publicContext;
     return true;
   }

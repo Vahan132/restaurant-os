@@ -11,16 +11,22 @@ const TERMINAL_ORDER_STATUSES = new Set(['CLOSED', 'CANCELLED']);
 /**
  * Denormalized KDS read model. Pulls live items routed to the station, then their
  * orders/tables/waiters/modifiers/menu prep-time, and assembles one ticket per
- * order (this station's items only). Tenant-scoped by restaurantId throughout.
+ * order (this station's items only). Scoped by (restaurantId, branchId) throughout
+ * — tickets are derived from branch-owned order lines.
  */
 @Injectable()
 export class PrismaStationTicketsReader implements StationTicketsReader {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getActiveTickets(restaurantId: string, station: string): Promise<StationTicketData[]> {
+  async getActiveTickets(
+    restaurantId: string,
+    branchId: string,
+    station: string,
+  ): Promise<StationTicketData[]> {
     const items = await this.prisma.orderItem.findMany({
       where: {
         restaurantId,
+        branchId,
         preparationStation: station as never,
         status: { in: LIVE_ITEM_STATUSES as never },
       },
@@ -31,7 +37,7 @@ export class PrismaStationTicketsReader implements StationTicketsReader {
 
     const orderIds = [...new Set(items.map((i) => i.orderId))];
     const orders = await this.prisma.order.findMany({
-      where: { id: { in: orderIds }, restaurantId },
+      where: { id: { in: orderIds }, restaurantId, branchId },
     });
     const liveOrders = orders.filter((o) => !TERMINAL_ORDER_STATUSES.has(o.status));
     const liveOrderIds = new Set(liveOrders.map((o) => o.id));

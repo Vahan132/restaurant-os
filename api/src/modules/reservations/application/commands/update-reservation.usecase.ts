@@ -17,6 +17,7 @@ import {
 
 export interface UpdateReservationInput {
   restaurantId: string | null;
+  branchId: string;
   reservationId: string;
   customerName?: string;
   customerPhone?: string;
@@ -43,7 +44,11 @@ export class UpdateReservationUseCase implements UseCase<UpdateReservationInput,
     if (!settings.enableReservations) {
       throw ReservationsDisabled();
     }
-    const reservation = await this.reservations.findById(input.restaurantId, input.reservationId);
+    const reservation = await this.reservations.findById(
+      input.restaurantId,
+      input.branchId,
+      input.reservationId,
+    );
     if (!reservation) {
       throw ReservationNotFound();
     }

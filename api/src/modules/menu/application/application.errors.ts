@@ -8,6 +8,12 @@ export const NoRestaurantInScope = () =>
     message: 'Your account is not scoped to a restaurant.',
   });
 
+export const CrossBranchReference = () =>
+  new BadRequestException({
+    code: 'VALIDATION_ERROR',
+    message: 'Referenced record belongs to a different branch.',
+  });
+
 export const CategoryNotFound = () =>
   new NotFoundException({ code: 'CATEGORY_NOT_FOUND', message: 'Category not found.' });
 

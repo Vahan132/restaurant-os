@@ -1,5 +1,5 @@
 import { AggregateRoot } from '../../../../shared/domain/aggregate-root';
-import { ReservationStatus, TERMINAL_RESERVATION_STATUSES } from '../enums';
+import { ReservationSource, ReservationStatus, TERMINAL_RESERVATION_STATUSES } from '../enums';
 import {
   ReservationArrivedEvent,
   ReservationCancelledEvent,
@@ -19,7 +19,7 @@ import {
 
 export interface ReservationProps {
   restaurantId: string;
-  branchId: string | null;
+  branchId: string;
   customerName: string;
   customerPhone: string;
   customerEmail: string | null;
@@ -28,7 +28,9 @@ export interface ReservationProps {
   durationMinutes: number;
   tableId: string | null;
   status: ReservationStatus;
+  source: ReservationSource;
   notes: string | null;
+  customerNote: string | null;
   arrivedAt: Date | null;
   seatedAt: Date | null;
   completedAt: Date | null;
@@ -43,7 +45,7 @@ export interface ReservationProps {
 export interface CreateReservationInput {
   id: string;
   restaurantId: string;
-  branchId?: string | null;
+  branchId: string;
   customerName: string;
   customerPhone: string;
   customerEmail?: string | null;
@@ -52,6 +54,8 @@ export interface CreateReservationInput {
   durationMinutes?: number;
   tableId?: string | null;
   notes?: string | null;
+  source?: ReservationSource;
+  customerNote?: string | null;
   createdByUserId: string;
 }
 
@@ -85,7 +89,7 @@ export class Reservation extends AggregateRoot<string> {
     const now = new Date();
     const reservation = new Reservation(input.id, {
       restaurantId: input.restaurantId,
-      branchId: input.branchId ?? null,
+      branchId: input.branchId,
       customerName: input.customerName,
       customerPhone: input.customerPhone,
       customerEmail: input.customerEmail ?? null,
@@ -94,7 +98,9 @@ export class Reservation extends AggregateRoot<string> {
       durationMinutes: input.durationMinutes ?? 90,
       tableId: input.tableId ?? null,
       status: ReservationStatus.PENDING,
+      source: input.source ?? ReservationSource.STAFF,
       notes: input.notes ?? null,
+      customerNote: input.customerNote ?? null,
       arrivedAt: null,
       seatedAt: null,
       completedAt: null,
@@ -106,7 +112,12 @@ export class Reservation extends AggregateRoot<string> {
       deletedAt: null,
     });
     reservation.addDomainEvent(
-      new ReservationCreatedEvent(reservation.id, input.restaurantId, reservation.props.status),
+      new ReservationCreatedEvent(
+        reservation.id,
+        input.restaurantId,
+        reservation.props.branchId,
+        reservation.props.status,
+      ),
     );
     return reservation;
   }
@@ -130,7 +141,7 @@ export class Reservation extends AggregateRoot<string> {
   get restaurantId(): string {
     return this.props.restaurantId;
   }
-  get branchId(): string | null {
+  get branchId(): string {
     return this.props.branchId;
   }
   get customerName(): string {
@@ -157,8 +168,14 @@ export class Reservation extends AggregateRoot<string> {
   get status(): ReservationStatus {
     return this.props.status;
   }
+  get source(): ReservationSource {
+    return this.props.source;
+  }
   get notes(): string | null {
     return this.props.notes;
+  }
+  get customerNote(): string | null {
+    return this.props.customerNote;
   }
   get arrivedAt(): Date | null {
     return this.props.arrivedAt;
@@ -214,7 +231,12 @@ export class Reservation extends AggregateRoot<string> {
     this.transitionTo(ReservationStatus.CONFIRMED);
     this.touch();
     this.addDomainEvent(
-      new ReservationConfirmedEvent(this.id, this.props.restaurantId, this.props.status),
+      new ReservationConfirmedEvent(
+        this.id,
+        this.props.restaurantId,
+        this.props.branchId,
+        this.props.status,
+      ),
     );
   }
 
@@ -223,7 +245,12 @@ export class Reservation extends AggregateRoot<string> {
     this.props.arrivedAt = now;
     this.touch();
     this.addDomainEvent(
-      new ReservationArrivedEvent(this.id, this.props.restaurantId, this.props.status),
+      new ReservationArrivedEvent(
+        this.id,
+        this.props.restaurantId,
+        this.props.branchId,
+        this.props.status,
+      ),
     );
   }
 
@@ -232,7 +259,12 @@ export class Reservation extends AggregateRoot<string> {
     this.props.seatedAt = now;
     this.touch();
     this.addDomainEvent(
-      new ReservationSeatedEvent(this.id, this.props.restaurantId, this.props.status),
+      new ReservationSeatedEvent(
+        this.id,
+        this.props.restaurantId,
+        this.props.branchId,
+        this.props.status,
+      ),
     );
   }
 
@@ -241,7 +273,12 @@ export class Reservation extends AggregateRoot<string> {
     this.props.completedAt = now;
     this.touch();
     this.addDomainEvent(
-      new ReservationCompletedEvent(this.id, this.props.restaurantId, this.props.status),
+      new ReservationCompletedEvent(
+        this.id,
+        this.props.restaurantId,
+        this.props.branchId,
+        this.props.status,
+      ),
     );
   }
 
@@ -254,6 +291,7 @@ export class Reservation extends AggregateRoot<string> {
       new ReservationCancelledEvent(
         this.id,
         this.props.restaurantId,
+        this.props.branchId,
         this.props.status,
         actorUserId,
       ),
@@ -264,7 +302,13 @@ export class Reservation extends AggregateRoot<string> {
     this.transitionTo(ReservationStatus.NO_SHOW);
     this.touch();
     this.addDomainEvent(
-      new ReservationNoShowEvent(this.id, this.props.restaurantId, this.props.status, actorUserId),
+      new ReservationNoShowEvent(
+        this.id,
+        this.props.restaurantId,
+        this.props.branchId,
+        this.props.status,
+        actorUserId,
+      ),
     );
   }
 

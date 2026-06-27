@@ -11,6 +11,7 @@ import { ApprovalChecker } from '../services/approval-checker';
 
 export interface ApplyDiscountInput {
   restaurantId: string | null;
+  branchId: string;
   organizationId: string;
   orderId: string;
   type: DiscountType;
@@ -33,7 +34,7 @@ export class ApplyDiscountUseCase implements UseCase<ApplyDiscountInput, Order> 
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findById(input.restaurantId, input.orderId);
+    const order = await this.orders.findById(input.restaurantId, input.branchId, input.orderId);
     if (!order) {
       throw OrderNotFound();
     }

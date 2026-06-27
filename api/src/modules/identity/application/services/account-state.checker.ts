@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { EdgeConfigService } from '../../../../shared/edge/edge-config.service';
 import { AccountSuspended } from '../application.errors';
 import { ACCOUNT_STATE_READER, AccountStateReader } from '../ports/account-state.reader';
 
@@ -16,9 +17,17 @@ const GOOD_SUBSCRIPTION = new Set(['TRIALING', 'ACTIVE']);
  */
 @Injectable()
 export class AccountStateChecker {
-  constructor(@Inject(ACCOUNT_STATE_READER) private readonly reader: AccountStateReader) {}
+  constructor(
+    @Inject(ACCOUNT_STATE_READER) private readonly reader: AccountStateReader,
+    private readonly edge: EdgeConfigService,
+  ) {}
 
   async assertGoodStanding(organizationId: string): Promise<void> {
+    // OFF-5: the edge has no synced Subscription (billing is a cloud concern);
+    // it trusts its synced users, so skip the billing gate when running on a hub.
+    if (this.edge.isEdge) {
+      return;
+    }
     const state = await this.reader.getByOrganization(organizationId);
     if (!state) {
       // No such organization — reject.

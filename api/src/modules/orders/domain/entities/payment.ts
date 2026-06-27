@@ -3,6 +3,7 @@ import { PaymentAmountInvalidError } from '../orders.errors';
 
 export interface PaymentProps {
   restaurantId: string;
+  branchId: string;
   orderId: string;
   method: PaymentMethod;
   amount: number;
@@ -18,6 +19,7 @@ export interface PaymentProps {
 export interface CreatePaymentInput {
   id: string;
   restaurantId: string;
+  branchId: string;
   orderId: string;
   method: PaymentMethod;
   amount: number;
@@ -53,6 +55,7 @@ export class Payment {
     const now = new Date();
     return new Payment(input.id, {
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       orderId: input.orderId,
       method: input.method,
       amount: input.amount,
@@ -75,6 +78,9 @@ export class Payment {
   }
   get restaurantId(): string {
     return this.props.restaurantId;
+  }
+  get branchId(): string {
+    return this.props.branchId;
   }
   get orderId(): string {
     return this.props.orderId;

@@ -19,6 +19,7 @@ import { MenuItemNotFound, NoRestaurantInScope } from '../application.errors';
 
 export interface GetMenuItemInput {
   restaurantId: string | null;
+  branchId: string;
   itemId: string;
 }
 
@@ -40,15 +41,19 @@ export class GetMenuItemUseCase implements UseCase<GetMenuItemInput, MenuItemWit
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const item = await this.items.findById(input.restaurantId, input.itemId);
+    const item = await this.items.findById(input.restaurantId, input.branchId, input.itemId);
     if (!item) {
       throw MenuItemNotFound();
     }
-    const groups = await this.groups.listByItem(input.restaurantId, item.id);
+    const groups = await this.groups.listByItem(input.restaurantId, input.branchId, item.id);
     const withOptions = await Promise.all(
       groups.map(async (group) => ({
         group,
-        options: await this.options.listByGroup(input.restaurantId as string, group.id),
+        options: await this.options.listByGroup(
+          input.restaurantId as string,
+          input.branchId,
+          group.id,
+        ),
       })),
     );
     return { item, groups: withOptions };

@@ -4,6 +4,7 @@ import { NegativePriceError } from '../menu.errors';
 
 export interface ModifierOptionProps {
   restaurantId: string;
+  branchId: string;
   modifierGroupId: string;
   name: string;
   priceDeltaAmount: number;
@@ -17,6 +18,7 @@ export interface ModifierOptionProps {
 export interface CreateModifierOptionInput {
   id: string;
   restaurantId: string;
+  branchId: string;
   modifierGroupId: string;
   name: string;
   priceDeltaAmount?: number;
@@ -44,6 +46,7 @@ export class ModifierOption extends AggregateRoot<string> {
     const now = new Date();
     return new ModifierOption(input.id, {
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       modifierGroupId: input.modifierGroupId,
       name: input.name,
       priceDeltaAmount: delta,
@@ -61,6 +64,9 @@ export class ModifierOption extends AggregateRoot<string> {
 
   get restaurantId(): string {
     return this.props.restaurantId;
+  }
+  get branchId(): string {
+    return this.props.branchId;
   }
   get modifierGroupId(): string {
     return this.props.modifierGroupId;

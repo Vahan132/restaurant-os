@@ -10,6 +10,7 @@ import { ModifierOptionNotFound, NoRestaurantInScope } from '../application.erro
 
 export interface UpdateModifierOptionInput {
   restaurantId: string | null;
+  branchId: string;
   optionId: string;
   name?: string;
   priceDeltaAmount?: number;
@@ -31,7 +32,7 @@ export class UpdateModifierOptionUseCase implements UseCase<
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const option = await this.options.findById(input.restaurantId, input.optionId);
+    const option = await this.options.findById(input.restaurantId, input.branchId, input.optionId);
     if (!option) {
       throw ModifierOptionNotFound();
     }

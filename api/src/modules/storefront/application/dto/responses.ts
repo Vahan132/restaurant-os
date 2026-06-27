@@ -52,4 +52,14 @@ export class PublicTableResponse {
   @ApiProperty() tableId!: string;
   @ApiProperty() name!: string;
   @ApiProperty({ nullable: true, type: String }) floorName!: string | null;
+  @ApiProperty({ description: "BR-9: the table's branch id." }) branchId!: string;
+  @ApiProperty({ description: "BR-9: the table's branch name." }) branchName!: string;
+  @ApiProperty({ description: "BR-9: the table's branch slug (fetch this branch's menu)." })
+  branchSlug!: string;
+}
+
+export class PublicBranchResponse {
+  @ApiProperty() id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ description: 'BR-9: public-facing branch slug.' }) slug!: string;
 }

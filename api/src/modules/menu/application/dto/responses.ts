@@ -8,6 +8,8 @@ import { MenuItemWithModifiers } from '../queries/get-menu-item.usecase';
 export class CategoryResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
+  @ApiProperty() branchId!: string;
+  @ApiProperty() code!: string;
   @ApiProperty() name!: string;
   @ApiProperty({ nullable: true, type: String }) description!: string | null;
   @ApiProperty() displayOrder!: number;
@@ -17,6 +19,8 @@ export class CategoryResponse {
     return {
       id: c.id,
       restaurantId: c.restaurantId,
+      branchId: c.branchId,
+      code: c.code,
       name: c.name,
       description: c.description,
       displayOrder: c.displayOrder,
@@ -28,6 +32,8 @@ export class CategoryResponse {
 export class MenuItemResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
+  @ApiProperty() branchId!: string;
+  @ApiProperty() code!: string;
   @ApiProperty() categoryId!: string;
   @ApiProperty() name!: string;
   @ApiProperty({ nullable: true, type: String }) description!: string | null;
@@ -42,6 +48,8 @@ export class MenuItemResponse {
     return {
       id: i.id,
       restaurantId: i.restaurantId,
+      branchId: i.branchId,
+      code: i.code,
       categoryId: i.categoryId,
       name: i.name,
       description: i.description,

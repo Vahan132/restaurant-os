@@ -121,6 +121,14 @@ export class AuthController {
       user: UserResponse.from(result.user),
       role: result.role ? RoleResponse.from(result.role) : null,
       permissions: result.permissions,
+      allBranches: result.branchAccess.allBranches,
+      accessibleBranches: result.branchAccess.branches.map((b) => ({
+        id: b.id,
+        name: b.name,
+        isDefault: b.isDefault,
+        permissions: b.permissions,
+      })),
+      defaultBranchId: result.branchAccess.defaultBranchId,
     };
   }
 }

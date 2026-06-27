@@ -4,6 +4,7 @@ import { OrderItemModifier } from './order-item-modifier';
 
 export interface OrderItemProps {
   restaurantId: string;
+  branchId: string;
   orderId: string;
   menuItemId: string;
   nameSnapshot: string;
@@ -25,6 +26,7 @@ export interface OrderItemProps {
 export interface CreateOrderItemInput {
   id: string;
   restaurantId: string;
+  branchId: string;
   orderId: string;
   menuItemId: string;
   nameSnapshot: string;
@@ -47,6 +49,7 @@ export class OrderItem {
     const now = new Date();
     const item = new OrderItem(input.id, {
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       orderId: input.orderId,
       menuItemId: input.menuItemId,
       nameSnapshot: input.nameSnapshot,
@@ -122,6 +125,9 @@ export class OrderItem {
   }
   get restaurantId(): string {
     return this.props.restaurantId;
+  }
+  get branchId(): string {
+    return this.props.branchId;
   }
   get orderId(): string {
     return this.props.orderId;

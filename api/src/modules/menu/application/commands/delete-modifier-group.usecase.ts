@@ -8,6 +8,7 @@ import { ModifierGroupNotFound, NoRestaurantInScope } from '../application.error
 
 export interface DeleteModifierGroupInput {
   restaurantId: string | null;
+  branchId: string;
   groupId: string;
 }
 
@@ -22,7 +23,7 @@ export class DeleteModifierGroupUseCase implements UseCase<DeleteModifierGroupIn
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const group = await this.groups.findById(input.restaurantId, input.groupId);
+    const group = await this.groups.findById(input.restaurantId, input.branchId, input.groupId);
     if (!group) {
       throw ModifierGroupNotFound();
     }

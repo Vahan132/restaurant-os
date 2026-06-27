@@ -9,6 +9,7 @@ import { CategoryNotFound, NoRestaurantInScope } from '../application.errors';
 
 export interface UpdateCategoryInput {
   restaurantId: string | null;
+  branchId: string;
   categoryId: string;
   name?: string;
   description?: string | null;
@@ -26,7 +27,11 @@ export class UpdateCategoryUseCase implements UseCase<UpdateCategoryInput, MenuC
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const category = await this.categories.findById(input.restaurantId, input.categoryId);
+    const category = await this.categories.findById(
+      input.restaurantId,
+      input.branchId,
+      input.categoryId,
+    );
     if (!category) {
       throw CategoryNotFound();
     }

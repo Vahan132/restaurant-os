@@ -1,0 +1,24 @@
+# Keep the build context small and the image clean. node_modules is reinstalled
+# inside the image (the host copy is platform-specific), and secrets/build
+# artifacts must never be copied in.
+node_modules
+dist
+*.tsbuildinfo
+.pnpm-store
+
+.git
+.gitignore
+
+.env
+.env.*
+!.env.example
+!.env.edge.example
+
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+.idea
+.vscode
+.DS_Store

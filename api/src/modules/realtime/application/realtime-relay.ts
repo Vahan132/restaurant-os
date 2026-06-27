@@ -18,8 +18,9 @@ import { RealtimePublisher } from './realtime-publisher.service';
 
 /**
  * Maps domain events -> small socket broadcasts. Payloads carry ids + new state
- * only; clients refetch details over HTTP. Station-targeted events go to KDS
- * station rooms; order/table updates go to the restaurant room (POS/waiter).
+ * only; clients refetch details over HTTP. BR-5: every event is routed to its
+ * aggregate's BRANCH room (e.branchId); station-targeted events go to that
+ * branch's station room.
  */
 @Injectable()
 export class RealtimeRelay {
@@ -29,21 +30,27 @@ export class RealtimeRelay {
   onItemsSent(e: OrderItemsSentToKitchenEvent): void {
     const stations = new Set(e.items.map((i) => i.preparationStation));
     for (const station of stations) {
-      this.pub.emitToStation(e.restaurantId, station, 'kds:ticket.new', {
+      this.pub.emitToStation(e.restaurantId, e.branchId, station, 'kds:ticket.new', {
         orderId: e.orderId,
         station,
       });
     }
-    this.pub.emitToRestaurant(e.restaurantId, 'order.updated', { orderId: e.orderId });
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'order.updated', { orderId: e.orderId });
   }
 
   @OnEvent('orders.order.item_cancelled')
   onItemCancelled(e: OrderItemCancelledEvent): void {
-    this.pub.emitToStation(e.restaurantId, e.preparationStation, 'kds:ticket.cancelled', {
-      orderId: e.orderId,
-      orderItemId: e.orderItemId,
-    });
-    this.pub.emitToRestaurant(e.restaurantId, 'order.item.cancelled', {
+    this.pub.emitToStation(
+      e.restaurantId,
+      e.branchId,
+      e.preparationStation,
+      'kds:ticket.cancelled',
+      {
+        orderId: e.orderId,
+        orderItemId: e.orderItemId,
+      },
+    );
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'order.item.cancelled', {
       orderId: e.orderId,
       orderItemId: e.orderItemId,
     });
@@ -51,12 +58,12 @@ export class RealtimeRelay {
 
   @OnEvent('orders.order.item_status_changed')
   onItemStatusChanged(e: OrderItemStatusChangedEvent): void {
-    this.pub.emitToStation(e.restaurantId, e.preparationStation, 'kds:ticket.updated', {
+    this.pub.emitToStation(e.restaurantId, e.branchId, e.preparationStation, 'kds:ticket.updated', {
       orderId: e.orderId,
       orderItemId: e.orderItemId,
       status: e.itemStatus,
     });
-    this.pub.emitToRestaurant(e.restaurantId, 'order.updated', {
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'order.updated', {
       orderId: e.orderId,
       status: e.orderStatus,
     });
@@ -64,7 +71,7 @@ export class RealtimeRelay {
 
   @OnEvent('orders.order.ready')
   onOrderReady(e: OrderReadyEvent): void {
-    this.pub.emitToRestaurant(e.restaurantId, 'order.ready', {
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'order.ready', {
       orderId: e.orderId,
       tableId: e.tableId,
     });
@@ -72,7 +79,7 @@ export class RealtimeRelay {
 
   @OnEvent('orders.order.created')
   onOrderCreated(e: OrderCreatedEvent): void {
-    this.pub.emitToRestaurant(e.restaurantId, 'order.updated', {
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'order.updated', {
       orderId: e.orderId,
       orderNumber: e.orderNumber,
     });
@@ -80,7 +87,7 @@ export class RealtimeRelay {
 
   @OnEvent('orders.order.closed')
   onOrderClosed(e: OrderClosedEvent): void {
-    this.pub.emitToRestaurant(e.restaurantId, 'order.updated', {
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'order.updated', {
       orderId: e.orderId,
       status: 'CLOSED',
     });
@@ -93,16 +100,37 @@ export class RealtimeRelay {
   @OnEvent('reservations.reservation.completed')
   @OnEvent('reservations.reservation.cancelled')
   @OnEvent('reservations.reservation.no_show')
-  onReservationChanged(e: { reservationId: string; restaurantId: string; status: string }): void {
-    this.pub.emitToRestaurant(e.restaurantId, 'reservation.updated', {
+  onReservationChanged(e: {
+    reservationId: string;
+    restaurantId: string;
+    branchId: string;
+    status: string;
+  }): void {
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'reservation.updated', {
       reservationId: e.reservationId,
       status: e.status,
     });
   }
 
+  @OnEvent('reservations.missed_call.created')
+  onMissedCallCreated(e: {
+    missedCallId: string;
+    restaurantId: string;
+    branchId: string;
+    phoneNumber: string;
+    callOccurredAt: Date;
+  }): void {
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'missedcall.new', {
+      missedCallId: e.missedCallId,
+      phoneNumber: e.phoneNumber,
+      occurredAt:
+        e.callOccurredAt instanceof Date ? e.callOccurredAt.toISOString() : e.callOccurredAt,
+    });
+  }
+
   @OnEvent('order_requests.request.created')
   onOrderRequestCreated(e: OrderRequestCreatedEvent): void {
-    this.pub.emitToRestaurant(e.restaurantId, 'order_request.new', {
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'order_request.new', {
       requestId: e.requestId,
       tableId: e.tableId,
       status: e.status,
@@ -111,7 +139,7 @@ export class RealtimeRelay {
 
   @OnEvent('order_requests.request.confirmed')
   onOrderRequestConfirmed(e: OrderRequestConfirmedEvent): void {
-    this.pub.emitToRestaurant(e.restaurantId, 'order_request.updated', {
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'order_request.updated', {
       requestId: e.requestId,
       status: e.status,
       linkedOrderId: e.linkedOrderId,
@@ -120,7 +148,7 @@ export class RealtimeRelay {
 
   @OnEvent('order_requests.request.rejected')
   onOrderRequestRejected(e: OrderRequestRejectedEvent): void {
-    this.pub.emitToRestaurant(e.restaurantId, 'order_request.updated', {
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'order_request.updated', {
       requestId: e.requestId,
       status: e.status,
     });
@@ -128,7 +156,7 @@ export class RealtimeRelay {
 
   @OnEvent('tables.table.status_changed')
   onTableStatusChanged(e: TableStatusChangedEvent): void {
-    this.pub.emitToRestaurant(e.restaurantId, 'table.status_changed', {
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'table.status_changed', {
       tableId: e.tableId,
       status: e.toStatus,
     });

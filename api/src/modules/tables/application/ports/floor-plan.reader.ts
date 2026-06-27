@@ -21,5 +21,5 @@ export interface FloorPlanFloor {
  * with current status. INACTIVE floors + soft-deleted rows are excluded.
  */
 export interface FloorPlanReader {
-  getFloorPlan(restaurantId: string): Promise<FloorPlanFloor[]>;
+  getFloorPlan(restaurantId: string, branchId: string): Promise<FloorPlanFloor[]>;
 }

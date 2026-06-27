@@ -11,9 +11,12 @@ import { UpdateRestaurantProfileUseCase } from './application/commands/update-re
 import { GetRestaurantSettingsUseCase } from './application/queries/get-restaurant-settings.usecase';
 import { UpdateRestaurantSettingsUseCase } from './application/commands/update-restaurant-settings.usecase';
 import { ListBranchesUseCase } from './application/queries/list-branches.usecase';
+import { GetBranchUseCase } from './application/queries/get-branch.usecase';
+import { GetMyBranchAccessUseCase } from './application/queries/get-my-branch-access.usecase';
 import { CreateBranchUseCase } from './application/commands/create-branch.usecase';
 import { UpdateBranchUseCase } from './application/commands/update-branch.usecase';
 import { DeactivateBranchUseCase } from './application/commands/deactivate-branch.usecase';
+import { MakeDefaultBranchUseCase } from './application/commands/make-default-branch.usecase';
 
 import { PrismaRestaurantRepository } from './infrastructure/persistence/prisma-restaurant.repository';
 import { PrismaRestaurantSettingsRepository } from './infrastructure/persistence/prisma-restaurant-settings.repository';
@@ -36,9 +39,12 @@ import { BranchesController } from './presentation/http/branches.controller';
     GetRestaurantSettingsUseCase,
     UpdateRestaurantSettingsUseCase,
     ListBranchesUseCase,
+    GetBranchUseCase,
+    GetMyBranchAccessUseCase,
     CreateBranchUseCase,
     UpdateBranchUseCase,
     DeactivateBranchUseCase,
+    MakeDefaultBranchUseCase,
 
     { provide: RESTAURANT_REPOSITORY, useClass: PrismaRestaurantRepository },
     { provide: RESTAURANT_SETTINGS_REPOSITORY, useClass: PrismaRestaurantSettingsRepository },

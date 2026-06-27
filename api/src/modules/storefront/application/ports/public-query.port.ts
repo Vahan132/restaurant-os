@@ -45,6 +45,17 @@ export interface PublicTableInfo {
   tableId: string;
   name: string;
   floorName: string | null;
+  // BR-9: the table's branch (tables are branch-scoped). The QR app uses the
+  // branch slug to fetch that location's own menu/prices.
+  branchId: string;
+  branchName: string;
+  branchSlug: string;
+}
+
+export interface PublicBranchInfo {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 /**
@@ -55,6 +66,12 @@ export interface PublicTableInfo {
  */
 export interface PublicStorefrontQuery {
   restaurantInfo(restaurantId: string): Promise<PublicRestaurantInfo | null>;
-  menuTree(restaurantId: string): Promise<PublicMenuCategory[]>;
+  /** BR-9: menu for a SPECIFIC branch (branch-owned catalog per BR-2). */
+  menuTree(restaurantId: string, branchId: string): Promise<PublicMenuCategory[]>;
+  /** BR-9: the table's info INCLUDING its branch (tables are branch-scoped). */
   tableByQr(restaurantId: string, qrIdentifier: string): Promise<PublicTableInfo | null>;
+  /** BR-9: active (non-deleted) branches for the public location picker. */
+  activeBranches(restaurantId: string): Promise<PublicBranchInfo[]>;
+  /** BR-9: the restaurant's default branch id (fallback for branch-less entries). */
+  defaultBranchId(restaurantId: string): Promise<string | null>;
 }

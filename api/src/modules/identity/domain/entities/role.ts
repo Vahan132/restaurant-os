@@ -8,6 +8,8 @@ export interface RoleProps {
   code: string;
   permissions: PermissionKey[];
   isSystem: boolean;
+  /** ALL-BRANCH reach (FIX-E): true → the user sees/operates every branch. */
+  allBranches: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,6 +21,7 @@ export interface CreateRoleInput {
   code: string;
   permissions: string[];
   isSystem?: boolean;
+  allBranches?: boolean;
 }
 
 /**
@@ -42,6 +45,7 @@ export class Role extends AggregateRoot<string> {
       code: input.code,
       permissions,
       isSystem: input.isSystem ?? false,
+      allBranches: input.allBranches ?? false,
       createdAt: now,
       updatedAt: now,
     });
@@ -75,6 +79,10 @@ export class Role extends AggregateRoot<string> {
   }
   get isSystem(): boolean {
     return this.props.isSystem;
+  }
+  /** ALL-BRANCH reach (FIX-E). */
+  get allBranches(): boolean {
+    return this.props.allBranches;
   }
   get createdAt(): Date {
     return this.props.createdAt;

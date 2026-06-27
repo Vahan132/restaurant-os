@@ -14,6 +14,7 @@ export class PrismaFloorRepository implements FloorRepository {
     const records = await this.prisma.floor.findMany({
       where: {
         restaurantId: filter.restaurantId,
+        branchId: filter.branchId,
         deletedAt: null,
         ...(status ? { status } : {}),
       },
@@ -22,14 +23,20 @@ export class PrismaFloorRepository implements FloorRepository {
     return records.map(FloorMapper.toDomain);
   }
 
-  async findById(restaurantId: string, id: string): Promise<Floor | null> {
-    const r = await this.prisma.floor.findFirst({ where: { id, restaurantId, deletedAt: null } });
+  async findById(restaurantId: string, branchId: string, id: string): Promise<Floor | null> {
+    const r = await this.prisma.floor.findFirst({
+      where: { id, restaurantId, branchId, deletedAt: null },
+    });
     return r ? FloorMapper.toDomain(r) : null;
   }
 
-  async countActiveTables(restaurantId: string, floorId: string): Promise<number> {
+  async countActiveTables(
+    restaurantId: string,
+    branchId: string,
+    floorId: string,
+  ): Promise<number> {
     return this.prisma.restaurantTable.count({
-      where: { restaurantId, floorId, deletedAt: null },
+      where: { restaurantId, branchId, floorId, deletedAt: null },
     });
   }
 
@@ -39,7 +46,7 @@ export class PrismaFloorRepository implements FloorRepository {
 
   async update(floor: Floor): Promise<void> {
     await this.prisma.floor.updateMany({
-      where: { id: floor.id, restaurantId: floor.restaurantId },
+      where: { id: floor.id, restaurantId: floor.restaurantId, branchId: floor.branchId },
       data: FloorMapper.toUpdate(floor),
     });
   }

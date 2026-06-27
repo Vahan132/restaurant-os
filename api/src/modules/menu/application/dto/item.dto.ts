@@ -15,10 +15,8 @@ export class CreateMenuItemDto {
   @MinLength(1)
   categoryId!: string;
 
-  @ApiProperty({ description: 'Price in integer minor units (>= 0).', minimum: 0 })
-  @IsInt()
-  @Min(0)
-  priceAmount!: number;
+  // NOTE (INV-3 §7): price is intentionally NOT settable here. New items start at
+  // 0 and price is set via PATCH /menu/items/:id/price under menu:item:set_price.
 
   @ApiPropertyOptional()
   @IsOptional()

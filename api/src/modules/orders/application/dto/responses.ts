@@ -58,6 +58,7 @@ export class OrderTotalsResponse {
 
 export class PaymentResponse {
   @ApiProperty() id!: string;
+  @ApiProperty() branchId!: string;
   @ApiProperty({ enum: ['CASH', 'CARD', 'BANK_TRANSFER', 'OTHER'] }) method!: string;
   @ApiProperty() amount!: number;
   @ApiProperty({ nullable: true, type: Number }) tenderedAmount!: number | null;
@@ -67,6 +68,7 @@ export class PaymentResponse {
   static from(p: Payment): PaymentResponse {
     return {
       id: p.id,
+      branchId: p.branchId,
       method: p.method,
       amount: p.amount,
       tenderedAmount: p.tenderedAmount,
@@ -79,6 +81,7 @@ export class PaymentResponse {
 export class OrderResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
+  @ApiProperty() branchId!: string;
   @ApiProperty() orderNumber!: number;
   @ApiProperty({ enum: ['DINE_IN', 'TAKEAWAY'] }) type!: string;
   @ApiProperty({ nullable: true, type: String }) tableId!: string | null;
@@ -101,6 +104,7 @@ export class OrderResponse {
     return {
       id: o.id,
       restaurantId: o.restaurantId,
+      branchId: o.branchId,
       orderNumber: o.orderNumber,
       type: o.type,
       tableId: o.tableId,

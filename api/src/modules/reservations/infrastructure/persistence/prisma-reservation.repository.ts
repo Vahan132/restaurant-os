@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { OUTBOX_RECORDER, OutboxRecorder } from '../../../../shared/edge/outbox-recorder';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
 import { Reservation } from '../../domain/entities/reservation';
-import { ACTIVE_RESERVATION_STATUSES } from '../../domain/enums';
+import { ACTIVE_RESERVATION_STATUSES, ReservationSource } from '../../domain/enums';
 import {
   ReservationListFilter,
   ReservationRepository,
@@ -10,24 +11,38 @@ import { ReservationMapper } from './reservation.mapper';
 
 @Injectable()
 export class PrismaReservationRepository implements ReservationRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(OUTBOX_RECORDER) private readonly outbox: OutboxRecorder,
+  ) {}
 
   async create(reservation: Reservation): Promise<void> {
-    await this.prisma.reservation.create({
-      data: { id: reservation.id, ...ReservationMapper.toRow(reservation) },
+    // OFF-4: wrap in a tx so the outbox capture is atomic with the write.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.reservation.create({
+        data: { id: reservation.id, ...ReservationMapper.toRow(reservation) },
+      });
+      await this.outbox.record(tx, [
+        { aggregateType: 'RESERVATION', aggregateId: reservation.id, op: 'CREATE' },
+      ]);
     });
   }
 
   async save(reservation: Reservation): Promise<void> {
-    await this.prisma.reservation.update({
-      where: { id: reservation.id },
-      data: ReservationMapper.toRow(reservation),
+    await this.prisma.$transaction(async (tx) => {
+      await tx.reservation.update({
+        where: { id: reservation.id },
+        data: ReservationMapper.toRow(reservation),
+      });
+      await this.outbox.record(tx, [
+        { aggregateType: 'RESERVATION', aggregateId: reservation.id, op: 'UPSERT' },
+      ]);
     });
   }
 
-  async findById(restaurantId: string, id: string): Promise<Reservation | null> {
+  async findById(restaurantId: string, branchId: string, id: string): Promise<Reservation | null> {
     const row = await this.prisma.reservation.findFirst({
-      where: { id, restaurantId, deletedAt: null },
+      where: { id, restaurantId, branchId, deletedAt: null },
     });
     return row ? ReservationMapper.toDomain(row) : null;
   }
@@ -35,6 +50,7 @@ export class PrismaReservationRepository implements ReservationRepository {
   async list(filter: ReservationListFilter): Promise<{ items: Reservation[]; total: number }> {
     const where: Record<string, unknown> = {
       restaurantId: filter.restaurantId,
+      branchId: filter.branchId,
       deletedAt: null,
     };
     if (filter.status) where.status = filter.status;
@@ -57,10 +73,15 @@ export class PrismaReservationRepository implements ReservationRepository {
     return { items: rows.map(ReservationMapper.toDomain), total };
   }
 
-  async findActiveWithTableBefore(restaurantId: string, windowEnd: Date): Promise<Reservation[]> {
+  async findActiveWithTableBefore(
+    restaurantId: string,
+    branchId: string,
+    windowEnd: Date,
+  ): Promise<Reservation[]> {
     const rows = await this.prisma.reservation.findMany({
       where: {
         restaurantId,
+        branchId,
         deletedAt: null,
         tableId: { not: null },
         status: { in: [...ACTIVE_RESERVATION_STATUSES] },
@@ -69,5 +90,23 @@ export class PrismaReservationRepository implements ReservationRepository {
       orderBy: { reservedAt: 'asc' },
     });
     return rows.map(ReservationMapper.toDomain);
+  }
+
+  async countRecentBySourceAndPhone(
+    restaurantId: string,
+    branchId: string,
+    source: ReservationSource,
+    customerPhone: string,
+    since: Date,
+  ): Promise<number> {
+    return this.prisma.reservation.count({
+      where: {
+        restaurantId,
+        branchId,
+        source,
+        customerPhone,
+        createdAt: { gte: since },
+      },
+    });
   }
 }

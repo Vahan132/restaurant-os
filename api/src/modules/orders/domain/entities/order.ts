@@ -46,7 +46,7 @@ import { Payment } from './payment';
 
 export interface OrderProps {
   restaurantId: string;
-  branchId: string | null;
+  branchId: string;
   orderNumber: number;
   type: OrderType;
   tableId: string | null;
@@ -77,7 +77,7 @@ export interface OrderProps {
 export interface CreateOrderInput {
   id: string;
   restaurantId: string;
-  branchId?: string | null;
+  branchId: string;
   type: OrderType;
   tableId?: string | null;
   waiterId: string;
@@ -102,7 +102,7 @@ export class Order extends AggregateRoot<string> {
     const now = new Date();
     return new Order(input.id, {
       restaurantId: input.restaurantId,
-      branchId: input.branchId ?? null,
+      branchId: input.branchId,
       orderNumber: 0,
       type: input.type,
       tableId: input.tableId ?? null,
@@ -139,7 +139,7 @@ export class Order extends AggregateRoot<string> {
   get restaurantId(): string {
     return this.props.restaurantId;
   }
-  get branchId(): string | null {
+  get branchId(): string {
     return this.props.branchId;
   }
   get orderNumber(): number {
@@ -241,7 +241,13 @@ export class Order extends AggregateRoot<string> {
     }
     this.props.orderNumber = orderNumber;
     this.addDomainEvent(
-      new OrderCreatedEvent(this.id, this.props.restaurantId, orderNumber, this.props.tableId),
+      new OrderCreatedEvent(
+        this.id,
+        this.props.restaurantId,
+        this.props.branchId,
+        orderNumber,
+        this.props.tableId,
+      ),
     );
   }
 
@@ -314,13 +320,18 @@ export class Order extends AggregateRoot<string> {
         nameSnapshot: item.nameSnapshot,
         preparationStation: item.preparationStation,
         quantity: item.quantity,
+        modifierOptionIds: item.modifiers
+          .map((m) => m.modifierOptionId)
+          .filter((id): id is string => id !== null),
       });
     }
     if (this.props.status === OrderStatus.DRAFT) {
       this.transitionTo(OrderStatus.SENT_TO_KITCHEN);
     }
     this.touch();
-    this.addDomainEvent(new OrderItemsSentToKitchenEvent(this.id, this.props.restaurantId, sent));
+    this.addDomainEvent(
+      new OrderItemsSentToKitchenEvent(this.id, this.props.restaurantId, this.props.branchId, sent),
+    );
   }
 
   markServed(): void {
@@ -380,6 +391,7 @@ export class Order extends AggregateRoot<string> {
       new OrderItemCancelledEvent(
         this.id,
         this.props.restaurantId,
+        this.props.branchId,
         itemId,
         station,
         reason,
@@ -392,13 +404,23 @@ export class Order extends AggregateRoot<string> {
     if (!reason || reason.trim().length === 0) {
       throw new CancelReasonRequiredError();
     }
+    // Capture lines that were live on a station BEFORE the transition so the
+    // inventory listener can reverse their consumption (INV-3).
+    const sentOrderItemIds = this.props.items.filter((i) => i.isActiveOnStation()).map((i) => i.id);
     this.transitionTo(OrderStatus.CANCELLED);
     this.props.cancelledReason = reason;
     this.props.cancelledByUserId = cancelledByUserId;
     this.props.cancelApprovedByUserId = cancelApprovedByUserId;
     this.touch();
     this.addDomainEvent(
-      new OrderCancelledEvent(this.id, this.props.restaurantId, reason, cancelledByUserId),
+      new OrderCancelledEvent(
+        this.id,
+        this.props.restaurantId,
+        this.props.branchId,
+        reason,
+        cancelledByUserId,
+        sentOrderItemIds,
+      ),
     );
   }
 
@@ -445,6 +467,7 @@ export class Order extends AggregateRoot<string> {
     const payment = Payment.create({
       id: input.id,
       restaurantId: this.props.restaurantId,
+      branchId: this.props.branchId, // payments inherit the order's branch
       orderId: this.id,
       method: input.method,
       amount: input.amount,
@@ -496,7 +519,13 @@ export class Order extends AggregateRoot<string> {
     this.props.closedAt = now;
     this.touch();
     this.addDomainEvent(
-      new OrderClosedEvent(this.id, this.props.restaurantId, this.props.tableId, actorUserId),
+      new OrderClosedEvent(
+        this.id,
+        this.props.restaurantId,
+        this.props.branchId,
+        this.props.tableId,
+        actorUserId,
+      ),
     );
   }
 
@@ -600,6 +629,7 @@ export class Order extends AggregateRoot<string> {
       new OrderItemStatusChangedEvent(
         this.id,
         this.props.restaurantId,
+        this.props.branchId,
         item.id,
         item.preparationStation,
         item.status,
@@ -626,6 +656,7 @@ export class Order extends AggregateRoot<string> {
       new OrderItemStatusChangedEvent(
         this.id,
         this.props.restaurantId,
+        this.props.branchId,
         item.id,
         item.preparationStation,
         item.status,
@@ -634,7 +665,12 @@ export class Order extends AggregateRoot<string> {
     );
     if (before !== OrderStatus.READY && this.props.status === OrderStatus.READY) {
       this.addDomainEvent(
-        new OrderReadyEvent(this.id, this.props.restaurantId, this.props.tableId),
+        new OrderReadyEvent(
+          this.id,
+          this.props.restaurantId,
+          this.props.branchId,
+          this.props.tableId,
+        ),
       );
     }
     this.touch();
@@ -659,6 +695,7 @@ export class Order extends AggregateRoot<string> {
         new OrderItemStatusChangedEvent(
           this.id,
           this.props.restaurantId,
+          this.props.branchId,
           item.id,
           item.preparationStation,
           item.status,
@@ -668,7 +705,12 @@ export class Order extends AggregateRoot<string> {
     }
     if (before !== OrderStatus.READY && this.props.status === OrderStatus.READY) {
       this.addDomainEvent(
-        new OrderReadyEvent(this.id, this.props.restaurantId, this.props.tableId),
+        new OrderReadyEvent(
+          this.id,
+          this.props.restaurantId,
+          this.props.branchId,
+          this.props.tableId,
+        ),
       );
     }
     this.touch();

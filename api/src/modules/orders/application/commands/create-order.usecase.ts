@@ -6,6 +6,7 @@ import { Order } from '../../domain/entities/order';
 import { OrderType } from '../../domain/enums';
 import { ORDER_REPOSITORY, OrderRepository } from '../../domain/repositories/order.repository';
 import {
+  CrossBranchReference,
   NoRestaurantInScope,
   TableHasOpenOrder,
   TableNotInRestaurant,
@@ -16,7 +17,7 @@ import { OrderTableSync } from '../services/order-table-sync';
 
 export interface CreateOrderInput {
   restaurantId: string | null;
-  branchId?: string | null;
+  branchId: string;
   waiterId: string;
   type: OrderType;
   tableId?: string | null;
@@ -44,10 +45,15 @@ export class CreateOrderUseCase implements UseCase<CreateOrderInput, Order> {
     const tableId = isDineIn ? (input.tableId ?? null) : null;
 
     if (tableId) {
-      if (!(await this.tables.tableExists(input.restaurantId, tableId))) {
+      const tableBranchId = await this.tables.getTableBranchId(input.restaurantId, tableId);
+      if (tableBranchId === null) {
         throw TableNotInRestaurant();
       }
-      const open = await this.orders.findOpenByTable(input.restaurantId, tableId);
+      // Intra-branch integrity: the assigned table must be in the order's branch.
+      if (tableBranchId !== input.branchId) {
+        throw CrossBranchReference('Table belongs to a different branch.');
+      }
+      const open = await this.orders.findOpenByTable(input.restaurantId, input.branchId, tableId);
       if (open) {
         throw TableHasOpenOrder();
       }
@@ -56,7 +62,7 @@ export class CreateOrderUseCase implements UseCase<CreateOrderInput, Order> {
     const order = Order.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
-      branchId: input.branchId ?? null,
+      branchId: input.branchId,
       type: input.type,
       tableId,
       waiterId: input.waiterId,

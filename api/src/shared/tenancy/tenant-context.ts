@@ -31,6 +31,12 @@ declare global {
     interface Request {
       tenant?: TenantContext;
       user?: AccessTokenPayload;
+      /**
+       * Effective permission keys at the active branch, set by BranchAccessGuard
+       * on @BranchScoped routes. When present, PermissionsGuard checks against
+       * these instead of the JWT permission snapshot.
+       */
+      effectivePermissions?: string[];
     }
   }
 }

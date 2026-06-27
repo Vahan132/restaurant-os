@@ -1,8 +1,8 @@
 /**
  * Idempotent seed (safe to run repeatedly):
  *   - Plan "starter", demo Organization + active Subscription
- *   - demo Restaurant (slug "demo") + RestaurantSettings + Main Branch
- *   - the 6 system Roles for the demo org
+ *   - demo Restaurant (slug "demo") + RestaurantSettings + default Main Branch
+ *   - the system Roles for the demo org (incl. the BRANCH_SCOPED sentinel)
  *   - an OWNER user (owner@demo.test) — dev password printed
  *   - a platform super-admin (admin@platform.test) — dev password printed
  *   - a small demo MENU (Burgers/Drinks, Classic Burger w/ Size+Extras, Cola on BAR)
@@ -12,10 +12,12 @@
 import { PrismaClient } from '@prisma/client';
 import * as argon2 from 'argon2';
 import {
+  SYSTEM_ROLE_ALL_BRANCHES,
   SYSTEM_ROLE_CODES,
   SYSTEM_ROLE_NAMES,
   SYSTEM_ROLE_PERMISSIONS,
 } from '../src/modules/identity/domain/permissions.catalog';
+import { slugify } from '../src/modules/menu/application/menu-code.util';
 
 const prisma = new PrismaClient();
 
@@ -91,10 +93,22 @@ async function main(): Promise<void> {
     where: { restaurantId: restaurant.id, name: 'Main Branch' },
     select: { id: true },
   });
+  let branchId: string;
   if (!existingBranch) {
-    await prisma.branch.create({
-      data: { restaurantId: restaurant.id, name: 'Main Branch', status: 'ACTIVE' },
+    // BR-1: the seeded branch is the restaurant's default.
+    const created = await prisma.branch.create({
+      data: {
+        restaurantId: restaurant.id,
+        name: 'Main Branch',
+        slug: 'main-branch',
+        status: 'ACTIVE',
+        isDefault: true,
+      },
     });
+    branchId = created.id;
+  } else {
+    await prisma.branch.update({ where: { id: existingBranch.id }, data: { isDefault: true } });
+    branchId = existingBranch.id;
   }
 
   const roleIdByCode: Record<string, string> = {};
@@ -105,6 +119,7 @@ async function main(): Promise<void> {
         name: SYSTEM_ROLE_NAMES[code],
         permissions: SYSTEM_ROLE_PERMISSIONS[code],
         isSystem: true,
+        allBranches: SYSTEM_ROLE_ALL_BRANCHES[code],
       },
       create: {
         organizationId: organization.id,
@@ -112,6 +127,7 @@ async function main(): Promise<void> {
         code,
         permissions: SYSTEM_ROLE_PERMISSIONS[code],
         isSystem: true,
+        allBranches: SYSTEM_ROLE_ALL_BRANCHES[code],
       },
     });
     roleIdByCode[code] = role.id;
@@ -132,6 +148,20 @@ async function main(): Promise<void> {
     },
   });
 
+  // FIX-BR-1: branch access is always explicit — grant the owner a membership at
+  // the default branch so the seeded account can operate branch-scoped endpoints.
+  await prisma.branchMembership.upsert({
+    where: { branchId_userId: { branchId, userId: owner.id } },
+    update: {},
+    create: {
+      restaurantId: restaurant.id,
+      branchId,
+      userId: owner.id,
+      roleId: roleIdByCode['OWNER'],
+      createdByUserId: owner.id,
+    },
+  });
+
   const adminHash = await argon2.hash(ADMIN_PASSWORD, { type: argon2.argon2id });
   const admin = await prisma.platformUser.upsert({
     where: { email: ADMIN_EMAIL },
@@ -148,11 +178,14 @@ async function main(): Promise<void> {
   // ── Demo menu (idempotent; guarded by restaurantId + name) ─────────────────
   const rid = restaurant.id;
   const findOrCreateCategory = async (name: string, displayOrder: number) => {
-    const found = await prisma.menuCategory.findFirst({ where: { restaurantId: rid, name } });
+    const found = await prisma.menuCategory.findFirst({
+      where: { restaurantId: rid, branchId, name },
+    });
     return (
       found ??
       (await prisma.menuCategory.create({
-        data: { restaurantId: rid, name, displayOrder, status: 'ACTIVE' },
+        // BR-2: menu is branch-owned; seed the default branch with a stable code.
+        data: { restaurantId: rid, branchId, code: slugify(name, 'category'), name, displayOrder, status: 'ACTIVE' },
       }))
     );
   };
@@ -165,12 +198,16 @@ async function main(): Promise<void> {
     priceAmount: number,
     station: 'KITCHEN' | 'BAR' | 'DESSERT' | 'OTHER',
   ) => {
-    const found = await prisma.menuItem.findFirst({ where: { restaurantId: rid, name } });
+    const found = await prisma.menuItem.findFirst({
+      where: { restaurantId: rid, branchId, name },
+    });
     return (
       found ??
       (await prisma.menuItem.create({
         data: {
           restaurantId: rid,
+          branchId,
+          code: slugify(name, 'item'),
           categoryId,
           name,
           priceAmount,
@@ -194,12 +231,12 @@ async function main(): Promise<void> {
     displayOrder: number,
   ) => {
     const found = await prisma.modifierGroup.findFirst({
-      where: { restaurantId: rid, menuItemId, name },
+      where: { restaurantId: rid, branchId, menuItemId, name },
     });
     return (
       found ??
       (await prisma.modifierGroup.create({
-        data: { restaurantId: rid, menuItemId, name, selectionType, required, minSelect, maxSelect, displayOrder },
+        data: { restaurantId: rid, branchId, menuItemId, name, selectionType, required, minSelect, maxSelect, displayOrder },
       }))
     );
   };
@@ -213,11 +250,11 @@ async function main(): Promise<void> {
     displayOrder: number,
   ) => {
     const found = await prisma.modifierOption.findFirst({
-      where: { restaurantId: rid, modifierGroupId, name },
+      where: { restaurantId: rid, branchId, modifierGroupId, name },
     });
     if (!found) {
       await prisma.modifierOption.create({
-        data: { restaurantId: rid, modifierGroupId, name, priceDeltaAmount, displayOrder, status: 'ACTIVE' },
+        data: { restaurantId: rid, branchId, modifierGroupId, name, priceDeltaAmount, displayOrder, status: 'ACTIVE' },
       });
     }
   };
@@ -228,18 +265,19 @@ async function main(): Promise<void> {
   await ensureOption(extrasGroup.id, 'Bacon', 200, 1);
 
   // ── Floors + tables (idempotent) ───────────────────────────────────────────
-  let mainHall = await prisma.floor.findFirst({ where: { restaurantId: rid, name: 'Main Hall' } });
+  let mainHall = await prisma.floor.findFirst({ where: { restaurantId: rid, branchId, name: 'Main Hall' } });
   if (!mainHall) {
     mainHall = await prisma.floor.create({
-      data: { restaurantId: rid, name: 'Main Hall', displayOrder: 0, status: 'ACTIVE' },
+      data: { restaurantId: rid, branchId, name: 'Main Hall', displayOrder: 0, status: 'ACTIVE' },
     });
   }
   for (const name of ['T1', 'T2', 'T3']) {
     await prisma.restaurantTable.upsert({
-      where: { restaurantId_name: { restaurantId: rid, name } },
+      where: { restaurantId_branchId_name: { restaurantId: rid, branchId, name } },
       update: {},
       create: {
         restaurantId: rid,
+        branchId,
         floorId: mainHall.id,
         name,
         seatCapacity: 4,

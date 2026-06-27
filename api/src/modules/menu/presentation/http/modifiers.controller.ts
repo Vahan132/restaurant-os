@@ -7,6 +7,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { ActiveBranchId } from '../../../../shared/auth/active-branch.decorator';
+import { BranchScoped } from '../../../../shared/auth/branch-scoped.decorator';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
@@ -28,6 +30,7 @@ const MENU_MANAGE = PERMISSIONS.MENU_MANAGE;
 /** Modifier group/option writes (per-item). All require MENU_MANAGE. */
 @ApiTags('menu-modifiers')
 @ApiBearerAuth('access-token')
+@BranchScoped()
 @Controller('menu')
 export class ModifiersController {
   constructor(
@@ -45,11 +48,13 @@ export class ModifiersController {
   @ApiOkResponse({ type: ModifierGroupResponse })
   async patchGroup(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: UpdateModifierGroupDto,
   ): Promise<ModifierGroupResponse> {
     const group = await this.updateGroup.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       groupId: id,
       name: dto.name,
       selectionType: dto.selectionType,
@@ -69,9 +74,10 @@ export class ModifiersController {
   @ApiOkResponse({ schema: { example: { success: true } } })
   async removeGroup(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<{ success: true }> {
-    await this.deleteGroup.execute({ restaurantId: tenant.restaurantId, groupId: id });
+    await this.deleteGroup.execute({ restaurantId: tenant.restaurantId, branchId, groupId: id });
     return { success: true };
   }
 
@@ -82,11 +88,13 @@ export class ModifiersController {
   @ApiCreatedResponse({ type: ModifierOptionResponse })
   async addOptionToGroup(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('groupId') groupId: string,
     @Body() dto: CreateModifierOptionDto,
   ): Promise<ModifierOptionResponse> {
     const option = await this.addOption.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       groupId,
       name: dto.name,
       priceDeltaAmount: dto.priceDeltaAmount,
@@ -102,11 +110,13 @@ export class ModifiersController {
   @ApiOkResponse({ type: ModifierOptionResponse })
   async patchOption(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: UpdateModifierOptionDto,
   ): Promise<ModifierOptionResponse> {
     const option = await this.updateOption.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       optionId: id,
       name: dto.name,
       priceDeltaAmount: dto.priceDeltaAmount,
@@ -124,9 +134,10 @@ export class ModifiersController {
   @ApiOkResponse({ schema: { example: { success: true } } })
   async removeOption(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<{ success: true }> {
-    await this.deleteOption.execute({ restaurantId: tenant.restaurantId, optionId: id });
+    await this.deleteOption.execute({ restaurantId: tenant.restaurantId, branchId, optionId: id });
     return { success: true };
   }
 }

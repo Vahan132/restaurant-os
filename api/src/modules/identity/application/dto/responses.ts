@@ -63,10 +63,34 @@ export class AuthTokensResponse {
   @ApiProperty({ type: UserResponse }) user!: UserResponse;
 }
 
+/** A branch the caller can access, with their effective permissions there (BR-1). */
+export class AccessibleBranchResponse {
+  @ApiProperty() id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty() isDefault!: boolean;
+  @ApiProperty({ type: [String], description: 'Effective permissions at this branch.' })
+  permissions!: string[];
+}
+
 export class MeResponse {
   @ApiProperty({ type: UserResponse }) user!: UserResponse;
   @ApiProperty({ type: RoleResponse, nullable: true }) role!: RoleResponse | null;
-  @ApiProperty({ type: [String] }) permissions!: string[];
+  @ApiProperty({ type: [String], description: 'Restaurant-wide permission set.' })
+  permissions!: string[];
+
+  @ApiProperty({
+    description: 'True if the caller is restaurant-wide (their role applies at every branch).',
+  })
+  allBranches!: boolean;
+
+  @ApiProperty({
+    type: [AccessibleBranchResponse],
+    description: 'Branches the caller can access, each with effective permissions.',
+  })
+  accessibleBranches!: AccessibleBranchResponse[];
+
+  @ApiProperty({ nullable: true, type: String, description: "The caller's default branch id." })
+  defaultBranchId!: string | null;
 }
 
 export class PermissionsResponse {

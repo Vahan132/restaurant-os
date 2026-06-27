@@ -51,7 +51,11 @@ export class PrismaOrderRequestRepository implements OrderRequestRepository {
   async list(
     filter: OrderRequestListFilter,
   ): Promise<{ items: CustomerOrderRequest[]; total: number }> {
-    const where: Record<string, unknown> = { restaurantId: filter.restaurantId };
+    // A request's branch is its table's branch — scope via the table relation.
+    const where: Record<string, unknown> = {
+      restaurantId: filter.restaurantId,
+      table: { branchId: filter.branchId },
+    };
     if (filter.status) {
       where.status = filter.status;
     }

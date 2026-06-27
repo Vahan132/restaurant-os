@@ -37,11 +37,17 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
-  // Real-time: Socket.IO with the Redis adapter so broadcasts fan out across
-  // every API instance. Must be set before the server starts listening.
-  const redisIoAdapter = new RedisIoAdapter(app, config.get('REDIS_URL', { infer: true }));
-  await redisIoAdapter.connectToRedis();
-  app.useWebSocketAdapter(redisIoAdapter);
+  // Real-time: Socket.IO adapter.
+  //  - CLOUD: Redis adapter so broadcasts fan out across every API instance.
+  //  - EDGE: default in-process adapter (single node, no Redis).
+  // Must be set before the server starts listening.
+  if (config.get('APP_MODE', { infer: true }) === 'EDGE') {
+    logger.log('EDGE mode: using in-process Socket.IO adapter (no Redis)');
+  } else {
+    const redisIoAdapter = new RedisIoAdapter(app, config.get('REDIS_URL', { infer: true }));
+    await redisIoAdapter.connectToRedis();
+    app.useWebSocketAdapter(redisIoAdapter);
+  }
 
   // Swagger at /docs.
   setupSwagger(app);

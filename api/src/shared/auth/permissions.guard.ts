@@ -37,7 +37,11 @@ export class PermissionsGuard implements CanActivate {
       });
     }
 
-    const granted = new Set(user.permissions ?? []);
+    // On @BranchScoped routes, BranchAccessGuard has resolved the caller's
+    // EFFECTIVE permissions at the active branch (restaurant-wide ∪ branch role)
+    // and stashed them on the request; prefer those over the JWT snapshot.
+    const effective = request.effectivePermissions ?? user.permissions ?? [];
+    const granted = new Set(effective);
     const missing = required.filter((p) => !granted.has(p));
     if (missing.length > 0) {
       throw new ForbiddenException({

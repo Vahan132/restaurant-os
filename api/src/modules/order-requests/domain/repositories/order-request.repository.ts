@@ -5,6 +5,8 @@ export const ORDER_REQUEST_REPOSITORY = Symbol('OrderRequestRepository');
 
 export interface OrderRequestListFilter {
   restaurantId: string;
+  /** Active branch — a request's branch is its table's branch (filtered via the table relation). */
+  branchId: string;
   status?: CustomerOrderRequestStatus;
   skip: number;
   take: number;

@@ -43,6 +43,10 @@ export const MenuItemNotOrderable = () =>
 export const InvalidModifierSelection = (message: string) =>
   new BadRequestException({ code: 'INVALID_MODIFIER_SELECTION', message });
 
+/** A referenced entity (table / menu item) lives in a different branch than the order. */
+export const CrossBranchReference = (message: string) =>
+  new BadRequestException({ code: 'VALIDATION_ERROR', message });
+
 export const DiscountsDisabled = () =>
   new ConflictException({
     code: 'DISCOUNTS_DISABLED',

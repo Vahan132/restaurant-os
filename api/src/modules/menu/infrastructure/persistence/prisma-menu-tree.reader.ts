@@ -15,9 +15,13 @@ import {
 export class PrismaMenuTreeReader implements MenuTreeReader {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getTree(restaurantId: string, includeUnavailable: boolean): Promise<MenuTreeCategory[]> {
+  async getTree(
+    restaurantId: string,
+    branchId: string,
+    includeUnavailable: boolean,
+  ): Promise<MenuTreeCategory[]> {
     const categories = await this.prisma.menuCategory.findMany({
-      where: { restaurantId, status: 'ACTIVE', deletedAt: null },
+      where: { restaurantId, branchId, status: 'ACTIVE', deletedAt: null },
       orderBy: { displayOrder: 'asc' },
     });
 
@@ -26,6 +30,7 @@ export class PrismaMenuTreeReader implements MenuTreeReader {
       const items = await this.prisma.menuItem.findMany({
         where: {
           restaurantId,
+          branchId,
           categoryId: category.id,
           status: 'ACTIVE',
           deletedAt: null,
@@ -37,13 +42,19 @@ export class PrismaMenuTreeReader implements MenuTreeReader {
       const treeItems = [];
       for (const item of items) {
         const groups = await this.prisma.modifierGroup.findMany({
-          where: { restaurantId, menuItemId: item.id, deletedAt: null },
+          where: { restaurantId, branchId, menuItemId: item.id, deletedAt: null },
           orderBy: { displayOrder: 'asc' },
         });
         const treeGroups: MenuTreeGroup[] = [];
         for (const group of groups) {
           const options = await this.prisma.modifierOption.findMany({
-            where: { restaurantId, modifierGroupId: group.id, status: 'ACTIVE', deletedAt: null },
+            where: {
+              restaurantId,
+              branchId,
+              modifierGroupId: group.id,
+              status: 'ACTIVE',
+              deletedAt: null,
+            },
             orderBy: { displayOrder: 'asc' },
           });
           treeGroups.push({

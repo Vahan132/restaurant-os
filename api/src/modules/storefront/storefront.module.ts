@@ -3,6 +3,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { PUBLIC_STOREFRONT_QUERY } from './application/ports/public-query.port';
 import { GetPublicMenuUseCase } from './application/queries/get-public-menu.usecase';
 import { GetPublicRestaurantUseCase } from './application/queries/get-public-restaurant.usecase';
+import { ListPublicBranchesUseCase } from './application/queries/list-public-branches.usecase';
 import { ResolvePublicTableUseCase } from './application/queries/resolve-public-table.usecase';
 import { PrismaPublicStorefrontQuery } from './infrastructure/prisma-public-storefront.query';
 import { PublicStorefrontController } from './presentation/http/public-storefront.controller';
@@ -20,6 +21,7 @@ import { PublicRestaurantResolverGuard } from '../../shared/storefront/public-re
     GetPublicRestaurantUseCase,
     GetPublicMenuUseCase,
     ResolvePublicTableUseCase,
+    ListPublicBranchesUseCase,
     PublicRestaurantResolverGuard,
     { provide: PUBLIC_STOREFRONT_QUERY, useClass: PrismaPublicStorefrontQuery },
   ],

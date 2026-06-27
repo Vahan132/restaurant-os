@@ -17,6 +17,7 @@ import {
 
 export interface ClearTableInput {
   restaurantId: string | null;
+  branchId: string;
   reservationId: string;
 }
 
@@ -36,7 +37,11 @@ export class ClearTableUseCase implements UseCase<ClearTableInput, Reservation> 
     if (!settings.enableReservations) {
       throw ReservationsDisabled();
     }
-    const reservation = await this.reservations.findById(input.restaurantId, input.reservationId);
+    const reservation = await this.reservations.findById(
+      input.restaurantId,
+      input.branchId,
+      input.reservationId,
+    );
     if (!reservation) {
       throw ReservationNotFound();
     }

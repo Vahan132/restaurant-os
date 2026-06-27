@@ -20,3 +20,6 @@ export const ManualTableStatusDisabled = () =>
     message:
       'Manual table status changes are disabled for this restaurant (flow-driven mode). Only cleaning->available and enabling/disabling are allowed.',
   });
+
+export const CrossBranchReference = (message: string) =>
+  new BadRequestException({ code: 'VALIDATION_ERROR', message });

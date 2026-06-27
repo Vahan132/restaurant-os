@@ -26,3 +26,21 @@ export const BranchLimitExceeded = (max: number) =>
     code: 'BRANCH_LIMIT_EXCEEDED',
     message: `Your plan allows at most ${max} active branch(es) per restaurant.`,
   });
+
+export const CannotDisableDefaultBranch = () =>
+  new ConflictException({
+    code: 'BRANCH_IS_DEFAULT',
+    message: 'The default branch cannot be disabled. Make another branch default first.',
+  });
+
+export const CannotDisableLastBranch = () =>
+  new ConflictException({
+    code: 'BRANCH_LAST_ACTIVE',
+    message: 'The last active branch cannot be disabled.',
+  });
+
+export const CannotDefaultInactiveBranch = () =>
+  new ConflictException({
+    code: 'BRANCH_INACTIVE',
+    message: 'An inactive branch cannot be made the default.',
+  });

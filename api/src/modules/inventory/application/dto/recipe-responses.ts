@@ -1,0 +1,91 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { Recipe } from '../../domain/entities/recipe';
+import { RecipeDetail, RecipeWarning } from '../services/recipe-detail.assembler';
+
+export class RecipeLineResponse {
+  @ApiProperty() id!: string;
+  @ApiProperty() itemId!: string;
+  @ApiProperty() baseQty!: number;
+}
+
+export class ModifierConsumptionResponse {
+  @ApiProperty() id!: string;
+  @ApiProperty() modifierOptionId!: string;
+  @ApiProperty() itemId!: string;
+  @ApiProperty() baseQty!: number;
+}
+
+export class RecipeWarningCounterpart {
+  @ApiProperty() itemId!: string;
+  @ApiProperty() name!: string;
+}
+
+export class RecipeWarningResponse {
+  @ApiProperty() itemId!: string;
+  @ApiProperty({ enum: ['HAS_PROCESSED_COUNTERPART', 'HAS_RAW_SOURCE'] }) type!: string;
+  @ApiProperty({ type: [RecipeWarningCounterpart] }) counterparts!: RecipeWarningCounterpart[];
+
+  static from(w: RecipeWarning): RecipeWarningResponse {
+    return { itemId: w.itemId, type: w.type, counterparts: w.counterparts };
+  }
+}
+
+/** Full recipe view: lines + modifier consumptions + estimate + warnings (§3,§6). */
+export class RecipeResponse {
+  @ApiProperty() id!: string;
+  @ApiProperty() restaurantId!: string;
+  @ApiProperty() branchId!: string;
+  @ApiProperty() menuItemId!: string;
+  @ApiProperty({ nullable: true, type: String }) note!: string | null;
+  @ApiProperty({ type: [RecipeLineResponse] }) lines!: RecipeLineResponse[];
+  @ApiProperty({ type: [ModifierConsumptionResponse] })
+  modifierConsumptions!: ModifierConsumptionResponse[];
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  @ApiProperty({ description: 'Forward-looking estimate (§3); NOT actual COGS.' })
+  estimatedUnitCost_amount!: number;
+  @ApiProperty({ type: [RecipeWarningResponse] }) warnings!: RecipeWarningResponse[];
+
+  static from(detail: RecipeDetail): RecipeResponse {
+    return {
+      ...RecipeResponse.base(detail.recipe),
+      estimatedUnitCost_amount: detail.estimatedUnitCostAmount,
+      warnings: detail.warnings.map(RecipeWarningResponse.from),
+    };
+  }
+
+  private static base(r: Recipe): Omit<RecipeResponse, 'estimatedUnitCost_amount' | 'warnings'> {
+    return {
+      id: r.id,
+      restaurantId: r.restaurantId,
+      branchId: r.branchId,
+      menuItemId: r.menuItemId,
+      note: r.note,
+      lines: r.lines.map((l) => ({ id: l.id, itemId: l.itemId, baseQty: l.baseQty })),
+      modifierConsumptions: r.modifierConsumptions.map((m) => ({
+        id: m.id,
+        modifierOptionId: m.modifierOptionId,
+        itemId: m.itemId,
+        baseQty: m.baseQty,
+      })),
+    };
+  }
+}
+
+/** Compact list row (no per-line warnings/estimate to keep listing cheap). */
+export class RecipeListItemResponse {
+  @ApiProperty() id!: string;
+  @ApiProperty() restaurantId!: string;
+  @ApiProperty() menuItemId!: string;
+  @ApiProperty({ nullable: true, type: String }) note!: string | null;
+  @ApiProperty() lineCount!: number;
+
+  static from(r: Recipe): RecipeListItemResponse {
+    return {
+      id: r.id,
+      restaurantId: r.restaurantId,
+      menuItemId: r.menuItemId,
+      note: r.note,
+      lineCount: r.lines.length,
+    };
+  }
+}

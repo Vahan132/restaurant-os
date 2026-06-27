@@ -1,0 +1,83 @@
+# ── Restaurant OS — EDGE hub ────────────────────────────────────────────────
+# A single on-prem node serving ONE branch: the API in EDGE mode + a
+# volume-persisted local Postgres. No Redis (Socket.IO runs in-process).
+#
+# Usage:
+#   cp .env.edge.example .env.edge   # fill in EDGE_* ids + secrets
+#   docker compose -f docker-compose.edge.yml --env-file .env.edge up -d --build
+services:
+  postgres:
+    image: postgres:16
+    container_name: restaurantos-edge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${EDGE_DB_USER:-restaurantos}
+      POSTGRES_PASSWORD: ${EDGE_DB_PASSWORD:-restaurantos}
+      POSTGRES_DB: ${EDGE_DB_NAME:-restaurantos}
+    volumes:
+      - edge_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${EDGE_DB_USER:-restaurantos} -d ${EDGE_DB_NAME:-restaurantos}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: restaurantos-edge-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      APP_MODE: EDGE
+      PORT: ${PORT:-3001}
+
+      # Edge identity — the one org -> restaurant -> branch this hub serves.
+      EDGE_ORG_ID: ${EDGE_ORG_ID}
+      EDGE_RESTAURANT_ID: ${EDGE_RESTAURANT_ID}
+      EDGE_BRANCH_ID: ${EDGE_BRANCH_ID}
+      EDGE_NODE_ID: ${EDGE_NODE_ID}
+
+      # Local Postgres (the compose service above).
+      DATABASE_URL: postgresql://${EDGE_DB_USER:-restaurantos}:${EDGE_DB_PASSWORD:-restaurantos}@postgres:5432/${EDGE_DB_NAME:-restaurantos}?schema=public
+
+      # Tenant auth secrets (tokens minted for this restaurant's users).
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      # Required by env validation though the platform module is excluded on edge.
+      PLATFORM_JWT_ACCESS_SECRET: ${PLATFORM_JWT_ACCESS_SECRET:-edge-unused-platform-access-secret}
+      PLATFORM_JWT_REFRESH_SECRET: ${PLATFORM_JWT_REFRESH_SECRET:-edge-unused-platform-refresh-secret}
+
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      PLATFORM_ROOT_DOMAIN: ${PLATFORM_ROOT_DOMAIN:-edge.local}
+
+      # Pairing (OFF-2): on first boot with an unseeded DB the hub pulls its
+      # branch snapshot from {CLOUD_URL}/edge/snapshot using EDGE_NODE_TOKEN.
+      CLOUD_URL: ${CLOUD_URL:-}
+      EDGE_NODE_TOKEN: ${EDGE_NODE_TOKEN:-}
+
+      # Config sync (OFF-3): cloud→edge config poll interval (ms, min 30000).
+      CONFIG_SYNC_INTERVAL_MS: ${CONFIG_SYNC_INTERVAL_MS:-120000}
+
+      # Operational push (OFF-4): edge→cloud outbox drain interval (ms, min 5000).
+      EDGE_PUSH_INTERVAL_MS: ${EDGE_PUSH_INTERVAL_MS:-30000}
+
+      # Heartbeat (OFF-8): edge→cloud telemetry/version report interval (30–60s).
+      EDGE_HEARTBEAT_INTERVAL_MS: ${EDGE_HEARTBEAT_INTERVAL_MS:-45000}
+      # Schema-version report override (OFF-8) — leave blank in production; set to
+      # force a SCHEMA_MISMATCH for testing the update flow.
+      EDGE_SCHEMA_VERSION: ${EDGE_SCHEMA_VERSION:-}
+
+      # OFF-1 smoke seed — leave false in the OFF-2 flow (snapshot supersedes it).
+      EDGE_SEED: ${EDGE_SEED:-false}
+      EDGE_SEED_OWNER_EMAIL: ${EDGE_SEED_OWNER_EMAIL:-owner@edge.local}
+      EDGE_SEED_OWNER_PASSWORD: ${EDGE_SEED_OWNER_PASSWORD:-ChangeMe123!}
+    ports:
+      - '${PORT:-3001}:${PORT:-3001}'
+
+volumes:
+  edge_pgdata:

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.service';
 import {
+  PublicBranchInfo,
   PublicMenuCategory,
   PublicModifierGroup,
   PublicRestaurantInfo,
@@ -50,20 +51,22 @@ export class PrismaPublicStorefrontQuery implements PublicStorefrontQuery {
     };
   }
 
-  async menuTree(restaurantId: string): Promise<PublicMenuCategory[]> {
+  async menuTree(restaurantId: string, branchId: string): Promise<PublicMenuCategory[]> {
+    // BR-9: the menu is branch-owned (BR-2). The branch is resolved upstream from
+    // the URL slug or the table QR token — never defaulted here.
     const categories = await this.prisma.menuCategory.findMany({
-      where: { restaurantId, deletedAt: null, status: 'ACTIVE' },
+      where: { restaurantId, branchId, deletedAt: null, status: 'ACTIVE' },
       orderBy: { displayOrder: 'asc' },
     });
     const items = await this.prisma.menuItem.findMany({
-      where: { restaurantId, deletedAt: null, status: 'ACTIVE' },
+      where: { restaurantId, branchId, deletedAt: null, status: 'ACTIVE' },
       orderBy: { name: 'asc' },
     });
     const itemIds = items.map((i) => i.id);
 
     const groups = itemIds.length
       ? await this.prisma.modifierGroup.findMany({
-          where: { restaurantId, deletedAt: null, menuItemId: { in: itemIds } },
+          where: { restaurantId, branchId, deletedAt: null, menuItemId: { in: itemIds } },
           orderBy: { displayOrder: 'asc' },
         })
       : [];
@@ -130,15 +133,48 @@ export class PrismaPublicStorefrontQuery implements PublicStorefrontQuery {
   async tableByQr(restaurantId: string, qrIdentifier: string): Promise<PublicTableInfo | null> {
     const table = await this.prisma.restaurantTable.findFirst({
       where: { restaurantId, qrIdentifier, deletedAt: null },
-      select: { id: true, name: true, floorId: true },
+      select: { id: true, name: true, floorId: true, branchId: true },
     });
     if (!table) {
+      return null;
+    }
+    // BR-9: a scanned table belongs to a branch; surface it so the QR app fetches
+    // that branch's own menu/prices. Only ACTIVE branches are publicly serviceable.
+    const branch = await this.prisma.branch.findFirst({
+      where: { id: table.branchId, restaurantId, status: 'ACTIVE', deletedAt: null },
+      select: { id: true, name: true, slug: true },
+    });
+    if (!branch) {
       return null;
     }
     const floor = await this.prisma.floor.findFirst({
       where: { id: table.floorId, restaurantId },
       select: { name: true },
     });
-    return { tableId: table.id, name: table.name, floorName: floor?.name ?? null };
+    return {
+      tableId: table.id,
+      name: table.name,
+      floorName: floor?.name ?? null,
+      branchId: branch.id,
+      branchName: branch.name,
+      branchSlug: branch.slug,
+    };
+  }
+
+  async activeBranches(restaurantId: string): Promise<PublicBranchInfo[]> {
+    const branches = await this.prisma.branch.findMany({
+      where: { restaurantId, status: 'ACTIVE', deletedAt: null },
+      orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
+      select: { id: true, name: true, slug: true },
+    });
+    return branches.map((b) => ({ id: b.id, name: b.name, slug: b.slug }));
+  }
+
+  async defaultBranchId(restaurantId: string): Promise<string | null> {
+    const branch = await this.prisma.branch.findFirst({
+      where: { restaurantId, isDefault: true, status: 'ACTIVE', deletedAt: null },
+      select: { id: true },
+    });
+    return branch?.id ?? null;
   }
 }

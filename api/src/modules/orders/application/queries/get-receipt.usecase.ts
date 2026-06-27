@@ -7,6 +7,7 @@ import { RECEIPT_READER, ReceiptReader } from '../ports/receipt-reader.port';
 
 export interface GetReceiptInput {
   restaurantId: string | null;
+  branchId: string;
   orderId: string;
 }
 
@@ -22,7 +23,7 @@ export class GetReceiptUseCase implements UseCase<GetReceiptInput, ReceiptRespon
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findById(input.restaurantId, input.orderId);
+    const order = await this.orders.findById(input.restaurantId, input.branchId, input.orderId);
     if (!order) {
       throw OrderNotFound();
     }

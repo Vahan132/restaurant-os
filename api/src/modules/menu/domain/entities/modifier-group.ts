@@ -4,6 +4,7 @@ import { InvalidModifierSelectionError } from '../menu.errors';
 
 export interface ModifierGroupProps {
   restaurantId: string;
+  branchId: string;
   menuItemId: string;
   name: string;
   selectionType: ModifierSelectionType;
@@ -19,6 +20,7 @@ export interface ModifierGroupProps {
 export interface CreateModifierGroupInput {
   id: string;
   restaurantId: string;
+  branchId: string;
   menuItemId: string;
   name: string;
   selectionType: ModifierSelectionType;
@@ -53,6 +55,7 @@ export class ModifierGroup extends AggregateRoot<string> {
     );
     return new ModifierGroup(input.id, {
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       menuItemId: input.menuItemId,
       name: input.name,
       selectionType: input.selectionType,
@@ -97,6 +100,9 @@ export class ModifierGroup extends AggregateRoot<string> {
 
   get restaurantId(): string {
     return this.props.restaurantId;
+  }
+  get branchId(): string {
+    return this.props.branchId;
   }
   get menuItemId(): string {
     return this.props.menuItemId;

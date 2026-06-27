@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   NotFoundException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 
@@ -69,8 +70,28 @@ export const CannotBlockSelf = () =>
     message: 'You cannot block your own account.',
   });
 
+export const NoRestaurantInScope = () =>
+  new BadRequestException({
+    code: 'NO_RESTAURANT_IN_SCOPE',
+    message: 'Your account is not scoped to a restaurant.',
+  });
+
 export const InvalidResetToken = () =>
   new BadRequestException({
     code: 'INVALID_RESET_TOKEN',
     message: 'This password reset link is invalid or has expired.',
+  });
+
+/** OFF-5: the edge denies a user with no access to the branch it serves. */
+export const NoBranchAccessAtEdge = () =>
+  new ForbiddenException({
+    code: 'NO_BRANCH_ACCESS_AT_EDGE',
+    message: 'You do not have access to the branch served by this hub.',
+  });
+
+/** OFF-5: no signing key available for the restaurant (e.g. edge not yet synced). */
+export const SigningKeyUnavailable = () =>
+  new ServiceUnavailableException({
+    code: 'SIGNING_KEY_UNAVAILABLE',
+    message: 'Token signing is temporarily unavailable for this restaurant.',
   });

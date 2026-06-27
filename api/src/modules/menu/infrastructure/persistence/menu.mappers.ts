@@ -19,6 +19,8 @@ export class CategoryMapper {
   static toDomain(r: PrismaCategory): MenuCategory {
     return MenuCategory.reconstitute(r.id, {
       restaurantId: r.restaurantId,
+      branchId: r.branchId,
+      code: r.code,
       name: r.name,
       description: r.description,
       displayOrder: r.displayOrder,
@@ -33,6 +35,8 @@ export class CategoryMapper {
     return {
       id: c.id,
       restaurantId: c.restaurantId,
+      branchId: c.branchId,
+      code: c.code,
       name: c.name,
       description: c.description,
       displayOrder: c.displayOrder,
@@ -59,6 +63,8 @@ export class ItemMapper {
   static toDomain(r: PrismaItem): MenuItem {
     return MenuItem.reconstitute(r.id, {
       restaurantId: r.restaurantId,
+      branchId: r.branchId,
+      code: r.code,
       categoryId: r.categoryId,
       name: r.name,
       description: r.description,
@@ -78,6 +84,8 @@ export class ItemMapper {
     return {
       id: i.id,
       restaurantId: i.restaurantId,
+      branchId: i.branchId,
+      code: i.code,
       categoryId: i.categoryId,
       name: i.name,
       description: i.description,
@@ -114,6 +122,7 @@ export class GroupMapper {
   static toDomain(r: PrismaGroup): ModifierGroup {
     return ModifierGroup.reconstitute(r.id, {
       restaurantId: r.restaurantId,
+      branchId: r.branchId,
       menuItemId: r.menuItemId,
       name: r.name,
       selectionType: r.selectionType as ModifierSelectionType,
@@ -131,6 +140,7 @@ export class GroupMapper {
     return {
       id: g.id,
       restaurantId: g.restaurantId,
+      branchId: g.branchId,
       menuItemId: g.menuItemId,
       name: g.name,
       selectionType: g.selectionType as ModifierSelectionType,
@@ -162,6 +172,7 @@ export class OptionMapper {
   static toDomain(r: PrismaOption): ModifierOption {
     return ModifierOption.reconstitute(r.id, {
       restaurantId: r.restaurantId,
+      branchId: r.branchId,
       modifierGroupId: r.modifierGroupId,
       name: r.name,
       priceDeltaAmount: r.priceDeltaAmount,
@@ -177,6 +188,7 @@ export class OptionMapper {
     return {
       id: o.id,
       restaurantId: o.restaurantId,
+      branchId: o.branchId,
       modifierGroupId: o.modifierGroupId,
       name: o.name,
       priceDeltaAmount: o.priceDeltaAmount,

@@ -4,6 +4,8 @@ import { CategoryHasItemsError } from '../menu.errors';
 
 export interface MenuCategoryProps {
   restaurantId: string;
+  branchId: string;
+  code: string;
   name: string;
   description: string | null;
   displayOrder: number;
@@ -16,6 +18,8 @@ export interface MenuCategoryProps {
 export interface CreateMenuCategoryInput {
   id: string;
   restaurantId: string;
+  branchId: string;
+  code: string;
   name: string;
   description?: string | null;
   displayOrder?: number;
@@ -34,6 +38,8 @@ export class MenuCategory extends AggregateRoot<string> {
     const now = new Date();
     return new MenuCategory(input.id, {
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
+      code: input.code,
       name: input.name,
       description: input.description ?? null,
       displayOrder: input.displayOrder ?? 0,
@@ -50,6 +56,12 @@ export class MenuCategory extends AggregateRoot<string> {
 
   get restaurantId(): string {
     return this.props.restaurantId;
+  }
+  get branchId(): string {
+    return this.props.branchId;
+  }
+  get code(): string {
+    return this.props.code;
   }
   get name(): string {
     return this.props.name;

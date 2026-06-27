@@ -1,6 +1,6 @@
 import { Reservation as PrismaReservation } from '@prisma/client';
 import { Reservation } from '../../domain/entities/reservation';
-import { ReservationStatus } from '../../domain/enums';
+import { ReservationSource, ReservationStatus } from '../../domain/enums';
 
 /** Maps Prisma reservation rows <-> the Reservation aggregate. */
 export class ReservationMapper {
@@ -16,7 +16,9 @@ export class ReservationMapper {
       durationMinutes: r.durationMinutes,
       tableId: r.tableId,
       status: r.status as ReservationStatus,
+      source: r.source as ReservationSource,
       notes: r.notes,
+      customerNote: r.customerNote,
       arrivedAt: r.arrivedAt,
       seatedAt: r.seatedAt,
       completedAt: r.completedAt,
@@ -42,7 +44,9 @@ export class ReservationMapper {
       durationMinutes: r.durationMinutes,
       tableId: r.tableId,
       status: r.status as ReservationStatus,
+      source: r.source as ReservationSource,
       notes: r.notes,
+      customerNote: r.customerNote,
       arrivedAt: r.arrivedAt,
       seatedAt: r.seatedAt,
       completedAt: r.completedAt,

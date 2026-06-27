@@ -50,6 +50,7 @@ export class PrismaMenuReader implements MenuReader {
     return {
       item: {
         id: item.id,
+        branchId: item.branchId,
         name: item.name,
         priceAmount: item.priceAmount,
         preparationStation: item.preparationStation,

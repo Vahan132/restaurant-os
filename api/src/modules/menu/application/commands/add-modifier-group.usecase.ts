@@ -11,10 +11,11 @@ import {
   MODIFIER_GROUP_REPOSITORY,
   ModifierGroupRepository,
 } from '../../domain/repositories/modifier-group.repository';
-import { MenuItemNotFound, NoRestaurantInScope } from '../application.errors';
+import { CrossBranchReference, MenuItemNotFound, NoRestaurantInScope } from '../application.errors';
 
 export interface AddModifierGroupInput {
   restaurantId: string | null;
+  branchId: string;
   itemId: string;
   name: string;
   selectionType: ModifierSelectionType;
@@ -37,13 +38,17 @@ export class AddModifierGroupUseCase implements UseCase<AddModifierGroupInput, M
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const item = await this.items.findById(input.restaurantId, input.itemId);
+    const item = await this.items.findInRestaurant(input.restaurantId, input.itemId);
     if (!item) {
       throw MenuItemNotFound();
+    }
+    if (item.branchId !== input.branchId) {
+      throw CrossBranchReference();
     }
     const group = ModifierGroup.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       menuItemId: input.itemId,
       name: input.name,
       selectionType: input.selectionType,

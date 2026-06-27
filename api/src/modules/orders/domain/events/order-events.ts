@@ -7,6 +7,7 @@ export class OrderCreatedEvent extends BaseDomainEvent {
   constructor(
     public readonly orderId: string,
     public readonly restaurantId: string,
+    public readonly branchId: string,
     public readonly orderNumber: number,
     public readonly tableId: string | null,
   ) {
@@ -20,6 +21,8 @@ export interface SentItemInfo {
   nameSnapshot: string;
   preparationStation: string;
   quantity: number;
+  /** Selected modifier option ids (drives modifier-consumption in inventory, INV-3). */
+  modifierOptionIds: string[];
 }
 
 export class OrderItemsSentToKitchenEvent extends BaseDomainEvent {
@@ -27,6 +30,7 @@ export class OrderItemsSentToKitchenEvent extends BaseDomainEvent {
   constructor(
     public readonly orderId: string,
     public readonly restaurantId: string,
+    public readonly branchId: string,
     public readonly items: SentItemInfo[],
   ) {
     super(orderId);
@@ -38,6 +42,7 @@ export class OrderItemCancelledEvent extends BaseDomainEvent {
   constructor(
     public readonly orderId: string,
     public readonly restaurantId: string,
+    public readonly branchId: string,
     public readonly orderItemId: string,
     public readonly preparationStation: string,
     public readonly reason: string,
@@ -52,8 +57,12 @@ export class OrderCancelledEvent extends BaseDomainEvent {
   constructor(
     public readonly orderId: string,
     public readonly restaurantId: string,
+    public readonly branchId: string,
     public readonly reason: string,
     public readonly actorUserId: string | null = null,
+    /** Order item ids that were live on a station when cancelled (INV-3: reverse
+     *  their inventory consumption). Empty when nothing had been sent. */
+    public readonly sentOrderItemIds: string[] = [],
   ) {
     super(orderId);
   }
@@ -112,6 +121,7 @@ export class OrderClosedEvent extends BaseDomainEvent {
   constructor(
     public readonly orderId: string,
     public readonly restaurantId: string,
+    public readonly branchId: string,
     public readonly tableId: string | null,
     public readonly actorUserId: string | null = null,
   ) {
@@ -137,6 +147,7 @@ export class OrderItemStatusChangedEvent extends BaseDomainEvent {
   constructor(
     public readonly orderId: string,
     public readonly restaurantId: string,
+    public readonly branchId: string,
     public readonly orderItemId: string,
     public readonly preparationStation: string,
     public readonly itemStatus: string,
@@ -152,6 +163,7 @@ export class OrderReadyEvent extends BaseDomainEvent {
   constructor(
     public readonly orderId: string,
     public readonly restaurantId: string,
+    public readonly branchId: string,
     public readonly tableId: string | null,
   ) {
     super(orderId);

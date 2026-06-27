@@ -8,6 +8,7 @@ import {
   REFRESH_TOKEN_REPOSITORY,
   RefreshTokenRepository,
 } from '../ports/refresh-token.repository';
+import { RESTAURANT_KEY_PROVIDER, RestaurantKeyProvider } from '../ports/restaurant-key.provider';
 import { TOKEN_SERVICE, TokenService } from '../ports/token.service';
 import { AccountStateChecker } from '../services/account-state.checker';
 import { AuthTokenIssuer } from '../services/auth-token-issuer';
@@ -32,14 +33,22 @@ export class RefreshTokenUseCase implements UseCase<RefreshInput, RefreshOutput>
     @Inject(ROLE_REPOSITORY) private readonly roles: RoleRepository,
     @Inject(REFRESH_TOKEN_REPOSITORY) private readonly refreshTokens: RefreshTokenRepository,
     @Inject(TOKEN_SERVICE) private readonly tokens: TokenService,
+    @Inject(RESTAURANT_KEY_PROVIDER) private readonly keys: RestaurantKeyProvider,
     private readonly issuer: AuthTokenIssuer,
     private readonly accountState: AccountStateChecker,
   ) {}
 
   async execute(input: RefreshInput): Promise<RefreshOutput> {
+    // OFF-5: resolve the per-restaurant key from the (unverified) restaurantId
+    // claim, then verify with it — so a refresh token from cloud or edge works.
+    const restaurantId = this.tokens.decodeRestaurantId(input.refreshToken);
+    const signingKey = await this.keys.getSigningKey(restaurantId);
+    if (!signingKey) {
+      throw InvalidRefreshToken();
+    }
     let payload;
     try {
-      payload = this.tokens.verifyRefreshToken(input.refreshToken);
+      payload = this.tokens.verifyRefreshToken(input.refreshToken, signingKey);
     } catch {
       throw InvalidRefreshToken();
     }

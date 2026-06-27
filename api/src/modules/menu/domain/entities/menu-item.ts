@@ -10,6 +10,8 @@ import { NegativePriceError } from '../menu.errors';
 
 export interface MenuItemProps {
   restaurantId: string;
+  branchId: string;
+  code: string;
   categoryId: string;
   name: string;
   description: string | null;
@@ -27,6 +29,8 @@ export interface MenuItemProps {
 export interface CreateMenuItemInput {
   id: string;
   restaurantId: string;
+  branchId: string;
+  code: string;
   categoryId: string;
   name: string;
   description?: string | null;
@@ -57,6 +61,8 @@ export class MenuItem extends AggregateRoot<string> {
     const now = new Date();
     const item = new MenuItem(input.id, {
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
+      code: input.code,
       categoryId: input.categoryId,
       name: input.name,
       description: input.description ?? null,
@@ -87,6 +93,12 @@ export class MenuItem extends AggregateRoot<string> {
 
   get restaurantId(): string {
     return this.props.restaurantId;
+  }
+  get branchId(): string {
+    return this.props.branchId;
+  }
+  get code(): string {
+    return this.props.code;
   }
   get categoryId(): string {
     return this.props.categoryId;

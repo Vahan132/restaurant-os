@@ -8,6 +8,9 @@ export enum BranchStatus {
 export interface BranchProps {
   restaurantId: string;
   name: string;
+  /** BR-9: public-facing, per-restaurant unique slug. */
+  slug: string;
+  isDefault: boolean;
   status: BranchStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -18,6 +21,8 @@ export interface CreateBranchInput {
   id: string;
   restaurantId: string;
   name: string;
+  slug: string;
+  isDefault?: boolean;
 }
 
 /** Branch aggregate (location within a restaurant). */
@@ -34,6 +39,8 @@ export class Branch extends AggregateRoot<string> {
     return new Branch(input.id, {
       restaurantId: input.restaurantId,
       name: input.name,
+      slug: input.slug,
+      isDefault: input.isDefault ?? false,
       status: BranchStatus.ACTIVE,
       createdAt: now,
       updatedAt: now,
@@ -51,8 +58,19 @@ export class Branch extends AggregateRoot<string> {
   get name(): string {
     return this.props.name;
   }
+  /** BR-9: public-facing, per-restaurant unique slug. */
+  get slug(): string {
+    return this.props.slug;
+  }
+  get isDefault(): boolean {
+    return this.props.isDefault;
+  }
   get status(): BranchStatus {
     return this.props.status;
+  }
+
+  isActive(): boolean {
+    return this.props.status === BranchStatus.ACTIVE && this.props.deletedAt === null;
   }
   get createdAt(): Date {
     return this.props.createdAt;

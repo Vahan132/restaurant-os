@@ -159,6 +159,11 @@ model Restaurant {
   defaultLanguage String           @default("en")
   timezone        String           @default("UTC")
   status          RestaurantStatus @default(ACTIVE)
+  // OFF-5: per-restaurant token signing root key (64-hex). The cloud and the
+  // restaurant's edge hub both sign/verify this restaurant's tokens with it, so
+  // a token from either side validates on both. Flows to the edge via the OFF-2
+  // snapshot / OFF-3 config (the Restaurant row). NEVER exposed to clients.
+  tokenSigningKey String?          @map("token_signing_key")
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   deletedAt       DateTime?
@@ -176,6 +181,8 @@ model Restaurant {
   orders          Order[]
   reservations    Reservation[]
   customerOrderRequests CustomerOrderRequest[]
+  missedCalls     MissedCall[]
+  callDevices     CallDevice[]
 
   @@index([organizationId])
   @@map("restaurants")
@@ -185,15 +192,47 @@ model Branch {
   id           String       @id @default(cuid())
   restaurantId String
   name         String
+  // BR-9: public-facing, per-restaurant unique slug (QR menu + public booking
+  // URLs). Backfilled from the branch name; the default branch gets a clean slug.
+  slug         String
+  // BR-1: exactly one default branch per restaurant (enforced in code; the
+  // make-default use case moves the flag atomically).
+  isDefault    Boolean      @default(false)
   status       BranchStatus @default(ACTIVE)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   deletedAt    DateTime?
 
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurant  Restaurant         @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  memberships BranchMembership[]
 
+  @@unique([restaurantId, slug])
   @@index([restaurantId])
   @@map("branches")
+}
+
+// BR-1: a user's role AT A SPECIFIC BRANCH. The EXISTING restaurant-level
+// user->role assignment (User.roleId, unless it is the BRANCH_SCOPED sentinel)
+// denotes RESTAURANT-WIDE access. A branch-scoped user (sentinel role) has no
+// restaurant-wide role and gains access only through these memberships
+// (one role per user per branch).
+model BranchMembership {
+  id              String   @id @default(cuid())
+  restaurantId    String
+  branchId        String
+  userId          String
+  roleId          String
+  createdByUserId String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, userId])
+  @@index([restaurantId, userId])
+  @@index([branchId])
+  @@map("branch_memberships")
 }
 
 model RestaurantSettings {
@@ -243,10 +282,11 @@ model User {
   updatedAt      DateTime   @updatedAt
   deletedAt      DateTime?
 
-  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  restaurant    Restaurant?    @relation(fields: [restaurantId], references: [id])
-  role          Role           @relation(fields: [roleId], references: [id])
-  refreshTokens RefreshToken[]
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  restaurant        Restaurant?        @relation(fields: [restaurantId], references: [id])
+  role              Role               @relation(fields: [roleId], references: [id])
+  refreshTokens     RefreshToken[]
+  branchMemberships BranchMembership[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -262,6 +302,9 @@ model Role {
   code           String
   permissions    String[]
   isSystem       Boolean  @default(false)
+  // FIX-E: ALL-BRANCH reach as a role capability (only OWNER true by default).
+  // Separate from restaurant-wide permissions; staff stay branch-explicit.
+  allBranches    Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -323,6 +366,11 @@ model PlatformRefreshToken {
 model MenuCategory {
   id           String     @id @default(cuid())
   restaurantId String
+  // BR-2: catalog is branch-owned (clone-and-diverge). branchId is denormalised
+  // onto every menu row for clean scoping + integrity (plain scalar, like other
+  // branch-scoped tables). `code` is the stable per-branch identity (import key).
+  branchId     String
+  code         String
   name         String
   description  String?
   displayOrder Int        @default(0)
@@ -334,13 +382,17 @@ model MenuCategory {
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   items      MenuItem[]
 
+  @@unique([restaurantId, branchId, code])
   @@index([restaurantId])
+  @@index([restaurantId, branchId])
   @@map("menu_categories")
 }
 
 model MenuItem {
   id                 String             @id @default(cuid())
   restaurantId       String
+  branchId           String
+  code               String
   categoryId         String
   name               String
   description        String?
@@ -358,8 +410,10 @@ model MenuItem {
   category       MenuCategory    @relation(fields: [categoryId], references: [id])
   modifierGroups ModifierGroup[]
 
+  @@unique([restaurantId, branchId, code])
   @@index([restaurantId])
   @@index([categoryId])
+  @@index([restaurantId, branchId])
   @@map("menu_items")
 }
 
@@ -373,6 +427,8 @@ model ModifierGroup {
   minSelect     Int?
   maxSelect     Int?
   displayOrder  Int                   @default(0)
+  // BR-2: denormalised branch scope (matches the owning item's branch).
+  branchId      String
   createdAt     DateTime              @default(now())
   updatedAt     DateTime              @updatedAt
   deletedAt     DateTime?
@@ -383,6 +439,7 @@ model ModifierGroup {
 
   @@index([restaurantId])
   @@index([menuItemId])
+  @@index([restaurantId, branchId])
   @@map("modifier_groups")
 }
 
@@ -394,6 +451,8 @@ model ModifierOption {
   priceDeltaAmount Int        @default(0) @map("price_delta_amount")
   displayOrder     Int        @default(0)
   status           MenuStatus @default(ACTIVE)
+  // BR-2: denormalised branch scope (matches the owning group's branch).
+  branchId         String
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   deletedAt        DateTime?
@@ -403,6 +462,7 @@ model ModifierOption {
 
   @@index([restaurantId])
   @@index([modifierGroupId])
+  @@index([restaurantId, branchId])
   @@map("modifier_options")
 }
 
@@ -410,6 +470,9 @@ model ModifierOption {
 model Floor {
   id           String     @id @default(cuid())
   restaurantId String
+  // BR-4: operational entities are branch-scoped. branchId is a denormalised
+  // plain scalar (no FK back-relation), matching menu/inventory/order_items.
+  branchId     String
   name         String
   description  String?
   displayOrder Int        @default(0)
@@ -422,12 +485,14 @@ model Floor {
   tables     RestaurantTable[]
 
   @@index([restaurantId])
+  @@index([restaurantId, branchId])
   @@map("floors")
 }
 
 model RestaurantTable {
   id           String      @id @default(cuid())
   restaurantId String
+  branchId     String
   floorId      String
   name         String
   seatCapacity Int
@@ -443,9 +508,10 @@ model RestaurantTable {
   reservations Reservation[]
   customerOrderRequests CustomerOrderRequest[]
 
-  @@unique([restaurantId, name])
+  @@unique([restaurantId, branchId, name])
   @@index([restaurantId])
   @@index([floorId])
+  @@index([restaurantId, branchId])
   @@map("restaurant_tables")
 }
 
@@ -490,7 +556,9 @@ model OrderCounter {
 model Order {
   id           String      @id @default(cuid())
   restaurantId String
-  branchId     String?
+  // BR-4: the branch the order was taken at. Immutable after creation; payments,
+  // splits, and stock consumption all inherit it.
+  branchId     String
   orderNumber  Int
   type         OrderType   @default(DINE_IN)
   tableId      String?
@@ -527,12 +595,15 @@ model Order {
   @@index([restaurantId])
   @@index([tableId])
   @@index([status])
+  @@index([restaurantId, branchId])
+  @@index([restaurantId, branchId, status])
   @@map("orders")
 }
 
 model OrderItem {
   id                 String             @id @default(cuid())
   restaurantId       String
+  branchId           String
   orderId            String
   menuItemId         String
   nameSnapshot       String
@@ -554,6 +625,7 @@ model OrderItem {
 
   @@index([orderId])
   @@index([restaurantId])
+  @@index([restaurantId, branchId])
   @@map("order_items")
 }
 
@@ -592,6 +664,7 @@ enum PaymentState {
 model Payment {
   id           String        @id @default(cuid())
   restaurantId String
+  branchId     String
   orderId      String
   method       PaymentMethod
   amount       Int
@@ -607,6 +680,7 @@ model Payment {
 
   @@index([orderId])
   @@index([restaurantId])
+  @@index([restaurantId, branchId])
   @@map("payments")
 }
 
@@ -620,10 +694,18 @@ enum ReservationStatus {
   NO_SHOW
 }
 
+// How a reservation entered the system. STAFF = created in the back office;
+// PUBLIC = self-service request-to-book; PHONE = created from a missed call.
+enum ReservationSource {
+  STAFF
+  PUBLIC
+  PHONE
+}
+
 model Reservation {
   id              String            @id @default(cuid())
   restaurantId    String
-  branchId        String?
+  branchId        String
   customerName    String
   customerPhone   String
   customerEmail   String?
@@ -632,7 +714,9 @@ model Reservation {
   durationMinutes Int               @default(90)
   tableId         String?
   status          ReservationStatus @default(PENDING)
+  source          ReservationSource @default(STAFF)
   notes           String?
+  customerNote    String?
   arrivedAt       DateTime?
   seatedAt        DateTime?
   completedAt     DateTime?
@@ -649,7 +733,70 @@ model Reservation {
   @@index([restaurantId])
   @@index([tableId])
   @@index([reservedAt])
+  @@index([restaurantId, branchId, reservedAt])
   @@map("reservations")
+}
+
+enum MissedCallStatus {
+  NEW
+  HANDLED
+  DISMISSED
+}
+
+// A missed call ingested from a registered Android companion device. Recording a
+// missed call is always allowed (it is just a log); creating a reservation from
+// one is gated by RestaurantSettings.enableReservations. Idempotent on
+// (restaurantId, dedupeKey).
+model MissedCall {
+  id                 String           @id @default(cuid())
+  restaurantId       String
+  branchId           String
+  deviceId           String
+  phoneNumber        String
+  callerName         String?
+  occurredAt         DateTime
+  status             MissedCallStatus @default(NEW)
+  handledByUserId    String?
+  linkedReservationId String?
+  dedupeKey          String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  device     CallDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, dedupeKey])
+  @@index([restaurantId, status, occurredAt])
+  @@index([deviceId])
+  @@index([restaurantId, branchId, status, occurredAt])
+  @@map("missed_calls")
+}
+
+enum CallDeviceStatus {
+  ACTIVE
+  REVOKED
+}
+
+// A registered Android companion that ingests missed calls. Authenticates with a
+// bearer device token; only the sha256 hash of that token is stored.
+model CallDevice {
+  id              String           @id @default(cuid())
+  restaurantId    String
+  branchId        String
+  name            String
+  tokenHash       String           @unique
+  status          CallDeviceStatus @default(ACTIVE)
+  lastSeenAt      DateTime?
+  createdByUserId String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  restaurant  Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  missedCalls MissedCall[]
+
+  @@index([restaurantId])
+  @@index([restaurantId, branchId])
+  @@map("call_devices")
 }
 
 enum AuditActorType {
@@ -788,4 +935,508 @@ model OrganizationBillingInfo {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("organization_billing_info")
+}
+
+// ── Inventory / warehouse (tenant-scoped by restaurantId, optional branchId) ──
+//   Raw AND processed goods, FIFO/FEFO stock layers, and an append-only movement
+//   ledger (source of truth for on-hand qty). ALL quantities are integers in the
+//   item's base unit. Money = integer minor units (columns end in _amount).
+//   These tables intentionally carry restaurantId as a plain indexed column (no
+//   FK back-relation on Restaurant), matching order_items / audit_logs.
+enum ItemKind {
+  RAW
+  PROCESSED
+}
+
+enum InventoryBaseUnit {
+  GRAM
+  MILLILITER
+  PIECE
+}
+
+enum InventoryItemStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum StockLayerStatus {
+  OPEN
+  DEPLETED
+}
+
+enum StockMovementType {
+  RECEIPT_IN
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  CONSUMPTION_OUT
+  WRITE_OFF_OUT
+  PROCESS_OUT
+  PROCESS_IN
+  CONSUMPTION_REVERSAL
+}
+
+enum ProcessStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model InventoryItem {
+  id                    String              @id @default(cuid())
+  restaurantId          String
+  // BR-3: inventory catalog is branch-owned. sku is the per-branch import key.
+  branchId              String
+  name                  String
+  sku                   String?
+  categoryId            String?
+  kind                  ItemKind            @default(RAW)
+  baseUnit              InventoryBaseUnit
+  alternateUnits        Json                @default("[]")
+  trackExpiry           Boolean             @default(false)
+  lowStockThresholdBase Int?
+  lastUnitCostMicro     BigInt?             @map("last_unit_cost_micro")
+  status                InventoryItemStatus @default(ACTIVE)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  deletedAt             DateTime?
+
+  @@unique([restaurantId, branchId, sku])
+  @@index([restaurantId])
+  @@index([branchId])
+  @@index([restaurantId, categoryId])
+  @@index([restaurantId, branchId])
+  @@map("inventory_items")
+}
+
+model InventoryCategory {
+  id           String    @id @default(cuid())
+  restaurantId String
+  branchId     String
+  name         String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  @@index([restaurantId])
+  @@index([restaurantId, branchId])
+  @@map("inventory_categories")
+}
+
+model Supplier {
+  id           String    @id @default(cuid())
+  restaurantId String
+  branchId     String
+  name         String
+  contact      String?
+  note         String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  @@index([restaurantId])
+  @@index([restaurantId, branchId])
+  @@map("inventory_suppliers")
+}
+
+model GoodsReceipt {
+  id              String   @id @default(cuid())
+  restaurantId    String
+  branchId        String
+  supplierId      String?
+  reference       String?
+  receivedAt      DateTime
+  note            String?
+  createdByUserId String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  lines GoodsReceiptLine[]
+
+  @@index([restaurantId])
+  @@index([branchId])
+  @@index([supplierId])
+  @@index([restaurantId, branchId])
+  @@index([restaurantId, receivedAt])
+  @@map("inventory_goods_receipts")
+}
+
+model GoodsReceiptLine {
+  id                  String    @id @default(cuid())
+  receiptId           String
+  branchId            String
+  itemId              String
+  enteredUnit         String
+  enteredQty          Int
+  baseQty             Int
+  lineTotalCostAmount Int       @map("line_total_cost_amount")
+  expiryDate          DateTime?
+
+  receipt GoodsReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  @@index([receiptId])
+  @@index([itemId])
+  @@index([branchId])
+  @@map("inventory_goods_receipt_lines")
+}
+
+model StockLayer {
+  id                  String           @id @default(cuid())
+  restaurantId        String
+  // BR-3: branchId always equals the layer's item's branch (set by the service,
+  // never the request). Stock attribution follows the item.
+  branchId            String
+  itemId              String
+  sourceReceiptLineId String?
+  baseQtyReceived     Int
+  baseQtyRemaining    Int
+  lineTotalCostAmount Int              @map("line_total_cost_amount")
+  receivedAt          DateTime
+  expiryDate          DateTime?
+  status              StockLayerStatus @default(OPEN)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([restaurantId, itemId, receivedAt])
+  @@index([restaurantId, itemId, expiryDate])
+  @@index([restaurantId, itemId, status])
+  @@index([restaurantId, branchId])
+  @@index([restaurantId, branchId, itemId, status])
+  @@map("inventory_stock_layers")
+}
+
+model StockMovement {
+  id              String            @id @default(cuid())
+  restaurantId    String
+  // BR-3: branchId always equals the moved item's branch (set by the service).
+  branchId        String
+  itemId          String
+  type            StockMovementType
+  baseQty         Int
+  costAmount      Int               @map("cost_amount")
+  layerId         String?
+  reason          String?
+  refType         String?
+  refId           String?
+  occurredAt      DateTime
+  createdByUserId String
+  createdAt       DateTime          @default(now())
+  /// Set on an OUT movement once it has been reversed (INV-3). Reversal movements
+  /// themselves are never reversed (stay null).
+  reversedAt      DateTime?
+
+  @@index([restaurantId, itemId, occurredAt])
+  @@index([restaurantId, type, occurredAt])
+  @@index([restaurantId, refType, refId])
+  @@index([restaurantId, branchId])
+  // Explicit short map: the default name (69 chars) exceeds Postgres's 63-char
+  // identifier limit and would be silently truncated, causing migrate drift.
+  @@index([restaurantId, branchId, itemId, occurredAt], map: "inv_stock_mov_rest_branch_item_occurred_idx")
+  @@map("inventory_stock_movements")
+}
+
+// ── Inventory processes / production (INV-2) ─────────────────────────────────
+//   A process turns raw/processed inputs into one or more PROCESSED outputs. A
+//   run consumes inputs FIFO/FEFO (reusing the StockLayer/StockMovement ledger),
+//   rolls input cost + a processing cost into the produced processed-item layers,
+//   and links produced layers/movements via refType="PROCESS_RUN", refId=run.id.
+model Process {
+  id                  String        @id @default(cuid())
+  restaurantId        String
+  branchId            String
+  name                String
+  processingCostAmount Int          @default(0) @map("processing_cost_amount")
+  note                String?
+  status              ProcessStatus @default(ACTIVE)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  deletedAt           DateTime?
+
+  inputs  ProcessInput[]
+  outputs ProcessOutput[]
+
+  @@index([restaurantId])
+  @@index([restaurantId, branchId])
+  @@map("inventory_processes")
+}
+
+model ProcessInput {
+  id        String @id @default(cuid())
+  processId String
+  branchId  String
+  itemId    String
+  baseQty   Int
+
+  process Process @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  @@index([processId])
+  @@index([itemId])
+  @@index([branchId])
+  @@map("inventory_process_inputs")
+}
+
+model ProcessOutput {
+  id           String  @id @default(cuid())
+  processId    String
+  branchId     String
+  itemId       String
+  baseQty      Int
+  isPrimary    Boolean @default(false)
+  costShareBps Int?
+
+  process Process @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  @@index([processId])
+  @@index([itemId])
+  @@index([branchId])
+  @@map("inventory_process_outputs")
+}
+
+model ProcessRun {
+  id                   String   @id @default(cuid())
+  restaurantId         String
+  branchId             String
+  processId            String
+  multiplier           Int      @default(1)
+  inputCostAmount      Int      @map("input_cost_amount")
+  processingCostAmount Int      @map("processing_cost_amount")
+  totalCostAmount      Int      @map("total_cost_amount")
+  wentNegative         Boolean  @default(false)
+  runAt                DateTime
+  note                 String?
+  createdByUserId      String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([restaurantId, processId, runAt])
+  @@index([restaurantId, branchId])
+  @@map("inventory_process_runs")
+}
+
+// ── Dish recipes / BOM (INV-3) ───────────────────────────────────────────────
+//   A recipe links a MENU item (cross-context by id) to the inventory items it
+//   consumes per unit sold. Sending an order line to the kitchen consumes them
+//   (FIFO); voiding restores them. One recipe per menu item.
+model Recipe {
+  id           String    @id @default(cuid())
+  restaurantId String
+  branchId     String
+  menuItemId   String
+  note         String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  lines                RecipeLine[]
+  modifierConsumptions ModifierConsumption[]
+
+  // One recipe per menu item; naturally per-branch since menu items are
+  // branch-scoped (BR-2).
+  @@unique([restaurantId, menuItemId])
+  @@index([restaurantId])
+  @@index([restaurantId, branchId])
+  @@map("inventory_recipes")
+}
+
+model RecipeLine {
+  id       String @id @default(cuid())
+  recipeId String
+  branchId String
+  itemId   String
+  baseQty  Int
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+  @@index([itemId])
+  @@index([branchId])
+  @@map("inventory_recipe_lines")
+}
+
+model ModifierConsumption {
+  id               String @id @default(cuid())
+  restaurantId     String
+  branchId         String
+  recipeId         String
+  modifierOptionId String
+  itemId           String
+  baseQty          Int
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+  @@index([restaurantId, branchId])
+  // Explicit map: the default name would exceed Postgres's 63-char identifier
+  // limit and get silently truncated, causing migrate drift.
+  @@index([restaurantId, modifierOptionId], map: "inventory_mod_consumption_restaurant_option_idx")
+  @@map("inventory_modifier_consumptions")
+}
+
+// ── Stock write-offs (INV-4) — reason-coded losses + staff meals ─────────────
+//   ITEM lines write off an inventory item directly; DISH lines explode a menu
+//   item's recipe (reusing INV-3). All draws are WRITE_OFF_OUT movements keyed by
+//   refType="WRITE_OFF"; a void reverses them. Append-only except the void stamp.
+enum WriteOffReason {
+  STAFF_MEAL
+  SPOILAGE
+  WASTE
+  BREAKAGE
+  THEFT
+  OTHER
+}
+
+enum WriteOffLineKind {
+  ITEM
+  DISH
+}
+
+model WriteOff {
+  id              String         @id @default(cuid())
+  restaurantId    String
+  branchId        String
+  reason          WriteOffReason
+  note            String?
+  occurredAt      DateTime
+  createdByUserId String
+  voidedAt        DateTime?
+  voidedByUserId  String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  lines WriteOffLine[]
+
+  @@index([restaurantId, occurredAt])
+  @@index([restaurantId, reason, occurredAt])
+  @@index([restaurantId, branchId])
+  @@map("inventory_write_offs")
+}
+
+model WriteOffLine {
+  id               String           @id @default(cuid())
+  writeOffId       String
+  branchId         String
+  kind             WriteOffLineKind
+  itemId           String?
+  menuItemId       String?
+  enteredUnit      String?
+  enteredQty       Int?
+  baseQty          Int?
+  units            Int?
+  modifierOptionIds Json?
+  costAmount       Int              @map("cost_amount")
+
+  writeOff WriteOff @relation(fields: [writeOffId], references: [id], onDelete: Cascade)
+
+  @@index([writeOffId])
+  @@index([branchId])
+  @@map("inventory_write_off_lines")
+}
+
+// ── Edge nodes (OFF-2) ───────────────────────────────────────────────────────
+//   Cloud-side registry of provisioned on-prem EDGE hubs. Each node serves ONE
+//   branch and authenticates to the cloud with a bearer node token (only its
+//   sha256 hash is stored). The edge MIRRORS cloud ids — a node's snapshot is a
+//   copy of one branch's slice, with the same ids throughout.
+enum EdgeNodeStatus {
+  ACTIVE
+  REVOKED
+}
+
+// OFF-8 derived health for a provisioned hub. OK / SYNC_BACKLOG / SCHEMA_MISMATCH
+// are STORED from heartbeats; OFFLINE is NEVER stored — it is derived on read
+// from lastHeartbeatAt recency (a powered-off hub cannot report itself).
+enum EdgeNodeHealthStatus {
+  OK
+  SYNC_BACKLOG
+  SCHEMA_MISMATCH
+  OFFLINE
+}
+
+model EdgeNode {
+  id              String         @id @default(cuid())
+  organizationId  String
+  restaurantId    String
+  branchId        String
+  name            String
+  // sha256(plaintext node token); the plaintext is shown once at creation.
+  tokenHash       String         @unique
+  status          EdgeNodeStatus @default(ACTIVE)
+  lastSeenAt      DateTime?
+  lastSnapshotAt  DateTime?
+  // schemaVersion the node last reported / snapshotted at (OFF-8 uses it).
+  schemaVersion   String?
+  // ── OFF-8 telemetry (written by POST /edge-sync/heartbeat) ──────────────────
+  // When the hub last sent a heartbeat. Online/offline is derived from this.
+  lastHeartbeatAt    DateTime?
+  // Pending edge→cloud outbox entries the hub last reported (sync backlog gauge).
+  pendingOutboxCount Int?
+  // The hub's reported application version (for the operator update flag).
+  appVersion         String?
+  // Last STORED health (OK | SYNC_BACKLOG | SCHEMA_MISMATCH). OFFLINE is derived.
+  healthStatus       EdgeNodeHealthStatus?
+  createdByUserId String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([restaurantId, branchId])
+  @@map("edge_nodes")
+}
+
+// Edge-LOCAL sync bookkeeping. The edge DB only ever holds its own node's row
+// (one per node). Tracks the snapshot version applied + when. Absence of a row
+// means the local DB is unseeded (bootstrap pulls a snapshot).
+model EdgeSyncState {
+  id              String    @id @default(cuid())
+  nodeId          String    @unique
+  snapshotVersion String?
+  lastSyncedAt    DateTime?
+  // OFF-3 downstream config sync: monotonic cursor (ISO timestamp) up to which
+  // cloud config has been mirrored, when it last synced, and live connectivity.
+  lastConfigCursor   String?
+  lastConfigSyncedAt DateTime?
+  online             Boolean   @default(false)
+  // OFF-4 upstream operational sync: highest outbox edgeSeq acked by the cloud
+  // and when the last push happened.
+  lastPushedSeq      Int?
+  lastPushAt         DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("edge_sync_state")
+}
+
+// ── Operational outbox (OFF-4, EDGE-only) ────────────────────────────────────
+//   Append-only, gapless, per-node stream of operational/stock writes. Every
+//   operational write appends one entry capturing the record's CURRENT full
+//   state, in the SAME transaction as the write. The push loop replays PENDING
+//   entries to the cloud in edgeSeq order; idempotent by aggregate id. Config is
+//   NEVER captured here (config flows DOWN only, OFF-3).
+enum OutboxStatus {
+  PENDING
+  SYNCED
+}
+
+model OutboxEntry {
+  id            String       @id @default(cuid())
+  // ORDER | RESERVATION | STOCK_LAYER | STOCK_MOVEMENT | GOODS_RECEIPT | WRITE_OFF | PROCESS_RUN
+  aggregateType String
+  aggregateId   String
+  // CREATE | UPSERT (informational; the cloud upserts-by-id to the sent state).
+  op            String
+  // The aggregate's full current state (cloud-mirrored ids), JSON-encoded.
+  payload       Json
+  // Monotonic, GAPLESS per node (assigned via EdgeOutboxCounter in the same tx).
+  edgeSeq       Int          @unique
+  status        OutboxStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+  syncedAt      DateTime?
+
+  @@index([status, edgeSeq])
+  @@map("outbox_entries")
+}
+
+// Singleton (id = "edge") gapless sequence source for OutboxEntry.edgeSeq.
+model EdgeOutboxCounter {
+  id  String @id
+  seq Int    @default(0)
+
+  @@map("edge_outbox_counter")
 }

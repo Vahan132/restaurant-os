@@ -17,6 +17,7 @@ import { TABLE_SETTINGS_READER, TableSettingsReader } from '../ports/table-setti
 
 export interface ChangeTableStatusManualInput {
   restaurantId: string | null;
+  branchId: string;
   tableId: string;
   status: TableStatus;
 }
@@ -44,7 +45,7 @@ export class ChangeTableStatusManualUseCase implements UseCase<
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const table = await this.tables.findById(input.restaurantId, input.tableId);
+    const table = await this.tables.findById(input.restaurantId, input.branchId, input.tableId);
     if (!table) {
       throw TableNotFound();
     }

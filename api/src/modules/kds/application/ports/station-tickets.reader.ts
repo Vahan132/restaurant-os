@@ -27,8 +27,13 @@ export interface StationTicketData {
 
 /**
  * Read model for KDS station tickets — denormalized active items routed to a
- * station (status SENT/PREPARING/READY). Impl in infrastructure (tenant-scoped).
+ * station (status SENT/PREPARING/READY). Impl in infrastructure
+ * (restaurant- and branch-scoped).
  */
 export interface StationTicketsReader {
-  getActiveTickets(restaurantId: string, station: string): Promise<StationTicketData[]>;
+  getActiveTickets(
+    restaurantId: string,
+    branchId: string,
+    station: string,
+  ): Promise<StationTicketData[]>;
 }

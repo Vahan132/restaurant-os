@@ -14,6 +14,7 @@ import { ModifierGroupNotFound, NoRestaurantInScope } from '../application.error
 
 export interface UpdateModifierGroupInput {
   restaurantId: string | null;
+  branchId: string;
   groupId: string;
   name?: string;
   selectionType?: ModifierSelectionType;
@@ -38,7 +39,7 @@ export class UpdateModifierGroupUseCase implements UseCase<
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const group = await this.groups.findById(input.restaurantId, input.groupId);
+    const group = await this.groups.findById(input.restaurantId, input.branchId, input.groupId);
     if (!group) {
       throw ModifierGroupNotFound();
     }
@@ -50,7 +51,11 @@ export class UpdateModifierGroupUseCase implements UseCase<
       maxSelect: input.maxSelect,
       displayOrder: input.displayOrder,
     });
-    const optionCount = await this.options.countByGroup(input.restaurantId, group.id);
+    const optionCount = await this.options.countByGroup(
+      input.restaurantId,
+      input.branchId,
+      group.id,
+    );
     group.assertConsistentWithOptionCount(optionCount); // throws if maxSelect > options
     await this.groups.update(group);
     return group;

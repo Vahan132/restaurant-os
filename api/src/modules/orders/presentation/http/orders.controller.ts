@@ -8,6 +8,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Paginated } from '../../../../shared/application/pagination';
+import { ActiveBranchId } from '../../../../shared/auth/active-branch.decorator';
+import { BranchScoped } from '../../../../shared/auth/branch-scoped.decorator';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
@@ -60,6 +62,7 @@ const P = PERMISSIONS;
 
 @ApiTags('orders')
 @ApiBearerAuth('access-token')
+@BranchScoped()
 @Controller('orders')
 export class OrdersController {
   constructor(
@@ -92,12 +95,13 @@ export class OrdersController {
   @ApiCreatedResponse({ type: OrderResponse })
   async create(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Body() dto: CreateOrderDto,
   ): Promise<OrderResponse> {
     const order = await this.createOrder.execute({
       restaurantId: tenant.restaurantId,
-      branchId: tenant.branchId ?? null,
+      branchId,
       waiterId: user.sub,
       type: dto.type,
       tableId: dto.tableId ?? null,
@@ -110,11 +114,13 @@ export class OrdersController {
   @ApiOkResponse({ type: [OrderResponse] })
   async list(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Query() query: ListOrdersQuery,
   ): Promise<Paginated<OrderResponse>> {
     const page = await this.listOrders.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       status: query.status,
       tableId: query.tableId,
       mineUserId: query.mine === 'true' ? user.sub : undefined,
@@ -130,9 +136,14 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async get(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<OrderResponse> {
-    const order = await this.getOrder.execute({ restaurantId: tenant.restaurantId, orderId: id });
+    const order = await this.getOrder.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      orderId: id,
+    });
     return OrderResponse.from(order);
   }
 
@@ -143,11 +154,13 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async update(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: UpdateOrderDto,
   ): Promise<OrderResponse> {
     const order = await this.updateNote.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       note: dto.note ?? null,
     });
@@ -161,11 +174,13 @@ export class OrdersController {
   @ApiCreatedResponse({ type: OrderResponse })
   async addOrderItem(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: AddOrderItemDto,
   ): Promise<OrderResponse> {
     const order = await this.addItem.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       menuItemId: dto.menuItemId,
       quantity: dto.quantity,
@@ -182,12 +197,14 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async editOrderItem(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Param('itemId') itemId: string,
     @Body() dto: EditOrderItemDto,
   ): Promise<OrderResponse> {
     const order = await this.editItem.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       itemId,
       quantity: dto.quantity,
@@ -205,11 +222,13 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async removeOrderItem(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Param('itemId') itemId: string,
   ): Promise<OrderResponse> {
     const order = await this.removeItem.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       itemId,
     });
@@ -224,10 +243,12 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async send(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<OrderResponse> {
     const order = await this.sendToKitchen.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
     });
     return OrderResponse.from(order);
@@ -241,12 +262,14 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async discount(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Body() dto: ApplyDiscountDto,
   ): Promise<OrderResponse> {
     const order = await this.applyDiscount.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       organizationId: tenant.organizationId,
       orderId: id,
       type: dto.type,
@@ -265,10 +288,12 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async clearDiscount(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<OrderResponse> {
     const order = await this.removeDiscount.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
     });
     return OrderResponse.from(order);
@@ -282,6 +307,7 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async cancelOrderItem(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Param('itemId') itemId: string,
@@ -289,6 +315,7 @@ export class OrdersController {
   ): Promise<OrderResponse> {
     const order = await this.cancelItem.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       organizationId: tenant.organizationId,
       orderId: id,
       itemId,
@@ -307,12 +334,14 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async cancel(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Body() dto: CancelDto,
   ): Promise<OrderResponse> {
     const order = await this.cancelOrder.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       organizationId: tenant.organizationId,
       orderId: id,
       reason: dto.reason,
@@ -330,11 +359,13 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async move(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: MoveTableDto,
   ): Promise<OrderResponse> {
     const order = await this.moveTable.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       tableId: dto.tableId,
     });
@@ -349,9 +380,14 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async serve(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<OrderResponse> {
-    const order = await this.markServed.execute({ restaurantId: tenant.restaurantId, orderId: id });
+    const order = await this.markServed.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      orderId: id,
+    });
     return OrderResponse.from(order);
   }
 
@@ -363,12 +399,14 @@ export class OrdersController {
   @ApiCreatedResponse({ type: RecordPaymentResponse })
   async addPayment(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Body() dto: RecordPaymentDto,
   ): Promise<RecordPaymentResponse> {
     const result = await this.recordPayment.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       method: dto.method,
       amount: dto.amount,
@@ -390,6 +428,7 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async voidOrderPayment(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Param('paymentId') paymentId: string,
@@ -397,6 +436,7 @@ export class OrdersController {
   ): Promise<OrderResponse> {
     const order = await this.voidPayment.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       paymentId,
       reason: dto.reason ?? null,
@@ -413,11 +453,13 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async close(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
   ): Promise<OrderResponse> {
     const order = await this.closeOrder.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       actorUserId: user.sub,
     });
@@ -432,11 +474,13 @@ export class OrdersController {
   @ApiOkResponse({ type: SplitEvenResponse })
   async splitEvenShares(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: SplitEvenDto,
   ): Promise<SplitEvenResponse> {
     return this.splitEven.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       parts: dto.parts,
     });
@@ -450,11 +494,13 @@ export class OrdersController {
   @ApiCreatedResponse({ type: SplitItemsResponse })
   async splitToNewCheck(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: SplitItemsDto,
   ): Promise<SplitItemsResponse> {
     const result = await this.splitItems.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       itemIds: dto.itemIds,
     });
@@ -469,8 +515,9 @@ export class OrdersController {
   @ApiOkResponse({ type: ReceiptResponse })
   async receipt(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<ReceiptResponse> {
-    return this.getReceipt.execute({ restaurantId: tenant.restaurantId, orderId: id });
+    return this.getReceipt.execute({ restaurantId: tenant.restaurantId, branchId, orderId: id });
   }
 }

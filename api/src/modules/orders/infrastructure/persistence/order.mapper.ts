@@ -29,6 +29,7 @@ export class OrderMapper {
     const items = r.items.map((it) =>
       OrderItem.reconstitute(it.id, {
         restaurantId: it.restaurantId,
+        branchId: it.branchId,
         orderId: it.orderId,
         menuItemId: it.menuItemId,
         nameSnapshot: it.nameSnapshot,
@@ -58,6 +59,7 @@ export class OrderMapper {
     const payments = r.payments.map((p) =>
       Payment.reconstitute(p.id, {
         restaurantId: p.restaurantId,
+        branchId: p.branchId,
         orderId: p.orderId,
         method: p.method as PaymentMethod,
         amount: p.amount,
@@ -73,7 +75,7 @@ export class OrderMapper {
 
     return Order.reconstitute(r.id, {
       restaurantId: r.restaurantId,
-      branchId: r.branchId,
+      branchId: r.branchId, // immutable; sourced at creation
       orderNumber: r.orderNumber,
       type: r.type as OrderType,
       tableId: r.tableId,
@@ -102,11 +104,14 @@ export class OrderMapper {
     });
   }
 
-  /** Scalar order columns (without items) for create/update. */
+  /**
+   * Scalar order columns (without items) for create/update. branchId is OMITTED
+   * here (immutable): it is written once via {@link toCreateOrderRow} at creation
+   * and never updated.
+   */
   static toOrderRow(o: Order) {
     return {
       restaurantId: o.restaurantId,
-      branchId: o.branchId,
       type: o.type as OrderType,
       tableId: o.tableId,
       waiterId: o.waiterId,
@@ -131,10 +136,16 @@ export class OrderMapper {
     };
   }
 
+  /** Order columns for CREATE: includes the immutable branchId. */
+  static toCreateOrderRow(o: Order) {
+    return { branchId: o.branchId, ...OrderMapper.toOrderRow(o) };
+  }
+
   static toPaymentRow(o: Order, p: Payment) {
     return {
       id: p.id,
       restaurantId: o.restaurantId,
+      branchId: o.branchId, // payments inherit the order's branch
       orderId: o.id,
       method: p.method as PaymentMethod,
       amount: p.amount,
@@ -152,6 +163,7 @@ export class OrderMapper {
     return {
       id: item.id,
       restaurantId: o.restaurantId,
+      branchId: o.branchId, // items inherit the order's branch
       orderId: o.id,
       menuItemId: item.menuItemId,
       nameSnapshot: item.nameSnapshot,

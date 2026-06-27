@@ -8,6 +8,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Paginated } from '../../../../shared/application/pagination';
+import { ActiveBranchId } from '../../../../shared/auth/active-branch.decorator';
+import { BranchScoped } from '../../../../shared/auth/branch-scoped.decorator';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
@@ -38,9 +40,11 @@ import { GetMenuItemUseCase } from '../../application/queries/get-menu-item.usec
 import { ListMenuItemsUseCase } from '../../application/queries/list-menu-items.usecase';
 
 const MENU_MANAGE = PERMISSIONS.MENU_MANAGE;
+const MENU_ITEM_SET_PRICE = PERMISSIONS.MENU_ITEM_SET_PRICE;
 
 @ApiTags('menu-items')
 @ApiBearerAuth('access-token')
+@BranchScoped()
 @Controller('menu/items')
 export class ItemsController {
   constructor(
@@ -60,10 +64,12 @@ export class ItemsController {
   @ApiOkResponse({ type: [MenuItemResponse] })
   async list(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Query() query: ListMenuItemsQuery,
   ): Promise<Paginated<MenuItemResponse>> {
     const page = await this.listItems.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       categoryId: query.categoryId,
       status: query.status,
       availability: query.availability,
@@ -79,9 +85,14 @@ export class ItemsController {
   @ApiOkResponse({ type: MenuItemDetailResponse })
   async get(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<MenuItemDetailResponse> {
-    const detail = await this.getItem.execute({ restaurantId: tenant.restaurantId, itemId: id });
+    const detail = await this.getItem.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      itemId: id,
+    });
     return MenuItemDetailResponse.fromDetail(detail);
   }
 
@@ -92,15 +103,19 @@ export class ItemsController {
   @ApiCreatedResponse({ type: MenuItemResponse })
   async create(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() actor: CurrentUserContext,
     @Body() dto: CreateMenuItemDto,
   ): Promise<MenuItemResponse> {
     const item = await this.createItem.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       categoryId: dto.categoryId,
       name: dto.name,
       description: dto.description ?? null,
-      priceAmount: dto.priceAmount,
+      // Price is NOT settable on create (INV-3 §7); items start at 0 and price is
+      // set via PATCH :id/price under menu:item:set_price.
+      priceAmount: 0,
       imageUrl: dto.imageUrl ?? null,
       preparationStation: dto.preparationStation,
       prepTimeMinutes: dto.prepTimeMinutes ?? null,
@@ -116,11 +131,13 @@ export class ItemsController {
   @ApiOkResponse({ type: MenuItemResponse })
   async update(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: UpdateMenuItemDto,
   ): Promise<MenuItemResponse> {
     const item = await this.updateItem.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       itemId: id,
       name: dto.name,
       description: dto.description,
@@ -133,18 +150,20 @@ export class ItemsController {
   }
 
   @Patch(':id/price')
-  @RequirePermissions(MENU_MANAGE)
-  @ApiForbiddenResponse({ description: 'Missing MENU_MANAGE permission.' })
-  @ApiOperation({ summary: 'Change a menu item price.' })
+  @RequirePermissions(MENU_ITEM_SET_PRICE)
+  @ApiForbiddenResponse({ description: 'Missing menu:item:set_price permission.' })
+  @ApiOperation({ summary: 'Set a menu item price (separate permission from item manage).' })
   @ApiOkResponse({ type: MenuItemResponse })
   async price(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() actor: CurrentUserContext,
     @Param('id') id: string,
     @Body() dto: ChangeItemPriceDto,
   ): Promise<MenuItemResponse> {
     const item = await this.changePrice.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       itemId: id,
       priceAmount: dto.priceAmount,
       actorUserId: actor.sub,
@@ -159,11 +178,13 @@ export class ItemsController {
   @ApiOkResponse({ type: MenuItemResponse })
   async status(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: SetItemStatusDto,
   ): Promise<MenuItemResponse> {
     const item = await this.setStatus.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       itemId: id,
       status: dto.status,
     });
@@ -177,11 +198,13 @@ export class ItemsController {
   @ApiOkResponse({ type: MenuItemResponse })
   async availability(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: SetItemAvailabilityDto,
   ): Promise<MenuItemResponse> {
     const item = await this.setAvailability.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       itemId: id,
       availability: dto.availability,
     });
@@ -196,11 +219,13 @@ export class ItemsController {
   @ApiOkResponse({ schema: { example: { success: true } } })
   async remove(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() actor: CurrentUserContext,
     @Param('id') id: string,
   ): Promise<{ success: true }> {
     await this.deleteItem.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       itemId: id,
       actorUserId: actor.sub,
     });
@@ -214,11 +239,13 @@ export class ItemsController {
   @ApiCreatedResponse({ type: ModifierGroupResponse })
   async addModifierGroup(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('itemId') itemId: string,
     @Body() dto: CreateModifierGroupDto,
   ): Promise<ModifierGroupResponse> {
     const group = await this.addGroup.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       itemId,
       name: dto.name,
       selectionType: dto.selectionType,

@@ -3,6 +3,7 @@ import { UseCase } from '../../../../shared/application/use-case';
 import { Order } from '../../domain/entities/order';
 import { ORDER_REPOSITORY, OrderRepository } from '../../domain/repositories/order.repository';
 import {
+  CrossBranchReference,
   NoRestaurantInScope,
   OrderNotFound,
   TableHasOpenOrder,
@@ -13,6 +14,7 @@ import { OrderTableSync } from '../services/order-table-sync';
 
 export interface MoveOrderToTableInput {
   restaurantId: string | null;
+  branchId: string;
   orderId: string;
   tableId: string;
 }
@@ -30,15 +32,24 @@ export class MoveOrderToTableUseCase implements UseCase<MoveOrderToTableInput, O
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findById(input.restaurantId, input.orderId);
+    const order = await this.orders.findById(input.restaurantId, input.branchId, input.orderId);
     if (!order) {
       throw OrderNotFound();
     }
-    if (!(await this.tables.tableExists(input.restaurantId, input.tableId))) {
+    const tableBranchId = await this.tables.getTableBranchId(input.restaurantId, input.tableId);
+    if (tableBranchId === null) {
       throw TableNotInRestaurant();
     }
+    // Intra-branch integrity: the target table must be in the order's branch.
+    if (tableBranchId !== order.branchId) {
+      throw CrossBranchReference('Table belongs to a different branch.');
+    }
     if (input.tableId !== order.tableId) {
-      const open = await this.orders.findOpenByTable(input.restaurantId, input.tableId);
+      const open = await this.orders.findOpenByTable(
+        input.restaurantId,
+        order.branchId,
+        input.tableId,
+      );
       if (open && open.id !== order.id) {
         throw TableHasOpenOrder();
       }

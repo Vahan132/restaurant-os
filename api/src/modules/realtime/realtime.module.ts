@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { IdentityModule } from '../identity/identity.module';
 import { REALTIME_USER_READER } from './application/ports/realtime-user.reader';
 import { RealtimePublisher } from './application/realtime-publisher.service';
 import { RealtimeRelay } from './application/realtime-relay';
@@ -9,10 +10,11 @@ import { RealtimeGateway } from './presentation/realtime.gateway';
 /**
  * Realtime module — Socket.IO gateway (/realtime), event relay (domain events ->
  * broadcasts) and the publisher. The Redis adapter is wired in main.ts. JwtModule
- * is imported so the gateway can verify handshake access tokens.
+ * is imported so the gateway can verify handshake access tokens; IdentityModule
+ * provides BRANCH_ACCESS_RESOLVER for branch validation on connect (BR-5).
  */
 @Module({
-  imports: [JwtModule.register({})],
+  imports: [JwtModule.register({}), IdentityModule],
   providers: [
     RealtimeGateway,
     RealtimePublisher,

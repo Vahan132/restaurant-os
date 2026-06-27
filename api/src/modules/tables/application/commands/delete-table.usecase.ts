@@ -8,6 +8,7 @@ import { NoRestaurantInScope, TableNotFound } from '../application.errors';
 
 export interface DeleteTableInput {
   restaurantId: string | null;
+  branchId: string;
   tableId: string;
 }
 
@@ -22,7 +23,7 @@ export class DeleteTableUseCase implements UseCase<DeleteTableInput, void> {
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const table = await this.tables.findById(input.restaurantId, input.tableId);
+    const table = await this.tables.findById(input.restaurantId, input.branchId, input.tableId);
     if (!table) {
       throw TableNotFound();
     }

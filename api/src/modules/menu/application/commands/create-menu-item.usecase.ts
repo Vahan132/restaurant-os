@@ -12,10 +12,12 @@ import {
   MENU_ITEM_REPOSITORY,
   MenuItemRepository,
 } from '../../domain/repositories/menu-item.repository';
-import { CategoryNotFound, NoRestaurantInScope } from '../application.errors';
+import { CategoryNotFound, CrossBranchReference, NoRestaurantInScope } from '../application.errors';
+import { slugify } from '../menu-code.util';
 
 export interface CreateMenuItemInput {
   restaurantId: string | null;
+  branchId: string;
   categoryId: string;
   name: string;
   description?: string | null;
@@ -40,13 +42,23 @@ export class CreateMenuItemUseCase implements UseCase<CreateMenuItemInput, MenuI
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const category = await this.categories.findById(input.restaurantId, input.categoryId);
+    const category = await this.categories.findInRestaurant(input.restaurantId, input.categoryId);
     if (!category) {
       throw CategoryNotFound();
     }
+    if (category.branchId !== input.branchId) {
+      throw CrossBranchReference();
+    }
+    const code = await this.generateUniqueCode(
+      input.restaurantId,
+      input.branchId,
+      slugify(input.name, 'item'),
+    );
     const item = MenuItem.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
+      code,
       categoryId: input.categoryId,
       name: input.name,
       description: input.description ?? null,
@@ -59,5 +71,20 @@ export class CreateMenuItemUseCase implements UseCase<CreateMenuItemInput, MenuI
     await this.items.create(item);
     await this.events.publishFromAggregate(item);
     return item;
+  }
+
+  /** Ensure per-branch uniqueness by appending -2, -3, ... to the base slug. */
+  private async generateUniqueCode(
+    restaurantId: string,
+    branchId: string,
+    base: string,
+  ): Promise<string> {
+    let candidate = base;
+    let suffix = 2;
+    while (await this.items.existsByCode(restaurantId, branchId, candidate)) {
+      candidate = `${base}-${suffix}`;
+      suffix += 1;
+    }
+    return candidate;
   }
 }

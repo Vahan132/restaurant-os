@@ -3,11 +3,13 @@ import { UseCase } from '../../../../shared/application/use-case';
 import { DomainEventPublisher } from '../../../../shared/infrastructure/events/domain-event-publisher';
 import { ID_GENERATOR, IdGenerator } from '../../../identity/application/ports/id-generator';
 import { Reservation } from '../../domain/entities/reservation';
+import { ReservationSource } from '../../domain/enums';
 import {
   RESERVATION_REPOSITORY,
   ReservationRepository,
 } from '../../domain/repositories/reservation.repository';
 import {
+  CrossBranchReference,
   NoRestaurantInScope,
   ReservationsDisabled,
   TableNotInRestaurant,
@@ -23,7 +25,7 @@ import {
 
 export interface CreateReservationInput {
   restaurantId: string | null;
-  branchId?: string | null;
+  branchId: string;
   createdByUserId: string;
   customerName: string;
   customerPhone: string;
@@ -33,6 +35,8 @@ export interface CreateReservationInput {
   durationMinutes?: number;
   tableId?: string | null;
   notes?: string | null;
+  source?: ReservationSource;
+  customerNote?: string | null;
   initialStatus?: 'PENDING' | 'CONFIRMED';
 }
 
@@ -56,15 +60,19 @@ export class CreateReservationUseCase implements UseCase<CreateReservationInput,
       throw ReservationsDisabled();
     }
     if (input.tableId) {
-      const status = await this.tables.findTableStatus(input.restaurantId, input.tableId);
-      if (status === null) {
+      const table = await this.tables.findTableRef(input.restaurantId, input.tableId);
+      if (table === null) {
         throw TableNotInRestaurant();
+      }
+      // §6 intra-branch integrity: the assigned table must be in this branch.
+      if (table.branchId !== input.branchId) {
+        throw CrossBranchReference();
       }
     }
     const reservation = Reservation.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
-      branchId: input.branchId ?? null,
+      branchId: input.branchId,
       customerName: input.customerName,
       customerPhone: input.customerPhone,
       customerEmail: input.customerEmail ?? null,
@@ -73,6 +81,8 @@ export class CreateReservationUseCase implements UseCase<CreateReservationInput,
       durationMinutes: input.durationMinutes,
       tableId: input.tableId ?? null,
       notes: input.notes ?? null,
+      source: input.source ?? ReservationSource.STAFF,
+      customerNote: input.customerNote ?? null,
       createdByUserId: input.createdByUserId,
     });
     if (input.initialStatus === 'CONFIRMED') {

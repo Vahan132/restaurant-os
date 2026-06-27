@@ -6,6 +6,7 @@ import { FloorNotFound, NoRestaurantInScope } from '../application.errors';
 
 export interface ReorderFloorsInput {
   restaurantId: string | null;
+  branchId: string;
   order: { id: string; displayOrder: number }[];
 }
 
@@ -20,7 +21,7 @@ export class ReorderFloorsUseCase implements UseCase<ReorderFloorsInput, Floor[]
     }
     const updated: Floor[] = [];
     for (const entry of input.order) {
-      const floor = await this.floors.findById(input.restaurantId, entry.id);
+      const floor = await this.floors.findById(input.restaurantId, input.branchId, entry.id);
       if (!floor) {
         throw FloorNotFound();
       }
