@@ -3,13 +3,13 @@
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
-import { BranchesTab } from '@/components/settings/branches-tab';
 import { OperationsTab } from '@/components/settings/operations-tab';
 import { ProfileTab } from '@/components/settings/profile-tab';
 import { Can } from '@/components/auth/can';
 import { PERMISSIONS } from '@/lib/permissions';
 
-type Tab = 'profile' | 'operations' | 'branches';
+// Branch management moved to its own screen (/branches, gated BRANCH_MANAGE).
+type Tab = 'profile' | 'operations';
 
 export function SettingsManager() {
   const t = useTranslations('settings');
@@ -18,14 +18,13 @@ export function SettingsManager() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'profile', label: t('profileTab') },
     { key: 'operations', label: t('operationsTab') },
-    { key: 'branches', label: t('branchesTab') },
   ];
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold text-gray-900">{t('title')}</h1>
 
-      <Can permission={PERMISSIONS.SETTINGS_MANAGE} fallback={
+      <Can permission={PERMISSIONS.SETTINGS_MANAGE} scope="restaurant" fallback={
         <p className="rounded-md border border-gray-200 bg-gray-50 px-4 py-2 text-xs text-gray-500">
           {t('readOnly')}
         </p>
@@ -52,7 +51,6 @@ export function SettingsManager() {
 
       {tab === 'profile' && <ProfileTab />}
       {tab === 'operations' && <OperationsTab />}
-      {tab === 'branches' && <BranchesTab />}
     </div>
   );
 }

@@ -26,10 +26,12 @@ import type {
 
 import type {
   AuthTokensResponse,
+  ForgotPasswordDto,
   LoginDto,
   LogoutDto,
   MeResponse,
-  RefreshDto
+  RefreshDto,
+  ResetPasswordDto
 } from '../model';
 
 import { customInstance } from '../../mutator';
@@ -164,6 +166,132 @@ export const useAuthControllerRefresh = <TError = void,
         TContext
       > => {
       return useMutation(getAuthControllerRefreshMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Request a password reset link (always 200; never reveals existence).
+ */
+export const authControllerForgotPassword = (
+    forgotPasswordDto: ForgotPasswordDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<unknown>(
+      {url: `/auth/forgot-password`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: forgotPasswordDto, signal
+    },
+      options);
+    }
+
+
+
+export const getAuthControllerForgotPasswordMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authControllerForgotPassword>>, TError,{data: ForgotPasswordDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof authControllerForgotPassword>>, TError,{data: ForgotPasswordDto}, TContext> => {
+
+const mutationKey = ['authControllerForgotPassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authControllerForgotPassword>>, {data: ForgotPasswordDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  authControllerForgotPassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthControllerForgotPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof authControllerForgotPassword>>>
+    export type AuthControllerForgotPasswordMutationBody = ForgotPasswordDto
+    export type AuthControllerForgotPasswordMutationError = unknown
+
+    /**
+ * @summary Request a password reset link (always 200; never reveals existence).
+ */
+export const useAuthControllerForgotPassword = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authControllerForgotPassword>>, TError,{data: ForgotPasswordDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof authControllerForgotPassword>>,
+        TError,
+        {data: ForgotPasswordDto},
+        TContext
+      > => {
+      return useMutation(getAuthControllerForgotPasswordMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Reset the password using a valid token; revokes existing sessions.
+ */
+export const authControllerResetPassword = (
+    resetPasswordDto: ResetPasswordDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<unknown>(
+      {url: `/auth/reset-password`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: resetPasswordDto, signal
+    },
+      options);
+    }
+
+
+
+export const getAuthControllerResetPasswordMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authControllerResetPassword>>, TError,{data: ResetPasswordDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof authControllerResetPassword>>, TError,{data: ResetPasswordDto}, TContext> => {
+
+const mutationKey = ['authControllerResetPassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authControllerResetPassword>>, {data: ResetPasswordDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  authControllerResetPassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthControllerResetPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof authControllerResetPassword>>>
+    export type AuthControllerResetPasswordMutationBody = ResetPasswordDto
+    export type AuthControllerResetPasswordMutationError = unknown
+
+    /**
+ * @summary Reset the password using a valid token; revokes existing sessions.
+ */
+export const useAuthControllerResetPassword = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authControllerResetPassword>>, TError,{data: ResetPasswordDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof authControllerResetPassword>>,
+        TError,
+        {data: ResetPasswordDto},
+        TContext
+      > => {
+      return useMutation(getAuthControllerResetPasswordMutationOptions(options), queryClient);
     }
     /**
  * @summary Revoke the presented refresh token.

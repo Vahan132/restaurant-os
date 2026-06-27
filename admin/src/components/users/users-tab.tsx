@@ -10,6 +10,7 @@ import {
 import { UserResponseStatus, type UserResponse } from '@/api/generated/model';
 import { PasswordRevealModal } from '@/components/users/password-reveal-modal';
 import { ResetPasswordModal } from '@/components/users/reset-password-modal';
+import { UserBranchAccessCell } from '@/components/users/user-branch-access-cell';
 import { UserFormModal } from '@/components/users/user-form-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -136,6 +137,7 @@ export function UsersTab() {
                 <th className="px-4 py-2 font-medium">{t('email')}</th>
                 <th className="px-4 py-2 font-medium">{t('role')}</th>
                 <th className="px-4 py-2 font-medium">{t('scope')}</th>
+                <th className="px-4 py-2 font-medium">{t('branchAccessTitle')}</th>
                 <th className="px-4 py-2 font-medium">{t('status')}</th>
                 <th className="px-4 py-2" />
               </tr>
@@ -151,6 +153,9 @@ export function UsersTab() {
                     <td className="px-4 py-2 text-gray-700">{roleName(user.roleId)}</td>
                     <td className="px-4 py-2 text-gray-600">
                       {user.restaurantId ? t('scopeRestaurant') : t('scopeOrg')}
+                    </td>
+                    <td className="px-4 py-2">
+                      <UserBranchAccessCell userId={user.id} />
                     </td>
                     <td className="px-4 py-2">
                       {blocked ? (

@@ -16,10 +16,9 @@ import {
 import type { ApplyDiscountDtoType, OrderResponse } from '@/api/generated/model';
 import type { ApiError } from '@/api/mutator';
 import { toast } from '@/lib/toast';
-import { useAuthMe } from '@/lib/useAuthMe';
 import { useSettings } from '@/lib/useSettings';
 import { useFloorDataInvalidator } from '@/lib/useActiveOrders';
-import { PERMISSIONS } from '@/lib/permissions';
+import { PERMISSIONS, useEffectivePermissions } from '@/lib/permissions';
 
 type RequestApproval = (permission: string) => Promise<string | null>;
 
@@ -33,7 +32,7 @@ export function useOrderActions(orderId: string, requestApproval: RequestApprova
   const t = useTranslations('actions');
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: me } = useAuthMe();
+  const permissions = useEffectivePermissions();
   const { data: settings } = useSettings();
   const invalidateFloor = useFloorDataInvalidator();
 
@@ -44,7 +43,7 @@ export function useOrderActions(orderId: string, requestApproval: RequestApprova
   const moveM = useOrdersControllerMove();
   const serveM = useOrdersControllerServe();
 
-  const can = useCallback((perm: string) => (me?.permissions ?? []).includes(perm), [me]);
+  const can = useCallback((perm: string) => permissions.includes(perm), [permissions]);
 
   const writeOrder = useCallback(
     (order: OrderResponse) => queryClient.setQueryData(getOrdersControllerGetQueryKey(orderId), order),

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { OrderResponse, OrderResponseStatus } from '@/api/generated/model';
 import { useMoney } from '@/lib/useMoney';
 import { OrderRequestsBell } from '@/components/requests/OrderRequestsBell';
+import { BranchMenu } from '@/components/branch/BranchMenu';
 
 const ORDER_STATUS_BADGE: Record<OrderResponseStatus, string> = {
   DRAFT: 'bg-gray-200 text-gray-700',
@@ -54,6 +55,7 @@ export function OrderHeader({ order, tableName }: OrderHeaderProps) {
         </div>
       </div>
       <div className="flex items-center gap-3">
+        <BranchMenu />
         <OrderRequestsBell />
         <div className="text-right">
           <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('total')}</p>

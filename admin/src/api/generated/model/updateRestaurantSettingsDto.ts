@@ -31,8 +31,8 @@ export interface UpdateRestaurantSettingsDto {
   enableKds?: boolean;
   /** Manual table status changes allowed (vs flow-driven). */
   allowManualTableStatus?: boolean;
-  /** Expose the public QR / link menu. */
+  /** Expose the public QR menu (storefront). */
   enableQrMenu?: boolean;
-  /** Allow dine-in customer order requests (requires enableQrMenu). */
+  /** Allow customers to submit dine-in order requests (needs enableQrMenu). */
   enableCustomerOrdering?: boolean;
 }

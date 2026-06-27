@@ -14,17 +14,28 @@
   "access": {
     "noAccessTitle": "No kitchen access",
     "noAccessBody": "This account does not have permission to use the Kitchen Display. Ask an administrator to grant KDS access.",
+    "noAccessHereBody": "This account does not have Kitchen Display access at this branch. Choose a branch where you have access, or ask an administrator.",
+    "changeBranch": "Change branch",
     "logout": "Log out"
   },
+  "setup": {
+    "title": "Set up this screen",
+    "hint": "Pin this display to a branch and a station. It will only show that branch's tickets for that station.",
+    "stationOnlyHint": "Choose the station this screen will show tickets for.",
+    "branchLabel": "Branch",
+    "stationLabel": "Station",
+    "confirm": "Start",
+    "change": "Change branch / station",
+    "loadingBranches": "Loading branches…",
+    "branchesError": "Could not load branches.",
+    "retry": "Retry",
+    "noBranches": "No branches available for this account."
+  },
   "station": {
-    "pickerTitle": "Choose your station",
-    "pickerHint": "Tickets for the selected station(s) will appear on this screen.",
     "KITCHEN": "Kitchen",
     "BAR": "Bar",
     "DESSERT": "Dessert",
-    "OTHER": "Other",
-    "confirm": "Start",
-    "change": "Change station"
+    "OTHER": "Other"
   },
   "board": {
     "empty": "No active tickets right now.",
@@ -57,6 +68,18 @@
   "connection": {
     "connected": "Connected",
     "connecting": "Connecting…",
-    "disconnected": "Connection lost — reconnecting. Tickets may be out of date."
+    "disconnected": "Connection lost — reconnecting. Tickets may be out of date.",
+    "hubSynced": "Local hub — synced",
+    "hubOffline": "Local hub — offline",
+    "hubReconnecting": "Reconnecting to hub…",
+    "hubUnreachable": "Hub unreachable"
+  },
+  "endpoint": {
+    "label": "Connection",
+    "cloud": "Cloud",
+    "localHub": "Local hub",
+    "hubUrlLabel": "Hub address (LAN)",
+    "hubUrlPlaceholder": "http://192.168.1.50:3001",
+    "hubUrlHint": "The hub's address on the local network. All tickets and updates will come from it."
   }
 }

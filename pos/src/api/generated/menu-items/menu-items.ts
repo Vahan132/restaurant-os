@@ -539,7 +539,7 @@ export const useItemsControllerRemove = <TError = void, TContext = unknown>(
   return useMutation(mutationOptions, queryClient);
 };
 /**
- * @summary Change a menu item price.
+ * @summary Set a menu item price (separate permission from item manage).
  */
 export const itemsControllerPrice = (
   id: string,
@@ -600,7 +600,7 @@ export type ItemsControllerPriceMutationBody = ChangeItemPriceDto;
 export type ItemsControllerPriceMutationError = void;
 
 /**
- * @summary Change a menu item price.
+ * @summary Set a menu item price (separate permission from item manage).
  */
 export const useItemsControllerPrice = <TError = void, TContext = unknown>(
   options?: {

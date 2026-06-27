@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
 import { usePublicReservationsControllerCreate } from '@/api/generated/public/public';
-import type { PublicReservationInfoResponse } from '@/api/generated/model';
+import type { PublicReservationsInfoResponse } from '@/api/generated/model';
 import { isApiError, type ApiError } from '@/api/mutator';
 import { todayInZone, zoneAbbrev, zonedWallTimeToUtc } from '@/lib/datetime';
 
@@ -12,7 +12,7 @@ import type { SubmittedReservation } from './ReservePage';
 import QuantityStepper from '../cart/QuantityStepper';
 
 interface Props {
-  info: PublicReservationInfoResponse;
+  info: PublicReservationsInfoResponse;
   /** Restaurant + branch the booking is scoped to (BR-10 branch endpoint). */
   restaurantSlug: string;
   branchSlug: string;

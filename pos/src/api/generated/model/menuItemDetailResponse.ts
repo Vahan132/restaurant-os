@@ -13,6 +13,8 @@ import type { ModifierGroupWithOptionsResponse } from './modifierGroupWithOption
 export interface MenuItemDetailResponse {
   id: string;
   restaurantId: string;
+  branchId: string;
+  code: string;
   categoryId: string;
   name: string;
   /** @nullable */

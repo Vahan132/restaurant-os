@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ReservationResponseStatus } from './reservationResponseStatus';
+import type { ReservationResponseSource } from './reservationResponseSource';
 
 export interface ReservationResponse {
   id: string;
@@ -22,8 +23,11 @@ export interface ReservationResponse {
   /** @nullable */
   tableId: string | null;
   status: ReservationResponseStatus;
+  source: ReservationResponseSource;
   /** @nullable */
   notes: string | null;
+  /** @nullable */
+  customerNote: string | null;
   /** @nullable */
   arrivedAt: string | null;
   /** @nullable */

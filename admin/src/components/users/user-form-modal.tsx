@@ -6,6 +6,7 @@ import { useState } from 'react';
 import {
   useUsersControllerCreate,
   useUsersControllerUpdate,
+  useBranchMembershipsControllerUpsert,
 } from '@/api/generated/users/users';
 import type {
   CreateUserDto,
@@ -13,6 +14,10 @@ import type {
   UpdateUserDto,
   UserResponse,
 } from '@/api/generated/model';
+import {
+  BranchMembershipsEditor,
+  type DraftMembership,
+} from '@/components/users/branch-memberships-editor';
 import { Button } from '@/components/ui/button';
 import { Field, inputClass } from '@/components/ui/form';
 import { Modal } from '@/components/ui/modal';
@@ -58,9 +63,14 @@ export function UserFormModal({
   );
   const [errors, setErrors] = useState<{ fullName?: string; email?: string; password?: string }>({});
 
+  // Branch access (BR-7.1): the operational grant. Collected as a draft on
+  // create (applied after the user exists) and managed live on edit.
+  const [draftMemberships, setDraftMemberships] = useState<DraftMembership[]>([]);
+
   const create = useUsersControllerCreate();
   const update = useUsersControllerUpdate();
-  const submitting = create.isPending || update.isPending;
+  const upsertMembership = useBranchMembershipsControllerUpsert();
+  const submitting = create.isPending || update.isPending || upsertMembership.isPending;
 
   const onGenerate = () => {
     const pw = generateStrongPassword();
@@ -99,7 +109,8 @@ export function UserFormModal({
 
     try {
       if (isEdit && user) {
-        // restaurantId null => organization-wide. organizationId is never sent.
+        // restaurantId null => organization-wide. Branch memberships are managed
+        // live by the editor below.
         const data = {
           fullName: fullName.trim(),
           roleId,
@@ -118,7 +129,11 @@ export function UserFormModal({
           roleId,
           ...(rid ? { restaurantId: rid } : {}),
         };
-        await create.mutateAsync({ data });
+        const created = await create.mutateAsync({ data });
+        // Apply the chosen branch memberships now that the user exists.
+        for (const m of draftMemberships) {
+          await upsertMembership.mutateAsync({ id: created.id, data: m });
+        }
         toast.success(t('toast.created'));
         await invalidate();
         onClose();
@@ -178,28 +193,44 @@ export function UserFormModal({
           </Field>
         )}
 
-        <Field label={t('role')}>
-          <select className={inputClass} value={roleId} onChange={(e) => setRoleId(e.target.value)}>
-            {roles.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
+        <div className="space-y-2 rounded-md border border-gray-200 p-3">
+          <p className="text-sm font-medium text-gray-800">{t('restaurantRoleTitle')}</p>
+          <p className="text-xs text-gray-500">{t('restaurantRoleHint')}</p>
+          <Field label={t('role')}>
+            <select className={inputClass} value={roleId} onChange={(e) => setRoleId(e.target.value)}>
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t('scope')}>
+            <select
+              className={inputClass}
+              value={scope}
+              onChange={(e) => setScope(e.target.value as Scope)}
+            >
+              <option value="restaurant" disabled={!canScopeRestaurant}>
+                {t('scopeRestaurant')}
               </option>
-            ))}
-          </select>
-        </Field>
+              <option value="org">{t('scopeOrg')}</option>
+            </select>
+          </Field>
+        </div>
 
-        <Field label={t('scope')}>
-          <select
-            className={inputClass}
-            value={scope}
-            onChange={(e) => setScope(e.target.value as Scope)}
-          >
-            <option value="restaurant" disabled={!canScopeRestaurant}>
-              {t('scopeRestaurant')}
-            </option>
-            <option value="org">{t('scopeOrg')}</option>
-          </select>
-        </Field>
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-gray-800">{t('branchAccessTitle')}</p>
+          {isEdit && user ? (
+            <BranchMembershipsEditor userId={user.id} roles={roles} />
+          ) : (
+            <BranchMembershipsEditor
+              roles={roles}
+              draft={draftMemberships}
+              onDraftChange={setDraftMemberships}
+            />
+          )}
+        </div>
       </div>
       {dialog}
     </Modal>

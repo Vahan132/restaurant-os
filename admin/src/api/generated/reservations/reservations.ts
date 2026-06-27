@@ -26,8 +26,15 @@ import type {
 
 import type {
   AssignTableDto,
+  CallDeviceResponse,
   CancelReservationDto,
   CreateReservationDto,
+  CreateReservationFromCallDto,
+  IngestMissedCallsDto,
+  MissedCallResponse,
+  MissedCallsControllerListParams,
+  RegisterCallDeviceDto,
+  RegisterCallDeviceResponse,
   ReservationResponse,
   ReservationsControllerAvailabilityParams,
   ReservationsControllerListParams,
@@ -940,4 +947,562 @@ export const useReservationsControllerCancel = <TError = void,
         TContext
       > => {
       return useMutation(getReservationsControllerCancelMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Register a device; returns the plaintext token ONCE.
+ */
+export const reservationDevicesControllerRegister = (
+    registerCallDeviceDto: RegisterCallDeviceDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<RegisterCallDeviceResponse>(
+      {url: `/reservations/devices`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: registerCallDeviceDto, signal
+    },
+      options);
+    }
+
+
+
+export const getReservationDevicesControllerRegisterMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reservationDevicesControllerRegister>>, TError,{data: RegisterCallDeviceDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof reservationDevicesControllerRegister>>, TError,{data: RegisterCallDeviceDto}, TContext> => {
+
+const mutationKey = ['reservationDevicesControllerRegister'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reservationDevicesControllerRegister>>, {data: RegisterCallDeviceDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reservationDevicesControllerRegister(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReservationDevicesControllerRegisterMutationResult = NonNullable<Awaited<ReturnType<typeof reservationDevicesControllerRegister>>>
+    export type ReservationDevicesControllerRegisterMutationBody = RegisterCallDeviceDto
+    export type ReservationDevicesControllerRegisterMutationError = void
+
+    /**
+ * @summary Register a device; returns the plaintext token ONCE.
+ */
+export const useReservationDevicesControllerRegister = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reservationDevicesControllerRegister>>, TError,{data: RegisterCallDeviceDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reservationDevicesControllerRegister>>,
+        TError,
+        {data: RegisterCallDeviceDto},
+        TContext
+      > => {
+      return useMutation(getReservationDevicesControllerRegisterMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary List registered devices (status + lastSeenAt).
+ */
+export const reservationDevicesControllerList = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<CallDeviceResponse[]>(
+      {url: `/reservations/devices`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getReservationDevicesControllerListQueryKey = () => {
+    return [
+    `/reservations/devices`
+    ] as const;
+    }
+
+
+export const getReservationDevicesControllerListQueryOptions = <TData = Awaited<ReturnType<typeof reservationDevicesControllerList>>, TError = void>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reservationDevicesControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReservationDevicesControllerListQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reservationDevicesControllerList>>> = ({ signal }) => reservationDevicesControllerList(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof reservationDevicesControllerList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReservationDevicesControllerListQueryResult = NonNullable<Awaited<ReturnType<typeof reservationDevicesControllerList>>>
+export type ReservationDevicesControllerListQueryError = void
+
+
+export function useReservationDevicesControllerList<TData = Awaited<ReturnType<typeof reservationDevicesControllerList>>, TError = void>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof reservationDevicesControllerList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reservationDevicesControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof reservationDevicesControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReservationDevicesControllerList<TData = Awaited<ReturnType<typeof reservationDevicesControllerList>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reservationDevicesControllerList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reservationDevicesControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof reservationDevicesControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReservationDevicesControllerList<TData = Awaited<ReturnType<typeof reservationDevicesControllerList>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reservationDevicesControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List registered devices (status + lastSeenAt).
+ */
+
+export function useReservationDevicesControllerList<TData = Awaited<ReturnType<typeof reservationDevicesControllerList>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reservationDevicesControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReservationDevicesControllerListQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * @summary Revoke a device (it can no longer ingest calls).
+ */
+export const reservationDevicesControllerRevoke = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<CallDeviceResponse>(
+      {url: `/reservations/devices/${id}/revoke`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+export const getReservationDevicesControllerRevokeMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reservationDevicesControllerRevoke>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof reservationDevicesControllerRevoke>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['reservationDevicesControllerRevoke'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reservationDevicesControllerRevoke>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  reservationDevicesControllerRevoke(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReservationDevicesControllerRevokeMutationResult = NonNullable<Awaited<ReturnType<typeof reservationDevicesControllerRevoke>>>
+
+    export type ReservationDevicesControllerRevokeMutationError = void
+
+    /**
+ * @summary Revoke a device (it can no longer ingest calls).
+ */
+export const useReservationDevicesControllerRevoke = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reservationDevicesControllerRevoke>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reservationDevicesControllerRevoke>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getReservationDevicesControllerRevokeMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary List missed calls (newest first; ?status, ?from, ?to; paginated).
+ */
+export const missedCallsControllerList = (
+    params?: MissedCallsControllerListParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<MissedCallResponse[]>(
+      {url: `/reservations/missed-calls`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getMissedCallsControllerListQueryKey = (params?: MissedCallsControllerListParams,) => {
+    return [
+    `/reservations/missed-calls`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getMissedCallsControllerListQueryOptions = <TData = Awaited<ReturnType<typeof missedCallsControllerList>>, TError = void>(params?: MissedCallsControllerListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof missedCallsControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getMissedCallsControllerListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof missedCallsControllerList>>> = ({ signal }) => missedCallsControllerList(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof missedCallsControllerList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type MissedCallsControllerListQueryResult = NonNullable<Awaited<ReturnType<typeof missedCallsControllerList>>>
+export type MissedCallsControllerListQueryError = void
+
+
+export function useMissedCallsControllerList<TData = Awaited<ReturnType<typeof missedCallsControllerList>>, TError = void>(
+ params: undefined |  MissedCallsControllerListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof missedCallsControllerList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof missedCallsControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof missedCallsControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMissedCallsControllerList<TData = Awaited<ReturnType<typeof missedCallsControllerList>>, TError = void>(
+ params?: MissedCallsControllerListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof missedCallsControllerList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof missedCallsControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof missedCallsControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMissedCallsControllerList<TData = Awaited<ReturnType<typeof missedCallsControllerList>>, TError = void>(
+ params?: MissedCallsControllerListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof missedCallsControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List missed calls (newest first; ?status, ?from, ?to; paginated).
+ */
+
+export function useMissedCallsControllerList<TData = Awaited<ReturnType<typeof missedCallsControllerList>>, TError = void>(
+ params?: MissedCallsControllerListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof missedCallsControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getMissedCallsControllerListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * @summary Mark a missed call HANDLED.
+ */
+export const missedCallsControllerHandle = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<MissedCallResponse>(
+      {url: `/reservations/missed-calls/${id}/handle`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+export const getMissedCallsControllerHandleMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof missedCallsControllerHandle>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof missedCallsControllerHandle>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['missedCallsControllerHandle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof missedCallsControllerHandle>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  missedCallsControllerHandle(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MissedCallsControllerHandleMutationResult = NonNullable<Awaited<ReturnType<typeof missedCallsControllerHandle>>>
+
+    export type MissedCallsControllerHandleMutationError = void
+
+    /**
+ * @summary Mark a missed call HANDLED.
+ */
+export const useMissedCallsControllerHandle = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof missedCallsControllerHandle>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof missedCallsControllerHandle>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getMissedCallsControllerHandleMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Mark a missed call DISMISSED.
+ */
+export const missedCallsControllerDismiss = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<MissedCallResponse>(
+      {url: `/reservations/missed-calls/${id}/dismiss`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+export const getMissedCallsControllerDismissMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof missedCallsControllerDismiss>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof missedCallsControllerDismiss>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['missedCallsControllerDismiss'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof missedCallsControllerDismiss>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  missedCallsControllerDismiss(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MissedCallsControllerDismissMutationResult = NonNullable<Awaited<ReturnType<typeof missedCallsControllerDismiss>>>
+
+    export type MissedCallsControllerDismissMutationError = void
+
+    /**
+ * @summary Mark a missed call DISMISSED.
+ */
+export const useMissedCallsControllerDismiss = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof missedCallsControllerDismiss>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof missedCallsControllerDismiss>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getMissedCallsControllerDismissMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Create a PENDING source=PHONE reservation from a call (phone prefilled).
+ */
+export const missedCallsControllerCreateReservation = (
+    id: string,
+    createReservationFromCallDto: CreateReservationFromCallDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<ReservationResponse>(
+      {url: `/reservations/missed-calls/${id}/create-reservation`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createReservationFromCallDto, signal
+    },
+      options);
+    }
+
+
+
+export const getMissedCallsControllerCreateReservationMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof missedCallsControllerCreateReservation>>, TError,{id: string;data: CreateReservationFromCallDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof missedCallsControllerCreateReservation>>, TError,{id: string;data: CreateReservationFromCallDto}, TContext> => {
+
+const mutationKey = ['missedCallsControllerCreateReservation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof missedCallsControllerCreateReservation>>, {id: string;data: CreateReservationFromCallDto}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  missedCallsControllerCreateReservation(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MissedCallsControllerCreateReservationMutationResult = NonNullable<Awaited<ReturnType<typeof missedCallsControllerCreateReservation>>>
+    export type MissedCallsControllerCreateReservationMutationBody = CreateReservationFromCallDto
+    export type MissedCallsControllerCreateReservationMutationError = void
+
+    /**
+ * @summary Create a PENDING source=PHONE reservation from a call (phone prefilled).
+ */
+export const useMissedCallsControllerCreateReservation = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof missedCallsControllerCreateReservation>>, TError,{id: string;data: CreateReservationFromCallDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof missedCallsControllerCreateReservation>>,
+        TError,
+        {id: string;data: CreateReservationFromCallDto},
+        TContext
+      > => {
+      return useMutation(getMissedCallsControllerCreateReservationMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Ingest a batch of missed calls (device-token auth; idempotent).
+ */
+export const missedCallIngestControllerIngestCalls = (
+    ingestMissedCallsDto: IngestMissedCallsDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<unknown>(
+      {url: `/reservations/missed-calls/ingest`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: ingestMissedCallsDto, signal
+    },
+      options);
+    }
+
+
+
+export const getMissedCallIngestControllerIngestCallsMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof missedCallIngestControllerIngestCalls>>, TError,{data: IngestMissedCallsDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof missedCallIngestControllerIngestCalls>>, TError,{data: IngestMissedCallsDto}, TContext> => {
+
+const mutationKey = ['missedCallIngestControllerIngestCalls'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof missedCallIngestControllerIngestCalls>>, {data: IngestMissedCallsDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  missedCallIngestControllerIngestCalls(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MissedCallIngestControllerIngestCallsMutationResult = NonNullable<Awaited<ReturnType<typeof missedCallIngestControllerIngestCalls>>>
+    export type MissedCallIngestControllerIngestCallsMutationBody = IngestMissedCallsDto
+    export type MissedCallIngestControllerIngestCallsMutationError = void
+
+    /**
+ * @summary Ingest a batch of missed calls (device-token auth; idempotent).
+ */
+export const useMissedCallIngestControllerIngestCalls = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof missedCallIngestControllerIngestCalls>>, TError,{data: IngestMissedCallsDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof missedCallIngestControllerIngestCalls>>,
+        TError,
+        {data: IngestMissedCallsDto},
+        TContext
+      > => {
+      return useMutation(getMissedCallIngestControllerIngestCallsMutationOptions(options), queryClient);
     }

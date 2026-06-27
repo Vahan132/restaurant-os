@@ -7,18 +7,24 @@ import { usePathname } from 'next/navigation';
 import { NAV_ITEMS } from '@/components/shell/nav-config';
 import { useAnyPermission } from '@/lib/auth/use-permission';
 
-function NavLink({ href, label }: { href: string; label: string }) {
+function NavLink({
+  href,
+  label,
+  nested = false,
+}: {
+  href: string;
+  label: string;
+  nested?: boolean;
+}) {
   const pathname = usePathname();
   const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
 
   return (
     <Link
       href={href}
-      className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-        active
-          ? 'bg-brand text-brand-fg'
-          : 'text-gray-700 hover:bg-gray-100'
-      }`}
+      className={`block rounded-md py-2 text-sm font-medium transition-colors ${
+        nested ? 'px-3 pl-5' : 'px-3'
+      } ${active ? 'bg-brand text-brand-fg' : 'text-gray-700 hover:bg-gray-100'}`}
     >
       {label}
     </Link>
@@ -27,8 +33,23 @@ function NavLink({ href, label }: { href: string; label: string }) {
 
 function GatedNavLink({ item }: { item: (typeof NAV_ITEMS)[number] }) {
   const t = useTranslations('nav');
-  const allowed = useAnyPermission(item.anyOf);
+  const allowed = useAnyPermission(item.anyOf, item.scope ?? 'branch');
   if (!allowed) return null;
+
+  // Section with sub-navigation (e.g. Inventory).
+  if (item.children && item.children.length > 0) {
+    return (
+      <div className="mt-2 space-y-1">
+        <p className="px-3 pt-1 text-xs font-semibold uppercase tracking-wide text-gray-400">
+          {t(item.key)}
+        </p>
+        {item.children.map((child) => (
+          <NavLink key={child.href} href={child.href} label={t(child.key)} nested />
+        ))}
+      </div>
+    );
+  }
+
   return <NavLink href={item.href} label={t(item.key)} />;
 }
 

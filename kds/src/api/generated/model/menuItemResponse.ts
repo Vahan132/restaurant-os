@@ -12,6 +12,8 @@ import type { MenuItemResponseAvailability } from './menuItemResponseAvailabilit
 export interface MenuItemResponse {
   id: string;
   restaurantId: string;
+  branchId: string;
+  code: string;
   categoryId: string;
   name: string;
   /** @nullable */

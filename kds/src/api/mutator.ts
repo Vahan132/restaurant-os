@@ -5,6 +5,7 @@ import axios, {
   InternalAxiosRequestConfig,
 } from 'axios';
 import { API_BASE_URL } from '@/lib/env';
+import { resolveApiBaseUrl } from '@/lib/endpoint/store';
 import { authStore } from '@/lib/auth/store';
 import { readPersistedTokens, withRefreshLock } from '@/lib/auth/refresh-lock';
 
@@ -12,7 +13,12 @@ import { readPersistedTokens, withRefreshLock } from '@/lib/auth/refresh-lock';
  * Axios mutator used by every orval-generated hook.
  *
  * Mirrors the POS/admin apps:
- *  - baseURL from env, Bearer token attached from the auth store
+ *  - baseURL resolved PER REQUEST from the device endpoint setting (cloud by
+ *    default, or the local hub when this device is hub-managed) — so login,
+ *    /auth/me, tickets and the refresh call all follow the same target. There is
+ *    intentionally no cloud fallback for a hub-managed branch (out of MVP scope).
+ *  - Bearer token attached from the auth store. The hub accepts the existing
+ *    (cloud-issued) token, so switching to a hub needs no re-login.
  *  - success envelope unwrapped so hooks receive the documented payload type
  *  - errors normalized to { code, message }
  *  - on 401: refresh once + retry, otherwise clear the store and go to /login
@@ -26,7 +32,8 @@ export interface NormalizedError {
   details?: unknown;
 }
 
-// Main instance — carries the interceptors below.
+// Main instance — carries the interceptors below. The baseURL default is only a
+// fallback; the request interceptor re-resolves it on every call.
 export const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
@@ -38,12 +45,19 @@ const rawAxios = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// --- request: attach Bearer -------------------------------------------------
+// --- request: target the active endpoint + attach Bearer --------------------
 axiosInstance.interceptors.request.use((config) => {
+  config.baseURL = resolveApiBaseUrl();
   const token = authStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+});
+
+// The refresh call must hit the same endpoint (hub or cloud) as everything else.
+rawAxios.interceptors.request.use((config) => {
+  config.baseURL = resolveApiBaseUrl();
   return config;
 });
 

@@ -5,6 +5,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios';
 
+import { useActiveBranchStore } from '@/stores/active-branch';
 import { useAuthStore } from '@/stores/auth';
 import { readPersistedTokens, withRefreshLock } from './refresh-lock';
 
@@ -37,12 +38,18 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// --- Request: attach bearer token ---------------------------------------
+// --- Request: attach bearer token + active branch -----------------------
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (!isAuthBypass(config.url)) {
     const token = useAuthStore.getState().accessToken;
     if (token) {
       config.headers.set('Authorization', `Bearer ${token}`);
+    }
+    // Attach the active branch on every authed request (BR-7). Branch-scoped
+    // endpoints use it; restaurant-scoped endpoints ignore it.
+    const activeBranchId = useActiveBranchStore.getState().activeBranchId;
+    if (activeBranchId) {
+      config.headers.set('X-Branch-Id', activeBranchId);
     }
   }
   return config;

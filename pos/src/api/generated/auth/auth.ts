@@ -21,7 +21,15 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
-import type { AuthTokensResponse, LoginDto, LogoutDto, MeResponse, RefreshDto } from '.././model';
+import type {
+  AuthTokensResponse,
+  ForgotPasswordDto,
+  LoginDto,
+  LogoutDto,
+  MeResponse,
+  RefreshDto,
+  ResetPasswordDto,
+} from '.././model';
 
 import { apiRequest } from '../../mutator';
 
@@ -193,6 +201,178 @@ export const useAuthControllerRefresh = <TError = void, TContext = unknown>(
   TContext
 > => {
   const mutationOptions = getAuthControllerRefreshMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary Request a password reset link (always 200; never reveals existence).
+ */
+export const authControllerForgotPassword = (
+  forgotPasswordDto: ForgotPasswordDto,
+  options?: SecondParameter<typeof apiRequest>,
+  signal?: AbortSignal,
+) => {
+  return apiRequest<unknown>(
+    {
+      url: `/auth/forgot-password`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: forgotPasswordDto,
+      signal,
+    },
+    options,
+  );
+};
+
+export const getAuthControllerForgotPasswordMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerForgotPassword>>,
+    TError,
+    { data: ForgotPasswordDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiRequest>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof authControllerForgotPassword>>,
+  TError,
+  { data: ForgotPasswordDto },
+  TContext
+> => {
+  const mutationKey = ['authControllerForgotPassword'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof authControllerForgotPassword>>,
+    { data: ForgotPasswordDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return authControllerForgotPassword(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AuthControllerForgotPasswordMutationResult = NonNullable<
+  Awaited<ReturnType<typeof authControllerForgotPassword>>
+>;
+export type AuthControllerForgotPasswordMutationBody = ForgotPasswordDto;
+export type AuthControllerForgotPasswordMutationError = unknown;
+
+/**
+ * @summary Request a password reset link (always 200; never reveals existence).
+ */
+export const useAuthControllerForgotPassword = <TError = unknown, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof authControllerForgotPassword>>,
+      TError,
+      { data: ForgotPasswordDto },
+      TContext
+    >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof authControllerForgotPassword>>,
+  TError,
+  { data: ForgotPasswordDto },
+  TContext
+> => {
+  const mutationOptions = getAuthControllerForgotPasswordMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary Reset the password using a valid token; revokes existing sessions.
+ */
+export const authControllerResetPassword = (
+  resetPasswordDto: ResetPasswordDto,
+  options?: SecondParameter<typeof apiRequest>,
+  signal?: AbortSignal,
+) => {
+  return apiRequest<unknown>(
+    {
+      url: `/auth/reset-password`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: resetPasswordDto,
+      signal,
+    },
+    options,
+  );
+};
+
+export const getAuthControllerResetPasswordMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof authControllerResetPassword>>,
+    TError,
+    { data: ResetPasswordDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiRequest>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof authControllerResetPassword>>,
+  TError,
+  { data: ResetPasswordDto },
+  TContext
+> => {
+  const mutationKey = ['authControllerResetPassword'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof authControllerResetPassword>>,
+    { data: ResetPasswordDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return authControllerResetPassword(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AuthControllerResetPasswordMutationResult = NonNullable<
+  Awaited<ReturnType<typeof authControllerResetPassword>>
+>;
+export type AuthControllerResetPasswordMutationBody = ResetPasswordDto;
+export type AuthControllerResetPasswordMutationError = unknown;
+
+/**
+ * @summary Reset the password using a valid token; revokes existing sessions.
+ */
+export const useAuthControllerResetPassword = <TError = unknown, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof authControllerResetPassword>>,
+      TError,
+      { data: ResetPasswordDto },
+      TContext
+    >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof authControllerResetPassword>>,
+  TError,
+  { data: ResetPasswordDto },
+  TContext
+> => {
+  const mutationOptions = getAuthControllerResetPasswordMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

@@ -6,12 +6,12 @@ import { useEffect, useMemo, useState } from 'react';
 
 import {
   usePublicReservationsControllerInfo,
-  usePublicStorefrontBranchControllerBranches,
+  usePublicStorefrontControllerBranches,
   usePublicStorefrontControllerRestaurant,
 } from '@/api/generated/public/public';
 import type {
-  PublicBranchesResponse,
-  PublicReservationInfoResponse,
+  PublicBranchResponse,
+  PublicReservationsInfoResponse,
   PublicRestaurantResponse,
 } from '@/api/generated/model';
 import { isNotFound, type ApiError } from '@/api/mutator';
@@ -60,19 +60,19 @@ export default function ReservePage() {
     PublicRestaurantResponse,
     ApiError
   >();
-  const branchesQ = usePublicStorefrontBranchControllerBranches<PublicBranchesResponse, ApiError>(
+  const branchesQ = usePublicStorefrontControllerBranches<PublicBranchResponse[], ApiError>(
     restaurantSlug,
     { query: { enabled: !!restaurantSlug } },
   );
 
   const pickedBranchSummary = useMemo(
-    () => branchesQ.data?.branches.find((b) => b.slug === pickedBranch) ?? null,
+    () => branchesQ.data?.find((b) => b.slug === pickedBranch) ?? null,
     [branchesQ.data, pickedBranch],
   );
   const branchSlug = pickedBranchSummary?.slug ?? null;
 
   const infoQ = usePublicReservationsControllerInfo<
-    PublicReservationInfoResponse,
+    PublicReservationsInfoResponse,
     ApiError
   >(restaurantSlug, branchSlug ?? '', {
     query: { enabled: !!restaurantSlug && !!branchSlug },
@@ -110,7 +110,7 @@ export default function ReservePage() {
       <div className="min-h-screen pb-12">
         <BrandingHeader name={restaurant.name} logoUrl={restaurant.logoUrl} />
         <LocationPicker
-          branches={branchesQ.data.branches}
+          branches={branchesQ.data}
           title={tLoc('bookTitle')}
           subtitle={tLoc('bookSubtitle')}
           onSelect={chooseBranch}

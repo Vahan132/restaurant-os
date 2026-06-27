@@ -12,8 +12,8 @@ type Tab = 'users' | 'roles';
 
 export function UsersManager() {
   const t = useTranslations('users');
-  const canUsers = usePermission(PERMISSIONS.USER_MANAGE);
-  const canRoles = usePermission(PERMISSIONS.ROLE_MANAGE);
+  const canUsers = usePermission(PERMISSIONS.USER_MANAGE, 'restaurant');
+  const canRoles = usePermission(PERMISSIONS.ROLE_MANAGE, 'restaurant');
 
   const available: { key: Tab; label: string }[] = [
     ...(canUsers ? [{ key: 'users' as const, label: t('usersTab') }] : []),

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthControllerLogin } from '@/api/generated/auth/auth';
 import { useAuthStore } from '@/stores/auth';
 import type { ApiError } from '@/api/mutator';
+import { EndpointSettings } from '@/components/settings/EndpointSettings';
 
 export default function LoginPage() {
   const t = useTranslations('login');
@@ -90,6 +91,12 @@ export default function LoginPage() {
             {submitting ? t('submitting') : t('submit')}
           </button>
         </form>
+
+        {/* Per-device endpoint config — point this terminal at its Local hub
+            before signing in (the hub authenticates the login locally). */}
+        <div className="mt-6 flex justify-center border-t border-gray-100 pt-5">
+          <EndpointSettings variant="text" />
+        </div>
       </div>
     </div>
   );

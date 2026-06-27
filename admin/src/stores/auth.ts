@@ -16,12 +16,33 @@ export interface AuthUser {
   status: string;
 }
 
+/** A branch the caller may act on, from the extended /auth/me (BR-1). */
+export interface AccessibleBranch {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  status?: string;
+}
+
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   user: AuthUser | null;
-  /** Permission keys from GET /auth/me. Drives nav gating and <Can>. */
+  /**
+   * Restaurant-wide permission keys from GET /auth/me. Used by restaurant-level
+   * screens (branch management, users, settings, audit) and as the fallback for
+   * all-branch users on branch-scoped screens.
+   */
   permissions: string[];
+  /**
+   * Effective permission keys per accessible branch (BR-1). Branch-scoped
+   * screens resolve gating at the active branch from this map.
+   */
+  branchPermissions: Record<string, string[]>;
+  /** Branches the caller may switch between (BR-1). */
+  accessibleBranches: AccessibleBranch[];
+  /** The caller's default branch id (BR-1), used to initialise the switcher. */
+  defaultBranchId: string | null;
   /** Whether /auth/me hydration has completed (so guards can wait). */
   hydrated: boolean;
 
@@ -31,7 +52,13 @@ interface AuthState {
     refreshToken: string;
     user: AuthUser;
   }) => void;
-  setUser: (user: AuthUser, permissions: string[]) => void;
+  setUser: (args: {
+    user: AuthUser;
+    permissions: string[];
+    branchPermissions?: Record<string, string[]>;
+    accessibleBranches?: AccessibleBranch[];
+    defaultBranchId?: string | null;
+  }) => void;
   setHydrated: (hydrated: boolean) => void;
   clear: () => void;
 }
@@ -47,6 +74,9 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       user: null,
       permissions: [],
+      branchPermissions: {},
+      accessibleBranches: [],
+      defaultBranchId: null,
       hydrated: false,
 
       setTokens: (accessToken, refreshToken) =>
@@ -55,7 +85,21 @@ export const useAuthStore = create<AuthState>()(
       setAuth: ({ accessToken, refreshToken, user }) =>
         set({ accessToken, refreshToken, user }),
 
-      setUser: (user, permissions) => set({ user, permissions, hydrated: true }),
+      setUser: ({
+        user,
+        permissions,
+        branchPermissions,
+        accessibleBranches,
+        defaultBranchId,
+      }) =>
+        set({
+          user,
+          permissions,
+          branchPermissions: branchPermissions ?? {},
+          accessibleBranches: accessibleBranches ?? [],
+          defaultBranchId: defaultBranchId ?? null,
+          hydrated: true,
+        }),
 
       setHydrated: (hydrated) => set({ hydrated }),
 
@@ -65,6 +109,9 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           user: null,
           permissions: [],
+          branchPermissions: {},
+          accessibleBranches: [],
+          defaultBranchId: null,
           hydrated: true,
         }),
     }),
@@ -76,6 +123,9 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         user: state.user,
         permissions: state.permissions,
+        branchPermissions: state.branchPermissions,
+        accessibleBranches: state.accessibleBranches,
+        defaultBranchId: state.defaultBranchId,
       }),
     },
   ),

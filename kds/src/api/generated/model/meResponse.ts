@@ -7,10 +7,21 @@
  */
 import type { UserResponse } from './userResponse';
 import type { MeResponseRole } from './meResponseRole';
+import type { AccessibleBranchResponse } from './accessibleBranchResponse';
 
 export interface MeResponse {
   user: UserResponse;
   /** @nullable */
   role: MeResponseRole;
+  /** Restaurant-wide permission set. */
   permissions: string[];
+  /** True if the caller is restaurant-wide (their role applies at every branch). */
+  allBranches: boolean;
+  /** Branches the caller can access, each with effective permissions. */
+  accessibleBranches: AccessibleBranchResponse[];
+  /**
+   * The caller's default branch id.
+   * @nullable
+   */
+  defaultBranchId: string | null;
 }

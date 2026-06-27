@@ -2,12 +2,14 @@
 
 import type { ReactNode } from 'react';
 
+import { BranchSync } from '@/components/shell/branch-sync';
 import { Sidebar } from '@/components/shell/sidebar';
 import { Topbar } from '@/components/shell/topbar';
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen bg-gray-50">
+      <BranchSync />
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />

@@ -18,9 +18,14 @@ export function MenuManager() {
   const { categories } = useCategories({ includeInactive: true });
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [drawer, setDrawer] = useState<{ open: boolean; itemId: string | null }>({
+  const [drawer, setDrawer] = useState<{
+    open: boolean;
+    itemId: string | null;
+    tab: 'details' | 'recipe';
+  }>({
     open: false,
     itemId: null,
+    tab: 'details',
   });
 
   // Auto-select the first category once loaded.
@@ -30,9 +35,24 @@ export function MenuManager() {
     }
   }, [categories, selectedCategoryId]);
 
+  // Deep-link support (e.g. from Menu Costing): /menu?itemId=<id>&tab=recipe
+  // opens that item's editor directly. Read once on mount, client-side, to
+  // avoid needing a Suspense boundary around useSearchParams.
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const itemId = sp.get('itemId');
+    if (itemId) {
+      setDrawer({
+        open: true,
+        itemId,
+        tab: sp.get('tab') === 'recipe' ? 'recipe' : 'details',
+      });
+    }
+  }, []);
+
   const openEditor = (item: MenuItemResponse | null) =>
-    setDrawer({ open: true, itemId: item?.id ?? null });
-  const closeEditor = () => setDrawer({ open: false, itemId: null });
+    setDrawer({ open: true, itemId: item?.id ?? null, tab: 'details' });
+  const closeEditor = () => setDrawer({ open: false, itemId: null, tab: 'details' });
 
   return (
     <div className="space-y-4">
@@ -60,6 +80,7 @@ export function MenuManager() {
           categoryId={selectedCategoryId}
           categories={categories}
           currency={currency}
+          initialTab={drawer.tab}
           onClose={closeEditor}
         />
       )}

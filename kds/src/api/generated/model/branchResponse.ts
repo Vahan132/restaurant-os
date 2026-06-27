@@ -11,5 +11,7 @@ export interface BranchResponse {
   id: string;
   restaurantId: string;
   name: string;
+  /** Whether this is the restaurant default branch. */
+  isDefault: boolean;
   status: BranchResponseStatus;
 }

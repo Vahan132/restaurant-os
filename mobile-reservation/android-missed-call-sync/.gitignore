@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Expo / native prebuild output
+.expo/
+dist/
+web-build/
+android/
+ios/
+
+# Native build artifacts
+*.apk
+*.aab
+*.keystore
+
+# Env / secrets
+.env*
+google-services.json
+
+# Logs
+npm-debug.*
+yarn-error.*
+*.log
+
+# Misc
+.DS_Store
+*.orig.*
+coverage/

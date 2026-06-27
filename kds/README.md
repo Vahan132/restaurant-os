@@ -14,7 +14,7 @@ axios codegen · zustand · socket.io-client · next-intl (hy / ru / en). Node 2
 
 ```bash
 pnpm install
-cp .env.example .env.local      # set NEXT_PUBLIC_API_BASE_URL if not localhost:3001
+cp .env.local.local.local.example .env.local.local.local.local      # set NEXT_PUBLIC_API_BASE_URL if not localhost:3001
 pnpm generate:api               # generate typed hooks from ./openapi.json
 pnpm dev                        # http://localhost:3002
 ```
@@ -50,24 +50,35 @@ point the input at `${NEXT_PUBLIC_API_BASE_URL}/docs-json`.
 ## Realtime
 
 `src/lib/realtime/client.ts` connects to the `/realtime` namespace with
-`auth: { token }`, reconnects on token refresh, and remembers station
-subscriptions across drops. `subscribeStations` emits `kds:subscribe`; typed
-listeners cover `kds:ticket.new` / `.updated` / `.cancelled`. A connection-status
-banner shows when disconnected. On reconnect the board refetches over HTTP (the
-read model is the source of truth) via the `onReconnected` signal — wired through
+`auth: { token, branchId, station }`, reconnects on token refresh **or** when the
+pin changes, and re-subscribes to its `branch:station` room across drops. On
+connect it emits `kds:subscribe { branchId, station }`; typed listeners cover
+`kds:ticket.new` / `.updated` / `.cancelled`. A connection-status banner shows
+when disconnected. On reconnect the board refetches over HTTP (the read model is
+the source of truth) via the `onReconnected` signal — wired through
 `src/lib/realtime/useRealtime.ts`.
 
-## Stations
+## Branch + station pinning
 
-Pick one or more of KITCHEN / BAR / DESSERT / OTHER. The choice persists to
-localStorage (`src/lib/station/store.ts`) so the kiosk returns to the same board
-after a reload. Selecting stations subscribes to their rooms and loads tickets.
+Setup pins the device to **one branch AND one station** (KITCHEN / BAR / DESSERT
+/ OTHER). The branch is chosen from `GET /restaurant/branches` (auto-selected
+when the account has a single active branch); the pin persists per device to
+localStorage (`src/lib/branch/store.ts` + `src/lib/station/store.ts`) so the
+kiosk returns to the same board after a reload. The active branch + station are
+shown in the top strip so a screen is never mistaken for another location's.
+
+The pin scopes everything: the socket handshake carries the branch + station and
+subscribes to ONLY that `branch:station` room, and ticket reads
+(`GET /kds/stations/:station/tickets`) plus the preparing/ready mutations send an
+`X-Branch-Id` header (injected via the orval `request` option in
+`src/lib/kds/branchRequest.ts`, so no generated file is hand-edited) and cache
+under a branch-scoped query key.
 
 ## Ticket board (K2)
 
-After a station is chosen, the board renders active tickets as glanceable cards
-(`src/components/board/`), oldest-first, merging all selected stations onto one
-screen. Each card shows the table name (or "Takeaway"), order number, a live
+Once pinned, the board renders the branch+station's active tickets as glanceable
+cards (`src/components/board/`), oldest-first. Each card shows the table name (or
+"Takeaway"), order number, a live
 count-up timer, a prominent order note, and this station's items with quantity,
 modifiers, item note, and per-item status. Per-item **Start** (SENT→PREPARING)
 and **Ready** (PREPARING→READY) actions hit the KDS endpoints and refetch; a

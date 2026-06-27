@@ -418,7 +418,7 @@ export const useItemsControllerRemove = <TError = void,
       return useMutation(getItemsControllerRemoveMutationOptions(options), queryClient);
     }
     /**
- * @summary Change a menu item price.
+ * @summary Set a menu item price (separate permission from item manage).
  */
 export const itemsControllerPrice = (
     id: string,
@@ -469,7 +469,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ItemsControllerPriceMutationError = void
 
     /**
- * @summary Change a menu item price.
+ * @summary Set a menu item price (separate permission from item manage).
  */
 export const useItemsControllerPrice = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof itemsControllerPrice>>, TError,{id: string;data: ChangeItemPriceDto}, TContext>, request?: SecondParameter<typeof customInstance>}

@@ -16,6 +16,7 @@ import type { PaymentResponse } from './paymentResponse';
 export interface OrderResponse {
   id: string;
   restaurantId: string;
+  branchId: string;
   orderNumber: number;
   type: OrderResponseType;
   /** @nullable */

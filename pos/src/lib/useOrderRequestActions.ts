@@ -11,10 +11,9 @@ import { getOrdersControllerGetQueryKey } from '@/api/generated/orders/orders';
 import type { OrderResponse } from '@/api/generated/model';
 import type { ApiError } from '@/api/mutator';
 import { toast } from '@/lib/toast';
-import { useAuthMe } from '@/lib/useAuthMe';
 import { useFloorDataInvalidator } from '@/lib/useActiveOrders';
 import { useOrderRequestsInvalidator } from '@/lib/useOrderRequests';
-import { PERMISSIONS } from '@/lib/permissions';
+import { PERMISSIONS, useEffectivePermissions } from '@/lib/permissions';
 
 /** HTTP statuses that mean "another waiter already handled this request". */
 const ALREADY_HANDLED_STATUSES = [400, 404, 409, 410, 422];
@@ -28,7 +27,7 @@ const ALREADY_HANDLED_STATUSES = [400, 404, 409, 410, 422];
 export function useOrderRequestActions() {
   const t = useTranslations('requests');
   const queryClient = useQueryClient();
-  const { data: me } = useAuthMe();
+  const permissions = useEffectivePermissions();
   const invalidateRequests = useOrderRequestsInvalidator();
   const invalidateFloor = useFloorDataInvalidator();
 
@@ -36,7 +35,7 @@ export function useOrderRequestActions() {
   const rejectM = useOrderRequestsControllerReject();
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const can = useCallback((perm: string) => (me?.permissions ?? []).includes(perm), [me]);
+  const can = useCallback((perm: string) => permissions.includes(perm), [permissions]);
 
   const handleConflict = useCallback(
     (err: ApiError) => {

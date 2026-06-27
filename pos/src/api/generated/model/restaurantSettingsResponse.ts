@@ -31,4 +31,6 @@ export interface RestaurantSettingsResponse {
   enableReservations: boolean;
   enableKds: boolean;
   allowManualTableStatus: boolean;
+  enableQrMenu: boolean;
+  enableCustomerOrdering: boolean;
 }

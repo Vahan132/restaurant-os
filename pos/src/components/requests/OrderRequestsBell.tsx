@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useAuthMe } from '@/lib/useAuthMe';
-import { PERMISSIONS } from '@/lib/permissions';
+import { PERMISSIONS, useEffectivePermissions } from '@/lib/permissions';
 import { usePendingOrderRequests, useOrderRequestsInvalidator } from '@/lib/useOrderRequests';
 import { useRealtimeEvent } from '@/lib/realtime/useRealtimeEvent';
 import { useRequestSound } from '@/lib/requestSound';
@@ -19,8 +18,7 @@ import { OrderRequestsPanel } from './OrderRequestsPanel';
  */
 export function OrderRequestsBell() {
   const t = useTranslations('requests');
-  const { data: me } = useAuthMe();
-  const perms = me?.permissions ?? [];
+  const perms = useEffectivePermissions();
   const visible = perms.includes(PERMISSIONS.ORDER_CREATE) || perms.includes(PERMISSIONS.ORDER_EDIT);
 
   const { count } = usePendingOrderRequests();

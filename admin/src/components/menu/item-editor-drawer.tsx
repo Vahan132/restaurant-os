@@ -22,13 +22,15 @@ import {
 } from '@/api/generated/model';
 import { Can } from '@/components/auth/can';
 import { ModifierGroupsEditor } from '@/components/menu/modifier-groups-editor';
+import { RecipeCostPanel } from '@/components/inventory/recipe-cost-panel';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { Field, inputClass } from '@/components/ui/form';
 import { getErrorMessage } from '@/lib/api-error';
 import { usePermission } from '@/lib/auth/use-permission';
+import { useRecipeForMenuItem } from '@/lib/inventory/use-recipe-data';
 import { useMenuInvalidation } from '@/lib/menu/use-menu-invalidation';
-import { minorToInput, toMinor } from '@/lib/money';
+import { formatMoney, minorToInput, toMinor } from '@/lib/money';
 import { PERMISSIONS } from '@/lib/permissions';
 import { toast } from '@/stores/toast';
 
@@ -40,18 +42,25 @@ export function ItemEditorDrawer({
   categories,
   currency,
   onClose,
+  initialTab = 'details',
 }: {
   itemId: string | null;
   categoryId: string | null;
   categories: CategoryResponse[];
   currency: string;
   onClose: () => void;
+  initialTab?: 'details' | 'recipe';
 }) {
   const t = useTranslations('menu');
   const tc = useTranslations('common');
+  const ti = useTranslations('inventory');
   const canManage = usePermission(PERMISSIONS.MENU_MANAGE);
+  const canSetPrice = usePermission(PERMISSIONS.MENU_ITEM_SET_PRICE);
+  const canManageRecipe = usePermission(PERMISSIONS.INVENTORY_RECIPE_MANAGE);
   const { invalidateItems, invalidateItem, invalidateMenuTree, invalidateCategories } =
     useMenuInvalidation();
+
+  const [tab, setTab] = useState<'details' | 'recipe'>(initialTab);
 
   // After a create, we switch to edit mode for the new item so the user can
   // immediately manage its modifiers without closing the drawer.
@@ -61,6 +70,10 @@ export function ItemEditorDrawer({
     query: { enabled: !!workingId },
   });
   const detail = detailQuery.data;
+
+  // Recipe estimated cost drives the margin helper (read-only to everyone).
+  const { recipe } = useRecipeForMenuItem(workingId);
+  const estimatedCost = recipe?.estimatedUnitCost ?? null;
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -123,7 +136,7 @@ export function ItemEditorDrawer({
           data: {
             name: name.trim(),
             categoryId: formCategoryId,
-            priceAmount: priceMinor ?? 0,
+            priceAmount: canSetPrice ? (priceMinor ?? 0) : 0,
             description: description.trim() || undefined,
             imageUrl: imageUrl.trim() || undefined,
             preparationStation: station as CreateMenuItemDtoPreparationStation,
@@ -160,7 +173,7 @@ export function ItemEditorDrawer({
             prepTimeMinutes,
           },
         });
-        if ((priceMinor ?? 0) !== detail.priceAmount) {
+        if (canSetPrice && (priceMinor ?? 0) !== detail.priceAmount) {
           await priceMut.mutateAsync({ id: workingId, data: { priceAmount: priceMinor ?? 0 } });
           toast.success(t('toast.priceUpdated'));
         }
@@ -192,6 +205,16 @@ export function ItemEditorDrawer({
   const title = workingId ? t('editItem') : t('addItem');
   const loadingDetail = !!workingId && detailQuery.isLoading;
 
+  // Margin helper (visible to anyone with read): price − estimated cost.
+  const priceMinorNow = toMinor(priceInput, currency);
+  const marginMinor =
+    priceMinorNow != null && estimatedCost != null ? priceMinorNow - estimatedCost : null;
+  const marginPct =
+    marginMinor != null && priceMinorNow != null && priceMinorNow > 0
+      ? (marginMinor / priceMinorNow) * 100
+      : null;
+  const modifierOptions = (detail?.modifierGroups ?? []).flatMap((g) => g.options);
+
   return (
     <Drawer
       open
@@ -217,9 +240,28 @@ export function ItemEditorDrawer({
           ))}
         </div>
       ) : (
-        <div className="space-y-5">
-          <div className="space-y-3">
-            <Field label={t('itemName')} required error={errors.name}>
+        <>
+          <div className="mb-4 flex gap-1 border-b border-gray-200">
+            {(['details', 'recipe'] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTab(key)}
+                className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                  tab === key
+                    ? 'border-brand text-brand'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {key === 'details' ? ti('tabDetails') : ti('tabRecipe')}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'details' ? (
+            <div className="space-y-5">
+              <div className="space-y-3">
+                <Field label={t('itemName')} required error={errors.name}>
               <input
                 className={inputClass}
                 value={name}
@@ -251,14 +293,23 @@ export function ItemEditorDrawer({
                   ))}
                 </select>
               </Field>
-              <Field label={`${t('price')} (${currency})`} required error={errors.price}>
+              <Field label={`${ti('sellPrice')} (${currency})`} required error={errors.price}>
                 <input
                   inputMode="decimal"
                   className={inputClass}
                   value={priceInput}
-                  disabled={!canManage}
+                  disabled={!canSetPrice}
                   onChange={(e) => setPriceInput(e.target.value)}
                 />
+                {!canSetPrice && (
+                  <span className="mt-1 block text-xs text-gray-400">{ti('priceReadOnly')}</span>
+                )}
+                {marginMinor != null && (
+                  <span className="mt-1 block text-xs text-gray-500">
+                    {ti('margin')}: {formatMoney(marginMinor, currency)}
+                    {marginPct != null && ` (${marginPct.toFixed(1)}%)`}
+                  </span>
+                )}
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -339,8 +390,21 @@ export function ItemEditorDrawer({
                 {t('saveItemFirst')}
               </p>
             )}
-          </div>
-        </div>
+              </div>
+            </div>
+          ) : workingId && detail ? (
+            <RecipeCostPanel
+              menuItemId={workingId}
+              currency={currency}
+              modifierOptions={modifierOptions}
+              canManage={canManageRecipe}
+            />
+          ) : (
+            <p className="rounded-md border border-dashed border-gray-300 p-4 text-center text-sm text-gray-500">
+              {ti('saveItemFirstRecipe')}
+            </p>
+          )}
+        </>
       )}
     </Drawer>
   );

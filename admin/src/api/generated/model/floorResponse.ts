@@ -10,6 +10,7 @@ import type { FloorResponseStatus } from './floorResponseStatus';
 export interface FloorResponse {
   id: string;
   restaurantId: string;
+  branchId: string;
   name: string;
   /** @nullable */
   description: string | null;

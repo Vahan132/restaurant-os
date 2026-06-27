@@ -6,17 +6,17 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { isNotFound, type ApiError } from '@/api/mutator';
 import {
-  usePublicStorefrontBranchControllerMenu,
-  usePublicStorefrontBranchControllerBranches,
+  usePublicStorefrontControllerBranchMenu,
+  usePublicStorefrontControllerBranches,
   usePublicStorefrontControllerRestaurant,
-  usePublicTableTokenControllerResolve,
+  usePublicStorefrontControllerTable,
 } from '@/api/generated/public/public';
 import type {
-  PublicBranchesResponse,
+  PublicBranchResponse,
   PublicMenuItemResponse,
   PublicMenuResponse,
   PublicRestaurantResponse,
-  PublicTableTokenResponse,
+  PublicTableResponse,
 } from '@/api/generated/model';
 import { resolveBranchSlug, resolveSlug, resolveTableQr, withBranchParam } from '@/lib/tenant';
 
@@ -61,32 +61,35 @@ export default function MenuView() {
     PublicRestaurantResponse,
     ApiError
   >();
-  // Dine-in: the scanned QR token resolves to its restaurant, branch, and table
-  // (BR-9). Never ask the customer to pick — the table implies the branch.
-  const tableQ = usePublicTableTokenControllerResolve<PublicTableTokenResponse, ApiError>(
-    qr ?? '',
+  // Dine-in: the scanned QR token resolves to its table AND its branch (BR-9:
+  // PublicTableResponse carries branchSlug/branchName). Never ask the customer
+  // to pick — the table implies the branch.
+  const tableQ = usePublicStorefrontControllerTable<PublicTableResponse, ApiError>(
+    { qr: qr ?? '' },
     { query: { enabled: hasTable } },
   );
   // No table: load the locations so the customer can pick one (and so we can
-  // show the chosen branch's name).
-  const branchesQ = usePublicStorefrontBranchControllerBranches<PublicBranchesResponse, ApiError>(
+  // show the chosen branch's name). The endpoint returns a bare branch array.
+  const branchesQ = usePublicStorefrontControllerBranches<PublicBranchResponse[], ApiError>(
     restaurantSlug,
     { query: { enabled: noTable && !!restaurantSlug } },
   );
 
   const tableBranchSlug = hasTable ? (tableQ.data?.branchSlug ?? null) : null;
   const pickedBranchSummary = useMemo(
-    () => branchesQ.data?.branches.find((b) => b.slug === pickedBranch) ?? null,
+    () => branchesQ.data?.find((b) => b.slug === pickedBranch) ?? null,
     [branchesQ.data, pickedBranch],
   );
 
   // The branch we render the menu for: from the table (dine-in) or the picker.
   const branchSlug = hasTable ? tableBranchSlug : (pickedBranchSummary?.slug ?? null);
-  // The lean table-token endpoint resolves the branch slug but not its display
-  // name; for dine-in we surface the table name instead of a branch label.
-  const branchName = hasTable ? null : (pickedBranchSummary?.name ?? null);
+  // Branch/location label for clarity: the table carries its branch name
+  // (dine-in); otherwise the picked location's name.
+  const branchName = hasTable
+    ? (tableQ.data?.branchName ?? null)
+    : (pickedBranchSummary?.name ?? null);
 
-  const menuQ = usePublicStorefrontBranchControllerMenu<PublicMenuResponse, ApiError>(
+  const menuQ = usePublicStorefrontControllerBranchMenu<PublicMenuResponse, ApiError>(
     restaurantSlug,
     branchSlug ?? '',
     { query: { enabled: !!restaurantSlug && !!branchSlug } },
@@ -178,7 +181,7 @@ export default function MenuView() {
         <div className="min-h-screen pb-12">
           <BrandingHeader name={restaurant.name} logoUrl={restaurant.logoUrl} />
           <LocationPicker
-            branches={branchesQ.data.branches}
+            branches={branchesQ.data}
             title={tLoc('menuTitle')}
             subtitle={tLoc('menuSubtitle')}
             onSelect={chooseBranch}
@@ -192,7 +195,7 @@ export default function MenuView() {
   if (menuQ.isError) return <GenericError />;
   if (menuQ.isLoading || !menuQ.data) return <MenuSkeleton />;
 
-  const tableName = hasTable ? (tableQ.data?.table.name ?? null) : null;
+  const tableName = hasTable ? (tableQ.data?.name ?? null) : null;
 
   // Ordering gate: orderingEnabled AND a table resolved from ?qr=.
   const tableResolved = hasTable && !!tableQ.data;

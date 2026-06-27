@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useAuthStore } from '@/lib/auth/store';
 import { useAuth } from '@/lib/auth/useAuth';
+import { useBranchStore } from '@/lib/branch/store';
 import { useStationStore } from '@/lib/station/store';
-import type { ConnectionStatus } from '@/lib/realtime/client';
+import type { DisplayConnectionStatus } from '@/lib/hub/status';
 import { ConnectionBanner, ConnectionIndicator } from './ConnectionBanner';
 import { FullscreenToggle } from './FullscreenToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -20,35 +21,53 @@ export function KioskShell({
   status,
   children,
 }: {
-  status: ConnectionStatus;
+  status: DisplayConnectionStatus;
   children: ReactNode;
 }) {
   const t = useTranslations();
   const router = useRouter();
   const { logout } = useAuth();
   const user = useAuthStore((s) => s.user);
-  const stations = useStationStore((s) => s.stations);
-  const clearStations = useStationStore((s) => s.clear);
+  const station = useStationStore((s) => s.station);
+  const clearStation = useStationStore((s) => s.clear);
+  const branchName = useBranchStore((s) => s.branchName);
+  const clearBranch = useBranchStore((s) => s.clear);
 
   async function onLogout() {
     await logout();
     router.replace('/login');
   }
 
-  const stationLabel = stations.map((s) => t(`station.${s}`)).join(' · ');
+  // Re-pinning clears both halves so the setup picker reappears.
+  function changePin() {
+    clearStation();
+    clearBranch();
+  }
+
+  const pinned = Boolean(branchName && station);
 
   return (
     <div className="flex h-screen flex-col">
       <header className="flex items-center justify-between gap-4 border-b border-kiosk-border bg-kiosk-panel px-6 py-3">
         <div className="flex items-center gap-4">
-          <span className="text-kiosk-lg font-bold">{stationLabel || t('app.title')}</span>
-          {stations.length > 0 && (
+          {pinned ? (
+            <span className="flex items-baseline gap-2">
+              <span className="text-kiosk-lg font-bold">{branchName}</span>
+              <span className="text-kiosk-muted">·</span>
+              <span className="text-kiosk-lg font-bold text-status-sent">
+                {t(`station.${station}`)}
+              </span>
+            </span>
+          ) : (
+            <span className="text-kiosk-lg font-bold">{t('app.title')}</span>
+          )}
+          {pinned && (
             <button
               type="button"
-              onClick={clearStations}
+              onClick={changePin}
               className="rounded-md border border-kiosk-border px-3 py-1 text-base text-kiosk-muted hover:bg-kiosk-border"
             >
-              {t('station.change')}
+              {t('setup.change')}
             </button>
           )}
           <ConnectionIndicator status={status} />

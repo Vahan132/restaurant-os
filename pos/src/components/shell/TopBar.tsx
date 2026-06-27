@@ -5,8 +5,12 @@ import { useRestaurantControllerProfile } from '@/api/generated/restaurant/resta
 import { useAuthMe } from '@/lib/useAuthMe';
 import { useAuthStore } from '@/stores/auth';
 import { useRealtime } from '@/lib/realtime/RealtimeProvider';
+import { useHubStatus } from '@/lib/hub/HubHealthProvider';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { HubStatusBadge } from './HubStatusBadge';
 import { OrderRequestsBell } from '@/components/requests/OrderRequestsBell';
+import { BranchMenu } from '@/components/branch/BranchMenu';
+import { EndpointSettings } from '@/components/settings/EndpointSettings';
 
 /**
  * POS top bar (workflow-driven shell — NOT an admin sidebar):
@@ -18,6 +22,7 @@ export function TopBar() {
   const { data: me } = useAuthMe();
   const clear = useAuthStore((s) => s.clear);
   const { connected, online } = useRealtime();
+  const { isHub } = useHubStatus();
 
   const live = connected && online;
 
@@ -30,13 +35,18 @@ export function TopBar() {
   return (
     <header className="flex h-16 items-center justify-between gap-4 border-b border-gray-200 bg-white px-4 shadow-sm">
       <div className="flex min-w-0 items-center gap-3">
-        <span
-          className={`inline-block h-3 w-3 shrink-0 rounded-full ${live ? 'bg-green-500' : 'bg-amber-500'}`}
-          title={live ? 'online' : 'reconnecting'}
-        />
+        {isHub ? (
+          <HubStatusBadge />
+        ) : (
+          <span
+            className={`inline-block h-3 w-3 shrink-0 rounded-full ${live ? 'bg-green-500' : 'bg-amber-500'}`}
+            title={live ? 'online' : 'reconnecting'}
+          />
+        )}
         <h1 className="truncate text-xl font-bold text-gray-900">
           {restaurant?.name ?? t('appName')}
         </h1>
+        <BranchMenu />
       </div>
 
       <div className="flex items-center gap-3">
@@ -46,6 +56,7 @@ export function TopBar() {
           </span>
         ) : null}
         <OrderRequestsBell />
+        <EndpointSettings />
         <LanguageSwitcher />
         <button
           type="button"

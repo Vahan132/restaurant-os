@@ -26,19 +26,19 @@ import type {
 
 import type {
   CreateOrderRequestDto,
-  CreatePublicReservationDto,
+  EmailAvailableResponse,
+  PublicAccountControllerEmailAvailableParams,
   PublicAccountControllerSubdomainParams,
-  PublicBranchesResponse,
+  PublicBranchResponse,
+  PublicCreateReservationDto,
   PublicMenuResponse,
   PublicOrderRequestResponse,
   PublicPlanResponse,
   PublicReservationConfirmationResponse,
-  PublicReservationInfoResponse,
+  PublicReservationsInfoResponse,
   PublicRestaurantResponse,
-  PublicStorefrontBranchControllerTableParams,
   PublicStorefrontControllerTableParams,
   PublicTableResponse,
-  PublicTableTokenResponse,
   SignupDto,
   SignupResponse,
   SubdomainAvailableResponse
@@ -52,7 +52,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 /**
- * @summary Public booking-page info (reflects the enableReservations toggle).
+ * @summary Per-branch booking info (toggle, restaurant + branch name, timezone, hours).
  */
 export const publicReservationsControllerInfo = (
     restaurantSlug: unknown,
@@ -61,7 +61,7 @@ export const publicReservationsControllerInfo = (
 ) => {
       
       
-      return customInstance<PublicReservationInfoResponse>(
+      return customInstance<PublicReservationsInfoResponse>(
       {url: `/public/${restaurantSlug}/branch/${branchSlug}/reservations/info`, method: 'GET', signal
     },
       options);
@@ -129,7 +129,7 @@ export function usePublicReservationsControllerInfo<TData = Awaited<ReturnType<t
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
 /**
- * @summary Public booking-page info (reflects the enableReservations toggle).
+ * @summary Per-branch booking info (toggle, restaurant + branch name, timezone, hours).
  */
 
 export function usePublicReservationsControllerInfo<TData = Awaited<ReturnType<typeof publicReservationsControllerInfo>>, TError = void>(
@@ -151,12 +151,12 @@ export function usePublicReservationsControllerInfo<TData = Awaited<ReturnType<t
 
 
 /**
- * @summary Submit a request-to-book reservation (PENDING, source PUBLIC).
+ * @summary Submit a request-to-book at this branch (PENDING, source=PUBLIC).
  */
 export const publicReservationsControllerCreate = (
     restaurantSlug: unknown,
     branchSlug: unknown,
-    createPublicReservationDto: CreatePublicReservationDto,
+    publicCreateReservationDto: PublicCreateReservationDto,
  options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
 ) => {
       
@@ -164,7 +164,7 @@ export const publicReservationsControllerCreate = (
       return customInstance<PublicReservationConfirmationResponse>(
       {url: `/public/${restaurantSlug}/branch/${branchSlug}/reservations`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
-      data: createPublicReservationDto, signal
+      data: publicCreateReservationDto, signal
     },
       options);
     }
@@ -172,8 +172,8 @@ export const publicReservationsControllerCreate = (
 
 
 export const getPublicReservationsControllerCreateMutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicReservationsControllerCreate>>, TError,{restaurantSlug: unknown;branchSlug: unknown;data: CreatePublicReservationDto}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof publicReservationsControllerCreate>>, TError,{restaurantSlug: unknown;branchSlug: unknown;data: CreatePublicReservationDto}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicReservationsControllerCreate>>, TError,{restaurantSlug: unknown;branchSlug: unknown;data: PublicCreateReservationDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof publicReservationsControllerCreate>>, TError,{restaurantSlug: unknown;branchSlug: unknown;data: PublicCreateReservationDto}, TContext> => {
 
 const mutationKey = ['publicReservationsControllerCreate'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -185,7 +185,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publicReservationsControllerCreate>>, {restaurantSlug: unknown;branchSlug: unknown;data: CreatePublicReservationDto}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publicReservationsControllerCreate>>, {restaurantSlug: unknown;branchSlug: unknown;data: PublicCreateReservationDto}> = (props) => {
           const {restaurantSlug,branchSlug,data} = props ?? {};
 
           return  publicReservationsControllerCreate(restaurantSlug,branchSlug,data,requestOptions)
@@ -197,18 +197,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type PublicReservationsControllerCreateMutationResult = NonNullable<Awaited<ReturnType<typeof publicReservationsControllerCreate>>>
-    export type PublicReservationsControllerCreateMutationBody = CreatePublicReservationDto
+    export type PublicReservationsControllerCreateMutationBody = PublicCreateReservationDto
     export type PublicReservationsControllerCreateMutationError = void
 
     /**
- * @summary Submit a request-to-book reservation (PENDING, source PUBLIC).
+ * @summary Submit a request-to-book at this branch (PENDING, source=PUBLIC).
  */
 export const usePublicReservationsControllerCreate = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicReservationsControllerCreate>>, TError,{restaurantSlug: unknown;branchSlug: unknown;data: CreatePublicReservationDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicReservationsControllerCreate>>, TError,{restaurantSlug: unknown;branchSlug: unknown;data: PublicCreateReservationDto}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof publicReservationsControllerCreate>>,
         TError,
-        {restaurantSlug: unknown;branchSlug: unknown;data: CreatePublicReservationDto},
+        {restaurantSlug: unknown;branchSlug: unknown;data: PublicCreateReservationDto},
         TContext
       > => {
 
@@ -217,488 +217,6 @@ export const usePublicReservationsControllerCreate = <TError = void,
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * @summary Resolve a table QR token to its restaurant slug, branch slug, and table.
- */
-export const publicTableTokenControllerResolve = (
-    token: string,
- options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
-) => {
-      
-      
-      return customInstance<PublicTableTokenResponse>(
-      {url: `/public/t/${token}`, method: 'GET', signal
-    },
-      options);
-    }
-  
-
-
-
-export const getPublicTableTokenControllerResolveQueryKey = (token?: string,) => {
-    return [
-    `/public/t/${token}`
-    ] as const;
-    }
-
-    
-export const getPublicTableTokenControllerResolveQueryOptions = <TData = Awaited<ReturnType<typeof publicTableTokenControllerResolve>>, TError = void>(token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTableTokenControllerResolve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPublicTableTokenControllerResolveQueryKey(token);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicTableTokenControllerResolve>>> = ({ signal }) => publicTableTokenControllerResolve(token, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, enabled: !!(token), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicTableTokenControllerResolve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
-}
-
-export type PublicTableTokenControllerResolveQueryResult = NonNullable<Awaited<ReturnType<typeof publicTableTokenControllerResolve>>>
-export type PublicTableTokenControllerResolveQueryError = void
-
-
-export function usePublicTableTokenControllerResolve<TData = Awaited<ReturnType<typeof publicTableTokenControllerResolve>>, TError = void>(
- token: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTableTokenControllerResolve>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof publicTableTokenControllerResolve>>,
-          TError,
-          Awaited<ReturnType<typeof publicTableTokenControllerResolve>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function usePublicTableTokenControllerResolve<TData = Awaited<ReturnType<typeof publicTableTokenControllerResolve>>, TError = void>(
- token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTableTokenControllerResolve>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof publicTableTokenControllerResolve>>,
-          TError,
-          Awaited<ReturnType<typeof publicTableTokenControllerResolve>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function usePublicTableTokenControllerResolve<TData = Awaited<ReturnType<typeof publicTableTokenControllerResolve>>, TError = void>(
- token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTableTokenControllerResolve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-/**
- * @summary Resolve a table QR token to its restaurant slug, branch slug, and table.
- */
-
-export function usePublicTableTokenControllerResolve<TData = Awaited<ReturnType<typeof publicTableTokenControllerResolve>>, TError = void>(
- token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTableTokenControllerResolve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
-
-  const queryOptions = getPublicTableTokenControllerResolveQueryOptions(token,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-
-/**
- * @summary Public-safe restaurant info (resolved by path slug).
- */
-export const publicStorefrontBranchControllerRestaurant = (
-    restaurantSlug: unknown,
- options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
-) => {
-      
-      
-      return customInstance<PublicRestaurantResponse>(
-      {url: `/public/${restaurantSlug}/restaurant`, method: 'GET', signal
-    },
-      options);
-    }
-  
-
-
-
-export const getPublicStorefrontBranchControllerRestaurantQueryKey = (restaurantSlug?: unknown,) => {
-    return [
-    `/public/${restaurantSlug}/restaurant`
-    ] as const;
-    }
-
-    
-export const getPublicStorefrontBranchControllerRestaurantQueryOptions = <TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>, TError = void>(restaurantSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPublicStorefrontBranchControllerRestaurantQueryKey(restaurantSlug);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>> = ({ signal }) => publicStorefrontBranchControllerRestaurant(restaurantSlug, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, enabled: !!(restaurantSlug), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
-}
-
-export type PublicStorefrontBranchControllerRestaurantQueryResult = NonNullable<Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>>
-export type PublicStorefrontBranchControllerRestaurantQueryError = void
-
-
-export function usePublicStorefrontBranchControllerRestaurant<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>, TError = void>(
- restaurantSlug: unknown, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>,
-          TError,
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function usePublicStorefrontBranchControllerRestaurant<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>, TError = void>(
- restaurantSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>,
-          TError,
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function usePublicStorefrontBranchControllerRestaurant<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>, TError = void>(
- restaurantSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-/**
- * @summary Public-safe restaurant info (resolved by path slug).
- */
-
-export function usePublicStorefrontBranchControllerRestaurant<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>, TError = void>(
- restaurantSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerRestaurant>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
-
-  const queryOptions = getPublicStorefrontBranchControllerRestaurantQueryOptions(restaurantSlug,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-
-/**
- * @summary List the restaurant's active branches (location picker).
- */
-export const publicStorefrontBranchControllerBranches = (
-    restaurantSlug: unknown,
- options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
-) => {
-      
-      
-      return customInstance<PublicBranchesResponse>(
-      {url: `/public/${restaurantSlug}/branches`, method: 'GET', signal
-    },
-      options);
-    }
-  
-
-
-
-export const getPublicStorefrontBranchControllerBranchesQueryKey = (restaurantSlug?: unknown,) => {
-    return [
-    `/public/${restaurantSlug}/branches`
-    ] as const;
-    }
-
-    
-export const getPublicStorefrontBranchControllerBranchesQueryOptions = <TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>, TError = void>(restaurantSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPublicStorefrontBranchControllerBranchesQueryKey(restaurantSlug);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>> = ({ signal }) => publicStorefrontBranchControllerBranches(restaurantSlug, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, enabled: !!(restaurantSlug), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
-}
-
-export type PublicStorefrontBranchControllerBranchesQueryResult = NonNullable<Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>>
-export type PublicStorefrontBranchControllerBranchesQueryError = void
-
-
-export function usePublicStorefrontBranchControllerBranches<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>, TError = void>(
- restaurantSlug: unknown, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>,
-          TError,
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function usePublicStorefrontBranchControllerBranches<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>, TError = void>(
- restaurantSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>,
-          TError,
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function usePublicStorefrontBranchControllerBranches<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>, TError = void>(
- restaurantSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-/**
- * @summary List the restaurant's active branches (location picker).
- */
-
-export function usePublicStorefrontBranchControllerBranches<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>, TError = void>(
- restaurantSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerBranches>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
-
-  const queryOptions = getPublicStorefrontBranchControllerBranchesQueryOptions(restaurantSlug,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-
-/**
- * @summary Public menu tree for a branch (active categories/items + modifiers; availability flagged).
- */
-export const publicStorefrontBranchControllerMenu = (
-    restaurantSlug: unknown,
-    branchSlug: unknown,
- options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
-) => {
-      
-      
-      return customInstance<PublicMenuResponse>(
-      {url: `/public/${restaurantSlug}/branch/${branchSlug}/menu`, method: 'GET', signal
-    },
-      options);
-    }
-  
-
-
-
-export const getPublicStorefrontBranchControllerMenuQueryKey = (restaurantSlug?: unknown,
-    branchSlug?: unknown,) => {
-    return [
-    `/public/${restaurantSlug}/branch/${branchSlug}/menu`
-    ] as const;
-    }
-
-    
-export const getPublicStorefrontBranchControllerMenuQueryOptions = <TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>, TError = void>(restaurantSlug: unknown,
-    branchSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPublicStorefrontBranchControllerMenuQueryKey(restaurantSlug,branchSlug);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>> = ({ signal }) => publicStorefrontBranchControllerMenu(restaurantSlug,branchSlug, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, enabled: !!(restaurantSlug && branchSlug), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
-}
-
-export type PublicStorefrontBranchControllerMenuQueryResult = NonNullable<Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>>
-export type PublicStorefrontBranchControllerMenuQueryError = void
-
-
-export function usePublicStorefrontBranchControllerMenu<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>, TError = void>(
- restaurantSlug: unknown,
-    branchSlug: unknown, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>,
-          TError,
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function usePublicStorefrontBranchControllerMenu<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>, TError = void>(
- restaurantSlug: unknown,
-    branchSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>,
-          TError,
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function usePublicStorefrontBranchControllerMenu<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>, TError = void>(
- restaurantSlug: unknown,
-    branchSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-/**
- * @summary Public menu tree for a branch (active categories/items + modifiers; availability flagged).
- */
-
-export function usePublicStorefrontBranchControllerMenu<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>, TError = void>(
- restaurantSlug: unknown,
-    branchSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerMenu>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
-
-  const queryOptions = getPublicStorefrontBranchControllerMenuQueryOptions(restaurantSlug,branchSlug,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-
-/**
- * @summary Resolve a table by its QR identifier within this restaurant.
- */
-export const publicStorefrontBranchControllerTable = (
-    restaurantSlug: unknown,
-    branchSlug: unknown,
-    params: PublicStorefrontBranchControllerTableParams,
- options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
-) => {
-      
-      
-      return customInstance<PublicTableResponse>(
-      {url: `/public/${restaurantSlug}/branch/${branchSlug}/table`, method: 'GET',
-        params, signal
-    },
-      options);
-    }
-  
-
-
-
-export const getPublicStorefrontBranchControllerTableQueryKey = (restaurantSlug?: unknown,
-    branchSlug?: unknown,
-    params?: PublicStorefrontBranchControllerTableParams,) => {
-    return [
-    `/public/${restaurantSlug}/branch/${branchSlug}/table`, ...(params ? [params]: [])
-    ] as const;
-    }
-
-    
-export const getPublicStorefrontBranchControllerTableQueryOptions = <TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>, TError = void>(restaurantSlug: unknown,
-    branchSlug: unknown,
-    params: PublicStorefrontBranchControllerTableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getPublicStorefrontBranchControllerTableQueryKey(restaurantSlug,branchSlug,params);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>> = ({ signal }) => publicStorefrontBranchControllerTable(restaurantSlug,branchSlug,params, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, enabled: !!(restaurantSlug && branchSlug), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
-}
-
-export type PublicStorefrontBranchControllerTableQueryResult = NonNullable<Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>>
-export type PublicStorefrontBranchControllerTableQueryError = void
-
-
-export function usePublicStorefrontBranchControllerTable<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>, TError = void>(
- restaurantSlug: unknown,
-    branchSlug: unknown,
-    params: PublicStorefrontBranchControllerTableParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>,
-          TError,
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function usePublicStorefrontBranchControllerTable<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>, TError = void>(
- restaurantSlug: unknown,
-    branchSlug: unknown,
-    params: PublicStorefrontBranchControllerTableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>,
-          TError,
-          Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>
-        > , 'initialData'
-      >, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-export function usePublicStorefrontBranchControllerTable<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>, TError = void>(
- restaurantSlug: unknown,
-    branchSlug: unknown,
-    params: PublicStorefrontBranchControllerTableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
-/**
- * @summary Resolve a table by its QR identifier within this restaurant.
- */
-
-export function usePublicStorefrontBranchControllerTable<TData = Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>, TError = void>(
- restaurantSlug: unknown,
-    branchSlug: unknown,
-    params: PublicStorefrontBranchControllerTableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontBranchControllerTable>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
- , queryClient?: QueryClient 
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
-
-  const queryOptions = getPublicStorefrontBranchControllerTableQueryOptions(restaurantSlug,branchSlug,params,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-
-/**
  * @summary Public-safe restaurant info (resolved by host or ?restaurant=slug).
  */
 export const publicStorefrontControllerRestaurant = (
@@ -791,7 +309,7 @@ export function usePublicStorefrontControllerRestaurant<TData = Awaited<ReturnTy
 
 
 /**
- * @summary Public menu tree (active categories/items + modifiers; availability flagged).
+ * @summary Public menu tree of the restaurant DEFAULT branch (branch-less landing entry).
  */
 export const publicStorefrontControllerMenu = (
     
@@ -862,7 +380,7 @@ export function usePublicStorefrontControllerMenu<TData = Awaited<ReturnType<typ
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
 /**
- * @summary Public menu tree (active categories/items + modifiers; availability flagged).
+ * @summary Public menu tree of the restaurant DEFAULT branch (branch-less landing entry).
  */
 
 export function usePublicStorefrontControllerMenu<TData = Awaited<ReturnType<typeof publicStorefrontControllerMenu>>, TError = unknown>(
@@ -871,6 +389,197 @@ export function usePublicStorefrontControllerMenu<TData = Awaited<ReturnType<typ
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
 
   const queryOptions = getPublicStorefrontControllerMenuQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary BR-9: active branches of the restaurant (public location picker).
+ */
+export const publicStorefrontControllerBranches = (
+    restaurantSlug: unknown,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<PublicBranchResponse[]>(
+      {url: `/public/${restaurantSlug}/branches`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getPublicStorefrontControllerBranchesQueryKey = (restaurantSlug?: unknown,) => {
+    return [
+    `/public/${restaurantSlug}/branches`
+    ] as const;
+    }
+
+    
+export const getPublicStorefrontControllerBranchesQueryOptions = <TData = Awaited<ReturnType<typeof publicStorefrontControllerBranches>>, TError = void>(restaurantSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontControllerBranches>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPublicStorefrontControllerBranchesQueryKey(restaurantSlug);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicStorefrontControllerBranches>>> = ({ signal }) => publicStorefrontControllerBranches(restaurantSlug, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(restaurantSlug), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontControllerBranches>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type PublicStorefrontControllerBranchesQueryResult = NonNullable<Awaited<ReturnType<typeof publicStorefrontControllerBranches>>>
+export type PublicStorefrontControllerBranchesQueryError = void
+
+
+export function usePublicStorefrontControllerBranches<TData = Awaited<ReturnType<typeof publicStorefrontControllerBranches>>, TError = void>(
+ restaurantSlug: unknown, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontControllerBranches>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicStorefrontControllerBranches>>,
+          TError,
+          Awaited<ReturnType<typeof publicStorefrontControllerBranches>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function usePublicStorefrontControllerBranches<TData = Awaited<ReturnType<typeof publicStorefrontControllerBranches>>, TError = void>(
+ restaurantSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontControllerBranches>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicStorefrontControllerBranches>>,
+          TError,
+          Awaited<ReturnType<typeof publicStorefrontControllerBranches>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function usePublicStorefrontControllerBranches<TData = Awaited<ReturnType<typeof publicStorefrontControllerBranches>>, TError = void>(
+ restaurantSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontControllerBranches>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary BR-9: active branches of the restaurant (public location picker).
+ */
+
+export function usePublicStorefrontControllerBranches<TData = Awaited<ReturnType<typeof publicStorefrontControllerBranches>>, TError = void>(
+ restaurantSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontControllerBranches>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getPublicStorefrontControllerBranchesQueryOptions(restaurantSlug,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary BR-9: a specific branch's own menu/prices (branch-explicit).
+ */
+export const publicStorefrontControllerBranchMenu = (
+    restaurantSlug: unknown,
+    branchSlug: unknown,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<PublicMenuResponse>(
+      {url: `/public/${restaurantSlug}/branch/${branchSlug}/menu`, method: 'GET', signal
+    },
+      options);
+    }
+  
+
+
+
+export const getPublicStorefrontControllerBranchMenuQueryKey = (restaurantSlug?: unknown,
+    branchSlug?: unknown,) => {
+    return [
+    `/public/${restaurantSlug}/branch/${branchSlug}/menu`
+    ] as const;
+    }
+
+    
+export const getPublicStorefrontControllerBranchMenuQueryOptions = <TData = Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>, TError = void>(restaurantSlug: unknown,
+    branchSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPublicStorefrontControllerBranchMenuQueryKey(restaurantSlug,branchSlug);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>> = ({ signal }) => publicStorefrontControllerBranchMenu(restaurantSlug,branchSlug, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(restaurantSlug && branchSlug), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type PublicStorefrontControllerBranchMenuQueryResult = NonNullable<Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>>
+export type PublicStorefrontControllerBranchMenuQueryError = void
+
+
+export function usePublicStorefrontControllerBranchMenu<TData = Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>, TError = void>(
+ restaurantSlug: unknown,
+    branchSlug: unknown, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>,
+          TError,
+          Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function usePublicStorefrontControllerBranchMenu<TData = Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>, TError = void>(
+ restaurantSlug: unknown,
+    branchSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>,
+          TError,
+          Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function usePublicStorefrontControllerBranchMenu<TData = Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>, TError = void>(
+ restaurantSlug: unknown,
+    branchSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary BR-9: a specific branch's own menu/prices (branch-explicit).
+ */
+
+export function usePublicStorefrontControllerBranchMenu<TData = Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>, TError = void>(
+ restaurantSlug: unknown,
+    branchSlug: unknown, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicStorefrontControllerBranchMenu>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getPublicStorefrontControllerBranchMenuQueryOptions(restaurantSlug,branchSlug,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
 
@@ -1305,6 +1014,99 @@ export function usePublicAccountControllerSubdomain<TData = Awaited<ReturnType<t
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
 
   const queryOptions = getPublicAccountControllerSubdomainQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary Check whether an email is valid + not already registered.
+ */
+export const publicAccountControllerEmailAvailable = (
+    params: PublicAccountControllerEmailAvailableParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<EmailAvailableResponse>(
+      {url: `/public/email-available`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+  
+
+
+
+export const getPublicAccountControllerEmailAvailableQueryKey = (params?: PublicAccountControllerEmailAvailableParams,) => {
+    return [
+    `/public/email-available`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getPublicAccountControllerEmailAvailableQueryOptions = <TData = Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError = unknown>(params: PublicAccountControllerEmailAvailableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPublicAccountControllerEmailAvailableQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>> = ({ signal }) => publicAccountControllerEmailAvailable(params, requestOptions, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type PublicAccountControllerEmailAvailableQueryResult = NonNullable<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>>
+export type PublicAccountControllerEmailAvailableQueryError = unknown
+
+
+export function usePublicAccountControllerEmailAvailable<TData = Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError = unknown>(
+ params: PublicAccountControllerEmailAvailableParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>,
+          TError,
+          Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function usePublicAccountControllerEmailAvailable<TData = Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError = unknown>(
+ params: PublicAccountControllerEmailAvailableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>,
+          TError,
+          Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function usePublicAccountControllerEmailAvailable<TData = Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError = unknown>(
+ params: PublicAccountControllerEmailAvailableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary Check whether an email is valid + not already registered.
+ */
+
+export function usePublicAccountControllerEmailAvailable<TData = Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError = unknown>(
+ params: PublicAccountControllerEmailAvailableParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicAccountControllerEmailAvailable>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getPublicAccountControllerEmailAvailableQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
 

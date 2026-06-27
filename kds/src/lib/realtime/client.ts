@@ -1,10 +1,17 @@
 import { io, Socket } from 'socket.io-client';
 import { SOCKET_BASE_URL, SOCKET_PATH } from '@/lib/env';
+import type { SocketTarget } from '@/lib/endpoint/store';
 
 /** Stations the KDS can subscribe to (matches the backend enum). */
 export type Station = 'KITCHEN' | 'BAR' | 'DESSERT' | 'OTHER';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
+
+/** The branch + station this kiosk is pinned to. */
+export interface Pin {
+  branchId: string;
+  station: Station;
+}
 
 /**
  * Payload shapes for the kds:ticket.* events. Kept intentionally loose — the
@@ -15,6 +22,7 @@ export interface KdsTicketEvent {
   orderId: string;
   orderNumber?: number;
   station?: Station;
+  branchId?: string;
   [key: string]: unknown;
 }
 
@@ -33,17 +41,26 @@ type TicketListener = (event: KdsTicketEvent) => void;
 /**
  * Singleton wrapper around a socket.io connection to the "/realtime" namespace.
  *
- * - Handshake auth carries the bearer token: { token }.
- * - `setToken` reconnects with fresh credentials after a token refresh.
- * - Station subscriptions are remembered and re-emitted on every (re)connect so
- *   the kiosk keeps receiving events across flaky-wifi drops.
+ * - The handshake auth carries the bearer token AND the active pin:
+ *   { token, branchId, station } — so the server can scope this socket to one
+ *   branch:station from the very first connect.
+ * - On (re)connect the kiosk subscribes to ONLY that branch:station room, and
+ *   the pin is remembered so the subscription is re-emitted across flaky-wifi
+ *   drops AND across a hub restart.
+ * - The socket host follows the device endpoint setting (cloud or local hub).
+ *   `connect` is idempotent: re-calling it with a changed token or pin reuses
+ *   the socket and re-handshakes; a changed endpoint host fully recreates it so
+ *   the new URL/path take effect.
  * - `onReconnected` fires after a drop+restore so the board can refetch tickets.
  */
+const DEFAULT_TARGET: SocketTarget = { baseUrl: SOCKET_BASE_URL, path: SOCKET_PATH };
+
 class RealtimeClient {
   private socket: Socket | null = null;
   private token: string | null = null;
+  private pin: Pin | null = null;
+  private target: SocketTarget = DEFAULT_TARGET;
   private status: ConnectionStatus = 'disconnected';
-  private subscribedStations = new Set<Station>();
   private hadConnected = false;
 
   private statusListeners = new Set<StatusListener>();
@@ -53,21 +70,48 @@ class RealtimeClient {
     return this.status;
   }
 
-  connect(token: string): void {
-    this.token = token;
+  /**
+   * Ensure a live socket carrying the given token + pin in its handshake, aimed
+   * at the given endpoint (cloud or hub). Reconnects if the token/pin changed;
+   * fully recreates the socket if the endpoint host/path changed; creates the
+   * socket on first call.
+   */
+  connect(token: string, pin: Pin, target: SocketTarget = DEFAULT_TARGET): void {
+    const pinChanged =
+      this.pin?.branchId !== pin.branchId || this.pin?.station !== pin.station;
+    const tokenChanged = this.token !== token;
+    const targetChanged =
+      this.target.baseUrl !== target.baseUrl || this.target.path !== target.path;
 
-    // Reuse the socket if the token is unchanged and we're already wired up.
+    this.token = token;
+    this.pin = pin;
+    this.target = target;
+
+    // A changed endpoint means a different URL: tear the old socket down and
+    // build a fresh one below rather than re-handshaking the old connection.
+    if (this.socket && targetChanged) {
+      this.socket.removeAllListeners();
+      this.socket.disconnect();
+      this.socket = null;
+      this.hadConnected = false;
+    }
+
     if (this.socket) {
-      this.socket.auth = { token };
-      if (!this.socket.connected) this.socket.connect();
+      this.socket.auth = this.handshake();
+      if (tokenChanged || pinChanged) {
+        // Force the new token/pin through a fresh handshake.
+        this.socket.disconnect().connect();
+      } else if (!this.socket.connected) {
+        this.socket.connect();
+      }
       return;
     }
 
     this.setStatus('connecting');
-    this.socket = io(`${SOCKET_BASE_URL}/realtime`, {
+    this.socket = io(`${target.baseUrl}/realtime`, {
       transports: ['websocket'],
-      auth: { token },
-      path: SOCKET_PATH,
+      auth: this.handshake(),
+      path: target.path,
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
@@ -75,10 +119,8 @@ class RealtimeClient {
 
     this.socket.on('connect', () => {
       this.setStatus('connected');
-      // Re-emit any remembered subscriptions.
-      if (this.subscribedStations.size > 0) {
-        this.socket?.emit('kds:subscribe', { stations: [...this.subscribedStations] });
-      }
+      // Subscribe to ONLY the pinned branch:station room.
+      this.emitSubscribe();
       if (this.hadConnected) {
         // This is a RE-connect: signal the board to refetch.
         this.reconnectedListeners.forEach((cb) => cb());
@@ -90,39 +132,22 @@ class RealtimeClient {
     this.socket.on('connect_error', () => this.setStatus('disconnected'));
   }
 
-  /** Reconnect with a new bearer token (after refresh). */
+  /** Reconnect with a new bearer token (after refresh), keeping the pin. */
   setToken(token: string): void {
     if (token === this.token) return;
     this.token = token;
     if (this.socket) {
-      this.socket.auth = { token };
+      this.socket.auth = this.handshake();
       this.socket.disconnect().connect();
-    } else {
-      this.connect(token);
     }
   }
 
   disconnect(): void {
     this.socket?.disconnect();
     this.socket = null;
-    this.subscribedStations.clear();
+    this.pin = null;
     this.hadConnected = false;
     this.setStatus('disconnected');
-  }
-
-  /** Emit kds:subscribe for the given stations (requires KDS_ACCESS server-side). */
-  subscribeStations(stations: Station[]): void {
-    stations.forEach((s) => this.subscribedStations.add(s));
-    if (this.socket?.connected) {
-      this.socket.emit('kds:subscribe', { stations });
-    }
-  }
-
-  unsubscribeStations(stations: Station[]): void {
-    stations.forEach((s) => this.subscribedStations.delete(s));
-    if (this.socket?.connected) {
-      this.socket.emit('kds:unsubscribe', { stations });
-    }
   }
 
   /** Subscribe to a ticket event. Returns an unsubscribe function. */
@@ -141,6 +166,22 @@ class RealtimeClient {
   onReconnected(cb: ReconnectedListener): () => void {
     this.reconnectedListeners.add(cb);
     return () => this.reconnectedListeners.delete(cb);
+  }
+
+  private handshake(): Record<string, unknown> {
+    return {
+      token: this.token,
+      branchId: this.pin?.branchId,
+      station: this.pin?.station,
+    };
+  }
+
+  private emitSubscribe(): void {
+    if (!this.socket?.connected || !this.pin) return;
+    this.socket.emit('kds:subscribe', {
+      branchId: this.pin.branchId,
+      station: this.pin.station,
+    });
   }
 
   private setStatus(status: ConnectionStatus): void {
