@@ -1,22 +1,32 @@
 import {
+  BranchInventoryPolicy as PrismaPolicy,
   GoodsReceipt as PrismaGoodsReceipt,
   GoodsReceiptLine as PrismaGoodsReceiptLine,
   InventoryCategory as PrismaCategory,
   InventoryItem as PrismaItem,
+  InventoryLocation as PrismaLocation,
+  InventoryTransfer as PrismaTransfer,
+  InventoryTransferSlice as PrismaTransferSlice,
   StockLayer as PrismaLayer,
   StockMovement as PrismaMovement,
   Supplier as PrismaSupplier,
 } from '@prisma/client';
+import { BranchInventoryPolicy } from '../../domain/entities/branch-inventory-policy';
 import { GoodsReceipt, GoodsReceiptLine } from '../../domain/entities/goods-receipt';
 import { InventoryCategory } from '../../domain/entities/inventory-category';
 import { InventoryItem } from '../../domain/entities/inventory-item';
+import { InventoryLocation } from '../../domain/entities/inventory-location';
+import { InventoryTransfer } from '../../domain/entities/inventory-transfer';
 import { StockLayer } from '../../domain/entities/stock-layer';
 import { StockMovement } from '../../domain/entities/stock-movement';
 import { Supplier } from '../../domain/entities/supplier';
 import {
   InventoryBaseUnit,
   InventoryItemStatus,
+  InventoryLocationStatus,
+  InventoryLocationType,
   ItemKind,
+  NegativeStockMode,
   StockLayerStatus,
   StockMovementType,
 } from '../../domain/enums';
@@ -41,6 +51,7 @@ export class InventoryItemMapper {
       trackExpiry: r.trackExpiry,
       lowStockThresholdBase: r.lowStockThresholdBase,
       lastUnitCostMicro: r.lastUnitCostMicro,
+      consumptionLocationId: r.consumptionLocationId,
       status: r.status as InventoryItemStatus,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
@@ -62,6 +73,7 @@ export class InventoryItemMapper {
       trackExpiry: i.trackExpiry,
       lowStockThresholdBase: i.lowStockThresholdBase,
       lastUnitCostMicro: i.lastUnitCostMicro,
+      consumptionLocationId: i.consumptionLocationId,
       status: i.status as InventoryItemStatus,
       createdAt: i.createdAt,
       updatedAt: i.updatedAt,
@@ -80,6 +92,7 @@ export class InventoryItemMapper {
       trackExpiry: i.trackExpiry,
       lowStockThresholdBase: i.lowStockThresholdBase,
       lastUnitCostMicro: i.lastUnitCostMicro,
+      consumptionLocationId: i.consumptionLocationId,
       status: i.status as InventoryItemStatus,
       updatedAt: i.updatedAt,
       deletedAt: i.deletedAt,
@@ -184,6 +197,85 @@ export class GoodsReceiptMapper {
   }
 }
 
+export class InventoryLocationMapper {
+  static toDomain(r: PrismaLocation): InventoryLocation {
+    return InventoryLocation.reconstitute(r.id, {
+      restaurantId: r.restaurantId,
+      branchId: r.branchId,
+      name: r.name,
+      systemType: r.systemType as InventoryLocationType,
+      isDefault: r.isDefault,
+      status: r.status as InventoryLocationStatus,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      deletedAt: r.deletedAt,
+    });
+  }
+
+  static toCreate(l: InventoryLocation) {
+    return {
+      id: l.id,
+      restaurantId: l.restaurantId,
+      branchId: l.branchId,
+      name: l.name,
+      systemType: l.systemType as InventoryLocationType,
+      isDefault: l.isDefault,
+      status: l.status as InventoryLocationStatus,
+      createdAt: l.createdAt,
+      updatedAt: l.updatedAt,
+      deletedAt: l.deletedAt,
+    };
+  }
+
+  static toUpdate(l: InventoryLocation) {
+    return {
+      name: l.name,
+      isDefault: l.isDefault,
+      status: l.status as InventoryLocationStatus,
+      updatedAt: l.updatedAt,
+      deletedAt: l.deletedAt,
+    };
+  }
+}
+
+export class BranchInventoryPolicyMapper {
+  static toDomain(r: PrismaPolicy): BranchInventoryPolicy {
+    return BranchInventoryPolicy.reconstitute(r.id, {
+      restaurantId: r.restaurantId,
+      branchId: r.branchId,
+      negativeStockMode: r.negativeStockMode as NegativeStockMode,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    });
+  }
+}
+
+export class InventoryTransferMapper {
+  static toDomain(
+    r: PrismaTransfer & { slices?: PrismaTransferSlice[] },
+  ): InventoryTransfer {
+    return InventoryTransfer.reconstitute(r.id, {
+      restaurantId: r.restaurantId,
+      branchId: r.branchId,
+      itemId: r.itemId,
+      fromLocationId: r.fromLocationId,
+      toLocationId: r.toLocationId,
+      quantity: r.quantity,
+      performedByUserId: r.performedByUserId,
+      occurredAt: r.occurredAt,
+      createdAt: r.createdAt,
+      slices: (r.slices ?? []).map((s) => ({
+        id: s.id,
+        sourceLayerId: s.sourceLayerId,
+        destinationLayerId: s.destinationLayerId,
+        baseQty: s.baseQty,
+        costAmount: s.costAmount,
+        unitCostMicro: s.unitCostMicro,
+      })),
+    });
+  }
+}
+
 export class StockLayerMapper {
   static toDomain(r: PrismaLayer): StockLayer {
     return StockLayer.reconstitute(r.id, {
@@ -208,6 +300,7 @@ export class StockMovementMapper {
     return StockMovement.reconstitute(r.id, {
       restaurantId: r.restaurantId,
       branchId: r.branchId,
+      locationId: r.locationId,
       itemId: r.itemId,
       type: r.type as StockMovementType,
       baseQty: r.baseQty,

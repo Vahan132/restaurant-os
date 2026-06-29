@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -255,10 +267,21 @@ export class OrdersController {
   }
 
   @Post(':id/discount')
-  @RequirePermissions(P.DISCOUNT_APPLY)
+  @RequirePermissions(P.ORDER_EDIT)
   @HttpCode(200)
-  @ApiForbiddenResponse({ description: 'Missing DISCOUNT_APPLY permission.' })
-  @ApiOperation({ summary: 'Apply a discount.' })
+  @ApiForbiddenResponse({
+    description:
+      'Missing ORDER_EDIT permission; or the caller lacks DISCOUNT_APPLY and ' +
+      'supplied no/invalid manager step-up authorization (generic failure).',
+  })
+  @ApiOperation({
+    summary: 'Apply a discount.',
+    description:
+      'Discount authority is DISCOUNT_APPLY. A caller holding it applies directly. ' +
+      'A caller without it must include an `authorization` block (enrolled POS ' +
+      'device secret + a capable manager’s 6-digit PIN); the manager is then ' +
+      'recorded as the approver. The requesting user is never logged out.',
+  })
   @ApiOkResponse({ type: OrderResponse })
   async discount(
     @CurrentTenant() tenant: TenantContext,
@@ -266,6 +289,7 @@ export class OrdersController {
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Body() dto: ApplyDiscountDto,
+    @Req() req: Request,
   ): Promise<OrderResponse> {
     const order = await this.applyDiscount.execute({
       restaurantId: tenant.restaurantId,
@@ -276,6 +300,8 @@ export class OrdersController {
       value: dto.value,
       approvedByUserId: dto.approvedByUserId ?? null,
       actorUserId: user.sub,
+      authorization: dto.authorization ?? null,
+      ip: req.ip ?? null,
     });
     return OrderResponse.from(order);
   }

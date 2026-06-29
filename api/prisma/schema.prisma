@@ -44,6 +44,15 @@ enum BranchStatus {
   INACTIVE
 }
 
+// Device-anchored staff auth (3A): how strictly a branch binds logins to its IP
+// allowlist. STRICT = the request's real client IP MUST be inside `ipAllowlist`;
+// SOFT (default) = record the seen IP and trust it (IP is a secondary signal,
+// the enrolled device is the real first factor).
+enum BranchIpBindingMode {
+  STRICT
+  SOFT
+}
+
 enum UserStatus {
   ACTIVE
   BLOCKED
@@ -173,9 +182,10 @@ model Restaurant {
   users           User[]
   settings        RestaurantSettings?
   menuCategories  MenuCategory[]
-  menuItems       MenuItem[]
-  modifierGroups  ModifierGroup[]
-  modifierOptions ModifierOption[]
+  menuItems          MenuItem[]
+  modifierGroups     ModifierGroup[]
+  modifierOptions    ModifierOption[]
+  dishModifierGroups DishModifierGroup[]
   floors          Floor[]
   tables          RestaurantTable[]
   orders          Order[]
@@ -183,6 +193,7 @@ model Restaurant {
   customerOrderRequests CustomerOrderRequest[]
   missedCalls     MissedCall[]
   callDevices     CallDevice[]
+  devices         Device[]
 
   @@index([organizationId])
   @@map("restaurants")
@@ -199,6 +210,11 @@ model Branch {
   // make-default use case moves the flag atomically).
   isDefault    Boolean      @default(false)
   status       BranchStatus @default(ACTIVE)
+  // Device-anchored staff auth (3A): per-branch IP policy. SOFT by default (IP is
+  // a secondary check). `ipAllowlist` holds manager-editable CIDRs; under STRICT
+  // a PIN/anchored login is allowed only from a source IP inside the allowlist.
+  ipBindingMode BranchIpBindingMode @default(SOFT)
+  ipAllowlist   String[]            @default([])
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   deletedAt    DateTime?
@@ -257,6 +273,11 @@ model RestaurantSettings {
   enableQrMenu                   Boolean @default(true)
   enableCustomerOrdering         Boolean @default(false)
   allowManualTableStatus         Boolean @default(false)
+  // Device-anchored staff auth (3A): when false (default), an admin/manager
+  // email+password login must come from an enrolled ADMIN-surface device. When
+  // true, admin login is allowed from any device. The Owner is always exempt
+  // (break-glass), regardless of this toggle.
+  allowUnanchoredAdminLogin      Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -287,6 +308,7 @@ model User {
   role              Role               @relation(fields: [roleId], references: [id])
   refreshTokens     RefreshToken[]
   branchMemberships BranchMembership[]
+  staffPin          StaffPin?
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -328,6 +350,105 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+// ── Device-anchored staff auth (3A) ─────────────────────────────────────────
+enum DeviceSurface {
+  POS
+  KDS
+  ADMIN
+}
+
+enum DeviceStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum StaffPinStatus {
+  ACTIVE
+  REVOKED
+}
+
+// An enrolled in-store device — the REAL first factor of staff auth. Possession
+// of its secret is required for every PIN login (POS/KDS) and for anchored
+// ADMIN-surface dashboard login. Only sha256(secret) is stored; the plaintext
+// secret is returned exactly once at enrollment. Branch-scoped.
+model Device {
+  id               String        @id @default(cuid())
+  restaurantId     String
+  branchId         String
+  label            String
+  surface          DeviceSurface
+  // sha256(secret) — deterministic so the secret can be looked up O(1) on login
+  // (mirrors CallDevice.tokenHash). The secret is high-entropy random, so a fast
+  // hash is appropriate here; low-entropy PINs use argon2 instead (see StaffPin).
+  deviceSecretHash String        @unique
+  enrolledByUserId String
+  enrolledIp       String?
+  enrolledCidr     String?
+  status           DeviceStatus  @default(ACTIVE)
+  lastSeenAt       DateTime?
+  lastSeenIp       String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId, branchId])
+  @@index([restaurantId, branchId, surface, status])
+  @@map("devices")
+}
+
+// A staff member's PIN (one row per user). The PIN is hashed with argon2
+// (`pinHash`); a separate keyed fingerprint (`pinFingerprint` =
+// HMAC(per-restaurant key, pin)) enforces "active PIN is unique within a
+// restaurant" without storing or revealing the PIN. On revoke, the fingerprint
+// is nulled so the active-uniqueness constraint frees that value (NULLs are
+// distinct in Postgres). Per-user rate-limit + lockout live on this row.
+model StaffPin {
+  id              String         @id @default(cuid())
+  userId          String         @unique
+  restaurantId    String
+  pinHash         String
+  pinFingerprint  String?
+  status          StaffPinStatus @default(ACTIVE)
+  failedAttempts  Int            @default(0)
+  lockedUntil     DateTime?
+  mustRotate      Boolean        @default(false)
+  createdByUserId String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Active-PIN uniqueness within a restaurant (revoked rows have a null
+  // fingerprint and so never collide).
+  @@unique([restaurantId, pinFingerprint])
+  @@index([restaurantId])
+  @@map("staff_pins")
+}
+
+// Manager step-up discounts (4A): DEVICE-scoped rate-limit + lockout on failed
+// step-up authorization attempts. One row per enrolled device. This is purely a
+// throttle (no secrets) and is edge-LOCAL operational state — it is intentionally
+// NOT captured in the sync outbox (a brute-force lockout is a per-node concern).
+// Distinct from StaffPin.lockedUntil, which is the per-USER PIN lockout owned by
+// the 3A primitive.
+model StepUpThrottle {
+  id             String    @id @default(cuid())
+  // The enrolled device the step-up attempts originate from (Device.id). Unique:
+  // one throttle row per device.
+  deviceId       String    @unique
+  restaurantId   String
+  branchId       String
+  failedAttempts Int       @default(0)
+  // When set + in the future, the device's step-up is locked until this instant.
+  lockedUntil    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([restaurantId, branchId])
+  @@map("step_up_throttles")
 }
 
 // ── Platform (cross-tenant) ─────────────────────────────────────────────────
@@ -406,9 +527,10 @@ model MenuItem {
   updatedAt          DateTime           @updatedAt
   deletedAt          DateTime?
 
-  restaurant     Restaurant      @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  category       MenuCategory    @relation(fields: [categoryId], references: [id])
-  modifierGroups ModifierGroup[]
+  restaurant         Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  category           MenuCategory        @relation(fields: [categoryId], references: [id])
+  // Prompt 1A: dishes link to reusable modifier groups via the join table.
+  modifierGroupLinks DishModifierGroup[]
 
   @@unique([restaurantId, branchId, code])
   @@index([restaurantId])
@@ -417,28 +539,29 @@ model MenuItem {
   @@map("menu_items")
 }
 
+// Modifier groups are a reusable, restaurant+branch-scoped LIBRARY (Prompt 1A).
+// They are no longer owned by a single dish; a group is attached to any number of
+// dishes many-to-many via DishModifierGroup. (Was: per-dish `menuItemId`.)
 model ModifierGroup {
   id            String                @id @default(cuid())
   restaurantId  String
-  menuItemId    String
+  // BR-2: branch-scoped library — each branch keeps its own modifier groups.
+  branchId      String
   name          String
   selectionType ModifierSelectionType
   required      Boolean               @default(false)
   minSelect     Int?
   maxSelect     Int?
-  displayOrder  Int                   @default(0)
-  // BR-2: denormalised branch scope (matches the owning item's branch).
-  branchId      String
+  status        MenuStatus            @default(ACTIVE)
   createdAt     DateTime              @default(now())
   updatedAt     DateTime              @updatedAt
   deletedAt     DateTime?
 
-  restaurant Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  item       MenuItem         @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  restaurant Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   options    ModifierOption[]
+  dishLinks  DishModifierGroup[]
 
   @@index([restaurantId])
-  @@index([menuItemId])
   @@index([restaurantId, branchId])
   @@map("modifier_groups")
 }
@@ -449,7 +572,9 @@ model ModifierOption {
   modifierGroupId  String
   name             String
   priceDeltaAmount Int        @default(0) @map("price_delta_amount")
-  displayOrder     Int        @default(0)
+  // Renamed displayOrder -> sortOrder (Prompt 1A). isDefault: pre-selected option.
+  sortOrder        Int        @default(0)
+  isDefault        Boolean    @default(false)
   status           MenuStatus @default(ACTIVE)
   // BR-2: denormalised branch scope (matches the owning group's branch).
   branchId         String
@@ -464,6 +589,35 @@ model ModifierOption {
   @@index([modifierGroupId])
   @@index([restaurantId, branchId])
   @@map("modifier_options")
+}
+
+// Dish ↔ ModifierGroup attachment (many-to-many) with optional per-attachment
+// overrides. A null override inherits the group's value. No deletedAt: detaching
+// removes the row (the link carries no historical data — order lines snapshot
+// their own selected modifiers).
+model DishModifierGroup {
+  id               String   @id @default(cuid())
+  restaurantId     String
+  branchId         String
+  menuItemId       String
+  modifierGroupId  String
+  requiredOverride Boolean?
+  minOverride      Int?
+  maxOverride      Int?
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  restaurant    Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  item          MenuItem      @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  modifierGroup ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@unique([menuItemId, modifierGroupId])
+  @@index([restaurantId])
+  @@index([restaurantId, branchId])
+  @@index([menuItemId])
+  @@index([modifierGroupId])
+  @@map("dish_modifier_groups")
 }
 
 // ── Tables / floor plan (tenant-scoped by restaurantId) ──────────────────────
@@ -809,9 +963,16 @@ model AuditLog {
   id             String         @id @default(cuid())
   organizationId String?
   restaurantId   String?
+  // Branch the audited action occurred in (null for restaurant/org-level actions
+  // with no branch context). Drives the branch-scoped activity-log view.
+  branchId       String?
   actorType      AuditActorType
   actorId        String?
   actorName      String?
+  // Snapshot of the actor's role CODE at the time of the action (e.g. OWNER,
+  // MANAGER, WAITER). Null for SYSTEM/PLATFORM actors or custom (non-system)
+  // roles. Enables filtering activity by role.
+  actorRoleCode  String?
   action         String
   entityType     String
   entityId       String
@@ -824,6 +985,9 @@ model AuditLog {
   @@index([restaurantId, createdAt])
   @@index([organizationId, createdAt])
   @@index([entityType, entityId])
+  // Activity-log filtered view: branch-scoped reads + action-type filtering.
+  @@index([restaurantId, branchId, createdAt])
+  @@index([restaurantId, action, createdAt])
   @@map("audit_logs")
 }
 
@@ -973,11 +1137,44 @@ enum StockMovementType {
   PROCESS_OUT
   PROCESS_IN
   CONSUMPTION_REVERSAL
+  // 6A multi-location: OPENING seeds a brand-new (item, location) balance with no
+  // prior movement history; TRANSFER_OUT/TRANSFER_IN are reserved for 6B (the
+  // endpoints land later, but the ledger types are defined now per §1).
+  OPENING
+  TRANSFER_OUT
+  TRANSFER_IN
 }
 
 enum ProcessStatus {
   ACTIVE
   INACTIVE
+}
+
+// ── 6A multi-location inventory ──────────────────────────────────────────────
+// Physical, branch-scoped stock locations ("shelves"). Three system locations
+// (KITCHEN / BAR / MAIN_STORAGE) are seeded per branch; managers add CUSTOM ones.
+enum InventoryLocationType {
+  KITCHEN
+  BAR
+  MAIN_STORAGE
+  CUSTOM
+}
+
+enum InventoryLocationStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+// Per-branch negative-stock policy. WARN = permit-but-flag (default per §4).
+enum NegativeStockMode {
+  ALLOW
+  WARN
+  BLOCK
+}
+
+enum LowStockAlertStatus {
+  OPEN
+  RESOLVED
 }
 
 model InventoryItem {
@@ -994,6 +1191,9 @@ model InventoryItem {
   trackExpiry           Boolean             @default(false)
   lowStockThresholdBase Int?
   lastUnitCostMicro     BigInt?             @map("last_unit_cost_micro")
+  // 6C: the location this item is depleted from on serve (per item, per branch).
+  // Null => resolve to the branch's default Main Storage (the resolver helper).
+  consumptionLocationId String?
   status                InventoryItemStatus @default(ACTIVE)
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
@@ -1084,6 +1284,10 @@ model StockLayer {
   // BR-3: branchId always equals the layer's item's branch (set by the service,
   // never the request). Stock attribution follows the item.
   branchId            String
+  // 6A: the physical location this lot sits on. Backfilled to the branch's
+  // Main Storage by the migration; required thereafter. FIFO `acquiredAt` =
+  // `receivedAt` (arrival-at-location semantics, §5).
+  locationId          String
   itemId              String
   sourceReceiptLineId String?
   baseQtyReceived     Int
@@ -1100,6 +1304,8 @@ model StockLayer {
   @@index([restaurantId, itemId, status])
   @@index([restaurantId, branchId])
   @@index([restaurantId, branchId, itemId, status])
+  // 6A: per-(item, location) FIFO scan, oldest arrival first.
+  @@index([locationId, itemId, status, receivedAt], map: "inv_stock_layer_loc_item_status_recv_idx")
   @@map("inventory_stock_layers")
 }
 
@@ -1108,6 +1314,10 @@ model StockMovement {
   restaurantId    String
   // BR-3: branchId always equals the moved item's branch (set by the service).
   branchId        String
+  // 6A: the location this movement applies to. Drawn from the source layer for
+  // OUT movements; the branch default (Main Storage) for shortfalls/seeding.
+  // Backfilled to Main Storage by the migration; required thereafter.
+  locationId      String
   itemId          String
   type            StockMovementType
   baseQty         Int
@@ -1130,7 +1340,130 @@ model StockMovement {
   // Explicit short map: the default name (69 chars) exceeds Postgres's 63-char
   // identifier limit and would be silently truncated, causing migrate drift.
   @@index([restaurantId, branchId, itemId, occurredAt], map: "inv_stock_mov_rest_branch_item_occurred_idx")
+  // 6A: rebuild StockOnHand per (item, location) by summing baseQty.
+  @@index([locationId, itemId], map: "inv_stock_mov_loc_item_idx")
   @@map("inventory_stock_movements")
+}
+
+// ── 6A multi-location: locations, on-hand projection, policy, alerts ─────────
+// Physical, branch-scoped shelf. System locations (KITCHEN/BAR/MAIN_STORAGE)
+// cannot be deleted; CUSTOM ones only when they hold no stock. Exactly one
+// isDefault per branch (Main Storage) — enforced in the application layer.
+model InventoryLocation {
+  id           String                  @id @default(cuid())
+  restaurantId String
+  branchId     String
+  name         String
+  systemType   InventoryLocationType   @default(CUSTOM)
+  isDefault    Boolean                 @default(false)
+  status       InventoryLocationStatus @default(ACTIVE)
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  deletedAt    DateTime?
+
+  @@index([restaurantId])
+  @@index([restaurantId, branchId])
+  @@index([restaurantId, branchId, systemType])
+  @@map("inventory_locations")
+}
+
+// Denormalized on-hand per (item, location), maintained in the SAME transaction
+// as every ledger append (§4). Rebuildable from the ledger (sum baseQty grouped
+// by location+item). `quantity` may be negative. Optional per-location low-stock
+// threshold override; falls back to InventoryItem.lowStockThresholdBase.
+model StockOnHand {
+  id                    String   @id @default(cuid())
+  restaurantId          String
+  branchId              String
+  itemId                String
+  locationId            String
+  quantity              Int      @default(0)
+  lowStockThresholdBase Int?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([itemId, locationId], map: "inv_on_hand_item_location_key")
+  @@index([restaurantId, branchId])
+  @@index([restaurantId, branchId, locationId])
+  @@map("inventory_stock_on_hand")
+}
+
+// One row per branch. Governs what happens when a depletion would drive on-hand
+// below zero (§5). Default WARN. (BLOCK applies to manual/admin depletions only;
+// the POS-serve exception is enforced in 6C.)
+model BranchInventoryPolicy {
+  id                String            @id @default(cuid())
+  restaurantId      String
+  branchId          String
+  negativeStockMode NegativeStockMode @default(WARN)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@unique([restaurantId, branchId], map: "inv_branch_policy_rest_branch_key")
+  @@index([restaurantId])
+  @@map("inventory_branch_policies")
+}
+
+// Pre-zero low-stock flag, raised when on-hand at a location crosses at/below the
+// threshold while still >= 0 (§5), resolved when it rises back above. At most one
+// OPEN alert per (item, location) — enforced in the application/gateway layer.
+model LowStockAlert {
+  id            String              @id @default(cuid())
+  restaurantId  String
+  branchId      String
+  itemId        String
+  locationId    String
+  thresholdBase Int
+  onHandBase    Int
+  status        LowStockAlertStatus @default(OPEN)
+  raisedAt      DateTime            @default(now())
+  resolvedAt    DateTime?
+
+  @@index([restaurantId, branchId, status])
+  @@index([restaurantId, branchId, itemId, locationId, status], map: "inv_low_stock_alert_scope_idx")
+  @@map("inventory_low_stock_alerts")
+}
+
+// ── 6B within-branch stock transfers ─────────────────────────────────────────
+// Relocates stock between two InventoryLocations of the SAME branch at carrying
+// cost (no COGS). Reuses StockMovement (TRANSFER_OUT/TRANSFER_IN) + StockLayer;
+// the slice rows record consumed-source-layer → cost → qty for auditability.
+model InventoryTransfer {
+  id                String   @id @default(cuid())
+  restaurantId      String
+  branchId          String
+  itemId            String
+  fromLocationId    String
+  toLocationId      String
+  quantity          Int
+  performedByUserId String
+  occurredAt        DateTime
+  createdAt         DateTime @default(now())
+
+  slices InventoryTransferSlice[]
+
+  @@index([restaurantId, branchId])
+  @@index([restaurantId, branchId, itemId])
+  @@index([restaurantId, branchId, occurredAt])
+  @@map("inventory_transfers")
+}
+
+model InventoryTransferSlice {
+  id                 String  @id @default(cuid())
+  transferId         String
+  itemId             String
+  // The source lot the slice was drawn from (null only for a defensive shortfall).
+  sourceLayerId      String?
+  // The destination lot the slice landed in (same unit cost preserved).
+  destinationLayerId String
+  baseQty            Int
+  costAmount         Int     @map("cost_amount")
+  unitCostMicro      BigInt  @map("unit_cost_micro")
+
+  transfer InventoryTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+
+  @@index([transferId])
+  @@map("inventory_transfer_slices")
 }
 
 // ── Inventory processes / production (INV-2) ─────────────────────────────────
@@ -1328,6 +1661,77 @@ model WriteOffLine {
   @@index([writeOffId])
   @@index([branchId])
   @@map("inventory_write_off_lines")
+}
+
+// ── Historical / external sales import (5A) ──────────────────────────────────
+//   NON-FISCAL, REPORTS-ONLY sales loaded from external/legacy systems for
+//   analytics. Isolation is STRUCTURAL: these rows live in their own tables and
+//   are NEVER reachable by the live order pipeline, fiscalization/HDM, or
+//   inventory depletion. No FK into orders/payments/stock — by construction they
+//   cannot enter any fiscal total. Branch-scoped like every operational entity.
+enum ImportBatchStatus {
+  PENDING // created, not yet processed
+  COMPLETED // every row imported
+  PARTIAL // some rows imported, some skipped/invalid (file was structurally valid)
+  FAILED // file structurally invalid — nothing imported
+}
+
+model ImportBatch {
+  id               String            @id @default(cuid())
+  restaurantId     String
+  // Nullable: a single file may carry rows for MULTIPLE branches (each row's
+  // branch is resolved + stored on the ImportedSale). Set only when the whole
+  // file resolved to one branch.
+  branchId         String?
+  fileName         String
+  importedByUserId String
+  rowCount         Int               @default(0)
+  successCount     Int               @default(0)
+  errorCount       Int               @default(0)
+  status           ImportBatchStatus @default(PENDING)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  sales ImportedSale[]
+
+  @@index([restaurantId])
+  @@index([restaurantId, branchId])
+  @@index([restaurantId, createdAt])
+  @@map("imported_sales_batches")
+}
+
+model ImportedSale {
+  id              String   @id @default(cuid())
+  restaurantId    String
+  // Always set (resolved per row from the file's branch column, within the
+  // importer's permitted scope). Stock attribution is N/A — these never deplete.
+  branchId        String
+  importBatchId   String
+  // Timestamp of the historical sale (NOT createdAt). Reports bucket on this.
+  occurredAt      DateTime
+  itemDescription String
+  // Nullable: linked to a catalog MenuItem ONLY if confidently matched. Plain
+  // String (no FK) — an imported item may reference a since-deleted/unknown item.
+  itemId          String?
+  quantity        Int
+  unitPriceAmount Int      @map("unit_price_amount")
+  lineTotalAmount Int      @map("line_total_amount")
+  paymentMethod   String?
+  // Source transaction id. Used for idempotent re-import: a (restaurant,
+  // externalReference) pair imports at most once. NULLs are distinct in
+  // Postgres, so rows without a reference are never deduped.
+  externalReference String?
+  createdAt       DateTime @default(now())
+
+  batch ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, externalReference])
+  @@index([restaurantId])
+  @@index([restaurantId, branchId])
+  @@index([restaurantId, occurredAt])
+  @@index([restaurantId, branchId, occurredAt])
+  @@index([importBatchId])
+  @@map("imported_sales")
 }
 
 // ── Edge nodes (OFF-2) ───────────────────────────────────────────────────────

@@ -44,6 +44,13 @@ export class GoodsReceiptLineDto {
 }
 
 export class CreateGoodsReceiptDto {
+  @ApiPropertyOptional({
+    description: '6C: target inventory location for the received stock (defaults to Main Storage).',
+  })
+  @IsOptional()
+  @IsString()
+  locationId?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

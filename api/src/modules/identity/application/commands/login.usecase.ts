@@ -6,13 +6,27 @@ import {
 import { UseCase } from '../../../../shared/application/use-case';
 import { EdgeConfigService } from '../../../../shared/edge/edge-config.service';
 import { DomainEventPublisher } from '../../../../shared/infrastructure/events/domain-event-publisher';
+import { DeviceSurface } from '../../domain/entities/device';
+import { Role } from '../../domain/entities/role';
+import { snapshotPermissionsForRole } from '../../domain/permissions.catalog';
 import { User } from '../../domain/entities/user';
+import { DEVICE_REPOSITORY, DeviceRepository } from '../../domain/repositories/device.repository';
 import { ROLE_REPOSITORY, RoleRepository } from '../../domain/repositories/role.repository';
 import { USER_REPOSITORY, UserRepository } from '../../domain/repositories/user.repository';
-import { AccountBlocked, InvalidCredentials, NoBranchAccessAtEdge } from '../application.errors';
+import {
+  AccountBlocked,
+  AdminDeviceRequired,
+  InvalidCredentials,
+  NoBranchAccessAtEdge,
+} from '../application.errors';
+import { AUTH_POLICY_READER, AuthPolicyReader } from '../ports/auth-policy.reader';
 import { PASSWORD_HASHER, PasswordHasher } from '../ports/password-hasher';
 import { AccountStateChecker } from '../services/account-state.checker';
 import { AuthTokenIssuer } from '../services/auth-token-issuer';
+import { hashDeviceSecret } from '../../infrastructure/services/device-secret.util';
+
+/** The OWNER system role is the single break-glass allowance (3A). */
+const OWNER_ROLE_CODE = 'OWNER';
 
 export interface LoginInput {
   email: string;
@@ -20,6 +34,12 @@ export interface LoginInput {
   organizationId?: string | null;
   ip?: string | null;
   userAgent?: string | null;
+  /**
+   * 3A: optional ADMIN-surface device secret. Required for admin/manager login
+   * unless the caller is the Owner (break-glass) or the restaurant has enabled
+   * unanchored admin login.
+   */
+  deviceSecret?: string | null;
 }
 
 export interface LoginOutput {
@@ -38,6 +58,8 @@ export class LoginUseCase implements UseCase<LoginInput, LoginOutput> {
     @Inject(ROLE_REPOSITORY) private readonly roles: RoleRepository,
     @Inject(PASSWORD_HASHER) private readonly hasher: PasswordHasher,
     @Inject(BRANCH_ACCESS_RESOLVER) private readonly branchAccess: BranchAccessResolver,
+    @Inject(DEVICE_REPOSITORY) private readonly devices: DeviceRepository,
+    @Inject(AUTH_POLICY_READER) private readonly policy: AuthPolicyReader,
     private readonly issuer: AuthTokenIssuer,
     private readonly accountState: AccountStateChecker,
     private readonly events: DomainEventPublisher,
@@ -83,7 +105,15 @@ export class LoginUseCase implements UseCase<LoginInput, LoginOutput> {
     await this.accountState.assertGoodStanding(user.organizationId);
 
     const role = await this.roles.findById(user.organizationId, user.roleId);
-    const permissions = role?.permissions ?? [];
+
+    // 3A: device-anchoring for admin/manager dashboard login (cloud path).
+    if (!this.edge.isEdge) {
+      await this.assertAdminAnchoring(user, role, input.deviceSecret ?? null, input.ip ?? null);
+    }
+
+    // System roles (OWNER/MANAGER/...) reconcile to the catalog so newly added
+    // permissions reach them without a manual backfill; custom roles use stored.
+    const permissions = snapshotPermissionsForRole(role);
 
     user.recordLogin(new Date(), input.ip ?? null, input.userAgent ?? null);
     await this.users.update(user);
@@ -91,5 +121,44 @@ export class LoginUseCase implements UseCase<LoginInput, LoginOutput> {
 
     const tokens = await this.issuer.issueFor(user, permissions);
     return { ...tokens, user, permissions };
+  }
+
+  /**
+   * 3A admin anchoring: Owner is always allowed (break-glass — resolves the
+   * enrollment bootstrap). Else if the restaurant allows unanchored admin login,
+   * any device is fine. Otherwise a valid, ACTIVE, ADMIN-surface device secret
+   * for the user's restaurant is required.
+   */
+  private async assertAdminAnchoring(
+    user: User,
+    role: Role | null,
+    deviceSecret: string | null,
+    ip: string | null,
+  ): Promise<void> {
+    if (role?.code === OWNER_ROLE_CODE) {
+      return; // break-glass
+    }
+    // Org-level principals (no restaurant) cannot be device-anchored.
+    if (!user.restaurantId) {
+      return;
+    }
+    if (await this.policy.allowsUnanchoredAdminLogin(user.restaurantId)) {
+      return;
+    }
+
+    if (!deviceSecret) {
+      throw AdminDeviceRequired();
+    }
+    const device = await this.devices.findActiveBySecretHash(hashDeviceSecret(deviceSecret));
+    if (
+      !device ||
+      !device.isActive() ||
+      device.restaurantId !== user.restaurantId ||
+      device.surface !== DeviceSurface.ADMIN
+    ) {
+      throw AdminDeviceRequired();
+    }
+    device.recordSeen(ip);
+    await this.devices.update(device);
   }
 }

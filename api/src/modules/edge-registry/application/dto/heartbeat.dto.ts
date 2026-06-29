@@ -1,13 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsInt,
-  IsISO8601,
-  IsOptional,
-  IsString,
-  MaxLength,
-  Min,
-  MinLength,
-} from 'class-validator';
+import { IsInt, IsISO8601, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator';
 
 /**
  * POST /edge-sync/heartbeat body — a hub's periodic self-report (OFF-8). Sent
@@ -16,12 +8,20 @@ import {
  * schema can still report in (and learn it must update).
  */
 export class HeartbeatRequestDto {
-  @ApiProperty({ nullable: true, type: String, description: 'When config last synced from cloud (ISO).' })
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'When config last synced from cloud (ISO).',
+  })
   @IsOptional()
   @IsISO8601()
   lastConfigSyncedAt?: string | null;
 
-  @ApiProperty({ nullable: true, type: Number, description: 'Highest outbox edgeSeq acked by the cloud.' })
+  @ApiProperty({
+    nullable: true,
+    type: Number,
+    description: 'Highest outbox edgeSeq acked by the cloud.',
+  })
   @IsOptional()
   @IsInt()
   lastPushedSeq?: number | null;

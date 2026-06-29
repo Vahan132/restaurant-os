@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Field, inputClass } from '@/components/ui/form';
 import { Modal } from '@/components/ui/modal';
 import { getErrorMessage } from '@/lib/api-error';
-import { useInventoryInvalidation } from '@/lib/inventory/use-inventory-data';
+import { useInventoryInvalidation, useItemsForSelect } from '@/lib/inventory/use-inventory-data';
 import {
   useProcess,
   useRunsInvalidation,
@@ -39,6 +39,10 @@ export function RunProductionModal({
   const currency = restaurant?.currency ?? 'USD';
   const { data: process, isLoading } = useProcess(processId);
   const { unitCost } = useUnitCostMap();
+  const { items } = useItemsForSelect();
+  const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
+  const itemName = (id: string) => itemById.get(id)?.name ?? id;
+  const itemUnit = (id: string) => abbr(itemById.get(id)?.baseUnit ?? '');
   const invalidateInventory = useInventoryInvalidation();
   const invalidateRuns = useRunsInvalidation();
 
@@ -59,11 +63,11 @@ export function RunProductionModal({
       (s, i) => s + i.baseQty * mult * unitCost(i.itemId),
       0,
     );
-    return inputs + process.processingCost;
+    return inputs + process.processingCost_amount;
   }, [process, mult, unitCost]);
 
   const expiryOutputs = useMemo(
-    () => (process?.outputs ?? []).filter((o) => o.trackExpiry),
+    () => (process?.outputs ?? []).filter((o) => itemById.get(o.itemId)?.trackExpiry),
     [process],
   );
 
@@ -81,13 +85,13 @@ export function RunProductionModal({
     };
     try {
       const result = await run.mutateAsync({ id: processId, data });
-      const summary = (result?.producedOutputs ?? [])
-        .map((o) => `${formatNumber(o.qtyBase)} ${o.itemName}`)
+      const summary = process.outputs
+        .map((o) => `${formatNumber(o.baseQty * mult)} ${itemName(o.itemId)}`)
         .join(', ');
       toast.success(
         t('runSuccess', {
-          outputs: summary || String(result?.producedOutputs?.length ?? ''),
-          cost: formatMoney(result?.totalCost ?? 0, currency),
+          outputs: summary || String(process.outputs.length),
+          cost: formatMoney(result?.totalCost_amount ?? 0, currency),
         }),
       );
       if (result?.wentNegative) toast.error(t('runWentNegative'));
@@ -151,7 +155,7 @@ export function RunProductionModal({
           {expiryOutputs.length > 0 && (
             <div className="space-y-2">
               {expiryOutputs.map((o) => (
-                <Field key={o.itemId} label={t('runExpiryFor', { item: o.itemName })}>
+                <Field key={o.itemId} label={t('runExpiryFor', { item: itemName(o.itemId) })}>
                   <input
                     type="date"
                     className={inputClass}
@@ -173,9 +177,9 @@ export function RunProductionModal({
             <ul className="mt-1 space-y-0.5">
               {process.inputs.map((i) => (
                 <li key={i.itemId} className="flex justify-between text-gray-600">
-                  <span>{i.itemName}</span>
+                  <span>{itemName(i.itemId)}</span>
                   <span>
-                    {formatNumber(i.baseQty * mult)} {abbr(i.baseUnit)}
+                    {formatNumber(i.baseQty * mult)} {itemUnit(i.itemId)}
                   </span>
                 </li>
               ))}
@@ -186,9 +190,9 @@ export function RunProductionModal({
             <ul className="mt-1 space-y-0.5">
               {process.outputs.map((o) => (
                 <li key={o.itemId} className="flex justify-between text-gray-600">
-                  <span>{o.itemName}</span>
+                  <span>{itemName(o.itemId)}</span>
                   <span>
-                    {formatNumber(o.baseQty * mult)} {abbr(o.baseUnit)}
+                    {formatNumber(o.baseQty * mult)} {itemUnit(o.itemId)}
                   </span>
                 </li>
               ))}

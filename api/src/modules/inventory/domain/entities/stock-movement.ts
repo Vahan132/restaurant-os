@@ -4,6 +4,8 @@ import { StockMovementType } from '../enums';
 export interface StockMovementProps {
   restaurantId: string;
   branchId: string;
+  /** 6A: the location this movement applies to. */
+  locationId: string;
   itemId: string;
   type: StockMovementType;
   /** SIGNED base qty: + in, - out. */
@@ -40,6 +42,9 @@ export class StockMovement extends Entity<string> {
   }
   get branchId(): string {
     return this.props.branchId;
+  }
+  get locationId(): string {
+    return this.props.locationId;
   }
   get itemId(): string {
     return this.props.itemId;

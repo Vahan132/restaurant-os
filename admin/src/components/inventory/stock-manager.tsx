@@ -46,6 +46,10 @@ export function StockManager() {
   useEffect(() => setPage(1), [debounced, categoryId, kind, lowStock, expiringBefore]);
 
   const { categories } = useCategoriesList();
+  const categoryName = useMemo(() => {
+    const m = new Map(categories.map((c) => [c.id, c.name]));
+    return (id: string | null) => (id ? (m.get(id) ?? '') : '');
+  }, [categories]);
 
   const params = useMemo<StockControllerStockParams>(
     () => ({
@@ -133,7 +137,7 @@ export function StockManager() {
             </thead>
             <tbody>
               {rows.map((row) => {
-                const qty = formatBaseQty(row.onHandBase, row.baseUnit, row.alternateUnits);
+                const qty = formatBaseQty(row.onHandBase, row.baseUnit, []);
                 return (
                   <tr
                     key={row.itemId}
@@ -142,11 +146,11 @@ export function StockManager() {
                   >
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-800">{row.itemName}</span>
+                        <span className="font-medium text-gray-800">{row.name}</span>
                         {row.lowStock && <LowStockBadge />}
                       </div>
-                      {row.categoryName && (
-                        <span className="text-xs text-gray-400">{row.categoryName}</span>
+                      {categoryName(row.categoryId) && (
+                        <span className="text-xs text-gray-400">{categoryName(row.categoryId)}</span>
                       )}
                     </td>
                     <td className="px-4 py-2">
@@ -157,9 +161,9 @@ export function StockManager() {
                       {qty.alt && <span className="ml-1 text-gray-400">({qty.alt})</span>}
                     </td>
                     <td className="px-4 py-2 text-gray-700">
-                      {formatMoney(row.valuation, currency)}
+                      {formatMoney(row.valuation_amount, currency)}
                     </td>
-                    <td className="px-4 py-2 text-gray-600">{formatDate(row.nearestExpiry)}</td>
+                    <td className="px-4 py-2 text-gray-600">{formatDate(row.earliestExpiry)}</td>
                   </tr>
                 );
               })}
@@ -179,9 +183,9 @@ export function StockManager() {
       {selected && (
         <StockDetailDrawer
           itemId={selected.itemId}
-          itemName={selected.itemName}
+          itemName={selected.name}
           baseUnit={selected.baseUnit}
-          alternateUnits={selected.alternateUnits}
+          alternateUnits={[]}
           onClose={() => setSelected(null)}
         />
       )}

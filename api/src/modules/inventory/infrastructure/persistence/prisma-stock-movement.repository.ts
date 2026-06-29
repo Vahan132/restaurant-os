@@ -15,9 +15,19 @@ export class PrismaStockMovementRepository implements StockMovementRepository {
   async list(filter: MovementListFilter): Promise<{ items: StockMovement[]; total: number }> {
     const where: Prisma.StockMovementWhereInput = {
       restaurantId: filter.restaurantId,
-      branchId: filter.branchId,
+      ...(filter.branchId ? { branchId: filter.branchId } : {}),
+      ...(filter.branchIds ? { branchId: { in: filter.branchIds } } : {}),
       ...(filter.itemId ? { itemId: filter.itemId } : {}),
+      ...(filter.locationId ? { locationId: filter.locationId } : {}),
       ...(filter.types && filter.types.length > 0 ? { type: { in: filter.types } } : {}),
+      ...(filter.from || filter.to
+        ? {
+            occurredAt: {
+              ...(filter.from ? { gte: filter.from } : {}),
+              ...(filter.to ? { lte: filter.to } : {}),
+            },
+          }
+        : {}),
     };
     const [records, total] = await this.prisma.$transaction([
       this.prisma.stockMovement.findMany({

@@ -25,13 +25,15 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AttachModifierGroupDto,
   ChangeItemPriceDto,
   CreateMenuItemDto,
-  CreateModifierGroupDto,
+  DishModifierGroupResponse,
   ItemsControllerListParams,
   MenuItemDetailResponse,
   MenuItemResponse,
-  ModifierGroupResponse,
+  ReorderDishModifierGroupsDto,
+  SetDishModifierOverridesDto,
   SetItemAvailabilityDto,
   SetItemStatusDto,
   UpdateMenuItemDto
@@ -611,30 +613,30 @@ export const useItemsControllerAvailability = <TError = void,
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * @summary Add a modifier group to an item.
+ * @summary Attach a reusable modifier group to a dish.
  */
-export const itemsControllerAddModifierGroup = (
+export const itemsControllerAttachModifierGroup = (
     itemId: string,
-    createModifierGroupDto: CreateModifierGroupDto,
+    attachModifierGroupDto: AttachModifierGroupDto,
  options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
 ) => {
       
       
-      return customInstance<ModifierGroupResponse>(
+      return customInstance<DishModifierGroupResponse>(
       {url: `/menu/items/${itemId}/modifier-groups`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
-      data: createModifierGroupDto, signal
+      data: attachModifierGroupDto, signal
     },
       options);
     }
   
 
 
-export const getItemsControllerAddModifierGroupMutationOptions = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof itemsControllerAddModifierGroup>>, TError,{itemId: string;data: CreateModifierGroupDto}, TContext>, request?: SecondParameter<typeof customInstance>}
-): UseMutationOptions<Awaited<ReturnType<typeof itemsControllerAddModifierGroup>>, TError,{itemId: string;data: CreateModifierGroupDto}, TContext> => {
+export const getItemsControllerAttachModifierGroupMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof itemsControllerAttachModifierGroup>>, TError,{itemId: string;data: AttachModifierGroupDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof itemsControllerAttachModifierGroup>>, TError,{itemId: string;data: AttachModifierGroupDto}, TContext> => {
 
-const mutationKey = ['itemsControllerAddModifierGroup'];
+const mutationKey = ['itemsControllerAttachModifierGroup'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -644,10 +646,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof itemsControllerAddModifierGroup>>, {itemId: string;data: CreateModifierGroupDto}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof itemsControllerAttachModifierGroup>>, {itemId: string;data: AttachModifierGroupDto}> = (props) => {
           const {itemId,data} = props ?? {};
 
-          return  itemsControllerAddModifierGroup(itemId,data,requestOptions)
+          return  itemsControllerAttachModifierGroup(itemId,data,requestOptions)
         }
 
         
@@ -655,23 +657,214 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ItemsControllerAddModifierGroupMutationResult = NonNullable<Awaited<ReturnType<typeof itemsControllerAddModifierGroup>>>
-    export type ItemsControllerAddModifierGroupMutationBody = CreateModifierGroupDto
-    export type ItemsControllerAddModifierGroupMutationError = void
+    export type ItemsControllerAttachModifierGroupMutationResult = NonNullable<Awaited<ReturnType<typeof itemsControllerAttachModifierGroup>>>
+    export type ItemsControllerAttachModifierGroupMutationBody = AttachModifierGroupDto
+    export type ItemsControllerAttachModifierGroupMutationError = void
 
     /**
- * @summary Add a modifier group to an item.
+ * @summary Attach a reusable modifier group to a dish.
  */
-export const useItemsControllerAddModifierGroup = <TError = void,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof itemsControllerAddModifierGroup>>, TError,{itemId: string;data: CreateModifierGroupDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+export const useItemsControllerAttachModifierGroup = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof itemsControllerAttachModifierGroup>>, TError,{itemId: string;data: AttachModifierGroupDto}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof itemsControllerAddModifierGroup>>,
+        Awaited<ReturnType<typeof itemsControllerAttachModifierGroup>>,
         TError,
-        {itemId: string;data: CreateModifierGroupDto},
+        {itemId: string;data: AttachModifierGroupDto},
         TContext
       > => {
 
-      const mutationOptions = getItemsControllerAddModifierGroupMutationOptions(options);
+      const mutationOptions = getItemsControllerAttachModifierGroupMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Reorder a dish's attached modifier groups.
+ */
+export const itemsControllerReorderModifierGroups = (
+    itemId: string,
+    reorderDishModifierGroupsDto: ReorderDishModifierGroupsDto,
+ options?: SecondParameter<typeof customInstance>,) => {
+      
+      
+      return customInstance<DishModifierGroupResponse[]>(
+      {url: `/menu/items/${itemId}/modifier-groups/reorder`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: reorderDishModifierGroupsDto
+    },
+      options);
+    }
+  
+
+
+export const getItemsControllerReorderModifierGroupsMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof itemsControllerReorderModifierGroups>>, TError,{itemId: string;data: ReorderDishModifierGroupsDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof itemsControllerReorderModifierGroups>>, TError,{itemId: string;data: ReorderDishModifierGroupsDto}, TContext> => {
+
+const mutationKey = ['itemsControllerReorderModifierGroups'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof itemsControllerReorderModifierGroups>>, {itemId: string;data: ReorderDishModifierGroupsDto}> = (props) => {
+          const {itemId,data} = props ?? {};
+
+          return  itemsControllerReorderModifierGroups(itemId,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ItemsControllerReorderModifierGroupsMutationResult = NonNullable<Awaited<ReturnType<typeof itemsControllerReorderModifierGroups>>>
+    export type ItemsControllerReorderModifierGroupsMutationBody = ReorderDishModifierGroupsDto
+    export type ItemsControllerReorderModifierGroupsMutationError = void
+
+    /**
+ * @summary Reorder a dish's attached modifier groups.
+ */
+export const useItemsControllerReorderModifierGroups = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof itemsControllerReorderModifierGroups>>, TError,{itemId: string;data: ReorderDishModifierGroupsDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof itemsControllerReorderModifierGroups>>,
+        TError,
+        {itemId: string;data: ReorderDishModifierGroupsDto},
+        TContext
+      > => {
+
+      const mutationOptions = getItemsControllerReorderModifierGroupsMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Set or clear a dish attachment's per-group overrides.
+ */
+export const itemsControllerSetModifierGroupOverrides = (
+    itemId: string,
+    groupId: string,
+    setDishModifierOverridesDto: SetDishModifierOverridesDto,
+ options?: SecondParameter<typeof customInstance>,) => {
+      
+      
+      return customInstance<DishModifierGroupResponse>(
+      {url: `/menu/items/${itemId}/modifier-groups/${groupId}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: setDishModifierOverridesDto
+    },
+      options);
+    }
+  
+
+
+export const getItemsControllerSetModifierGroupOverridesMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof itemsControllerSetModifierGroupOverrides>>, TError,{itemId: string;groupId: string;data: SetDishModifierOverridesDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof itemsControllerSetModifierGroupOverrides>>, TError,{itemId: string;groupId: string;data: SetDishModifierOverridesDto}, TContext> => {
+
+const mutationKey = ['itemsControllerSetModifierGroupOverrides'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof itemsControllerSetModifierGroupOverrides>>, {itemId: string;groupId: string;data: SetDishModifierOverridesDto}> = (props) => {
+          const {itemId,groupId,data} = props ?? {};
+
+          return  itemsControllerSetModifierGroupOverrides(itemId,groupId,data,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ItemsControllerSetModifierGroupOverridesMutationResult = NonNullable<Awaited<ReturnType<typeof itemsControllerSetModifierGroupOverrides>>>
+    export type ItemsControllerSetModifierGroupOverridesMutationBody = SetDishModifierOverridesDto
+    export type ItemsControllerSetModifierGroupOverridesMutationError = void
+
+    /**
+ * @summary Set or clear a dish attachment's per-group overrides.
+ */
+export const useItemsControllerSetModifierGroupOverrides = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof itemsControllerSetModifierGroupOverrides>>, TError,{itemId: string;groupId: string;data: SetDishModifierOverridesDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof itemsControllerSetModifierGroupOverrides>>,
+        TError,
+        {itemId: string;groupId: string;data: SetDishModifierOverridesDto},
+        TContext
+      > => {
+
+      const mutationOptions = getItemsControllerSetModifierGroupOverridesMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Detach a modifier group from a dish.
+ */
+export const itemsControllerDetachModifierGroup = (
+    itemId: string,
+    groupId: string,
+ options?: SecondParameter<typeof customInstance>,) => {
+      
+      
+      return customInstance<unknown>(
+      {url: `/menu/items/${itemId}/modifier-groups/${groupId}`, method: 'DELETE'
+    },
+      options);
+    }
+  
+
+
+export const getItemsControllerDetachModifierGroupMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof itemsControllerDetachModifierGroup>>, TError,{itemId: string;groupId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof itemsControllerDetachModifierGroup>>, TError,{itemId: string;groupId: string}, TContext> => {
+
+const mutationKey = ['itemsControllerDetachModifierGroup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof itemsControllerDetachModifierGroup>>, {itemId: string;groupId: string}> = (props) => {
+          const {itemId,groupId} = props ?? {};
+
+          return  itemsControllerDetachModifierGroup(itemId,groupId,requestOptions)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ItemsControllerDetachModifierGroupMutationResult = NonNullable<Awaited<ReturnType<typeof itemsControllerDetachModifierGroup>>>
+    
+    export type ItemsControllerDetachModifierGroupMutationError = void
+
+    /**
+ * @summary Detach a modifier group from a dish.
+ */
+export const useItemsControllerDetachModifierGroup = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof itemsControllerDetachModifierGroup>>, TError,{itemId: string;groupId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof itemsControllerDetachModifierGroup>>,
+        TError,
+        {itemId: string;groupId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getItemsControllerDetachModifierGroupMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

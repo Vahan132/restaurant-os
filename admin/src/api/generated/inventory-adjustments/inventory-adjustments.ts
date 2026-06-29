@@ -27,7 +27,9 @@ import type {
 import type {
   AdjustmentResultResponse,
   AdjustmentsControllerListParams,
+  CountAdjustmentResultResponse,
   CreateAdjustmentDto,
+  SetCountedOnHandDto,
   StockMovementResponse
 } from '../model';
 
@@ -194,3 +196,66 @@ export function useAdjustmentsControllerList<TData = Awaited<ReturnType<typeof a
 
 
 
+/**
+ * @summary Correction adjustment (6A §6): set the ACTUAL counted on-hand for an (item, location). Writes the signed-difference ADJUSTMENT and reconciles lots + projection atomically.
+ */
+export const adjustmentsControllerCount = (
+    setCountedOnHandDto: SetCountedOnHandDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<CountAdjustmentResultResponse>(
+      {url: `/inventory/adjustments/count`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: setCountedOnHandDto, signal
+    },
+      options);
+    }
+
+
+
+export const getAdjustmentsControllerCountMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adjustmentsControllerCount>>, TError,{data: SetCountedOnHandDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof adjustmentsControllerCount>>, TError,{data: SetCountedOnHandDto}, TContext> => {
+
+const mutationKey = ['adjustmentsControllerCount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adjustmentsControllerCount>>, {data: SetCountedOnHandDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adjustmentsControllerCount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdjustmentsControllerCountMutationResult = NonNullable<Awaited<ReturnType<typeof adjustmentsControllerCount>>>
+    export type AdjustmentsControllerCountMutationBody = SetCountedOnHandDto
+    export type AdjustmentsControllerCountMutationError = void
+
+    /**
+ * @summary Correction adjustment (6A §6): set the ACTUAL counted on-hand for an (item, location). Writes the signed-difference ADJUSTMENT and reconciles lots + projection atomically.
+ */
+export const useAdjustmentsControllerCount = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adjustmentsControllerCount>>, TError,{data: SetCountedOnHandDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof adjustmentsControllerCount>>,
+        TError,
+        {data: SetCountedOnHandDto},
+        TContext
+      > => {
+      return useMutation(getAdjustmentsControllerCountMutationOptions(options), queryClient);
+    }

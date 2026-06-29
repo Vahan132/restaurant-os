@@ -25,3 +25,11 @@ export class InvalidModifierSelectionError extends DomainError {
     super(message);
   }
 }
+
+export class InvalidPriceDeltaError extends DomainError {
+  readonly code = 'INVALID_PRICE_DELTA';
+  override readonly httpStatus = 400;
+  constructor(field: string) {
+    super(`${field} must be an integer (minor units); it may be negative.`);
+  }
+}

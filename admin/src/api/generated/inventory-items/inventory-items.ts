@@ -31,6 +31,7 @@ import type {
   InventoryItemsControllerListParams,
   InventoryItemsControllerMovementsParams,
   RelatedItemsResponse,
+  SetItemConsumptionLocationDto,
   StockLayerResponse,
   StockMovementResponse,
   UpdateInventoryItemDto
@@ -415,6 +416,70 @@ export const useInventoryItemsControllerRemove = <TError = void,
         TContext
       > => {
       return useMutation(getInventoryItemsControllerRemoveMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Reassign the item's serve-time consumption location (6C).
+ */
+export const inventoryItemsControllerSetConsumptionLocationRoute = (
+    id: string,
+    setItemConsumptionLocationDto: SetItemConsumptionLocationDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<InventoryItemResponse>(
+      {url: `/inventory/items/${id}/consumption-location`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: setItemConsumptionLocationDto, signal
+    },
+      options);
+    }
+
+
+
+export const getInventoryItemsControllerSetConsumptionLocationRouteMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inventoryItemsControllerSetConsumptionLocationRoute>>, TError,{id: string;data: SetItemConsumptionLocationDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof inventoryItemsControllerSetConsumptionLocationRoute>>, TError,{id: string;data: SetItemConsumptionLocationDto}, TContext> => {
+
+const mutationKey = ['inventoryItemsControllerSetConsumptionLocationRoute'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof inventoryItemsControllerSetConsumptionLocationRoute>>, {id: string;data: SetItemConsumptionLocationDto}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  inventoryItemsControllerSetConsumptionLocationRoute(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InventoryItemsControllerSetConsumptionLocationRouteMutationResult = NonNullable<Awaited<ReturnType<typeof inventoryItemsControllerSetConsumptionLocationRoute>>>
+    export type InventoryItemsControllerSetConsumptionLocationRouteMutationBody = SetItemConsumptionLocationDto
+    export type InventoryItemsControllerSetConsumptionLocationRouteMutationError = void
+
+    /**
+ * @summary Reassign the item's serve-time consumption location (6C).
+ */
+export const useInventoryItemsControllerSetConsumptionLocationRoute = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inventoryItemsControllerSetConsumptionLocationRoute>>, TError,{id: string;data: SetItemConsumptionLocationDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof inventoryItemsControllerSetConsumptionLocationRoute>>,
+        TError,
+        {id: string;data: SetItemConsumptionLocationDto},
+        TContext
+      > => {
+      return useMutation(getInventoryItemsControllerSetConsumptionLocationRouteMutationOptions(options), queryClient);
     }
     /**
  * @summary List an item stock layers (OPEN by default) with derived unit cost.

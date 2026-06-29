@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
 import { User } from '../../domain/entities/user';
+import { snapshotPermissionsForRole } from '../../domain/permissions.catalog';
 import { ROLE_REPOSITORY, RoleRepository } from '../../domain/repositories/role.repository';
 import { USER_REPOSITORY, UserRepository } from '../../domain/repositories/user.repository';
 import { AccountBlocked, InvalidRefreshToken } from '../application.errors';
@@ -73,7 +74,7 @@ export class RefreshTokenUseCase implements UseCase<RefreshInput, RefreshOutput>
     await this.refreshTokens.revoke(record.id);
 
     const role = await this.roles.findById(user.organizationId, user.roleId);
-    const permissions = role?.permissions ?? [];
+    const permissions = snapshotPermissionsForRole(role);
     const issued = await this.issuer.issueFor(user, permissions);
     return { ...issued, user, permissions };
   }

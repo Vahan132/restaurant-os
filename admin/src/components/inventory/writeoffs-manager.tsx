@@ -173,13 +173,13 @@ export function WriteOffsManager() {
                         <ReasonBadge reason={w.reason} />
                       </td>
                       <td className="px-4 py-2 text-gray-600">
-                        {lineSummary(w.itemLineCount, w.dishLineCount)}
+                        {lineSummary(w.lines.filter((l) => l.kind === 'ITEM').length, w.lines.filter((l) => l.kind === 'DISH').length)}
                       </td>
-                      <td className={`px-4 py-2 ${w.voided ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
-                        {formatMoney(w.totalCost, currency)}
+                      <td className={`px-4 py-2 ${w.voidedAt ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
+                        {formatMoney(w.totalCost_amount, currency)}
                       </td>
                       <td className="px-4 py-2">
-                        {w.voided && <Badge tone="gray">{t('voidedBadge')}</Badge>}
+                        {w.voidedAt && <Badge tone="gray">{t('voidedBadge')}</Badge>}
                       </td>
                     </tr>
                   ))}

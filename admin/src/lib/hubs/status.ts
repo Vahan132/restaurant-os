@@ -1,49 +1,47 @@
 import {
-  EdgeNodeResponseStatus,
+  EdgeNodeResponseHealthStatus,
   type EdgeNodeResponse,
 } from '@/api/generated/model';
 
-/**
- * A node is considered offline if it hasn't reported in within this window.
- * Hubs heartbeat roughly once a minute; allow a couple of missed beats.
- */
+/** A node is offline if no heartbeat arrived within this window (fallback). */
 export const HEARTBEAT_STALE_MS = 2 * 60 * 1000;
 
 /** Pending operational entries above this count are flagged as a backlog. */
 export const BACKLOG_THRESHOLD = 50;
 
 export interface HubWarnings {
-  /** No (recent) heartbeat — the hub is unreachable. */
   offline: boolean;
-  /** A large pending push backlog is building up on the hub. */
   backlog: boolean;
-  /** The hub's DB schema is behind the platform's expected version. */
   needsUpdate: boolean;
 }
 
 const ageMs = (iso: string | null, now: number): number | null =>
   iso ? now - new Date(iso).getTime() : null;
 
-/** Whether the node has missed its heartbeat window (or never paired). */
+/** Offline per the server's live health, falling back to heartbeat recency. */
 export function isOffline(node: EdgeNodeResponse, now: number): boolean {
+  if (node.healthStatus === EdgeNodeResponseHealthStatus.OFFLINE) return true;
+  if (node.online) return false;
   const age = ageMs(node.lastHeartbeatAt, now);
   return age === null || age > HEARTBEAT_STALE_MS;
 }
 
-/** Whether the node is carrying a large unpushed operational backlog. */
+/** Carrying a large unpushed operational backlog. */
 export function isBacklogged(node: EdgeNodeResponse): boolean {
-  return node.pendingCount > BACKLOG_THRESHOLD;
-}
-
-/** Whether the node's schema is behind what the platform expects. */
-export function needsUpdate(node: EdgeNodeResponse): boolean {
   return (
-    node.schemaVersion !== null &&
-    node.schemaVersion !== node.expectedSchemaVersion
+    node.healthStatus === EdgeNodeResponseHealthStatus.SYNC_BACKLOG ||
+    (node.pendingOutboxCount ?? 0) > BACKLOG_THRESHOLD
   );
 }
 
-/** Telemetry-derived warning flags for a node. */
+/** The hub's schema/app is behind the platform. */
+export function needsUpdate(node: EdgeNodeResponse): boolean {
+  return (
+    node.updateAvailable ||
+    node.healthStatus === EdgeNodeResponseHealthStatus.SCHEMA_MISMATCH
+  );
+}
+
 export function hubWarnings(node: EdgeNodeResponse, now: number): HubWarnings {
   return {
     offline: isOffline(node, now),
@@ -53,36 +51,34 @@ export function hubWarnings(node: EdgeNodeResponse, now: number): HubWarnings {
 }
 
 /**
- * Effective status for display, derived from telemetry so warnings and the
- * status badge always agree. Severity order: offline > needs update > backlog
- * > online. The backend also returns a `status`; we derive client-side so the
- * badge stays meaningful regardless of how fresh that field is.
+ * Effective display health, derived so warnings and the badge agree. Severity
+ * order: offline > schema mismatch > backlog > ok.
  */
 export function deriveHubStatus(
   node: EdgeNodeResponse,
   now: number,
-): EdgeNodeResponseStatus {
-  if (isOffline(node, now)) return EdgeNodeResponseStatus.OFFLINE;
-  if (needsUpdate(node)) return EdgeNodeResponseStatus.NEEDS_UPDATE;
-  if (isBacklogged(node)) return EdgeNodeResponseStatus.SYNC_BACKLOG;
-  return EdgeNodeResponseStatus.ONLINE;
+): EdgeNodeResponseHealthStatus {
+  if (isOffline(node, now)) return EdgeNodeResponseHealthStatus.OFFLINE;
+  if (needsUpdate(node)) return EdgeNodeResponseHealthStatus.SCHEMA_MISMATCH;
+  if (isBacklogged(node)) return EdgeNodeResponseHealthStatus.SYNC_BACKLOG;
+  return EdgeNodeResponseHealthStatus.OK;
 }
 
 type Tone = 'green' | 'gray' | 'red' | 'amber' | 'blue';
 
-/** Badge tone + translation key (under the `hubs` namespace) for a status. */
-export function statusDisplay(status: EdgeNodeResponseStatus): {
+/** Badge tone + translation key (under the `hubs` namespace) for a health value. */
+export function statusDisplay(status: EdgeNodeResponseHealthStatus): {
   tone: Tone;
   key: string;
 } {
   switch (status) {
-    case EdgeNodeResponseStatus.ONLINE:
+    case EdgeNodeResponseHealthStatus.OK:
       return { tone: 'green', key: 'statusOnline' };
-    case EdgeNodeResponseStatus.OFFLINE:
+    case EdgeNodeResponseHealthStatus.OFFLINE:
       return { tone: 'red', key: 'statusOffline' };
-    case EdgeNodeResponseStatus.NEEDS_UPDATE:
+    case EdgeNodeResponseHealthStatus.SCHEMA_MISMATCH:
       return { tone: 'amber', key: 'statusNeedsUpdate' };
-    case EdgeNodeResponseStatus.SYNC_BACKLOG:
+    case EdgeNodeResponseHealthStatus.SYNC_BACKLOG:
       return { tone: 'amber', key: 'statusSyncBacklog' };
     default:
       return { tone: 'gray', key: 'statusUnknown' };

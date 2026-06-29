@@ -50,9 +50,7 @@ export function HubsManager() {
   const now = Date.now();
 
   const branchName = (hub: EdgeNodeResponse) =>
-    hub.branchName ||
-    accessibleBranches.find((b) => b.id === hub.branchId)?.name ||
-    hub.branchId;
+    accessibleBranches.find((b) => b.id === hub.branchId)?.name || hub.branchId;
 
   const onRevoke = async (hub: EdgeNodeResponse) => {
     const ok = await ask({
@@ -115,7 +113,7 @@ export function HubsManager() {
             </thead>
             <tbody>
               {hubs.map((hub) => {
-                const revoked = !!hub.revokedAt;
+                const revoked = hub.status === 'REVOKED';
                 const warnings = hubWarnings(hub, now);
                 const status = deriveHubStatus(hub, now);
                 const sd = statusDisplay(status);
@@ -140,21 +138,21 @@ export function HubsManager() {
                     </td>
                     <td
                       className="px-4 py-2 text-gray-600"
-                      title={absoluteTime(hub.lastConfigSyncedAt, locale)}
+                      title={absoluteTime(hub.lastSnapshotAt, locale)}
                     >
-                      {rel(hub.lastConfigSyncedAt)}
+                      {rel(hub.lastSnapshotAt)}
                     </td>
                     <td
                       className="px-4 py-2 text-gray-600"
-                      title={absoluteTime(hub.lastOperationalPushAt, locale)}
+                      title={absoluteTime(hub.lastSeenAt, locale)}
                     >
-                      {rel(hub.lastOperationalPushAt)}
+                      {rel(hub.lastSeenAt)}
                     </td>
                     <td className="px-4 py-2">
                       {!revoked && warnings.backlog ? (
-                        <Badge tone="amber">{t('pendingBacklog', { count: hub.pendingCount })}</Badge>
+                        <Badge tone="amber">{t('pendingBacklog', { count: hub.pendingOutboxCount ?? 0 })}</Badge>
                       ) : (
-                        <span className="text-gray-600">{hub.pendingCount}</span>
+                        <span className="text-gray-600">{hub.pendingOutboxCount ?? 0}</span>
                       )}
                     </td>
                     <td className="px-4 py-2 text-gray-600">

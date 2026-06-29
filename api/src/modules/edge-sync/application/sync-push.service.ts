@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  OnApplicationBootstrap,
-  OnModuleDestroy,
-} from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EdgeConfigService } from '../../../shared/edge/edge-config.service';
 import { EdgeSyncGate } from '../../../shared/edge/edge-sync-gate';
@@ -146,7 +141,11 @@ export class SyncPushService implements OnApplicationBootstrap, OnModuleDestroy 
           }
           await this.prisma.edgeSyncState.updateMany({
             where: { nodeId },
-            data: { lastPushedSeq: result.lastAppliedSeq ?? undefined, lastPushAt: now, online: true },
+            data: {
+              lastPushedSeq: result.lastAppliedSeq ?? undefined,
+              lastPushAt: now,
+              online: true,
+            },
           });
         }
 

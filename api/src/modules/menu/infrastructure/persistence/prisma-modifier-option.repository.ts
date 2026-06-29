@@ -15,7 +15,22 @@ export class PrismaModifierOptionRepository implements ModifierOptionRepository 
   ): Promise<ModifierOption[]> {
     const records = await this.prisma.modifierOption.findMany({
       where: { restaurantId, branchId, modifierGroupId, deletedAt: null },
-      orderBy: { displayOrder: 'asc' },
+      orderBy: { sortOrder: 'asc' },
+    });
+    return records.map(OptionMapper.toDomain);
+  }
+
+  async listByGroupIds(
+    restaurantId: string,
+    branchId: string,
+    modifierGroupIds: string[],
+  ): Promise<ModifierOption[]> {
+    if (modifierGroupIds.length === 0) {
+      return [];
+    }
+    const records = await this.prisma.modifierOption.findMany({
+      where: { restaurantId, branchId, modifierGroupId: { in: modifierGroupIds }, deletedAt: null },
+      orderBy: { sortOrder: 'asc' },
     });
     return records.map(OptionMapper.toDomain);
   }

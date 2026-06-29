@@ -14,11 +14,12 @@ export interface UpdateModifierOptionInput {
   optionId: string;
   name?: string;
   priceDeltaAmount?: number;
-  displayOrder?: number;
+  sortOrder?: number;
+  isDefault?: boolean;
   status?: MenuStatus;
 }
 
-/** Update a modifier option (tenant-scoped). Rejects negative price deltas. */
+/** Update a modifier option (tenant-scoped). Price deltas may be 0 or negative. */
 @Injectable()
 export class UpdateModifierOptionUseCase implements UseCase<
   UpdateModifierOptionInput,
@@ -39,7 +40,8 @@ export class UpdateModifierOptionUseCase implements UseCase<
     option.update({
       name: input.name,
       priceDeltaAmount: input.priceDeltaAmount,
-      displayOrder: input.displayOrder,
+      sortOrder: input.sortOrder,
+      isDefault: input.isDefault,
       status: input.status,
     });
     await this.options.update(option);

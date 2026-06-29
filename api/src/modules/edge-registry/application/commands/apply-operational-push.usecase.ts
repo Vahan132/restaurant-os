@@ -5,6 +5,7 @@ import { OPERATIONAL_WRITER, OperationalWriter } from '../ports/operational-writ
 
 export interface ApplyOperationalPushInput {
   branchId: string;
+  restaurantId: string;
   entries: PushEntry[];
 }
 
@@ -13,15 +14,13 @@ export interface ApplyOperationalPushInput {
  * node's branch (the branch comes from the authenticated node, never the body).
  */
 @Injectable()
-export class ApplyOperationalPushUseCase
-  implements UseCase<ApplyOperationalPushInput, PushResult>
-{
+export class ApplyOperationalPushUseCase implements UseCase<ApplyOperationalPushInput, PushResult> {
   constructor(@Inject(OPERATIONAL_WRITER) private readonly writer: OperationalWriter) {}
 
   async execute(input: ApplyOperationalPushInput): Promise<PushResult> {
     if (input.entries.length === 0) {
       return { appliedIds: [], lastAppliedSeq: null };
     }
-    return this.writer.apply(input.branchId, input.entries);
+    return this.writer.apply(input.branchId, input.restaurantId, input.entries);
   }
 }

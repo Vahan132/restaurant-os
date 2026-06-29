@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { QueryProvider } from '@/lib/query/QueryProvider';
 import { ToastProvider } from '@/components/Toast';
+import { DeviceHydrator } from '@/components/DeviceHydrator';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -27,7 +28,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <QueryProvider>
-            <ToastProvider>{children}</ToastProvider>
+            <ToastProvider>
+              <DeviceHydrator />
+              {children}
+            </ToastProvider>
           </QueryProvider>
         </NextIntlClientProvider>
       </body>

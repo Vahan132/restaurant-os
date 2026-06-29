@@ -83,7 +83,7 @@ export function CreateFromCallModal({
     >
       <div className="space-y-3">
         <Field label={t('customerPhone')}>
-          <input className={inputClass} value={call.phone} disabled />
+          <input className={inputClass} value={call.phoneNumber} disabled />
         </Field>
         <Field label={t('customerName')} required error={errors.name}>
           <input

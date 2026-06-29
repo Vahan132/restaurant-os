@@ -85,7 +85,7 @@ export function AdjustmentFormModal({ onClose }: { onClose: () => void }) {
       toast.success(t('created'));
       // OUT adjustments that drive stock below zero still succeed; warn softly.
       if (result?.wentNegative) {
-        toast.error(t('wentNegative', { item: result.itemName ?? selectedItem?.name ?? '' }));
+        toast.error(t('wentNegative', { item: selectedItem?.name ?? '' }));
       }
       await invalidate(itemId);
       onClose();

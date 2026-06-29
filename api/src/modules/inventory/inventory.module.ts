@@ -19,11 +19,18 @@ import { MENU_ITEM_LOOKUP } from './application/ports/menu-item.lookup';
 import { ITEM_UNIT_COST_READER } from './application/ports/item-unit-cost.reader';
 import { WRITE_OFF_REPOSITORY } from './domain/repositories/write-off.repository';
 import { WRITE_OFF_SUMMARY_READER } from './application/ports/write-off-summary.reader';
+import { INVENTORY_LOCATION_REPOSITORY } from './domain/repositories/inventory-location.repository';
+import { BRANCH_INVENTORY_POLICY_REPOSITORY } from './domain/repositories/branch-inventory-policy.repository';
+import { STOCK_ON_HAND_READER } from './application/ports/stock-on-hand.reader';
+import { LOW_STOCK_ALERT_READER } from './application/ports/low-stock-alert.reader';
+import { INVENTORY_TRANSFER_REPOSITORY } from './domain/repositories/inventory-transfer.repository';
+import { INVENTORY_REPORT_READER } from './application/ports/inventory-report.reader';
 
 import { CreateAdjustmentUseCase } from './application/commands/create-adjustment.usecase';
 import { CreateGoodsReceiptUseCase } from './application/commands/create-goods-receipt.usecase';
 import { CreateInventoryItemUseCase } from './application/commands/create-inventory-item.usecase';
 import { DeleteInventoryItemUseCase } from './application/commands/delete-inventory-item.usecase';
+import { SetItemConsumptionLocationUseCase } from './application/commands/set-item-consumption-location.usecase';
 import { UpdateInventoryItemUseCase } from './application/commands/update-inventory-item.usecase';
 import {
   CreateInventoryCategoryUseCase,
@@ -74,6 +81,38 @@ import { ListWriteOffsUseCase } from './application/queries/list-write-offs.usec
 import { GetWriteOffUseCase } from './application/queries/get-write-off.usecase';
 import { GetWriteOffSummaryUseCase } from './application/queries/get-write-off-summary.usecase';
 
+// Multi-location inventory (6A)
+import {
+  CreateInventoryLocationUseCase,
+  DeleteInventoryLocationUseCase,
+  RenameInventoryLocationUseCase,
+} from './application/commands/manage-location.usecase';
+import { ListLocationsUseCase } from './application/queries/list-locations.usecase';
+import { GetLocationOnHandUseCase } from './application/queries/get-location-on-hand.usecase';
+import { SetCountedOnHandUseCase } from './application/commands/set-counted-on-hand.usecase';
+import {
+  GetBranchPolicyUseCase,
+  UpdateBranchPolicyUseCase,
+} from './application/commands/manage-policy.usecase';
+import { ListLowStockAlertsUseCase } from './application/queries/list-low-stock-alerts.usecase';
+import { InventoryLocationProvisioner } from './application/services/inventory-location-provisioner.service';
+import { NegativeStockPolicyService } from './application/services/negative-stock-policy.service';
+
+// Within-branch transfers (6B)
+import { CreateTransferUseCase } from './application/commands/create-transfer.usecase';
+import { ListTransfersUseCase } from './application/queries/list-transfers.usecase';
+import { GetTransferUseCase } from './application/queries/get-transfer.usecase';
+
+// Stock reports (6D)
+import {
+  GetLowStockReportUseCase,
+  GetNegativeStockReportUseCase,
+  GetStockOnHandReportUseCase,
+  GetValuationSummaryUseCase,
+} from './application/queries/stock-reports.usecase';
+import { GetMovementHistoryUseCase } from './application/queries/get-movement-history.usecase';
+import { InventoryReportScopeService } from './application/services/inventory-report-scope.service';
+
 import { PrismaGoodsReceiptRepository } from './infrastructure/persistence/prisma-goods-receipt.repository';
 import { PrismaInventoryCategoryRepository } from './infrastructure/persistence/prisma-inventory-category.repository';
 import { PrismaInventoryItemRepository } from './infrastructure/persistence/prisma-inventory-item.repository';
@@ -91,6 +130,12 @@ import { PrismaMenuItemLookup } from './infrastructure/persistence/prisma-menu-i
 import { PrismaItemUnitCostReader } from './infrastructure/persistence/prisma-item-unit-cost.reader';
 import { PrismaWriteOffRepository } from './infrastructure/persistence/prisma-write-off.repository';
 import { PrismaWriteOffSummaryReader } from './infrastructure/persistence/prisma-write-off-summary.reader';
+import { PrismaInventoryLocationRepository } from './infrastructure/persistence/prisma-inventory-location.repository';
+import { PrismaBranchInventoryPolicyRepository } from './infrastructure/persistence/prisma-branch-inventory-policy.repository';
+import { PrismaStockOnHandReader } from './infrastructure/persistence/prisma-stock-on-hand.reader';
+import { PrismaLowStockAlertReader } from './infrastructure/persistence/prisma-low-stock-alert.reader';
+import { PrismaInventoryTransferRepository } from './infrastructure/persistence/prisma-inventory-transfer.repository';
+import { PrismaInventoryReportReader } from './infrastructure/persistence/prisma-inventory-report.reader';
 
 import { AdjustmentsController } from './presentation/http/adjustments.controller';
 import { GoodsReceiptsController } from './presentation/http/goods-receipts.controller';
@@ -103,6 +148,11 @@ import { ProcessRunsController } from './presentation/http/process-runs.controll
 import { RelatedItemsController } from './presentation/http/related-items.controller';
 import { RecipesController } from './presentation/http/recipes.controller';
 import { WriteOffsController } from './presentation/http/write-offs.controller';
+import { InventoryLocationsController } from './presentation/http/locations.controller';
+import { InventoryPolicyController } from './presentation/http/inventory-policy.controller';
+import { LowStockAlertsController } from './presentation/http/low-stock-alerts.controller';
+import { InventoryTransfersController } from './presentation/http/transfers.controller';
+import { InventoryReportsController } from './presentation/http/inventory-reports.controller';
 
 /**
  * Inventory (warehouse) module — raw + processed goods, FIFO/FEFO stock layers,
@@ -124,6 +174,11 @@ import { WriteOffsController } from './presentation/http/write-offs.controller';
     RelatedItemsController,
     RecipesController,
     WriteOffsController,
+    InventoryLocationsController,
+    InventoryPolicyController,
+    LowStockAlertsController,
+    InventoryTransfersController,
+    InventoryReportsController,
   ],
   providers: [
     // items
@@ -132,6 +187,7 @@ import { WriteOffsController } from './presentation/http/write-offs.controller';
     CreateInventoryItemUseCase,
     UpdateInventoryItemUseCase,
     DeleteInventoryItemUseCase,
+    SetItemConsumptionLocationUseCase,
     GetItemLayersUseCase,
     GetItemMovementsUseCase,
     // categories
@@ -183,6 +239,32 @@ import { WriteOffsController } from './presentation/http/write-offs.controller';
     GetWriteOffUseCase,
     GetWriteOffSummaryUseCase,
 
+    // multi-location inventory (6A)
+    ListLocationsUseCase,
+    CreateInventoryLocationUseCase,
+    RenameInventoryLocationUseCase,
+    DeleteInventoryLocationUseCase,
+    GetLocationOnHandUseCase,
+    SetCountedOnHandUseCase,
+    GetBranchPolicyUseCase,
+    UpdateBranchPolicyUseCase,
+    ListLowStockAlertsUseCase,
+    InventoryLocationProvisioner,
+    NegativeStockPolicyService,
+
+    // within-branch transfers (6B)
+    CreateTransferUseCase,
+    ListTransfersUseCase,
+    GetTransferUseCase,
+
+    // stock reports (6D)
+    GetStockOnHandReportUseCase,
+    GetValuationSummaryUseCase,
+    GetLowStockReportUseCase,
+    GetNegativeStockReportUseCase,
+    GetMovementHistoryUseCase,
+    InventoryReportScopeService,
+
     // port -> implementation bindings
     { provide: INVENTORY_ITEM_REPOSITORY, useClass: PrismaInventoryItemRepository },
     { provide: INVENTORY_CATEGORY_REPOSITORY, useClass: PrismaInventoryCategoryRepository },
@@ -202,6 +284,12 @@ import { WriteOffsController } from './presentation/http/write-offs.controller';
     { provide: ITEM_UNIT_COST_READER, useClass: PrismaItemUnitCostReader },
     { provide: WRITE_OFF_REPOSITORY, useClass: PrismaWriteOffRepository },
     { provide: WRITE_OFF_SUMMARY_READER, useClass: PrismaWriteOffSummaryReader },
+    { provide: INVENTORY_LOCATION_REPOSITORY, useClass: PrismaInventoryLocationRepository },
+    { provide: BRANCH_INVENTORY_POLICY_REPOSITORY, useClass: PrismaBranchInventoryPolicyRepository },
+    { provide: STOCK_ON_HAND_READER, useClass: PrismaStockOnHandReader },
+    { provide: LOW_STOCK_ALERT_READER, useClass: PrismaLowStockAlertReader },
+    { provide: INVENTORY_TRANSFER_REPOSITORY, useClass: PrismaInventoryTransferRepository },
+    { provide: INVENTORY_REPORT_READER, useClass: PrismaInventoryReportReader },
   ],
   // Later contexts depend on the consumption PORT, not the concrete service.
   exports: [STOCK_CONSUMPTION_PORT],

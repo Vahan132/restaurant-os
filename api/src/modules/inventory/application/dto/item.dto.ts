@@ -147,3 +147,14 @@ export class ListInventoryItemsQuery {
   @IsString()
   search?: string;
 }
+
+/** 6C: reassign an item's consumption location (omit/empty to reset to default). */
+export class SetItemConsumptionLocationDto {
+  @ApiPropertyOptional({
+    description: 'Target location id; omit or null to reset to the branch default (Main Storage).',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  locationId?: string | null;
+}

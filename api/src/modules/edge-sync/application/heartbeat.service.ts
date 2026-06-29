@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  OnApplicationBootstrap,
-  OnModuleDestroy,
-} from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EdgeConfigService } from '../../../shared/edge/edge-config.service';
 import { EdgeSyncGate } from '../../../shared/edge/edge-sync-gate';
@@ -123,7 +118,9 @@ export class HeartbeatService implements OnApplicationBootstrap, OnModuleDestroy
         return { sent: false, paused: true, reason: 'SCHEMA_MISMATCH' };
       }
       await this.markOffline();
-      this.logger.warn(`Heartbeat failed (hub will read OFFLINE in cloud): ${(err as Error).message}`);
+      this.logger.warn(
+        `Heartbeat failed (hub will read OFFLINE in cloud): ${(err as Error).message}`,
+      );
       return { sent: false, reason: (err as Error).message };
     }
   }

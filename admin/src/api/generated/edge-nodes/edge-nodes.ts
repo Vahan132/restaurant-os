@@ -56,7 +56,7 @@ export const edgeNodesControllerCreate = (
 
 
 
-export const getEdgeNodesControllerCreateMutationOptions = <TError = void,
+export const getEdgeNodesControllerCreateMutationOptions = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof edgeNodesControllerCreate>>, TError,{data: RegisterEdgeNodeDto}, TContext>, request?: SecondParameter<typeof customInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof edgeNodesControllerCreate>>, TError,{data: RegisterEdgeNodeDto}, TContext> => {
 
@@ -85,12 +85,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type EdgeNodesControllerCreateMutationResult = NonNullable<Awaited<ReturnType<typeof edgeNodesControllerCreate>>>
     export type EdgeNodesControllerCreateMutationBody = RegisterEdgeNodeDto
-    export type EdgeNodesControllerCreateMutationError = void
+    export type EdgeNodesControllerCreateMutationError = unknown
 
     /**
  * @summary Register an edge node for a branch (returns the token ONCE).
  */
-export const useEdgeNodesControllerCreate = <TError = void,
+export const useEdgeNodesControllerCreate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof edgeNodesControllerCreate>>, TError,{data: RegisterEdgeNodeDto}, TContext>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof edgeNodesControllerCreate>>,
@@ -100,8 +100,7 @@ export const useEdgeNodesControllerCreate = <TError = void,
       > => {
       return useMutation(getEdgeNodesControllerCreateMutationOptions(options), queryClient);
     }
-
-/**
+    /**
  * @summary List edge nodes for the restaurant.
  */
 export const edgeNodesControllerListNodes = (
@@ -187,6 +186,8 @@ export function useEdgeNodesControllerListNodes<TData = Awaited<ReturnType<typeo
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+
 
 
 

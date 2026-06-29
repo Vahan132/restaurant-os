@@ -5,33 +5,40 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { EdgeNodeResponseHealthStatus } from './edgeNodeResponseHealthStatus';
 import type { EdgeNodeResponseStatus } from './edgeNodeResponseStatus';
 
 export interface EdgeNodeResponse {
   id: string;
-  restaurantId: string;
   branchId: string;
-  /** Human-readable branch name (denormalized for the admin list). */
-  branchName: string;
-  /** Operator-chosen name for the hub (e.g. "Kitchen Pi"). */
   name: string;
-  /** Server-computed liveness/sync status for the node. */
   status: EdgeNodeResponseStatus;
-  /** Last time the node reported in. Null until the node first pairs. */
-  lastHeartbeatAt: string | null;
-  /** Last successful CONFIG snapshot/incremental pull by the node. */
-  lastConfigSyncedAt: string | null;
-  /** Last successful operational outbox push from the node. */
-  lastOperationalPushAt: string | null;
-  /** Operational outbox entries queued on the node awaiting push. */
-  pendingCount: number;
-  /** App version the node currently runs. Null until first heartbeat. */
-  appVersion: string | null;
-  /** DB schema version the node currently runs. Null until first heartbeat. */
+  /** @nullable */
+  lastSeenAt: string | null;
+  /** @nullable */
+  lastSnapshotAt: string | null;
+  /** @nullable */
   schemaVersion: string | null;
-  /** Schema version the platform currently expects nodes to run. */
-  expectedSchemaVersion: string;
-  /** When the node's token was revoked, if it has been. */
-  revokedAt: string | null;
+  /**
+     * When the hub last sent a heartbeat.
+     * @nullable
+     */
+  lastHeartbeatAt: string | null;
+  /**
+     * Pending edge→cloud outbox entries.
+     * @nullable
+     */
+  pendingOutboxCount: number | null;
+  /**
+     * The hub application version.
+     * @nullable
+     */
+  appVersion: string | null;
+  /** Live health (OFFLINE derived from heartbeat recency). */
+  healthStatus: EdgeNodeResponseHealthStatus;
+  /** True if a heartbeat arrived within the offline threshold. */
+  online: boolean;
+  /** True if the hub is behind the cloud schema/app version. */
+  updateAvailable: boolean;
   createdAt: string;
 }

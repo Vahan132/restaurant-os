@@ -64,13 +64,28 @@ export class PrismaPublicStorefrontQuery implements PublicStorefrontQuery {
     });
     const itemIds = items.map((i) => i.id);
 
-    const groups = itemIds.length
-      ? await this.prisma.modifierGroup.findMany({
-          where: { restaurantId, branchId, deletedAt: null, menuItemId: { in: itemIds } },
-          orderBy: { displayOrder: 'asc' },
+    // Prompt 1A: a dish's groups come from the dish_modifier_groups join (in
+    // attachment order), with effective (override-resolved) rules. Only ACTIVE,
+    // non-deleted groups/options are public.
+    const links = itemIds.length
+      ? await this.prisma.dishModifierGroup.findMany({
+          where: { restaurantId, branchId, menuItemId: { in: itemIds } },
+          orderBy: { sortOrder: 'asc' },
         })
       : [];
-    const groupIds = groups.map((g) => g.id);
+    const groupIds = [...new Set(links.map((l) => l.modifierGroupId))];
+    const groups = groupIds.length
+      ? await this.prisma.modifierGroup.findMany({
+          where: {
+            id: { in: groupIds },
+            restaurantId,
+            branchId,
+            status: 'ACTIVE',
+            deletedAt: null,
+          },
+        })
+      : [];
+    const groupById = new Map(groups.map((g) => [g.id, g]));
     const options = groupIds.length
       ? await this.prisma.modifierOption.findMany({
           where: {
@@ -79,7 +94,7 @@ export class PrismaPublicStorefrontQuery implements PublicStorefrontQuery {
             status: 'ACTIVE',
             modifierGroupId: { in: groupIds },
           },
-          orderBy: { displayOrder: 'asc' },
+          orderBy: { sortOrder: 'asc' },
         })
       : [];
 
@@ -93,18 +108,23 @@ export class PrismaPublicStorefrontQuery implements PublicStorefrontQuery {
       optionsByGroup.set(o.modifierGroupId, arr);
     }
     const groupsByItem = new Map<string, PublicModifierGroup[]>();
-    for (const g of groups) {
-      const arr = groupsByItem.get(g.menuItemId) ?? [];
+    for (const link of links) {
+      const g = groupById.get(link.modifierGroupId);
+      if (!g) {
+        continue;
+      }
+      const eff = resolveEffectivePublicRules(g, link);
+      const arr = groupsByItem.get(link.menuItemId) ?? [];
       arr.push({
         id: g.id,
         name: g.name,
-        selectionType: g.selectionType,
-        required: g.required,
-        minSelect: g.minSelect,
-        maxSelect: g.maxSelect,
+        selectionType: eff.selectionType,
+        required: eff.required,
+        minSelect: eff.minSelect,
+        maxSelect: eff.maxSelect,
         options: optionsByGroup.get(g.id) ?? [],
       });
-      groupsByItem.set(g.menuItemId, arr);
+      groupsByItem.set(link.menuItemId, arr);
     }
 
     const itemsByCategory = new Map<string, typeof items>();
@@ -177,4 +197,30 @@ export class PrismaPublicStorefrontQuery implements PublicStorefrontQuery {
     });
     return branch?.id ?? null;
   }
+}
+
+// Inlined copy of menu/domain/modifier-rules.resolveEffectiveModifierRules — the
+// public storefront resolves a dish's effective modifier rules so the QR app never
+// recomputes them. Kept local to avoid a cross-module domain import.
+function resolveEffectivePublicRules(
+  base: {
+    selectionType: string;
+    required: boolean;
+    minSelect: number | null;
+    maxSelect: number | null;
+  },
+  ov: { requiredOverride: boolean | null; minOverride: number | null; maxOverride: number | null },
+): { selectionType: string; required: boolean; minSelect: number; maxSelect: number | null } {
+  const selectionType = String(base.selectionType);
+  const required = ov.requiredOverride ?? base.required;
+  if (selectionType === 'SINGLE') {
+    return { selectionType, required, minSelect: required ? 1 : 0, maxSelect: 1 };
+  }
+  let min = ov.minOverride ?? base.minSelect ?? (required ? 1 : 0);
+  let max = ov.maxOverride ?? base.maxSelect ?? null;
+  if (min < 0) min = 0;
+  if (required && min < 1) min = 1;
+  if (max !== null && max < 1) max = 1;
+  if (max !== null && min > max) min = max;
+  return { selectionType, required, minSelect: min, maxSelect: max };
 }

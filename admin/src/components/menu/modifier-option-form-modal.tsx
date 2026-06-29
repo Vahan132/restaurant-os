@@ -4,9 +4,9 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import {
-  useModifiersControllerAddOptionToGroup,
-  useModifiersControllerPatchOption,
-} from '@/api/generated/menu-modifiers/menu-modifiers';
+  useModifierGroupsControllerAddOptionToGroup,
+  useModifierGroupsControllerPatchOption,
+} from '@/api/generated/menu-modifier-groups/menu-modifier-groups';
 import {
   ModifierOptionResponseStatus,
   type ModifierOptionResponse,
@@ -19,11 +19,16 @@ import { getErrorMessage } from '@/lib/api-error';
 import { minorToInput, toMinor } from '@/lib/money';
 import { toast } from '@/stores/toast';
 
+/**
+ * Create or edit a single option inside a library modifier group. Prices are
+ * entered in major units and converted to integer minor units before sending.
+ */
 export function ModifierOptionFormModal({
   open,
   groupId,
   option,
   currency,
+  nextSortOrder,
   onClose,
   onSaved,
 }: {
@@ -31,6 +36,8 @@ export function ModifierOptionFormModal({
   groupId: string;
   option?: ModifierOptionResponse | null;
   currency: string;
+  /** Default sortOrder for a brand-new option (append to the end). */
+  nextSortOrder?: number;
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 }) {
@@ -42,14 +49,14 @@ export function ModifierOptionFormModal({
   const [price, setPrice] = useState(
     option ? minorToInput(option.priceDeltaAmount, currency) : '0',
   );
-  const [displayOrder, setDisplayOrder] = useState(String(option?.displayOrder ?? 0));
+  const [isDefault, setIsDefault] = useState(option?.isDefault ?? false);
   const [status, setStatus] = useState<UpdateModifierOptionDtoStatus>(
     (option?.status as UpdateModifierOptionDtoStatus) ?? ModifierOptionResponseStatus.ACTIVE,
   );
   const [errors, setErrors] = useState<{ name?: string; price?: string }>({});
 
-  const add = useModifiersControllerAddOptionToGroup();
-  const patch = useModifiersControllerPatchOption();
+  const add = useModifierGroupsControllerAddOptionToGroup();
+  const patch = useModifierGroupsControllerPatchOption();
   const submitting = add.isPending || patch.isPending;
 
   const submit = async () => {
@@ -63,11 +70,12 @@ export function ModifierOptionFormModal({
     try {
       if (isEdit && option) {
         await patch.mutateAsync({
-          id: option.id,
+          groupId,
+          optionId: option.id,
           data: {
             name: name.trim(),
             priceDeltaAmount: priceMinor ?? 0,
-            displayOrder: Number(displayOrder) || 0,
+            isDefault,
             status,
           },
         });
@@ -77,7 +85,8 @@ export function ModifierOptionFormModal({
           data: {
             name: name.trim(),
             priceDeltaAmount: priceMinor ?? 0,
-            displayOrder: Number(displayOrder) || 0,
+            isDefault,
+            sortOrder: nextSortOrder ?? 0,
           },
         });
       }
@@ -85,7 +94,7 @@ export function ModifierOptionFormModal({
       await onSaved();
       onClose();
     } catch (err) {
-      toast.error(getErrorMessage(err));
+      setErrors({ name: getErrorMessage(err) });
     }
   };
 
@@ -107,7 +116,12 @@ export function ModifierOptionFormModal({
     >
       <div className="space-y-3">
         <Field label={t('optionName')} required error={errors.name}>
-          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+          <input
+            className={inputClass}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+          />
         </Field>
         <Field label={`${t('priceDelta')} (${currency})`} error={errors.price}>
           <input
@@ -117,15 +131,14 @@ export function ModifierOptionFormModal({
             onChange={(e) => setPrice(e.target.value)}
           />
         </Field>
-        <Field label={t('displayOrder')}>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
           <input
-            type="number"
-            min={0}
-            className={inputClass}
-            value={displayOrder}
-            onChange={(e) => setDisplayOrder(e.target.value)}
+            type="checkbox"
+            checked={isDefault}
+            onChange={(e) => setIsDefault(e.target.checked)}
           />
-        </Field>
+          {t('isDefault')}
+        </label>
         {isEdit && (
           <Field label={t('status')}>
             <select

@@ -1,4 +1,5 @@
 import type {
+  AuditLog,
   GoodsReceipt,
   GoodsReceiptLine,
   Order,
@@ -27,6 +28,16 @@ export const OUTBOX_AGGREGATE_TYPES = [
   'GOODS_RECEIPT',
   'WRITE_OFF',
   'PROCESS_RUN',
+  // 3B: device-anchored PIN auth-state (per-user lockout counters) produced by
+  // offline PIN verification at the edge. Carries COUNTERS ONLY — no hashes, no
+  // plaintext. The cloud reconciles (max) so a reconnect never resets an active
+  // lockout nor double-counts.
+  'STAFF_PIN_AUTH',
+  // 4A: immutable audit-log rows produced at the edge (e.g. a manager step-up
+  // discount authorization while the cloud is unreachable). Append-only; the
+  // cloud upserts by id, idempotently. Reuses this EXISTING sync channel — no
+  // new channel is introduced.
+  'AUDIT_LOG',
 ] as const;
 
 export type OutboxAggregateType = (typeof OUTBOX_AGGREGATE_TYPES)[number];
@@ -51,6 +62,20 @@ export type StockMovementPayload = Jsonify<StockMovement>;
 export type GoodsReceiptPayload = Jsonify<GoodsReceipt> & { lines: Jsonify<GoodsReceiptLine>[] };
 export type WriteOffPayload = Jsonify<WriteOff> & { lines: Jsonify<WriteOffLine>[] };
 export type ProcessRunPayload = Jsonify<ProcessRun>;
+/** 4A: a full audit-log row captured at the edge, replayed to the cloud by id. */
+export type AuditLogPayload = Jsonify<AuditLog>;
+/**
+ * 3B: PIN auth-state pushed up from the edge — COUNTERS ONLY (no pinHash). The
+ * cloud reconciles failedAttempts (max) + lockedUntil (later) onto its row.
+ */
+export interface StaffPinAuthPayload {
+  id: string;
+  userId: string;
+  restaurantId: string;
+  failedAttempts: number;
+  /** ISO-8601 (or null if not locked). */
+  lockedUntil: string | null;
+}
 
 /** A single entry on the wire (POST /edge-sync/push). */
 export interface PushEntry {

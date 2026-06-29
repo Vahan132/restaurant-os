@@ -46,6 +46,8 @@ export class RestaurantSettingsResponse {
   @ApiProperty() allowManualTableStatus!: boolean;
   @ApiProperty() enableQrMenu!: boolean;
   @ApiProperty() enableCustomerOrdering!: boolean;
+  @ApiProperty({ description: '3A: admin login allowed from any device when true.' })
+  allowUnanchoredAdminLogin!: boolean;
 
   static from(s: RestaurantSettings): RestaurantSettingsResponse {
     const p = s.snapshot;
@@ -68,6 +70,7 @@ export class RestaurantSettingsResponse {
       allowManualTableStatus: p.allowManualTableStatus,
       enableQrMenu: p.enableQrMenu,
       enableCustomerOrdering: p.enableCustomerOrdering,
+      allowUnanchoredAdminLogin: p.allowUnanchoredAdminLogin,
     };
   }
 }
@@ -81,6 +84,10 @@ export class BranchResponse {
   @ApiProperty({ description: 'Whether this is the restaurant default branch.' })
   isDefault!: boolean;
   @ApiProperty({ enum: ['ACTIVE', 'INACTIVE'] }) status!: string;
+  @ApiProperty({ enum: ['STRICT', 'SOFT'], description: '3A: branch IP binding policy.' })
+  ipBindingMode!: string;
+  @ApiProperty({ type: [String], description: '3A: allowed source CIDRs (STRICT mode).' })
+  ipAllowlist!: string[];
 
   static from(b: Branch): BranchResponse {
     return {
@@ -90,6 +97,8 @@ export class BranchResponse {
       slug: b.slug,
       isDefault: b.isDefault,
       status: b.status,
+      ipBindingMode: b.ipBindingMode,
+      ipAllowlist: b.ipAllowlist,
     };
   }
 }

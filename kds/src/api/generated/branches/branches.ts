@@ -198,13 +198,13 @@ export const useBranchesControllerCreate = <TError = void,
  * @summary Effective permissions of the caller at the active branch (X-Branch-Id).
  */
 export const branchesControllerMyAccess = (
-    
+    id: string,
  options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
 ) => {
       
       
       return customInstance<MyBranchAccessResponse>(
-      {url: `/branches/my-access`, method: 'GET', signal
+      {url: `/branches/${id}/my-access`, method: 'GET', signal
     },
       options);
     }
@@ -212,29 +212,29 @@ export const branchesControllerMyAccess = (
 
 
 
-export const getBranchesControllerMyAccessQueryKey = () => {
+export const getBranchesControllerMyAccessQueryKey = (id?: string,) => {
     return [
-    `/branches/my-access`
+    `/branches/${id}/my-access`
     ] as const;
     }
 
     
-export const getBranchesControllerMyAccessQueryOptions = <TData = Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError = void>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export const getBranchesControllerMyAccessQueryOptions = <TData = Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError = void>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getBranchesControllerMyAccessQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getBranchesControllerMyAccessQueryKey(id);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof branchesControllerMyAccess>>> = ({ signal }) => branchesControllerMyAccess(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof branchesControllerMyAccess>>> = ({ signal }) => branchesControllerMyAccess(id, requestOptions, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
 }
 
 export type BranchesControllerMyAccessQueryResult = NonNullable<Awaited<ReturnType<typeof branchesControllerMyAccess>>>
@@ -242,7 +242,7 @@ export type BranchesControllerMyAccessQueryError = void
 
 
 export function useBranchesControllerMyAccess<TData = Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError = void>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError, TData>> & Pick<
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof branchesControllerMyAccess>>,
           TError,
@@ -252,7 +252,7 @@ export function useBranchesControllerMyAccess<TData = Awaited<ReturnType<typeof 
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
 export function useBranchesControllerMyAccess<TData = Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError = void>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError, TData>> & Pick<
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof branchesControllerMyAccess>>,
           TError,
@@ -262,7 +262,7 @@ export function useBranchesControllerMyAccess<TData = Awaited<ReturnType<typeof 
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
 export function useBranchesControllerMyAccess<TData = Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError = void>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
 /**
@@ -270,11 +270,11 @@ export function useBranchesControllerMyAccess<TData = Awaited<ReturnType<typeof 
  */
 
 export function useBranchesControllerMyAccess<TData = Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError = void>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchesControllerMyAccess>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
 
-  const queryOptions = getBranchesControllerMyAccessQueryOptions(options)
+  const queryOptions = getBranchesControllerMyAccessQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
 

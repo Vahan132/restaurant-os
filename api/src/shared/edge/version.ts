@@ -18,7 +18,11 @@ export const APP_VERSION = '0.1.0';
  * compare the SAME value regardless of how many internal migrations each side
  * has applied — only deliberate, breaking bumps cause a SCHEMA_MISMATCH.
  */
-export const SCHEMA_VERSION = '2';
+// '3' (3B): the snapshot/config-sync contracts now carry device-anchored auth
+// material (devices + StaffPin hashes) and the operational push gained the
+// STAFF_PIN_AUTH aggregate — an older hub would not (de)serialize these, so the
+// bump forces a SCHEMA_MISMATCH until both sides update.
+export const SCHEMA_VERSION = '3';
 
 /**
  * HTTP header the edge sends on every sync request carrying its reported edge

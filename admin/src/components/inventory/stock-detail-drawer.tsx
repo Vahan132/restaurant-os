@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
-import type { AlternateUnit } from '@/api/generated/model';
+import type { AlternateUnitView } from '@/api/generated/model';
 import { Drawer } from '@/components/ui/drawer';
 import { Toggle } from '@/components/ui/toggle';
 import {
@@ -30,7 +30,7 @@ export function StockDetailDrawer({
   itemId: string;
   itemName: string;
   baseUnit: string;
-  alternateUnits: AlternateUnit[];
+  alternateUnits: AlternateUnitView[];
   onClose: () => void;
 }) {
   const t = useTranslations('inventory');
@@ -108,14 +108,14 @@ export function StockDetailDrawer({
               </thead>
               <tbody>
                 {layers.map((layer) => (
-                  <tr key={layer.id} className="border-b border-gray-100">
+                  <tr key={layer.layerId} className="border-b border-gray-100">
                     <td className="py-2 pr-3 text-gray-700">{formatDate(layer.receivedAt)}</td>
                     <td className="py-2 pr-3 text-gray-600">{formatDate(layer.expiryDate)}</td>
                     <td className="py-2 pr-3 text-gray-700">
-                      {formatNumber(layer.qtyRemainingBase)} {abbr}
+                      {formatNumber(layer.baseQtyRemaining)} {abbr}
                     </td>
                     <td className="py-2 pr-3 text-gray-700">
-                      {formatMoney(layer.derivedUnitCost, currency)}
+                      {formatMoney(Number(layer.unitCostMicro) / 1e6, currency)}
                     </td>
                     <td className="py-2">
                       <LayerStatusBadge status={layer.status} />
@@ -155,16 +155,16 @@ export function StockDetailDrawer({
                       <td className="py-2 pr-3 text-gray-700">{mov.type}</td>
                       <td
                         className={`py-2 pr-3 font-medium ${
-                          mov.qtyBase < 0 ? 'text-red-600' : 'text-green-700'
+                          mov.baseQty < 0 ? 'text-red-600' : 'text-green-700'
                         }`}
                       >
-                        {signedQty(mov.qtyBase)}
+                        {signedQty(mov.baseQty)}
                       </td>
                       <td className="py-2 pr-3 text-gray-700">
-                        {mov.cost == null ? '—' : formatMoney(mov.cost, currency)}
+                        {formatMoney(mov.costAmount, currency)}
                       </td>
                       <td className="py-2 text-gray-600">
-                        {mov.reason ?? mov.reference ?? mov.note ?? '—'}
+                        {mov.reason ?? '—'}
                       </td>
                     </tr>
                   ))}

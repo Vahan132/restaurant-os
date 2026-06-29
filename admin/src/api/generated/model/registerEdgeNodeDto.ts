@@ -7,8 +7,8 @@
  */
 
 export interface RegisterEdgeNodeDto {
-  /** Branch the hub belongs to. */
+  /** The branch this hub will serve. */
   branchId: string;
-  /** Operator-chosen name for the hub. */
+  /** Human-friendly node name, e.g. "Kitchen hub". */
   name: string;
 }

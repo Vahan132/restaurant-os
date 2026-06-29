@@ -7,7 +7,7 @@ import { useWriteOffsControllerCreate } from '@/api/generated/inventory-write-of
 import {
   CreateWriteOffDtoReason,
   type CreateWriteOffDto,
-  type CreateWriteOffLineDto,
+  type WriteOffLineDto,
   type InventoryItemResponse,
 } from '@/api/generated/model';
 import { Button } from '@/components/ui/button';
@@ -157,7 +157,7 @@ export function WriteOffFormDrawer({ onClose }: { onClose: () => void }) {
 
   const save = async () => {
     setError(undefined);
-    const payload: CreateWriteOffLineDto[] = [];
+    const payload: WriteOffLineDto[] = [];
     for (const l of lines) {
       if (l.kind === 'ITEM') {
         const q = Number(l.qty);
@@ -188,8 +188,7 @@ export function WriteOffFormDrawer({ onClose }: { onClose: () => void }) {
     };
     try {
       const res = await create.mutateAsync({ data });
-      toast.success(t('woCreated', { cost: formatMoney(res?.totalCost ?? 0, currency) }));
-      if (res?.wentNegative) toast.error(t('woWentNegative'));
+      toast.success(t('woCreated', { cost: formatMoney(res?.totalCost_amount ?? 0, currency) }));
       await invalidate();
       onClose();
     } catch (err) {

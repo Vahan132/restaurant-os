@@ -91,15 +91,42 @@ export class ProcessDeletedEvent extends BaseDomainEvent {
   }
 }
 
-/** Raised after a production run completes (INV-2). */
+/** One input consumed by a run, for the audit trail (7A §4.4). */
+export interface ProcessRunInputDetail {
+  itemId: string;
+  locationId: string;
+  baseQty: number;
+  costAmount: number;
+}
+
+/** One output produced by a run, for the audit trail (7A §4.4). */
+export interface ProcessRunOutputDetail {
+  itemId: string;
+  locationId: string;
+  baseQty: number;
+  costAmount: number;
+}
+
+/**
+ * Raised after a production run completes (INV-2). 7A enriched it with the
+ * branch + per-input/per-output costs and locations so the run is fully audited
+ * (actor, process, inputs consumed + cost + location, output produced + cost +
+ * location, timestamp via the audit row).
+ */
 export class ProcessRunExecutedEvent extends BaseDomainEvent {
   readonly eventName = 'inventory.process.run_executed';
   constructor(
     public readonly runId: string,
     public readonly restaurantId: string,
+    public readonly branchId: string,
     public readonly processId: string,
+    public readonly multiplier: number,
+    public readonly inputCostAmount: number,
+    public readonly processingCostAmount: number,
     public readonly totalCostAmount: number,
     public readonly wentNegative: boolean,
+    public readonly inputs: ProcessRunInputDetail[],
+    public readonly outputs: ProcessRunOutputDetail[],
     public readonly actorUserId: string | null = null,
   ) {
     super(runId);
@@ -133,6 +160,65 @@ export class InventoryWentNegativeEvent extends BaseDomainEvent {
     public readonly shortfallBaseQty: number,
   ) {
     super(itemId);
+  }
+}
+
+/**
+ * Raised when on-hand at a location crosses at/below its low-stock threshold
+ * while still >= 0 (6A, §5). Fires BEFORE zero. The reports/notifications layer
+ * can surface it; a persisted LowStockAlert row is the durable source.
+ */
+export class LowStockAlertRaisedEvent extends BaseDomainEvent {
+  readonly eventName = 'inventory.stock.low_stock_raised';
+  constructor(
+    public readonly itemId: string,
+    public readonly restaurantId: string,
+    public readonly branchId: string,
+    public readonly locationId: string,
+    public readonly thresholdBase: number,
+    public readonly onHandBase: number,
+  ) {
+    super(itemId);
+  }
+}
+
+/**
+ * Raised after a correction adjustment sets the actual counted on-hand for an
+ * (item, location) (6A, §6). deltaBaseQty is signed (+ surplus / - shortfall).
+ */
+export class StockCountAdjustedEvent extends BaseDomainEvent {
+  readonly eventName = 'inventory.stock.count_adjusted';
+  constructor(
+    public readonly itemId: string,
+    public readonly restaurantId: string,
+    public readonly branchId: string,
+    public readonly locationId: string,
+    public readonly deltaBaseQty: number,
+    public readonly countedBaseQty: number,
+    public readonly actorUserId: string | null = null,
+  ) {
+    super(itemId);
+  }
+}
+
+/**
+ * Raised after a within-branch stock transfer completes (6B). Carries enough for
+ * the audit trail (from/to location, quantity, slice count). No COGS.
+ */
+export class StockTransferredEvent extends BaseDomainEvent {
+  readonly eventName = 'inventory.stock.transferred';
+  constructor(
+    public readonly transferId: string,
+    public readonly restaurantId: string,
+    public readonly branchId: string,
+    public readonly itemId: string,
+    public readonly fromLocationId: string,
+    public readonly toLocationId: string,
+    public readonly baseQty: number,
+    public readonly sliceCount: number,
+    public readonly actorUserId: string | null = null,
+  ) {
+    super(transferId);
   }
 }
 

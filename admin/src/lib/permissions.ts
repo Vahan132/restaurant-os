@@ -1,8 +1,3 @@
-/**
- * Permission catalog mirroring the backend. Keep in sync with the API's
- * permission seed (GET /permissions). Values are the wire keys checked against
- * `user.permissions` returned by GET /auth/me.
- */
 export const PERMISSIONS = {
   MENU_MANAGE: 'MENU_MANAGE',
   TABLE_MANAGE: 'TABLE_MANAGE',
@@ -18,31 +13,25 @@ export const PERMISSIONS = {
   USER_MANAGE: 'USER_MANAGE',
   ROLE_MANAGE: 'ROLE_MANAGE',
   SETTINGS_MANAGE: 'SETTINGS_MANAGE',
-  // Multi-branch management (BR-3/BR-7). Restaurant-wide permission.
   BRANCH_MANAGE: 'BRANCH_MANAGE',
-  // Edge hub registration + monitoring (OFF-8). Restaurant-wide permission.
   EDGE_MANAGE: 'EDGE_MANAGE',
   AUDIT_VIEW: 'AUDIT_VIEW',
   DASHBOARD_VIEW: 'DASHBOARD_VIEW',
-  // Inventory (INV-1). Write keys are the colon-style keys registered by the
-  // backend (surfaced in the 403 messages of the inventory endpoints). No
-  // explicit read key is published by the spec, so we follow the established
-  // convention `inventory:read` for view gating; adjust here if the backend
-  // seeds a different read key.
   INVENTORY_READ: 'inventory:read',
   INVENTORY_ITEM_MANAGE: 'inventory:item:manage',
   INVENTORY_RECEIPT_CREATE: 'inventory:receipt:create',
   INVENTORY_ADJUSTMENT_CREATE: 'inventory:adjustment:create',
-  // Inventory processes (INV-2).
+  INVENTORY_LOCATION_MANAGE: 'inventory:location:manage',
+  INVENTORY_TRANSFER_CREATE: 'inventory:transfer:create',
   INVENTORY_PROCESS_MANAGE: 'inventory:process:manage',
   INVENTORY_PROCESS_RUN: 'inventory:process:run',
-  // Recipes & dish costing (INV-3).
   INVENTORY_RECIPE_MANAGE: 'inventory:recipe:manage',
-  // Fine-grained sell-price permission (separate from MENU_MANAGE).
   MENU_ITEM_SET_PRICE: 'menu:item:set_price',
-  // Write-offs (INV-4).
   INVENTORY_WRITEOFF_CREATE: 'inventory:writeoff:create',
   INVENTORY_WRITEOFF_VOID: 'inventory:writeoff:void',
+  DEVICE_ENROLL: 'device.enroll',
+  STAFF_PIN_MANAGE: 'staff.pin.manage',
+  SALES_IMPORT_MANAGE: 'sales:import:manage',
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

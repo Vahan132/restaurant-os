@@ -84,7 +84,11 @@ export class RegisterEdgeNodeResponse extends EdgeNodeResponse {
   })
   token!: string;
 
-  static fromNode(node: EdgeNode, token: string, ctx: EdgeNodeViewContext): RegisterEdgeNodeResponse {
+  static fromNode(
+    node: EdgeNode,
+    token: string,
+    ctx: EdgeNodeViewContext,
+  ): RegisterEdgeNodeResponse {
     return { ...EdgeNodeResponse.from(node, ctx), token };
   }
 }

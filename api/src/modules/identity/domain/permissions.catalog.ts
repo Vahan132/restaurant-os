@@ -42,11 +42,37 @@ export const PERMISSIONS = {
   // Inventory write-offs (INV-4).
   INVENTORY_WRITEOFF_CREATE: 'inventory:writeoff:create',
   INVENTORY_WRITEOFF_VOID: 'inventory:writeoff:void',
+  // Multi-location inventory (6A). Granted to OWNER/MANAGER automatically (they
+  // hold ALL_PERMISSIONS, reconciled at token-issue). Reads reuse INVENTORY_READ;
+  // counted-on-hand corrections reuse INVENTORY_ADJUSTMENT_CREATE.
+  // - LOCATION_MANAGE: create/rename/delete branch stock locations (shelves).
+  INVENTORY_LOCATION_MANAGE: 'inventory:location:manage',
+  // - POLICY_MANAGE: set the branch negative-stock mode (ALLOW/WARN/BLOCK).
+  INVENTORY_POLICY_MANAGE: 'inventory:policy:manage',
+  // - TRANSFER_CREATE: move stock between two locations of a branch (6B).
+  INVENTORY_TRANSFER_CREATE: 'inventory:transfer:create',
   // Edge nodes (OFF-2): register/list/revoke on-prem edge hubs. Restaurant-wide
   // (checked against the JWT permission snapshot, NOT branch-resolved). Granted
   // to OWNER/MANAGER automatically (they hold ALL_PERMISSIONS); existing roles
   // are backfilled by the OFF-2 migration.
   EDGE_MANAGE: 'EDGE_MANAGE',
+  // Device-anchored staff auth (3A). Granted to OWNER/MANAGER automatically (they
+  // hold ALL_PERMISSIONS); existing roles are backfilled by the 3A migration.
+  // - DEVICE_ENROLL: enroll / list / revoke in-store devices for a branch.
+  //   BRANCH-SCOPED — checked against the caller's EFFECTIVE permissions at the
+  //   active branch (X-Branch-Id).
+  DEVICE_ENROLL: 'device.enroll',
+  // - STAFF_PIN_MANAGE: create / reset / revoke a staff member's POS/KDS PIN.
+  //   RESTAURANT-WIDE — a user's PIN works at any POS/KDS in the restaurant, so
+  //   it is checked against the role snapshot, not branch-resolved.
+  STAFF_PIN_MANAGE: 'staff.pin.manage',
+  // Historical / external sales import (5A): upload a CSV of non-fiscal,
+  // reports-only sales and view import batches. RESTAURANT-WIDE (checked against
+  // the JWT permission snapshot); per-row branch reach is still enforced against
+  // the importer's accessible branches. Granted to OWNER/MANAGER automatically
+  // (they hold ALL_PERMISSIONS); existing roles are backfilled by the 5A migration.
+  // Reading the imported-sales ANALYTICS reuses REPORTS_VIEW.
+  SALES_IMPORT_MANAGE: 'sales:import:manage',
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -76,6 +102,12 @@ export const SYSTEM_ROLE_CODES = [
   'WAITER',
   'CASHIER',
   'KITCHEN_STAFF',
+  // 7A: senior kitchen roles that operate the KDS and may execute production
+  // runs. They hold the process-run capability (inventory:process:run) by
+  // default; plain KITCHEN_STAFF does not. Seeded per org; existing orgs are
+  // backfilled by the 7A migration.
+  'CHEF',
+  'SOUS_CHEF',
   'RECEPTIONIST',
   // BR-1 sentinel. A user assigned this role has NO restaurant-wide access; their
   // access is granted ONLY through BranchMemberships (a role per branch). This is
@@ -84,6 +116,11 @@ export const SYSTEM_ROLE_CODES = [
 ] as const;
 
 export type SystemRoleCode = (typeof SYSTEM_ROLE_CODES)[number];
+
+/** Type guard: is `code` one of the canonical system-role codes? */
+export function isSystemRoleCode(code: string): code is SystemRoleCode {
+  return (SYSTEM_ROLE_CODES as readonly string[]).includes(code);
+}
 
 /**
  * The sentinel role code that denotes a BRANCH-SCOPED user (no restaurant-wide
@@ -119,6 +156,20 @@ export const SYSTEM_ROLE_PERMISSIONS: Record<SystemRoleCode, PermissionKey[]> = 
     PERMISSIONS.TABLE_STATUS_UPDATE,
   ],
   KITCHEN_STAFF: [PERMISSIONS.KDS_ACCESS],
+  // 7A: Chef / Sous-Chef run production from the KDS. They get KDS access, read
+  // inventory (to see stock while prepping), and the process-run capability. They
+  // do NOT get inventory:process:manage (defining processes stays with OWNER/
+  // MANAGER) or any sell-side permissions.
+  CHEF: [
+    PERMISSIONS.KDS_ACCESS,
+    PERMISSIONS.INVENTORY_READ,
+    PERMISSIONS.INVENTORY_PROCESS_RUN,
+  ],
+  SOUS_CHEF: [
+    PERMISSIONS.KDS_ACCESS,
+    PERMISSIONS.INVENTORY_READ,
+    PERMISSIONS.INVENTORY_PROCESS_RUN,
+  ],
   RECEPTIONIST: [
     PERMISSIONS.DASHBOARD_VIEW,
     PERMISSIONS.RESERVATION_MANAGE,
@@ -142,6 +193,8 @@ export const SYSTEM_ROLE_ALL_BRANCHES: Record<SystemRoleCode, boolean> = {
   WAITER: false,
   CASHIER: false,
   KITCHEN_STAFF: false,
+  CHEF: false,
+  SOUS_CHEF: false,
   RECEPTIONIST: false,
   BRANCH_SCOPED: false,
 };
@@ -151,6 +204,29 @@ export function hasAllBranches(role: { allBranches?: boolean } | null | undefine
   return role?.allBranches === true;
 }
 
+/**
+ * The permission snapshot to embed in an access token / return from /auth/me for
+ * a role.
+ *
+ * SYSTEM roles are RECONCILED to the catalog (`SYSTEM_ROLE_PERMISSIONS`) so that
+ * newly added catalog permissions reach existing OWNER / MANAGER / etc. WITHOUT a
+ * manual per-feature backfill + a perfectly-timed migration. (Access tokens still
+ * snapshot permissions, so a fresh login is required for a new snapshot to take
+ * effect — but no DB backfill race.) The migration backfills the stored rows too,
+ * which keeps branch-scoped effective-permission resolution correct.
+ *
+ * CUSTOM (non-system) roles use their stored permission set verbatim.
+ */
+export function snapshotPermissionsForRole(
+  role: { code: string; isSystem: boolean; permissions: readonly string[] } | null | undefined,
+): string[] {
+  if (!role) return [];
+  if (role.isSystem && isSystemRoleCode(role.code)) {
+    return [...SYSTEM_ROLE_PERMISSIONS[role.code]];
+  }
+  return [...role.permissions];
+}
+
 /** Human-friendly default names for the system roles (used by the seed). */
 export const SYSTEM_ROLE_NAMES: Record<SystemRoleCode, string> = {
   OWNER: 'Owner',
@@ -158,6 +234,8 @@ export const SYSTEM_ROLE_NAMES: Record<SystemRoleCode, string> = {
   WAITER: 'Waiter',
   CASHIER: 'Cashier',
   KITCHEN_STAFF: 'Kitchen Staff',
+  CHEF: 'Chef',
+  SOUS_CHEF: 'Sous-Chef',
   RECEPTIONIST: 'Receptionist',
   BRANCH_SCOPED: 'Branch-Scoped (no restaurant-wide access)',
 };

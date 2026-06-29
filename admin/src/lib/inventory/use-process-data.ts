@@ -34,7 +34,7 @@ export function useUnitCostMap() {
   const unitCost = useMemo(() => {
     const map = new Map<string, number>();
     for (const r of rows) {
-      map.set(r.itemId, r.onHandBase > 0 ? r.valuation / r.onHandBase : 0);
+      map.set(r.itemId, r.onHandBase > 0 ? r.valuation_amount / r.onHandBase : 0);
     }
     return (itemId: string) => map.get(itemId) ?? 0;
   }, [rows]);

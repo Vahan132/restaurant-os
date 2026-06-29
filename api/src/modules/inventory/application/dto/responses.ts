@@ -31,6 +31,12 @@ export class InventoryItemResponse {
     description: 'Last unit cost at MICRO precision (BigInt as string).',
   })
   lastUnitCostMicro!: string | null;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: '6C: per-item consumption location (null => branch default Main Storage).',
+  })
+  consumptionLocationId!: string | null;
   @ApiProperty({ enum: ['ACTIVE', 'INACTIVE'] }) status!: string;
 
   static from(i: InventoryItem): InventoryItemResponse {
@@ -47,6 +53,7 @@ export class InventoryItemResponse {
       trackExpiry: i.trackExpiry,
       lowStockThresholdBase: i.lowStockThresholdBase,
       lastUnitCostMicro: i.lastUnitCostMicro === null ? null : i.lastUnitCostMicro.toString(),
+      consumptionLocationId: i.consumptionLocationId,
       status: i.status,
     };
   }
@@ -162,9 +169,22 @@ export class StockLayerResponse {
 export class StockMovementResponse {
   @ApiProperty() id!: string;
   @ApiProperty() branchId!: string;
+  @ApiProperty() locationId!: string;
   @ApiProperty() itemId!: string;
   @ApiProperty({
-    enum: ['RECEIPT_IN', 'ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'CONSUMPTION_OUT', 'WRITE_OFF_OUT'],
+    enum: [
+      'OPENING',
+      'RECEIPT_IN',
+      'ADJUSTMENT_IN',
+      'ADJUSTMENT_OUT',
+      'CONSUMPTION_OUT',
+      'WRITE_OFF_OUT',
+      'PROCESS_OUT',
+      'PROCESS_IN',
+      'CONSUMPTION_REVERSAL',
+      'TRANSFER_OUT',
+      'TRANSFER_IN',
+    ],
   })
   type!: string;
   @ApiProperty({ description: 'Signed base qty (+ in, - out).' }) baseQty!: number;
@@ -180,6 +200,7 @@ export class StockMovementResponse {
     return {
       id: m.id,
       branchId: m.branchId,
+      locationId: m.locationId,
       itemId: m.itemId,
       type: m.type,
       baseQty: m.baseQty,

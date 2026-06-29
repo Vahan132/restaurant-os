@@ -76,6 +76,17 @@ export class PrismaEdgeReadModel implements EdgeReadModel {
       }),
     ]);
 
+    // ── 3B: device-anchored auth material (devices + PIN HASHES, scoped) ───────
+    const accessUserIds = users.map((u) => u.id);
+    const [devices, staffPins] = await Promise.all([
+      this.prisma.device.findMany({ where: branchScope }),
+      accessUserIds.length
+        ? this.prisma.staffPin.findMany({
+            where: { restaurantId, userId: { in: accessUserIds } },
+          })
+        : Promise.resolve([]),
+    ]);
+
     // ── catalog (branch-owned; include soft-deleted to keep the FK graph whole) ─
     const [
       menuCategories,
@@ -107,10 +118,16 @@ export class PrismaEdgeReadModel implements EdgeReadModel {
       this.prisma.processOutput.findMany({ where: { branchId } }),
     ]);
 
-    // ── stock: current OPEN FIFO layers only ───────────────────────────────────
-    const stockLayers = await this.prisma.stockLayer.findMany({
-      where: { ...branchScope, status: 'OPEN' },
-    });
+    // ── stock: current OPEN FIFO layers + on-hand projection ───────────────────
+    // 6C: locations + per-branch policy + on-hand so the edge resolves the
+    // consumption location and depletes the correct location's FIFO offline.
+    const [stockLayers, stockOnHand, inventoryLocations, branchInventoryPolicies] =
+      await Promise.all([
+        this.prisma.stockLayer.findMany({ where: { ...branchScope, status: 'OPEN' } }),
+        this.prisma.stockOnHand.findMany({ where: branchScope }),
+        this.prisma.inventoryLocation.findMany({ where: { ...branchScope, deletedAt: null } }),
+        this.prisma.branchInventoryPolicy.findMany({ where: branchScope }),
+      ]);
 
     // ── operational starter set ────────────────────────────────────────────────
     const now = new Date();
@@ -155,6 +172,8 @@ export class PrismaEdgeReadModel implements EdgeReadModel {
         roles: jsonifyMany(roles),
         users: jsonifyMany(users),
         branchMemberships: jsonifyMany(memberships),
+        devices: jsonifyMany(devices),
+        staffPins: jsonifyMany(staffPins),
       },
       catalog: {
         menuCategories: jsonifyMany(menuCategories),
@@ -162,7 +181,9 @@ export class PrismaEdgeReadModel implements EdgeReadModel {
         modifierGroups: jsonifyMany(modifierGroups),
         modifierOptions: jsonifyMany(modifierOptions),
         inventoryCategories: jsonifyMany(inventoryCategories),
+        inventoryLocations: jsonifyMany(inventoryLocations),
         inventoryItems: jsonifyMany(inventoryItems),
+        branchInventoryPolicies: jsonifyMany(branchInventoryPolicies),
         suppliers: jsonifyMany(suppliers),
         recipes: jsonifyMany(recipes),
         recipeLines: jsonifyMany(recipeLines),
@@ -173,6 +194,7 @@ export class PrismaEdgeReadModel implements EdgeReadModel {
       },
       stock: {
         stockLayers: jsonifyMany(stockLayers),
+        stockOnHand: jsonifyMany(stockOnHand),
       },
       operational: {
         orderCounter: orderCounter ? jsonifyOne(orderCounter) : null,
@@ -187,10 +209,7 @@ export class PrismaEdgeReadModel implements EdgeReadModel {
     };
   }
 
-  async buildConfigChanges(
-    target: EdgeSnapshotTarget,
-    since: Date | null,
-  ): Promise<ConfigChanges> {
+  async buildConfigChanges(target: EdgeSnapshotTarget, since: Date | null): Promise<ConfigChanges> {
     const { organizationId, restaurantId, branchId } = target;
     const branchScope = { restaurantId, branchId };
     const requestStart = new Date();
@@ -244,7 +263,10 @@ export class PrismaEdgeReadModel implements EdgeReadModel {
     const [roles, branchMemberships, allBranchRoles] = await Promise.all([
       this.prisma.role.findMany({ where: { organizationId, ...changedSince } }),
       this.prisma.branchMembership.findMany({ where: { branchId } }),
-      this.prisma.role.findMany({ where: { organizationId, allBranches: true }, select: { id: true } }),
+      this.prisma.role.findMany({
+        where: { organizationId, allBranches: true },
+        select: { id: true },
+      }),
     ]);
     const memberUserIds = [...new Set(branchMemberships.map((m) => m.userId))];
     const allBranchRoleIds = allBranchRoles.map((r) => r.id);
@@ -277,6 +299,21 @@ export class PrismaEdgeReadModel implements EdgeReadModel {
       ? await this.prisma.user.findMany({ where: { organizationId, id: { in: userIds } } })
       : [];
 
+    // ── 3B: device-anchored auth material changed since the cursor ─────────────
+    // Devices are branch-scoped directly. StaffPins are scoped to branch-relevant
+    // users (members ∪ all-branch). Revocations ride as status changes (updatedAt
+    // bumps). The edge preserves its local lockout counters when applying these.
+    const [devices, staffPins] = await Promise.all([
+      this.prisma.device.findMany({ where: { ...branchScope, ...changedSince } }),
+      this.prisma.staffPin.findMany({
+        where: {
+          restaurantId,
+          user: { OR: [{ id: { in: memberUserIds } }, { roleId: { in: allBranchRoleIds } }] },
+          ...changedSince,
+        },
+      }),
+    ]);
+
     const cursor = new Date(requestStart.getTime() - CONFIG_CURSOR_OVERLAP_MS).toISOString();
 
     return {
@@ -289,6 +326,8 @@ export class PrismaEdgeReadModel implements EdgeReadModel {
         roles: jsonifyMany(roles),
         users: jsonifyMany(users),
         branchMemberships: jsonifyMany(branchMemberships),
+        devices: jsonifyMany(devices),
+        staffPins: jsonifyMany(staffPins),
         menuCategories: jsonifyMany(menuCategories),
         menuItems: jsonifyMany(menuItems),
         modifierGroups: jsonifyMany(modifierGroups),

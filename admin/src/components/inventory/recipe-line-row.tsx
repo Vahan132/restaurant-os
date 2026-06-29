@@ -43,15 +43,16 @@ export function RecipeLineRow({
 
   // First relevant counterpart (processed counterpart of a raw, or raw source of a processed).
   const counterpart = useMemo(() => {
-    const entries = related?.related ?? [];
-    return (
-      entries.find(
-        (r) =>
-          r.relation === 'HAS_PROCESSED_COUNTERPART' ||
-          r.relation === 'HAS_RAW_SOURCE',
-      ) ?? null
-    );
-  }, [related]);
+    if (!it) return null;
+    if (it.kind === 'RAW') {
+      const c = related?.processedOutputs?.[0];
+      return c
+        ? { itemId: c.id, name: c.name, relation: 'HAS_PROCESSED_COUNTERPART' as const }
+        : null;
+    }
+    const c = related?.rawSources?.[0];
+    return c ? { itemId: c.id, name: c.name, relation: 'HAS_RAW_SOURCE' as const } : null;
+  }, [related, it]);
 
   return (
     <div className="space-y-1">

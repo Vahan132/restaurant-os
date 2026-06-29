@@ -6,11 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ModifierGroupWithOptionsResponseSelectionType } from './modifierGroupWithOptionsResponseSelectionType';
+import type { ModifierGroupWithOptionsResponseStatus } from './modifierGroupWithOptionsResponseStatus';
 import type { ModifierOptionResponse } from './modifierOptionResponse';
 
 export interface ModifierGroupWithOptionsResponse {
   id: string;
-  menuItemId: string;
+  restaurantId: string;
+  branchId: string;
   name: string;
   selectionType: ModifierGroupWithOptionsResponseSelectionType;
   required: boolean;
@@ -18,6 +20,6 @@ export interface ModifierGroupWithOptionsResponse {
   minSelect: number | null;
   /** @nullable */
   maxSelect: number | null;
-  displayOrder: number;
+  status: ModifierGroupWithOptionsResponseStatus;
   options: ModifierOptionResponse[];
 }

@@ -93,6 +93,40 @@ export const envSchema = z
 
     // Root domain used to derive restaurant subdomains, e.g. "restaurantos.app".
     PLATFORM_ROOT_DOMAIN: z.string().min(1).default('restaurantos.app'),
+
+    // Express `trust proxy` setting (3A). The API sits behind Nginx + Tailscale,
+    // so without this `req.ip` is the proxy's socket IP and every branch IP
+    // policy is meaningless. Accepts a hop count ("1"), a boolean ("true"/
+    // "false"), or a subnet/keyword Express understands (e.g. "loopback"). One
+    // hop (Nginx) is the default. Parsed in main.ts.
+    TRUST_PROXY: z.string().default('1'),
+
+    // Device-anchored staff auth (3A): per-user PIN rate-limit + lockout. After
+    // PIN_MAX_ATTEMPTS consecutive failures the PIN is locked for
+    // PIN_LOCKOUT_MINUTES. Blank-safe; clamped to sane minimums.
+    PIN_MAX_ATTEMPTS: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(1).default(5),
+    ),
+    PIN_LOCKOUT_MINUTES: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(1).default(15),
+    ),
+
+    // Manager step-up discounts (4A): DEVICE-scoped rate-limit + lockout on
+    // failed step-up authorization attempts (a non-holder asking a manager to
+    // approve a discount with their PIN). Deliberately AGGRESSIVE — a small,
+    // shared device must not be a brute-force surface: after
+    // STEP_UP_MAX_ATTEMPTS failures the device's step-up is locked for
+    // STEP_UP_LOCKOUT_MINUTES. Separate from the per-user PIN lockout (3A).
+    STEP_UP_MAX_ATTEMPTS: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(1).default(3),
+    ),
+    STEP_UP_LOCKOUT_MINUTES: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(1).default(10),
+    ),
   })
   // Fail-fast: in EDGE mode the four edge identity ids are mandatory. CLOUD
   // validation is unchanged (these stay optional and unused).

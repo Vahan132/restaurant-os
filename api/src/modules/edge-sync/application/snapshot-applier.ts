@@ -11,6 +11,37 @@ async function forEachSeq<T>(rows: T[], fn: (row: T) => Promise<unknown>): Promi
   }
 }
 
+/**
+ * 3B: upsert a synced Device. lastSeenAt/lastSeenIp are EDGE-OWNED (updated by
+ * local logins) so they are NOT overwritten on update; status (revocation),
+ * surface, secret hash etc. ARE applied so a revoke propagates promptly.
+ */
+function applyDevice(tx: Prisma.TransactionClient, r: Record<string, unknown>): Promise<unknown> {
+  const create = r as unknown as Prisma.DeviceUncheckedCreateInput;
+  const { lastSeenAt: _lastSeenAt, lastSeenIp: _lastSeenIp, ...update } = r;
+  return tx.device.upsert({
+    where: { id: r.id as string },
+    create,
+    update: update as unknown as Prisma.DeviceUncheckedUpdateInput,
+  });
+}
+
+/**
+ * 3B: upsert a synced StaffPin. failedAttempts/lockedUntil are EDGE-OWNED auth
+ * counters while offline, so they are PRESERVED on update — a cloud config sync
+ * never resets an in-progress local lockout. pinHash/status/mustRotate (config)
+ * ARE applied so a revoke or rotation propagates. New rows seed counters fresh.
+ */
+function applyStaffPin(tx: Prisma.TransactionClient, r: Record<string, unknown>): Promise<unknown> {
+  const create = r as unknown as Prisma.StaffPinUncheckedCreateInput;
+  const { failedAttempts: _failedAttempts, lockedUntil: _lockedUntil, ...update } = r;
+  return tx.staffPin.upsert({
+    where: { id: r.id as string },
+    create,
+    update: update as unknown as Prisma.StaffPinUncheckedUpdateInput,
+  });
+}
+
 /** Group rows by a string key. */
 function groupByKey<T>(rows: T[], key: (row: T) => string): Map<string, T[]> {
   const map = new Map<string, T[]>();
@@ -88,6 +119,12 @@ export class SnapshotApplier {
           return tx.branchMembership.upsert({ where: { id: r.id }, create: data, update: data });
         });
 
+        // ── 3B: device-anchored auth (devices + PIN HASHES) ────────────────────
+        // Device lastSeen and PIN lockout counters are EDGE-OWNED while offline,
+        // so they are preserved on update (never clobbered by a cloud sync).
+        await forEachSeq(s.access.devices, (r) => applyDevice(tx, r));
+        await forEachSeq(s.access.staffPins, (r) => applyStaffPin(tx, r));
+
         // ── catalog: menu ────────────────────────────────────────────────────
         await forEachSeq(s.catalog.menuCategories, (r) => {
           const data = r as unknown as Prisma.MenuCategoryUncheckedCreateInput;
@@ -110,6 +147,15 @@ export class SnapshotApplier {
         await forEachSeq(s.catalog.inventoryCategories, (r) => {
           const data = r as unknown as Prisma.InventoryCategoryUncheckedCreateInput;
           return tx.inventoryCategory.upsert({ where: { id: r.id }, create: data, update: data });
+        });
+        // 6C: locations BEFORE items (item.consumptionLocationId points at one).
+        await forEachSeq(s.catalog.inventoryLocations, (r) => {
+          const data = r as unknown as Prisma.InventoryLocationUncheckedCreateInput;
+          return tx.inventoryLocation.upsert({ where: { id: r.id }, create: data, update: data });
+        });
+        await forEachSeq(s.catalog.branchInventoryPolicies, (r) => {
+          const data = r as unknown as Prisma.BranchInventoryPolicyUncheckedCreateInput;
+          return tx.branchInventoryPolicy.upsert({ where: { id: r.id }, create: data, update: data });
         });
         await forEachSeq(s.catalog.inventoryItems, (r) => {
           const data = {
@@ -153,6 +199,12 @@ export class SnapshotApplier {
         await forEachSeq(s.stock.stockLayers, (r) => {
           const data = r as unknown as Prisma.StockLayerUncheckedCreateInput;
           return tx.stockLayer.upsert({ where: { id: r.id }, create: data, update: data });
+        });
+        // 6C: seed the per-location on-hand projection so the edge starts at the
+        // correct balances; local serves maintain it thereafter.
+        await forEachSeq(s.stock.stockOnHand, (r) => {
+          const data = r as unknown as Prisma.StockOnHandUncheckedCreateInput;
+          return tx.stockOnHand.upsert({ where: { id: r.id }, create: data, update: data });
         });
 
         // ── operational ──────────────────────────────────────────────────────
@@ -261,6 +313,10 @@ export class SnapshotApplier {
           return tx.branchMembership.upsert({ where: { id: r.id }, create: data, update: data });
         });
 
+        // ── 3B: device-anchored auth (revocations ride status; lockout preserved) ─
+        await forEachSeq(ch.devices, (r) => applyDevice(tx, r));
+        await forEachSeq(ch.staffPins, (r) => applyStaffPin(tx, r));
+
         // ── catalog: menu ────────────────────────────────────────────────────
         await forEachSeq(ch.menuCategories, (r) => {
           const data = r as unknown as Prisma.MenuCategoryUncheckedCreateInput;
@@ -305,7 +361,9 @@ export class SnapshotApplier {
         const consumptionsByRecipe = groupByKey(ch.modifierConsumptions, (m) => m.recipeId);
         for (const recipe of ch.recipes) {
           const lineIds = (linesByRecipe.get(recipe.id) ?? []).map((l) => l.id);
-          await tx.recipeLine.deleteMany({ where: { recipeId: recipe.id, id: { notIn: lineIds } } });
+          await tx.recipeLine.deleteMany({
+            where: { recipeId: recipe.id, id: { notIn: lineIds } },
+          });
           const consumptionIds = (consumptionsByRecipe.get(recipe.id) ?? []).map((m) => m.id);
           await tx.modifierConsumption.deleteMany({
             where: { recipeId: recipe.id, id: { notIn: consumptionIds } },

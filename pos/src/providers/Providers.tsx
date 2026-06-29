@@ -10,6 +10,7 @@ import { HubBlockingOverlay } from '@/components/shell/HubBlockingOverlay';
 import { OrderReadyNotifier } from '@/components/shell/OrderReadyNotifier';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { BranchGate } from '@/components/branch/BranchGate';
+import { DeviceEnrollmentGate } from '@/components/device/DeviceEnrollmentGate';
 
 /**
  * Client-side provider stack: React Query + realtime socket + global
@@ -33,9 +34,11 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <HubHealthProvider>
         <RealtimeProvider>
-          <AuthGate>
-            <BranchGate>{children}</BranchGate>
-          </AuthGate>
+          <DeviceEnrollmentGate>
+            <AuthGate>
+              <BranchGate>{children}</BranchGate>
+            </AuthGate>
+          </DeviceEnrollmentGate>
           <ConnectionBanner />
           <HubBlockingOverlay />
           <OrderReadyNotifier />

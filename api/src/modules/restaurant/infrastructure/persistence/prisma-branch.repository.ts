@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Branch as PrismaBranch } from '@prisma/client';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
-import { Branch, BranchStatus } from '../../domain/entities/branch';
+import { Branch, BranchIpBindingMode, BranchStatus } from '../../domain/entities/branch';
 import { BranchRepository } from '../../domain/repositories/branch.repository';
 
 @Injectable()
@@ -77,6 +77,8 @@ export class PrismaBranchRepository implements BranchRepository {
       data: {
         name: branch.name,
         status: branch.status as BranchStatus,
+        ipBindingMode: branch.ipBindingMode as BranchIpBindingMode,
+        ipAllowlist: branch.ipAllowlist,
         updatedAt: branch.updatedAt,
       },
     });
@@ -89,6 +91,8 @@ export class PrismaBranchRepository implements BranchRepository {
       slug: r.slug,
       isDefault: r.isDefault,
       status: r.status as BranchStatus,
+      ipBindingMode: r.ipBindingMode as BranchIpBindingMode,
+      ipAllowlist: r.ipAllowlist,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       deletedAt: r.deletedAt,

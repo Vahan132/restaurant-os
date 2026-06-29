@@ -6,6 +6,7 @@ import {
 } from '../../../../shared/auth/branch-access.resolver';
 import { UseCase } from '../../../../shared/application/use-case';
 import { Role } from '../../domain/entities/role';
+import { snapshotPermissionsForRole } from '../../domain/permissions.catalog';
 import { User } from '../../domain/entities/user';
 import { ROLE_REPOSITORY, RoleRepository } from '../../domain/repositories/role.repository';
 import { USER_REPOSITORY, UserRepository } from '../../domain/repositories/user.repository';
@@ -56,6 +57,6 @@ export class GetMeUseCase implements UseCase<GetMeInput, GetMeOutput> {
         })
       : EMPTY_BRANCH_ACCESS;
 
-    return { user, role, permissions: role?.permissions ?? [], branchAccess };
+    return { user, role, permissions: snapshotPermissionsForRole(role), branchAccess };
   }
 }

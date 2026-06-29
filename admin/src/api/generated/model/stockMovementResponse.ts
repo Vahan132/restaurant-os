@@ -10,6 +10,7 @@ import type { StockMovementResponseType } from './stockMovementResponseType';
 export interface StockMovementResponse {
   id: string;
   branchId: string;
+  locationId: string;
   itemId: string;
   type: StockMovementResponseType;
   /** Signed base qty (+ in, - out). */

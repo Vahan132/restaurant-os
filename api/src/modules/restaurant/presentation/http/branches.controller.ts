@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Req } from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -114,17 +115,23 @@ export class BranchesController {
   @Patch(':id')
   @RequirePermissions(PERMISSIONS.BRANCH_MANAGE)
   @ApiForbiddenResponse({ description: 'Missing BRANCH_MANAGE permission.' })
-  @ApiOperation({ summary: 'Update a branch.' })
+  @ApiOperation({ summary: 'Update a branch (rename and/or 3A IP policy).' })
   @ApiOkResponse({ type: BranchResponse })
   async update(
     @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Body() dto: UpdateBranchDto,
+    @Req() req: Request,
   ): Promise<BranchResponse> {
     const branch = await this.updateBranch.execute({
       restaurantId: tenant.restaurantId,
       branchId: id,
       name: dto.name,
+      ipBindingMode: dto.ipBindingMode,
+      ipAllowlist: dto.ipAllowlist,
+      actorUserId: user.sub,
+      ip: req.ip ?? null,
     });
     return BranchResponse.from(branch);
   }

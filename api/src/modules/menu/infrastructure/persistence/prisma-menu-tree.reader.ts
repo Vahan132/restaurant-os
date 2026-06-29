@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
+import { resolveEffectiveModifierRules } from '../../domain/modifier-rules';
 import {
   MenuTreeCategory,
   MenuTreeGroup,
@@ -41,12 +42,45 @@ export class PrismaMenuTreeReader implements MenuTreeReader {
 
       const treeItems = [];
       for (const item of items) {
-        const groups = await this.prisma.modifierGroup.findMany({
-          where: { restaurantId, branchId, menuItemId: item.id, deletedAt: null },
-          orderBy: { displayOrder: 'asc' },
+        // Prompt 1A: a dish's groups come from the dish_modifier_groups join, in
+        // attachment order, with effective (override-resolved) rules. Only ACTIVE
+        // groups appear in the consumption tree.
+        const links = await this.prisma.dishModifierGroup.findMany({
+          where: { restaurantId, branchId, menuItemId: item.id },
+          orderBy: { sortOrder: 'asc' },
         });
+        const groupIds = links.map((l) => l.modifierGroupId);
+        const groups = groupIds.length
+          ? await this.prisma.modifierGroup.findMany({
+              where: {
+                id: { in: groupIds },
+                restaurantId,
+                branchId,
+                status: 'ACTIVE',
+                deletedAt: null,
+              },
+            })
+          : [];
+        const groupById = new Map(groups.map((g) => [g.id, g]));
         const treeGroups: MenuTreeGroup[] = [];
-        for (const group of groups) {
+        for (const link of links) {
+          const group = groupById.get(link.modifierGroupId);
+          if (!group) {
+            continue;
+          }
+          const eff = resolveEffectiveModifierRules(
+            {
+              selectionType: group.selectionType,
+              required: group.required,
+              minSelect: group.minSelect,
+              maxSelect: group.maxSelect,
+            },
+            {
+              requiredOverride: link.requiredOverride,
+              minOverride: link.minOverride,
+              maxOverride: link.maxOverride,
+            },
+          );
           const options = await this.prisma.modifierOption.findMany({
             where: {
               restaurantId,
@@ -55,21 +89,21 @@ export class PrismaMenuTreeReader implements MenuTreeReader {
               status: 'ACTIVE',
               deletedAt: null,
             },
-            orderBy: { displayOrder: 'asc' },
+            orderBy: { sortOrder: 'asc' },
           });
           treeGroups.push({
             id: group.id,
             name: group.name,
-            selectionType: group.selectionType,
-            required: group.required,
-            minSelect: group.minSelect,
-            maxSelect: group.maxSelect,
-            displayOrder: group.displayOrder,
+            selectionType: eff.selectionType,
+            required: eff.required,
+            minSelect: eff.minSelect,
+            maxSelect: eff.maxSelect,
+            displayOrder: link.sortOrder,
             options: options.map((o) => ({
               id: o.id,
               name: o.name,
               priceDeltaAmount: o.priceDeltaAmount,
-              displayOrder: o.displayOrder,
+              displayOrder: o.sortOrder,
             })),
           });
         }

@@ -11,6 +11,33 @@
     "invalid": "Invalid email or password.",
     "error": "Could not sign in. Please try again."
   },
+  "enroll": {
+    "title": "Set up this kitchen screen",
+    "subtitle": "A manager signs in once to register this device. After that, kitchen staff sign in with a PIN.",
+    "deviceLabel": "Screen name",
+    "deviceLabelPlaceholder": "e.g. Hot line display",
+    "managerEmail": "Manager email",
+    "managerPassword": "Manager password",
+    "enroll": "Register this device",
+    "enrolling": "Registering…",
+    "invalid": "Invalid email or password.",
+    "forbidden": "This account can't register devices. Ask an administrator.",
+    "error": "Could not register this device. Please try again."
+  },
+  "staff": {
+    "title": "Who's signing in?",
+    "subtitle": "Tap your name, then enter your PIN.",
+    "loading": "Loading staff…",
+    "loadError": "Could not load staff. Check the connection.",
+    "retry": "Retry",
+    "empty": "No staff available for this branch.",
+    "back": "Back",
+    "enterPin": "Enter your 6-digit PIN",
+    "checking": "Checking…",
+    "wrongPin": "Wrong PIN. Try again.",
+    "locked": "Too many attempts. Locked — try again in {seconds}s.",
+    "mustRotate": "Your PIN was reset. Please set a new one soon."
+  },
   "access": {
     "noAccessTitle": "No kitchen access",
     "noAccessBody": "This account does not have permission to use the Kitchen Display. Ask an administrator to grant KDS access.",
@@ -53,6 +80,35 @@
       "PREPARING": "Cooking",
       "READY": "Ready",
       "delayed": "Delayed"
+    }
+  },
+  "nav": {
+    "tickets": "Tickets",
+    "processes": "Processes"
+  },
+  "processes": {
+    "loading": "Loading processes…",
+    "error": "Could not load processes.",
+    "empty": "No processes for this branch.",
+    "uses": "Uses",
+    "makes": "Makes",
+    "onHand": "on hand {qty}",
+    "short": "Short",
+    "low": "Low",
+    "primary": "Primary",
+    "noInputs": "No inputs.",
+    "unknownItem": "Item",
+    "run": "Run",
+    "running": "Running…",
+    "increase": "Increase batch",
+    "decrease": "Decrease batch",
+    "ranOk": "Process run complete.",
+    "ranNegative": "Run complete — an input went negative.",
+    "runError": "Could not run this process. Please try again.",
+    "units": {
+      "GRAM": "g",
+      "MILLILITER": "ml",
+      "PIECE": "pcs"
     }
   },
   "topbar": {

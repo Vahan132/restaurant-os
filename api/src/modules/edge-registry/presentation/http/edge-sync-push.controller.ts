@@ -41,6 +41,7 @@ export class EdgeSyncPushController {
   ): Promise<PushResultDto> {
     return this.apply.execute({
       branchId: node.branchId,
+      restaurantId: node.restaurantId,
       entries: dto.entries as unknown as PushEntry[],
     });
   }

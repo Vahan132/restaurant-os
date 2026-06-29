@@ -26,6 +26,8 @@ export interface RestaurantSettingsProps {
   allowManualTableStatus: boolean;
   enableQrMenu: boolean;
   enableCustomerOrdering: boolean;
+  /** 3A: when false (default), admin/manager email login must be device-anchored. */
+  allowUnanchoredAdminLogin: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +49,7 @@ export interface UpdateRestaurantSettingsInput {
   allowManualTableStatus?: boolean;
   enableQrMenu?: boolean;
   enableCustomerOrdering?: boolean;
+  allowUnanchoredAdminLogin?: boolean;
 }
 
 /** RestaurantSettings aggregate (1:1 with Restaurant). Rates are basis points. */
@@ -104,6 +107,8 @@ export class RestaurantSettings extends AggregateRoot<string> {
     if (input.enableQrMenu !== undefined) this.props.enableQrMenu = input.enableQrMenu;
     if (input.enableCustomerOrdering !== undefined)
       this.props.enableCustomerOrdering = input.enableCustomerOrdering;
+    if (input.allowUnanchoredAdminLogin !== undefined)
+      this.props.allowUnanchoredAdminLogin = input.allowUnanchoredAdminLogin;
     // Keep stored state honest: customer ordering requires the public QR menu.
     if (this.props.enableCustomerOrdering && !this.props.enableQrMenu) {
       this.props.enableCustomerOrdering = false;

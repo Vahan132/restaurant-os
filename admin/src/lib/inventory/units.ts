@@ -3,13 +3,10 @@
  *
  * Quantities are stored and returned by the API in the item's BASE unit
  * (GRAM / MILLILITER / PIECE). Items may define alternate units via a
- * `conversionFactor` (integer count of base units per alternate unit), e.g.
+ * `factor` (integer count of base units per alternate unit), e.g.
  * `kg -> 1000` means 1 kg = 1000 g.
- *
- * These helpers convert between base and chosen units and render the friendly
- * "4,800 g (4.8 kg)" string used across the warehouse screens.
  */
-import type { AlternateUnit } from '@/api/generated/model';
+import type { AlternateUnitView } from '@/api/generated/model';
 
 export type BaseUnit = 'GRAM' | 'MILLILITER' | 'PIECE';
 
@@ -34,7 +31,7 @@ export interface UnitOption {
 /** Base-unit option followed by the item's alternate units (factor asc). */
 export function unitOptions(
   baseUnit: BaseUnit | string,
-  alternateUnits: AlternateUnit[] = [],
+  alternateUnits: AlternateUnitView[] = [],
 ): UnitOption[] {
   const base: UnitOption = {
     value: baseUnit,
@@ -43,12 +40,12 @@ export function unitOptions(
     isBase: true,
   };
   const alts = [...alternateUnits]
-    .filter((u) => u.conversionFactor >= 1)
-    .sort((a, b) => a.conversionFactor - b.conversionFactor)
+    .filter((u) => u.factor >= 1)
+    .sort((a, b) => a.factor - b.factor)
     .map((u) => ({
       value: u.name,
       label: u.name,
-      conversionFactor: u.conversionFactor,
+      conversionFactor: u.factor,
       isBase: false,
     }));
   return [base, ...alts];
@@ -58,7 +55,7 @@ export function unitOptions(
 export function factorForUnit(
   unitValue: string,
   baseUnit: BaseUnit | string,
-  alternateUnits: AlternateUnit[] = [],
+  alternateUnits: AlternateUnitView[] = [],
 ): number {
   const match = unitOptions(baseUnit, alternateUnits).find((u) => u.value === unitValue);
   return match?.conversionFactor ?? 1;
@@ -69,7 +66,7 @@ export function toBaseQty(
   qty: number,
   unitValue: string,
   baseUnit: BaseUnit | string,
-  alternateUnits: AlternateUnit[] = [],
+  alternateUnits: AlternateUnitView[] = [],
 ): number {
   return qty * factorForUnit(unitValue, baseUnit, alternateUnits);
 }
@@ -83,28 +80,28 @@ export function formatNumber(value: number, maxFractionDigits = 3): string {
 
 /** The largest-factor alternate unit, if any (used for the friendly display). */
 export function largestAlternate(
-  alternateUnits: AlternateUnit[] = [],
-): AlternateUnit | null {
-  const valid = alternateUnits.filter((u) => u.conversionFactor > 1);
+  alternateUnits: AlternateUnitView[] = [],
+): AlternateUnitView | null {
+  const valid = alternateUnits.filter((u) => u.factor > 1);
   if (valid.length === 0) return null;
-  return valid.reduce((max, u) => (u.conversionFactor > max.conversionFactor ? u : max));
+  return valid.reduce((max, u) => (u.factor > max.factor ? u : max));
 }
 
 /**
  * Render an on-hand quantity in the base unit with a muted conversion to the
  * item's largest alternate unit, e.g. `formatBaseQty(4800, 'GRAM', [{name:'kg',
- * conversionFactor:1000}])` -> `{ base: "4,800 g", alt: "4.8 kg" }`.
+ * factor:1000}])` -> `{ base: "4,800 g", alt: "4.8 kg" }`.
  * `alt` is null when the item has no alternate unit.
  */
 export function formatBaseQty(
   baseQty: number,
   baseUnit: BaseUnit | string,
-  alternateUnits: AlternateUnit[] = [],
+  alternateUnits: AlternateUnitView[] = [],
 ): { base: string; alt: string | null } {
   const abbr = BASE_UNIT_ABBR[baseUnit as BaseUnit] ?? baseUnit;
   const base = `${formatNumber(baseQty)} ${abbr}`;
   const largest = largestAlternate(alternateUnits);
   if (!largest) return { base, alt: null };
-  const altValue = baseQty / largest.conversionFactor;
+  const altValue = baseQty / largest.factor;
   return { base, alt: `${formatNumber(altValue)} ${largest.name}` };
 }

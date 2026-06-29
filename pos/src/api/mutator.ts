@@ -11,6 +11,7 @@ import {
   resolveApiBaseUrl,
 } from '@/stores/endpoint';
 import { readPersistedTokens, withRefreshLock } from './refresh-lock';
+import { getDeviceSecret } from '@/lib/device/deviceSecretStore';
 
 /**
  * Custom axios mutator — mirrors the admin app.
@@ -67,6 +68,15 @@ axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const branchId = useBranchStore.getState().activeBranchId;
   if (branchId) {
     config.headers.set?.('X-Branch-Id', branchId);
+  }
+  // Device anchor: once this terminal is enrolled (3A), attach its device secret
+  // to every request so device-anchored endpoints can verify the terminal. Read
+  // synchronously from the IndexedDB store's in-memory mirror. An explicit header
+  // already set by a generated hook (e.g. the staff-picker's X-Device-Secret)
+  // wins and is left untouched.
+  const deviceSecret = getDeviceSecret();
+  if (deviceSecret && !config.headers.has?.('X-Device-Secret')) {
+    config.headers.set?.('X-Device-Secret', deviceSecret);
   }
   return config;
 });

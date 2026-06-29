@@ -16,6 +16,7 @@ import {
   INVENTORY_ITEM_REPOSITORY,
   InventoryItemRepository,
 } from '../../domain/repositories/inventory-item.repository';
+import { InventoryLocationProvisioner } from '../services/inventory-location-provisioner.service';
 import {
   CrossBranchReference,
   InventoryItemNotFound,
@@ -33,6 +34,8 @@ export interface CreateGoodsReceiptLineInput {
 export interface CreateGoodsReceiptInput {
   restaurantId: string | null;
   branchId: string;
+  /** 6C: target location for the received stock (defaults to Main Storage). */
+  locationId?: string | null;
   supplierId?: string | null;
   reference?: string | null;
   receivedAt?: Date | null;
@@ -52,6 +55,7 @@ export class CreateGoodsReceiptUseCase implements UseCase<CreateGoodsReceiptInpu
     @Inject(INVENTORY_ITEM_REPOSITORY) private readonly items: InventoryItemRepository,
     @Inject(INVENTORY_LEDGER_GATEWAY) private readonly ledger: InventoryLedgerGateway,
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
+    private readonly locations: InventoryLocationProvisioner,
     private readonly events: DomainEventPublisher,
   ) {}
 
@@ -63,6 +67,13 @@ export class CreateGoodsReceiptUseCase implements UseCase<CreateGoodsReceiptInpu
     const receivedAt = input.receivedAt ?? new Date();
 
     const branchId = input.branchId;
+    // 6C: received stock lands in the requested target location (validated active
+    // + in-branch), or the branch default Main Storage if unspecified.
+    const locationId = await this.locations.resolveReceivingLocationId(
+      restaurantId,
+      branchId,
+      input.locationId ?? null,
+    );
     const itemIds = [...new Set(input.lines.map((l) => l.itemId))];
     const itemRows = await this.items.findManyByIds(restaurantId, branchId, itemIds);
     const itemsById = new Map<string, InventoryItem>(itemRows.map((i) => [i.id, i]));
@@ -111,6 +122,7 @@ export class CreateGoodsReceiptUseCase implements UseCase<CreateGoodsReceiptInpu
         restaurantId,
         // §4: stock follows the item — the layer lives in the item's branch.
         branchId: item.branchId,
+        locationId,
         itemId: line.itemId,
         sourceReceiptLineId: lineId,
         baseQtyReceived: baseQty,
@@ -125,6 +137,7 @@ export class CreateGoodsReceiptUseCase implements UseCase<CreateGoodsReceiptInpu
         restaurantId,
         // §4: stock follows the item — the movement lives in the item's branch.
         branchId: item.branchId,
+        locationId,
         itemId: line.itemId,
         type: StockMovementType.RECEIPT_IN,
         baseQty,

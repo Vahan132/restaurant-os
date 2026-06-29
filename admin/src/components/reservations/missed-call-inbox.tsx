@@ -117,7 +117,7 @@ export function MissedCallInbox({
             <tbody>
               {calls.map((c) => (
                 <tr key={c.id} className="border-b border-gray-100 align-top">
-                  <td className="px-4 py-2 font-medium text-gray-800">{c.phone}</td>
+                  <td className="px-4 py-2 font-medium text-gray-800">{c.phoneNumber}</td>
                   <td className="px-4 py-2 text-gray-700">{c.callerName ?? '—'}</td>
                   <td className="px-4 py-2 tabular-nums text-gray-600">
                     {ymdInTz(new Date(c.occurredAt), timezone)}{' '}
@@ -126,14 +126,14 @@ export function MissedCallInbox({
                   <td className="px-4 py-2">
                     <div className="flex flex-col gap-1">
                       <Badge tone={statusTone(c.status)}>{t(`mcStatus${c.status}`)}</Badge>
-                      {c.reservationId && (
+                      {c.linkedReservationId && (
                         <Badge tone="blue">{t('mcLinked')}</Badge>
                       )}
                     </div>
                   </td>
                   <td className="px-4 py-2">
                     <div className="flex flex-wrap justify-end gap-1">
-                      <a href={`tel:${c.phone}`}>
+                      <a href={`tel:${c.phoneNumber}`}>
                         <Button size="sm" variant="secondary">
                           {t('mcCallBack')}
                         </Button>

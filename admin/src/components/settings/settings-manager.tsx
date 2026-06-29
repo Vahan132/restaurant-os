@@ -5,11 +5,12 @@ import { useState } from 'react';
 
 import { OperationsTab } from '@/components/settings/operations-tab';
 import { ProfileTab } from '@/components/settings/profile-tab';
+import { SecurityTab } from '@/components/settings/security-tab';
 import { Can } from '@/components/auth/can';
 import { PERMISSIONS } from '@/lib/permissions';
 
 // Branch management moved to its own screen (/branches, gated BRANCH_MANAGE).
-type Tab = 'profile' | 'operations';
+type Tab = 'profile' | 'operations' | 'security';
 
 export function SettingsManager() {
   const t = useTranslations('settings');
@@ -18,6 +19,7 @@ export function SettingsManager() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'profile', label: t('profileTab') },
     { key: 'operations', label: t('operationsTab') },
+    { key: 'security', label: t('securityTab') },
   ];
 
   return (
@@ -51,6 +53,7 @@ export function SettingsManager() {
 
       {tab === 'profile' && <ProfileTab />}
       {tab === 'operations' && <OperationsTab />}
+      {tab === 'security' && <SecurityTab />}
     </div>
   );
 }

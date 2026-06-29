@@ -8,7 +8,7 @@
 import type { MenuItemDetailResponsePreparationStation } from './menuItemDetailResponsePreparationStation';
 import type { MenuItemDetailResponseStatus } from './menuItemDetailResponseStatus';
 import type { MenuItemDetailResponseAvailability } from './menuItemDetailResponseAvailability';
-import type { ModifierGroupWithOptionsResponse } from './modifierGroupWithOptionsResponse';
+import type { AttachedModifierGroupResponse } from './attachedModifierGroupResponse';
 
 export interface MenuItemDetailResponse {
   id: string;
@@ -27,5 +27,5 @@ export interface MenuItemDetailResponse {
   prepTimeMinutes: number | null;
   status: MenuItemDetailResponseStatus;
   availability: MenuItemDetailResponseAvailability;
-  modifierGroups: ModifierGroupWithOptionsResponse[];
+  modifierGroups: AttachedModifierGroupResponse[];
 }

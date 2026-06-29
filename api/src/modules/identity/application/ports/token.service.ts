@@ -28,7 +28,10 @@ export interface IssuedRefreshToken {
  */
 export interface TokenService {
   signAccessToken(payload: AccessTokenPayload, signingKey: string): string;
-  issueRefreshToken(payload: Omit<RefreshTokenPayload, 'jti'>, signingKey: string): IssuedRefreshToken;
+  issueRefreshToken(
+    payload: Omit<RefreshTokenPayload, 'jti'>,
+    signingKey: string,
+  ): IssuedRefreshToken;
   verifyAccessToken(token: string, signingKey: string): AccessTokenPayload;
   verifyRefreshToken(token: string, signingKey: string): RefreshTokenPayload;
   /**

@@ -9,7 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { AdjustmentFormModal } from '@/components/inventory/adjustment-form-modal';
 import { Pagination, formatDateTime } from '@/components/inventory/shared';
 import { usePermission } from '@/lib/auth/use-permission';
-import { usePaginatedAdjustments } from '@/lib/inventory/use-inventory-data';
+import {
+  usePaginatedAdjustments,
+  useItemsForSelect,
+} from '@/lib/inventory/use-inventory-data';
 import { formatNumber } from '@/lib/inventory/units';
 import { PERMISSIONS } from '@/lib/permissions';
 
@@ -27,8 +30,13 @@ export function AdjustmentsManager() {
     usePaginatedAdjustments(params);
   const hasNext = pagination?.hasNext ?? movements.length === PAGE_SIZE;
 
-  const directionOf = (mov: StockMovementResponse) =>
-    mov.direction ?? (mov.qtyBase < 0 ? 'OUT' : 'IN');
+  const { items } = useItemsForSelect();
+  const itemName = useMemo(() => {
+    const map = new Map(items.map((i) => [i.id, i.name]));
+    return (id: string) => map.get(id) ?? id;
+  }, [items]);
+
+  const directionOf = (mov: StockMovementResponse) => (mov.baseQty < 0 ? 'OUT' : 'IN');
 
   return (
     <div className="space-y-4">
@@ -61,7 +69,6 @@ export function AdjustmentsManager() {
                 <th className="px-4 py-2 font-medium">{t('colDirection')}</th>
                 <th className="px-4 py-2 font-medium">{t('colQty')}</th>
                 <th className="px-4 py-2 font-medium">{t('colReasonOnly')}</th>
-                <th className="px-4 py-2 font-medium">{t('colNote')}</th>
               </tr>
             </thead>
             <tbody>
@@ -71,7 +78,7 @@ export function AdjustmentsManager() {
                   <tr key={mov.id} className="border-b border-gray-100">
                     <td className="px-4 py-2 text-gray-600">{formatDateTime(mov.occurredAt)}</td>
                     <td className="px-4 py-2 font-medium text-gray-800">
-                      {mov.itemName ?? mov.itemId}
+                      {itemName(mov.itemId)}
                     </td>
                     <td className="px-4 py-2">
                       <Badge tone={dir === 'OUT' ? 'red' : 'green'}>
@@ -79,10 +86,9 @@ export function AdjustmentsManager() {
                       </Badge>
                     </td>
                     <td className="px-4 py-2 text-gray-700">
-                      {formatNumber(Math.abs(mov.qtyBase))}
+                      {formatNumber(Math.abs(mov.baseQty))}
                     </td>
                     <td className="px-4 py-2 text-gray-600">{mov.reason ?? '—'}</td>
-                    <td className="px-4 py-2 text-gray-600">{mov.note ?? '—'}</td>
                   </tr>
                 );
               })}

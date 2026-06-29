@@ -169,3 +169,49 @@ export class OrderReadyEvent extends BaseDomainEvent {
     super(orderId);
   }
 }
+
+/**
+ * Manager step-up authorization SUCCEEDED for a discount (4A). Emitted in
+ * addition to DiscountAppliedEvent and carries the full who/where/how so the
+ * audit trail records requester, authorizer, device and IP.
+ */
+export class DiscountStepUpAuthorizedEvent extends BaseDomainEvent {
+  readonly eventName = 'orders.discount.step_up_authorized';
+  constructor(
+    public readonly orderId: string,
+    public readonly restaurantId: string,
+    public readonly branchId: string,
+    /** The user who requested the discount (stays logged in). */
+    public readonly requestedByUserId: string | null,
+    /** The capable manager who authorized it via PIN. */
+    public readonly authorizedByUserId: string,
+    public readonly deviceId: string | null,
+    public readonly discountType: string,
+    public readonly discountValue: number,
+    public readonly discountAmount: number,
+    public readonly ip: string | null,
+  ) {
+    super(orderId);
+  }
+}
+
+/**
+ * Manager step-up authorization FAILED for a discount (4A). The `reason` is for
+ * the audit/log only — the HTTP response is always a generic failure. Emitted
+ * for every failed attempt (drives the device-scoped throttle visibility).
+ */
+export class DiscountStepUpFailedEvent extends BaseDomainEvent {
+  readonly eventName = 'orders.discount.step_up_failed';
+  constructor(
+    public readonly orderId: string,
+    public readonly restaurantId: string,
+    public readonly branchId: string,
+    public readonly requestedByUserId: string | null,
+    public readonly deviceId: string | null,
+    /** Internal failure factor (NEVER returned to the client). */
+    public readonly reason: string,
+    public readonly ip: string | null,
+  ) {
+    super(orderId);
+  }
+}

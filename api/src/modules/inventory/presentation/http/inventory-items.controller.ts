@@ -17,10 +17,12 @@ import { CurrentUserContext, TenantContext } from '../../../../shared/tenancy/te
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { CreateInventoryItemUseCase } from '../../application/commands/create-inventory-item.usecase';
 import { DeleteInventoryItemUseCase } from '../../application/commands/delete-inventory-item.usecase';
+import { SetItemConsumptionLocationUseCase } from '../../application/commands/set-item-consumption-location.usecase';
 import { UpdateInventoryItemUseCase } from '../../application/commands/update-inventory-item.usecase';
 import {
   CreateInventoryItemDto,
   ListInventoryItemsQuery,
+  SetItemConsumptionLocationDto,
   UpdateInventoryItemDto,
 } from '../../application/dto/item.dto';
 import {
@@ -48,6 +50,7 @@ export class InventoryItemsController {
     private readonly createItem: CreateInventoryItemUseCase,
     private readonly updateItem: UpdateInventoryItemUseCase,
     private readonly deleteItem: DeleteInventoryItemUseCase,
+    private readonly setConsumptionLocation: SetItemConsumptionLocationUseCase,
     private readonly getLayers: GetItemLayersUseCase,
     private readonly getMovements: GetItemMovementsUseCase,
   ) {}
@@ -162,6 +165,26 @@ export class InventoryItemsController {
       actorUserId: actor.sub,
     });
     return { success: true };
+  }
+
+  @Patch(':id/consumption-location')
+  @RequirePermissions(MANAGE)
+  @ApiForbiddenResponse({ description: 'Missing inventory:item:manage permission.' })
+  @ApiOperation({ summary: "Reassign the item's serve-time consumption location (6C)." })
+  @ApiOkResponse({ type: InventoryItemResponse })
+  async setConsumptionLocationRoute(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+    @Param('id') id: string,
+    @Body() dto: SetItemConsumptionLocationDto,
+  ): Promise<InventoryItemResponse> {
+    const item = await this.setConsumptionLocation.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      itemId: id,
+      locationId: dto.locationId ?? null,
+    });
+    return InventoryItemResponse.from(item);
   }
 
   @Get(':id/layers')

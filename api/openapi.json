@@ -850,6 +850,312 @@
         ]
       }
     },
+    "/devices": {
+      "post": {
+        "operationId": "DevicesController_enroll",
+        "summary": "Enroll an in-store device (returns the secret ONCE).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrollDeviceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceEnrolledResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing device.enroll at the active branch."
+          }
+        },
+        "tags": [
+          "devices"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "DevicesController_list",
+        "summary": "List devices enrolled for the active branch.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing device.enroll at the active branch."
+          }
+        },
+        "tags": [
+          "devices"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/devices/{id}/revoke": {
+      "post": {
+        "operationId": "DevicesController_revoke",
+        "summary": "Revoke a device (immediately invalidates PIN + anchored use).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Device id (within the active branch).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing device.enroll at the active branch."
+          }
+        },
+        "tags": [
+          "devices"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/staff-pins/{userId}": {
+      "post": {
+        "operationId": "StaffPinsController_create",
+        "summary": "Create a staff PIN (returns the PIN ONCE).",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "The staff user to issue a PIN for.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffPinIssuedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing staff.pin.manage permission."
+          }
+        },
+        "tags": [
+          "staff-pins"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/staff-pins/{userId}/reset": {
+      "post": {
+        "operationId": "StaffPinsController_reset",
+        "summary": "Reset a staff PIN (forces rotation; returns the PIN ONCE).",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "The staff user whose PIN to reset.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffPinIssuedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing staff.pin.manage permission."
+          }
+        },
+        "tags": [
+          "staff-pins"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/staff-pins/{userId}/revoke": {
+      "post": {
+        "operationId": "StaffPinsController_revoke",
+        "summary": "Revoke a staff PIN (offboarding; takes effect immediately).",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "The staff user whose PIN to revoke.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing staff.pin.manage permission."
+          }
+        },
+        "tags": [
+          "staff-pins"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/auth/staff-picker": {
+      "get": {
+        "operationId": "PinAuthController_staffPicker",
+        "summary": "Branch staff list for the POS/KDS login grid (device-authenticated).",
+        "parameters": [
+          {
+            "name": "X-Device-Secret",
+            "in": "header",
+            "description": "Enrolled device secret.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StaffPickerEntryResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing/invalid device secret."
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/pin-login": {
+      "post": {
+        "operationId": "PinAuthController_login",
+        "summary": "PIN login (POS/KDS): device secret + chosen user + 6-digit PIN.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PinLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PinLoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid device, PIN, or locked-out PIN."
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/edge/info": {
       "get": {
         "operationId": "EdgeController_info",
@@ -1189,7 +1495,7 @@
       },
       "patch": {
         "operationId": "BranchesController_update",
-        "summary": "Update a branch.",
+        "summary": "Update a branch (rename and/or 3A IP policy).",
         "parameters": [
           {
             "name": "id",
@@ -2020,8 +2326,8 @@
     },
     "/menu/items/{itemId}/modifier-groups": {
       "post": {
-        "operationId": "ItemsController_addModifierGroup",
-        "summary": "Add a modifier group to an item.",
+        "operationId": "ItemsController_attachModifierGroup",
+        "summary": "Attach a reusable modifier group to a dish.",
         "parameters": [
           {
             "name": "itemId",
@@ -2032,6 +2338,273 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachModifierGroupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishModifierGroupResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing MENU_MANAGE permission."
+          }
+        },
+        "tags": [
+          "menu-items"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/menu/items/{itemId}/modifier-groups/reorder": {
+      "patch": {
+        "operationId": "ItemsController_reorderModifierGroups",
+        "summary": "Reorder a dish's attached modifier groups.",
+        "parameters": [
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderDishModifierGroupsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DishModifierGroupResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing MENU_MANAGE permission."
+          }
+        },
+        "tags": [
+          "menu-items"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/menu/items/{itemId}/modifier-groups/{groupId}": {
+      "patch": {
+        "operationId": "ItemsController_setModifierGroupOverrides",
+        "summary": "Set or clear a dish attachment's per-group overrides.",
+        "parameters": [
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetDishModifierOverridesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishModifierGroupResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing MENU_MANAGE permission."
+          }
+        },
+        "tags": [
+          "menu-items"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "ItemsController_detachModifierGroup",
+        "summary": "Detach a modifier group from a dish.",
+        "parameters": [
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing MENU_MANAGE permission."
+          }
+        },
+        "tags": [
+          "menu-items"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/menu/modifier-groups": {
+      "get": {
+        "operationId": "ModifierGroupsController_list",
+        "summary": "List the reusable modifier-group library (paginated).",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "ACTIVE",
+                "INACTIVE"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive name search.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModifierGroupResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "menu-modifier-groups"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "ModifierGroupsController_create",
+        "summary": "Create a reusable modifier group.",
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -2058,7 +2631,7 @@
           }
         },
         "tags": [
-          "menu-items"
+          "menu-modifier-groups"
         ],
         "security": [
           {
@@ -2068,9 +2641,43 @@
       }
     },
     "/menu/modifier-groups/{id}": {
+      "get": {
+        "operationId": "ModifierGroupsController_get",
+        "summary": "Get a modifier group with its options.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModifierGroupWithOptionsResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "menu-modifier-groups"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
       "patch": {
-        "operationId": "ModifiersController_patchGroup",
-        "summary": "Update a modifier group.",
+        "operationId": "ModifierGroupsController_update",
+        "summary": "Update a modifier group (edits propagate to every attached dish).",
         "parameters": [
           {
             "name": "id",
@@ -2107,7 +2714,7 @@
           }
         },
         "tags": [
-          "menu-modifiers"
+          "menu-modifier-groups"
         ],
         "security": [
           {
@@ -2116,8 +2723,8 @@
         ]
       },
       "delete": {
-        "operationId": "ModifiersController_removeGroup",
-        "summary": "Soft-delete a modifier group.",
+        "operationId": "ModifierGroupsController_remove",
+        "summary": "Soft-delete a modifier group (blocked while attached to any dish).",
         "parameters": [
           {
             "name": "id",
@@ -2146,7 +2753,7 @@
           }
         },
         "tags": [
-          "menu-modifiers"
+          "menu-modifier-groups"
         ],
         "security": [
           {
@@ -2157,7 +2764,7 @@
     },
     "/menu/modifier-groups/{groupId}/options": {
       "post": {
-        "operationId": "ModifiersController_addOptionToGroup",
+        "operationId": "ModifierGroupsController_addOptionToGroup",
         "summary": "Add an option to a modifier group.",
         "parameters": [
           {
@@ -2195,7 +2802,7 @@
           }
         },
         "tags": [
-          "menu-modifiers"
+          "menu-modifier-groups"
         ],
         "security": [
           {
@@ -2204,13 +2811,73 @@
         ]
       }
     },
-    "/menu/modifier-options/{id}": {
+    "/menu/modifier-groups/{groupId}/options/reorder": {
       "patch": {
-        "operationId": "ModifiersController_patchOption",
+        "operationId": "ModifierGroupsController_reorderGroupOptions",
+        "summary": "Reorder a group's options.",
+        "parameters": [
+          {
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderModifierOptionsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModifierOptionResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing MENU_MANAGE permission."
+          }
+        },
+        "tags": [
+          "menu-modifier-groups"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/menu/modifier-groups/{groupId}/options/{optionId}": {
+      "patch": {
+        "operationId": "ModifierGroupsController_patchOption",
         "summary": "Update a modifier option.",
         "parameters": [
           {
-            "name": "id",
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "optionId",
             "required": true,
             "in": "path",
             "schema": {
@@ -2244,7 +2911,7 @@
           }
         },
         "tags": [
-          "menu-modifiers"
+          "menu-modifier-groups"
         ],
         "security": [
           {
@@ -2253,11 +2920,19 @@
         ]
       },
       "delete": {
-        "operationId": "ModifiersController_removeOption",
+        "operationId": "ModifierGroupsController_removeOption",
         "summary": "Soft-delete a modifier option.",
         "parameters": [
           {
-            "name": "id",
+            "name": "groupId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "optionId",
             "required": true,
             "in": "path",
             "schema": {
@@ -2283,7 +2958,7 @@
           }
         },
         "tags": [
-          "menu-modifiers"
+          "menu-modifier-groups"
         ],
         "security": [
           {
@@ -3267,6 +3942,7 @@
       "post": {
         "operationId": "OrdersController_discount",
         "summary": "Apply a discount.",
+        "description": "Discount authority is DISCOUNT_APPLY. A caller holding it applies directly. A caller without it must include an `authorization` block (enrolled POS device secret + a capable manager’s 6-digit PIN); the manager is then recorded as the approver. The requesting user is never logged out.",
         "parameters": [
           {
             "name": "id",
@@ -3299,7 +3975,7 @@
             }
           },
           "403": {
-            "description": "Missing DISCOUNT_APPLY permission."
+            "description": "Missing ORDER_EDIT permission; or the caller lacks DISCOUNT_APPLY and supplied no/invalid manager step-up authorization (generic failure)."
           }
         },
         "tags": [
@@ -5469,10 +6145,352 @@
         ]
       }
     },
+    "/sales-import": {
+      "post": {
+        "operationId": "SalesImportController_upload",
+        "summary": "Upload a CSV of historical/external sales (NON-FISCAL, reports-only). Tolerant column mapping; per-row validation; per-row success/error summary.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "CSV file."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResultResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SALES_IMPORT_MANAGE permission."
+          }
+        },
+        "tags": [
+          "sales-import"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/sales-import/batches": {
+      "get": {
+        "operationId": "SalesImportController_list",
+        "summary": "List import batches (branch-scoped; newest first).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ImportBatchResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SALES_IMPORT_MANAGE permission."
+          }
+        },
+        "tags": [
+          "sales-import"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/sales-import/batches/{id}": {
+      "get": {
+        "operationId": "SalesImportController_get",
+        "summary": "Get one import batch (branch-scoped).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Import batch id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBatchResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SALES_IMPORT_MANAGE permission."
+          }
+        },
+        "tags": [
+          "sales-import"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/sales-import/analytics/summary": {
+      "get": {
+        "operationId": "SalesImportController_summary",
+        "summary": "Imported-sales summary (NON-FISCAL; labeled source=IMPORTED).",
+        "parameters": [
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "From date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportedSalesSummaryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing REPORTS_VIEW permission."
+          }
+        },
+        "tags": [
+          "sales-import"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/sales-import/analytics/by-item": {
+      "get": {
+        "operationId": "SalesImportController_byItem",
+        "summary": "Imported quantity + revenue by item (labeled source=IMPORTED).",
+        "parameters": [
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "From date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ImportedItemRowResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing REPORTS_VIEW permission."
+          }
+        },
+        "tags": [
+          "sales-import"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/sales-import/analytics/timeseries": {
+      "get": {
+        "operationId": "SalesImportController_timeseries",
+        "summary": "Imported revenue per bucket (day/week/month; source=IMPORTED).",
+        "parameters": [
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "From date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupBy",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "day",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ImportedTimeSeriesBucketResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing REPORTS_VIEW permission."
+          }
+        },
+        "tags": [
+          "sales-import"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/sales-import/analytics/by-payment-method": {
+      "get": {
+        "operationId": "SalesImportController_byPaymentMethod",
+        "summary": "Imported totals by payment method (source=IMPORTED).",
+        "parameters": [
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "From date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ImportedPaymentMethodResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing REPORTS_VIEW permission."
+          }
+        },
+        "tags": [
+          "sales-import"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
     "/audit-logs": {
       "get": {
         "operationId": "AuditController_list",
-        "summary": "List audit logs (tenant-scoped; newest first; filters).",
+        "summary": "List audit logs (branch-scoped; newest first; combinable filters).",
         "parameters": [
           {
             "name": "page",
@@ -5499,7 +6517,7 @@
             "name": "from",
             "required": false,
             "in": "query",
-            "description": "From timestamp (ISO 8601, inclusive).",
+            "description": "From timestamp (ISO 8601, inclusive). Must be <= `to`.",
             "schema": {
               "type": "string"
             }
@@ -5508,7 +6526,7 @@
             "name": "to",
             "required": false,
             "in": "query",
-            "description": "To timestamp (ISO 8601, exclusive).",
+            "description": "To timestamp (ISO 8601, inclusive). Must be >= `from`.",
             "schema": {
               "type": "string"
             }
@@ -5517,7 +6535,77 @@
             "name": "action",
             "required": false,
             "in": "query",
-            "description": "Action filter (e.g. ORDER_CANCELLED).",
+            "description": "Action type filter (validated against recorded actions).",
+            "schema": {
+              "enum": [
+                "USER_LOGGED_IN",
+                "USER_CREATED",
+                "USER_BLOCKED",
+                "USER_UNBLOCKED",
+                "MENU_ITEM_CREATED",
+                "MENU_ITEM_PRICE_CHANGED",
+                "MENU_ITEM_DELETED",
+                "ORDER_CANCELLED",
+                "ORDER_ITEM_CANCELLED",
+                "DISCOUNT_APPLIED",
+                "DISCOUNT_STEP_UP_AUTHORIZED",
+                "DISCOUNT_STEP_UP_FAILED",
+                "PAYMENT_RECORDED",
+                "ORDER_CLOSED",
+                "RESERVATION_CANCELLED",
+                "RESERVATION_NO_SHOW",
+                "ORGANIZATION_PROVISIONED",
+                "ORGANIZATION_SUSPENDED",
+                "SUBSCRIPTION_STATUS_CHANGED",
+                "DEVICE_ENROLLED",
+                "DEVICE_REVOKED",
+                "STAFF_PIN_CREATED",
+                "STAFF_PIN_RESET",
+                "STAFF_PIN_REVOKED",
+                "STAFF_PIN_LOCKED_OUT",
+                "BRANCH_IP_POLICY_CHANGED",
+                "ADMIN_LOGIN_POLICY_CHANGED",
+                "INVENTORY_COUNT_ADJUSTED",
+                "INVENTORY_TRANSFERRED",
+                "INVENTORY_PROCESS_RUN"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "description": "Actor's role code filter (system role codes).",
+            "schema": {
+              "enum": [
+                "OWNER",
+                "MANAGER",
+                "WAITER",
+                "CASHIER",
+                "KITCHEN_STAFF",
+                "CHEF",
+                "SOUS_CHEF",
+                "RECEPTIONIST",
+                "BRANCH_SCOPED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Branch id filter (within the caller’s reachable scope).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "actorId",
+            "required": false,
+            "in": "query",
+            "description": "Actor (employee) id filter.",
             "schema": {
               "type": "string"
             }
@@ -5532,14 +6620,6 @@
           },
           {
             "name": "entityId",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "actorId",
             "required": false,
             "in": "query",
             "schema": {
@@ -5562,7 +6642,165 @@
             }
           },
           "403": {
-            "description": "Missing AUDIT_VIEW permission."
+            "description": "Missing AUDIT_VIEW permission, or branch out of scope."
+          }
+        },
+        "tags": [
+          "audit"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/audit-logs/export": {
+      "get": {
+        "operationId": "AuditController_export",
+        "summary": "Export audit logs as CSV (same filters as the list — what you see is what you export).",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "From timestamp (ISO 8601, inclusive). Must be <= `to`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "To timestamp (ISO 8601, inclusive). Must be >= `from`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "required": false,
+            "in": "query",
+            "description": "Action type filter (validated against recorded actions).",
+            "schema": {
+              "enum": [
+                "USER_LOGGED_IN",
+                "USER_CREATED",
+                "USER_BLOCKED",
+                "USER_UNBLOCKED",
+                "MENU_ITEM_CREATED",
+                "MENU_ITEM_PRICE_CHANGED",
+                "MENU_ITEM_DELETED",
+                "ORDER_CANCELLED",
+                "ORDER_ITEM_CANCELLED",
+                "DISCOUNT_APPLIED",
+                "DISCOUNT_STEP_UP_AUTHORIZED",
+                "DISCOUNT_STEP_UP_FAILED",
+                "PAYMENT_RECORDED",
+                "ORDER_CLOSED",
+                "RESERVATION_CANCELLED",
+                "RESERVATION_NO_SHOW",
+                "ORGANIZATION_PROVISIONED",
+                "ORGANIZATION_SUSPENDED",
+                "SUBSCRIPTION_STATUS_CHANGED",
+                "DEVICE_ENROLLED",
+                "DEVICE_REVOKED",
+                "STAFF_PIN_CREATED",
+                "STAFF_PIN_RESET",
+                "STAFF_PIN_REVOKED",
+                "STAFF_PIN_LOCKED_OUT",
+                "BRANCH_IP_POLICY_CHANGED",
+                "ADMIN_LOGIN_POLICY_CHANGED",
+                "INVENTORY_COUNT_ADJUSTED",
+                "INVENTORY_TRANSFERRED",
+                "INVENTORY_PROCESS_RUN"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "description": "Actor's role code filter (system role codes).",
+            "schema": {
+              "enum": [
+                "OWNER",
+                "MANAGER",
+                "WAITER",
+                "CASHIER",
+                "KITCHEN_STAFF",
+                "CHEF",
+                "SOUS_CHEF",
+                "RECEPTIONIST",
+                "BRANCH_SCOPED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Branch id filter (within the caller’s reachable scope).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "actorId",
+            "required": false,
+            "in": "query",
+            "description": "Actor (employee) id filter.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file of the filtered audit logs."
+          },
+          "403": {
+            "description": "Missing AUDIT_VIEW permission, or branch out of scope."
           }
         },
         "tags": [
@@ -6181,6 +7419,55 @@
                   "example": {
                     "success": true
                   }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:item:manage permission."
+          }
+        },
+        "tags": [
+          "inventory-items"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/items/{id}/consumption-location": {
+      "patch": {
+        "operationId": "InventoryItemsController_setConsumptionLocationRoute",
+        "summary": "Reassign the item's serve-time consumption location (6C).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetItemConsumptionLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryItemResponse"
                 }
               }
             }
@@ -6906,6 +8193,46 @@
                 }
               }
             }
+          }
+        },
+        "tags": [
+          "inventory-adjustments"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/adjustments/count": {
+      "post": {
+        "operationId": "AdjustmentsController_count",
+        "summary": "Correction adjustment (6A §6): set the ACTUAL counted on-hand for an (item, location). Writes the signed-difference ADJUSTMENT and reconciles lots + projection atomically.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCountedOnHandDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CountAdjustmentResultResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:adjustment:create permission."
           }
         },
         "tags": [
@@ -7919,6 +9246,899 @@
         },
         "tags": [
           "inventory-write-offs"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/locations": {
+      "get": {
+        "operationId": "InventoryLocationsController_list",
+        "summary": "List the active stock locations for the active branch.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryLocationResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "inventory-locations"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "InventoryLocationsController_create",
+        "summary": "Create a custom stock location (shelf).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInventoryLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryLocationResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:location:manage permission."
+          }
+        },
+        "tags": [
+          "inventory-locations"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/locations/{id}": {
+      "patch": {
+        "operationId": "InventoryLocationsController_update",
+        "summary": "Rename a stock location.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInventoryLocationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryLocationResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:location:manage permission."
+          }
+        },
+        "tags": [
+          "inventory-locations"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "InventoryLocationsController_remove",
+        "summary": "Delete a CUSTOM location (only when empty; system locations are undeletable).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:location:manage permission."
+          }
+        },
+        "tags": [
+          "inventory-locations"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/locations/{id}/on-hand": {
+      "get": {
+        "operationId": "InventoryLocationsController_onHand",
+        "summary": "On-hand per item at a single location.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OnHandRowResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "inventory-locations"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/policy": {
+      "get": {
+        "operationId": "InventoryPolicyController_get",
+        "summary": "Get the branch negative-stock policy.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchInventoryPolicyResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "inventory-policy"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "InventoryPolicyController_update",
+        "summary": "Set the branch negative-stock mode (ALLOW/WARN/BLOCK).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBranchPolicyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchInventoryPolicyResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:policy:manage permission."
+          }
+        },
+        "tags": [
+          "inventory-policy"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/alerts/low-stock": {
+      "get": {
+        "operationId": "LowStockAlertsController_list",
+        "summary": "List low-stock alerts for the active branch (paginated).",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by alert status.",
+            "schema": {
+              "enum": [
+                "OPEN",
+                "RESOLVED"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LowStockAlertResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "inventory-alerts"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/transfers": {
+      "post": {
+        "operationId": "InventoryTransfersController_create",
+        "summary": "Transfer stock between two locations of the active branch (FIFO; carrying cost; no COGS).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransferDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateTransferResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:transfer:create permission."
+          }
+        },
+        "tags": [
+          "inventory-transfers"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "InventoryTransfersController_list",
+        "summary": "List transfers for the active branch (paginated).",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to a single item.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransferResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "inventory-transfers"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/transfers/{id}": {
+      "get": {
+        "operationId": "InventoryTransfersController_get",
+        "summary": "Get a transfer with its consumed-slice detail.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "inventory-transfers"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/reports/stock-on-hand": {
+      "get": {
+        "operationId": "InventoryReportsController_getStockOnHand",
+        "summary": "Per-(item, location) on-hand + FIFO value (paginated, roll-up totals).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one location.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one item.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one category.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lowStock",
+            "required": false,
+            "in": "query",
+            "description": "Only rows at/below their low-stock threshold. Pass \"true\".",
+            "schema": {
+              "enum": [
+                "true",
+                "false"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockOnHandRowResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:read, or branch out of scope."
+          }
+        },
+        "tags": [
+          "inventory-reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/reports/valuation": {
+      "get": {
+        "operationId": "InventoryReportsController_getValuation",
+        "summary": "Inventory valuation roll-ups: per location, per branch, aggregate.",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one location.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one item.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one category.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuationSummaryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:read, or branch out of scope."
+          }
+        },
+        "tags": [
+          "inventory-reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/reports/low-stock": {
+      "get": {
+        "operationId": "InventoryReportsController_getLowStock",
+        "summary": "Items at/below their low-stock threshold per (item, location).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one location.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one item.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one category.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockOnHandRowResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:read, or branch out of scope."
+          }
+        },
+        "tags": [
+          "inventory-reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/reports/negative-stock": {
+      "get": {
+        "operationId": "InventoryReportsController_getNegativeStock",
+        "summary": "Items currently negative at a location (correction worklist).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one location.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one item.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one category.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockOnHandRowResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:read, or branch out of scope."
+          }
+        },
+        "tags": [
+          "inventory-reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/reports/movements": {
+      "get": {
+        "operationId": "InventoryReportsController_getMovements",
+        "summary": "Movement-history ledger filtered by item/location/branch/type/date (AND).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one item.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one location.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Filter by exact movement type.",
+            "schema": {
+              "enum": [
+                "RECEIPT_IN",
+                "ADJUSTMENT_IN",
+                "ADJUSTMENT_OUT",
+                "CONSUMPTION_OUT",
+                "WRITE_OFF_OUT",
+                "PROCESS_OUT",
+                "PROCESS_IN",
+                "CONSUMPTION_REVERSAL",
+                "OPENING",
+                "TRANSFER_OUT",
+                "TRANSFER_IN"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "From occurredAt (ISO 8601, inclusive).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "To occurredAt (ISO 8601, inclusive).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockMovementResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:read, or branch out of scope."
+          }
+        },
+        "tags": [
+          "inventory-reports"
         ],
         "security": [
           {
@@ -9502,6 +11722,10 @@
             "type": "string",
             "example": "ChangeMe123!",
             "minLength": 8
+          },
+          "deviceSecret": {
+            "type": "string",
+            "description": "3A: ADMIN-surface device secret. Required for admin/manager login unless the caller is the Owner (break-glass) or the restaurant allows unanchored admin login."
           }
         },
         "required": [
@@ -9947,6 +12171,204 @@
           "permissions"
         ]
       },
+      "EnrollDeviceDto": {
+        "type": "object",
+        "properties": {
+          "surface": {
+            "type": "string",
+            "enum": [
+              "POS",
+              "KDS",
+              "ADMIN"
+            ],
+            "description": "Surface this device serves."
+          },
+          "label": {
+            "type": "string",
+            "example": "Front counter POS",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "surface",
+          "label"
+        ]
+      },
+      "DeviceResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "restaurantId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "POS",
+              "KDS",
+              "ADMIN"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "REVOKED"
+            ]
+          },
+          "enrolledCidr": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastSeenAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastSeenIp": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "restaurantId",
+          "branchId",
+          "label",
+          "surface",
+          "status",
+          "enrolledCidr",
+          "lastSeenAt",
+          "lastSeenIp",
+          "createdAt"
+        ]
+      },
+      "DeviceEnrolledResponse": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "$ref": "#/components/schemas/DeviceResponse"
+          },
+          "secret": {
+            "type": "string",
+            "description": "Plaintext device secret — shown once, never retrievable again."
+          }
+        },
+        "required": [
+          "device",
+          "secret"
+        ]
+      },
+      "StaffPinIssuedResponse": {
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "string",
+            "description": "Plaintext PIN — shown once to the manager."
+          },
+          "mustRotate": {
+            "type": "boolean",
+            "description": "True if the staff member must rotate the PIN (after a reset)."
+          }
+        },
+        "required": [
+          "pin",
+          "mustRotate"
+        ]
+      },
+      "StaffPickerEntryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "roleCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "roleName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "fullName",
+          "roleCode",
+          "roleName"
+        ]
+      },
+      "PinLoginDto": {
+        "type": "object",
+        "properties": {
+          "deviceSecret": {
+            "type": "string",
+            "description": "The enrolled device secret (POS/KDS)."
+          },
+          "userId": {
+            "type": "string",
+            "description": "The user chosen from the branch staff picker."
+          },
+          "pin": {
+            "type": "string",
+            "example": "0184 27",
+            "description": "6-digit PIN."
+          }
+        },
+        "required": [
+          "deviceSecret",
+          "userId",
+          "pin"
+        ]
+      },
+      "PinLoginResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "expiresIn": {
+            "type": "number",
+            "description": "Access-token lifetime in seconds."
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponse"
+          },
+          "branchId": {
+            "type": "string",
+            "description": "The branch the device is bound to (send as X-Branch-Id)."
+          },
+          "mustRotate": {
+            "type": "boolean",
+            "description": "True if this PIN was reset and should be rotated."
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "expiresIn",
+          "user",
+          "branchId",
+          "mustRotate"
+        ]
+      },
       "RestaurantResponse": {
         "type": "object",
         "properties": {
@@ -10073,6 +12495,10 @@
           },
           "enableCustomerOrdering": {
             "type": "boolean"
+          },
+          "allowUnanchoredAdminLogin": {
+            "type": "boolean",
+            "description": "3A: admin login allowed from any device when true."
           }
         },
         "required": [
@@ -10093,7 +12519,8 @@
           "enableKds",
           "allowManualTableStatus",
           "enableQrMenu",
-          "enableCustomerOrdering"
+          "enableCustomerOrdering",
+          "allowUnanchoredAdminLogin"
         ]
       },
       "OpeningHourDto": {
@@ -10177,6 +12604,10 @@
           "enableCustomerOrdering": {
             "type": "boolean",
             "description": "Allow customers to submit dine-in order requests (needs enableQrMenu)."
+          },
+          "allowUnanchoredAdminLogin": {
+            "type": "boolean",
+            "description": "3A: when false (default), admin/manager email login must come from an enrolled ADMIN-surface device. Owner is always exempt (break-glass)."
           }
         }
       },
@@ -10206,6 +12637,21 @@
               "ACTIVE",
               "INACTIVE"
             ]
+          },
+          "ipBindingMode": {
+            "type": "string",
+            "enum": [
+              "STRICT",
+              "SOFT"
+            ],
+            "description": "3A: branch IP binding policy."
+          },
+          "ipAllowlist": {
+            "description": "3A: allowed source CIDRs (STRICT mode).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -10214,7 +12660,9 @@
           "name",
           "slug",
           "isDefault",
-          "status"
+          "status",
+          "ipBindingMode",
+          "ipAllowlist"
         ]
       },
       "MyBranchAccessResponse": {
@@ -10254,6 +12702,25 @@
         "properties": {
           "name": {
             "type": "string"
+          },
+          "ipBindingMode": {
+            "type": "string",
+            "enum": [
+              "STRICT",
+              "SOFT"
+            ],
+            "description": "3A: STRICT enforces ipAllowlist on device-anchored logins; SOFT records + trusts."
+          },
+          "ipAllowlist": {
+            "description": "3A: allowed source CIDRs (or bare IPs) evaluated under STRICT.",
+            "example": [
+              "10.0.0.0/24",
+              "203.0.113.5"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -10457,6 +12924,68 @@
           "availability"
         ]
       },
+      "DishModifierGroupResponse": {
+        "type": "object",
+        "properties": {
+          "menuItemId": {
+            "type": "string"
+          },
+          "modifierGroupId": {
+            "type": "string"
+          },
+          "requiredOverride": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "minOverride": {
+            "type": "number",
+            "nullable": true
+          },
+          "maxOverride": {
+            "type": "number",
+            "nullable": true
+          },
+          "sortOrder": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "menuItemId",
+          "modifierGroupId",
+          "requiredOverride",
+          "minOverride",
+          "maxOverride",
+          "sortOrder"
+        ]
+      },
+      "EffectiveModifierRulesResponse": {
+        "type": "object",
+        "properties": {
+          "selectionType": {
+            "type": "string",
+            "enum": [
+              "SINGLE",
+              "MULTIPLE"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "minSelect": {
+            "type": "number"
+          },
+          "maxSelect": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "selectionType",
+          "required",
+          "minSelect",
+          "maxSelect"
+        ]
+      },
       "ModifierOptionResponse": {
         "type": "object",
         "properties": {
@@ -10470,10 +12999,14 @@
             "type": "string"
           },
           "priceDeltaAmount": {
+            "type": "number",
+            "description": "May be 0 or negative (minor units)."
+          },
+          "sortOrder": {
             "type": "number"
           },
-          "displayOrder": {
-            "type": "number"
+          "isDefault": {
+            "type": "boolean"
           },
           "status": {
             "type": "string",
@@ -10488,17 +13021,21 @@
           "modifierGroupId",
           "name",
           "priceDeltaAmount",
-          "displayOrder",
+          "sortOrder",
+          "isDefault",
           "status"
         ]
       },
-      "ModifierGroupWithOptionsResponse": {
+      "AttachedModifierGroupResponse": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string"
           },
-          "menuItemId": {
+          "restaurantId": {
+            "type": "string"
+          },
+          "branchId": {
             "type": "string"
           },
           "name": {
@@ -10522,8 +13059,21 @@
             "type": "number",
             "nullable": true
           },
-          "displayOrder": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "sortOrder": {
             "type": "number"
+          },
+          "attachment": {
+            "$ref": "#/components/schemas/DishModifierGroupResponse"
+          },
+          "effective": {
+            "$ref": "#/components/schemas/EffectiveModifierRulesResponse"
           },
           "options": {
             "type": "array",
@@ -10534,13 +13084,17 @@
         },
         "required": [
           "id",
-          "menuItemId",
+          "restaurantId",
+          "branchId",
           "name",
           "selectionType",
           "required",
           "minSelect",
           "maxSelect",
-          "displayOrder",
+          "status",
+          "sortOrder",
+          "attachment",
+          "effective",
           "options"
         ]
       },
@@ -10606,7 +13160,7 @@
           "modifierGroups": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ModifierGroupWithOptionsResponse"
+              "$ref": "#/components/schemas/AttachedModifierGroupResponse"
             }
           }
         },
@@ -10736,6 +13290,187 @@
           "availability"
         ]
       },
+      "AttachModifierGroupDto": {
+        "type": "object",
+        "properties": {
+          "groupId": {
+            "type": "string",
+            "description": "Id of a library modifier group in this branch."
+          },
+          "requiredOverride": {
+            "type": "object",
+            "nullable": true
+          },
+          "minOverride": {
+            "type": "object",
+            "nullable": true,
+            "minimum": 0
+          },
+          "maxOverride": {
+            "type": "object",
+            "nullable": true,
+            "minimum": 1
+          },
+          "sortOrder": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "groupId"
+        ]
+      },
+      "ReorderDishModifierGroupsDto": {
+        "type": "object",
+        "properties": {
+          "groupIds": {
+            "description": "Attached group ids in the desired order.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "groupIds"
+        ]
+      },
+      "SetDishModifierOverridesDto": {
+        "type": "object",
+        "properties": {
+          "requiredOverride": {
+            "type": "object",
+            "nullable": true
+          },
+          "minOverride": {
+            "type": "object",
+            "nullable": true,
+            "minimum": 0
+          },
+          "maxOverride": {
+            "type": "object",
+            "nullable": true,
+            "minimum": 1
+          },
+          "sortOrder": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "ModifierGroupResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "restaurantId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "selectionType": {
+            "type": "string",
+            "enum": [
+              "SINGLE",
+              "MULTIPLE"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "minSelect": {
+            "type": "number",
+            "nullable": true
+          },
+          "maxSelect": {
+            "type": "number",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "restaurantId",
+          "branchId",
+          "name",
+          "selectionType",
+          "required",
+          "minSelect",
+          "maxSelect",
+          "status"
+        ]
+      },
+      "ModifierGroupWithOptionsResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "restaurantId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "selectionType": {
+            "type": "string",
+            "enum": [
+              "SINGLE",
+              "MULTIPLE"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "minSelect": {
+            "type": "number",
+            "nullable": true
+          },
+          "maxSelect": {
+            "type": "number",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModifierOptionResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "restaurantId",
+          "branchId",
+          "name",
+          "selectionType",
+          "required",
+          "minSelect",
+          "maxSelect",
+          "status",
+          "options"
+        ]
+      },
       "CreateModifierGroupDto": {
         "type": "object",
         "properties": {
@@ -10761,61 +13496,11 @@
           "maxSelect": {
             "type": "number",
             "minimum": 1
-          },
-          "displayOrder": {
-            "type": "number",
-            "default": 0,
-            "minimum": 0
           }
         },
         "required": [
           "name",
           "selectionType"
-        ]
-      },
-      "ModifierGroupResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "menuItemId": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "selectionType": {
-            "type": "string",
-            "enum": [
-              "SINGLE",
-              "MULTIPLE"
-            ]
-          },
-          "required": {
-            "type": "boolean"
-          },
-          "minSelect": {
-            "type": "number",
-            "nullable": true
-          },
-          "maxSelect": {
-            "type": "number",
-            "nullable": true
-          },
-          "displayOrder": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "id",
-          "menuItemId",
-          "name",
-          "selectionType",
-          "required",
-          "minSelect",
-          "maxSelect",
-          "displayOrder"
         ]
       },
       "UpdateModifierGroupDto": {
@@ -10842,9 +13527,13 @@
             "type": "number",
             "minimum": 1
           },
-          "displayOrder": {
-            "type": "number",
-            "minimum": 0
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ],
+            "description": "Archive a group with INACTIVE."
           }
         }
       },
@@ -10858,17 +13547,36 @@
           "priceDeltaAmount": {
             "type": "number",
             "default": 0,
-            "minimum": 0,
-            "description": "Price delta in minor units (>= 0)."
+            "description": "Price delta in minor units. May be 0 or negative (a discount)."
           },
-          "displayOrder": {
+          "sortOrder": {
             "type": "number",
             "default": 0,
             "minimum": 0
+          },
+          "isDefault": {
+            "type": "boolean",
+            "default": false,
+            "description": "Pre-selected option."
           }
         },
         "required": [
           "name"
+        ]
+      },
+      "ReorderModifierOptionsDto": {
+        "type": "object",
+        "properties": {
+          "optionIds": {
+            "description": "Option ids in the desired order.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "optionIds"
         ]
       },
       "UpdateModifierOptionDto": {
@@ -10879,11 +13587,14 @@
           },
           "priceDeltaAmount": {
             "type": "number",
-            "minimum": 0
+            "description": "Price delta in minor units. May be 0 or negative."
           },
-          "displayOrder": {
+          "sortOrder": {
             "type": "number",
             "minimum": 0
+          },
+          "isDefault": {
+            "type": "boolean"
           },
           "status": {
             "type": "string",
@@ -11469,6 +14180,25 @@
           }
         }
       },
+      "DiscountAuthorizationDto": {
+        "type": "object",
+        "properties": {
+          "deviceSecret": {
+            "type": "string",
+            "description": "Enrolled POS device secret (the step-up first factor)."
+          },
+          "pin": {
+            "type": "string",
+            "description": "Authorizing manager's 6-digit PIN.",
+            "minLength": 6,
+            "maxLength": 6
+          }
+        },
+        "required": [
+          "deviceSecret",
+          "pin"
+        ]
+      },
       "ApplyDiscountDto": {
         "type": "object",
         "properties": {
@@ -11487,6 +14217,14 @@
           "approvedByUserId": {
             "type": "string",
             "description": "Approver user id (required if approvals are enforced)."
+          },
+          "authorization": {
+            "description": "Manager step-up authorization. Required ONLY when the caller lacks DISCOUNT_APPLY — a capable manager authorizes the discount with their PIN on the enrolled POS device. Omit when the caller already holds DISCOUNT_APPLY.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DiscountAuthorizationDto"
+              }
+            ]
           }
         },
         "required": [
@@ -12854,6 +15592,255 @@
           "cancelledItems"
         ]
       },
+      "RowResultResponse": {
+        "type": "object",
+        "properties": {
+          "row": {
+            "type": "number",
+            "description": "1-based data-row index (header excluded)."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "IMPORTED",
+              "SKIPPED_DUPLICATE",
+              "ERROR"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "nullable": true,
+            "description": "Reason for a skip/error (null when imported)."
+          }
+        },
+        "required": [
+          "row",
+          "status",
+          "message"
+        ]
+      },
+      "ImportResultResponse": {
+        "type": "object",
+        "properties": {
+          "batchId": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "COMPLETED",
+              "PARTIAL",
+              "FAILED"
+            ],
+            "description": "COMPLETED | PARTIAL | FAILED."
+          },
+          "rowCount": {
+            "type": "number",
+            "description": "Total data rows in the file (header excluded)."
+          },
+          "successCount": {
+            "type": "number",
+            "description": "Rows imported."
+          },
+          "errorCount": {
+            "type": "number",
+            "description": "Rows not imported (invalid + duplicates)."
+          },
+          "duplicateCount": {
+            "type": "number",
+            "description": "Of errorCount, how many were skipped duplicates."
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Single resolved branch, or null when the file spanned branches."
+          },
+          "note": {
+            "type": "string",
+            "nullable": true,
+            "description": "Structural failure reason (e.g. missing columns); null otherwise."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RowResultResponse"
+            }
+          }
+        },
+        "required": [
+          "batchId",
+          "fileName",
+          "status",
+          "rowCount",
+          "successCount",
+          "errorCount",
+          "duplicateCount",
+          "branchId",
+          "note",
+          "rows"
+        ]
+      },
+      "ImportBatchResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "importedByUserId": {
+            "type": "string"
+          },
+          "rowCount": {
+            "type": "number"
+          },
+          "successCount": {
+            "type": "number"
+          },
+          "errorCount": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "COMPLETED",
+              "PARTIAL",
+              "FAILED"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "branchId",
+          "fileName",
+          "importedByUserId",
+          "rowCount",
+          "successCount",
+          "errorCount",
+          "status",
+          "createdAt"
+        ]
+      },
+      "ImportedSalesSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "IMPORTED"
+            ],
+            "description": "Always \"IMPORTED\" (non-fiscal)."
+          },
+          "totalRevenueAmount": {
+            "type": "number",
+            "description": "Sum of line totals (minor units). NON-FISCAL."
+          },
+          "saleCount": {
+            "type": "number"
+          },
+          "totalQuantity": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "source",
+          "totalRevenueAmount",
+          "saleCount",
+          "totalQuantity"
+        ]
+      },
+      "ImportedItemRowResponse": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "IMPORTED"
+            ]
+          },
+          "itemId": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemDescription": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "revenueAmount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "source",
+          "itemId",
+          "itemDescription",
+          "quantity",
+          "revenueAmount"
+        ]
+      },
+      "ImportedTimeSeriesBucketResponse": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "IMPORTED"
+            ]
+          },
+          "bucket": {
+            "type": "string"
+          },
+          "revenueAmount": {
+            "type": "number"
+          },
+          "saleCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "source",
+          "bucket",
+          "revenueAmount",
+          "saleCount"
+        ]
+      },
+      "ImportedPaymentMethodResponse": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "IMPORTED"
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "source",
+          "method",
+          "amount"
+        ]
+      },
       "AuditLogResponse": {
         "type": "object",
         "properties": {
@@ -12865,6 +15852,10 @@
             "nullable": true
           },
           "restaurantId": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchId": {
             "type": "string",
             "nullable": true
           },
@@ -12881,6 +15872,10 @@
             "nullable": true
           },
           "actorName": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorRoleCode": {
             "type": "string",
             "nullable": true
           },
@@ -12917,9 +15912,11 @@
           "id",
           "organizationId",
           "restaurantId",
+          "branchId",
           "actorType",
           "actorId",
           "actorName",
+          "actorRoleCode",
           "action",
           "entityType",
           "entityId",
@@ -13472,6 +16469,11 @@
             "nullable": true,
             "description": "Last unit cost at MICRO precision (BigInt as string)."
           },
+          "consumptionLocationId": {
+            "type": "string",
+            "nullable": true,
+            "description": "6C: per-item consumption location (null => branch default Main Storage)."
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -13493,6 +16495,7 @@
           "trackExpiry",
           "lowStockThresholdBase",
           "lastUnitCostMicro",
+          "consumptionLocationId",
           "status"
         ]
       },
@@ -13598,6 +16601,16 @@
           }
         }
       },
+      "SetItemConsumptionLocationDto": {
+        "type": "object",
+        "properties": {
+          "locationId": {
+            "type": "object",
+            "description": "Target location id; omit or null to reset to the branch default (Main Storage).",
+            "nullable": true
+          }
+        }
+      },
       "StockLayerResponse": {
         "type": "object",
         "properties": {
@@ -13665,17 +16678,26 @@
           "branchId": {
             "type": "string"
           },
+          "locationId": {
+            "type": "string"
+          },
           "itemId": {
             "type": "string"
           },
           "type": {
             "type": "string",
             "enum": [
+              "OPENING",
               "RECEIPT_IN",
               "ADJUSTMENT_IN",
               "ADJUSTMENT_OUT",
               "CONSUMPTION_OUT",
-              "WRITE_OFF_OUT"
+              "WRITE_OFF_OUT",
+              "PROCESS_OUT",
+              "PROCESS_IN",
+              "CONSUMPTION_REVERSAL",
+              "TRANSFER_OUT",
+              "TRANSFER_IN"
             ]
           },
           "baseQty": {
@@ -13712,6 +16734,7 @@
         "required": [
           "id",
           "branchId",
+          "locationId",
           "itemId",
           "type",
           "baseQty",
@@ -13861,6 +16884,10 @@
       "CreateGoodsReceiptDto": {
         "type": "object",
         "properties": {
+          "locationId": {
+            "type": "string",
+            "description": "6C: target inventory location for the received stock (defaults to Main Storage)."
+          },
           "supplierId": {
             "type": "string"
           },
@@ -14045,6 +17072,76 @@
           "baseQty",
           "wentNegative",
           "uncosted"
+        ]
+      },
+      "SetCountedOnHandDto": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "Inventory item id (must belong to your restaurant + branch)."
+          },
+          "locationId": {
+            "type": "string",
+            "description": "Location id where the count was taken."
+          },
+          "unit": {
+            "type": "string",
+            "description": "Base unit (e.g. \"GRAM\") or a defined alternate name (e.g. \"kg\")."
+          },
+          "countedQty": {
+            "type": "number",
+            "description": "The ACTUAL counted quantity in the entered unit (>= 0).",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "description": "Optional reason / note for the correction."
+          }
+        },
+        "required": [
+          "itemId",
+          "locationId",
+          "unit",
+          "countedQty"
+        ]
+      },
+      "CountAdjustmentResultResponse": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string"
+          },
+          "locationId": {
+            "type": "string"
+          },
+          "beforeBaseQty": {
+            "type": "number"
+          },
+          "afterBaseQty": {
+            "type": "number"
+          },
+          "deltaBaseQty": {
+            "type": "number",
+            "description": "Signed correction (+ surplus / - shortfall / 0 no-op)."
+          },
+          "uncosted": {
+            "type": "boolean",
+            "description": "True if a positive correction could not be costed."
+          },
+          "lowStockRaised": {
+            "type": "boolean",
+            "description": "True if the correction crossed at/below the low-stock threshold."
+          }
+        },
+        "required": [
+          "itemId",
+          "locationId",
+          "beforeBaseQty",
+          "afterBaseQty",
+          "deltaBaseQty",
+          "uncosted",
+          "lowStockRaised"
         ]
       },
       "StockRowResponse": {
@@ -15031,6 +18128,483 @@
           "byReason",
           "overallLineCount",
           "overallTotalCost_amount"
+        ]
+      },
+      "InventoryLocationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "restaurantId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "systemType": {
+            "type": "string",
+            "enum": [
+              "KITCHEN",
+              "BAR",
+              "MAIN_STORAGE",
+              "CUSTOM"
+            ]
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "isSystem": {
+            "type": "boolean",
+            "description": "System locations (Main Storage / Kitchen / Bar) cannot be deleted."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "restaurantId",
+          "branchId",
+          "name",
+          "systemType",
+          "isDefault",
+          "isSystem",
+          "status"
+        ]
+      },
+      "CreateInventoryLocationDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Location (shelf) name, unique within the branch."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateInventoryLocationDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "OnHandRowResponse": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string"
+          },
+          "itemName": {
+            "type": "string"
+          },
+          "baseUnit": {
+            "type": "string"
+          },
+          "locationId": {
+            "type": "string"
+          },
+          "locationName": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "description": "On-hand in base units (may be negative)."
+          },
+          "lowStockThresholdBase": {
+            "type": "number",
+            "nullable": true
+          },
+          "lowStock": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "itemId",
+          "itemName",
+          "baseUnit",
+          "locationId",
+          "locationName",
+          "quantity",
+          "lowStockThresholdBase",
+          "lowStock"
+        ]
+      },
+      "BranchInventoryPolicyResponse": {
+        "type": "object",
+        "properties": {
+          "restaurantId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "negativeStockMode": {
+            "type": "string",
+            "enum": [
+              "ALLOW",
+              "WARN",
+              "BLOCK"
+            ]
+          }
+        },
+        "required": [
+          "restaurantId",
+          "branchId",
+          "negativeStockMode"
+        ]
+      },
+      "UpdateBranchPolicyDto": {
+        "type": "object",
+        "properties": {
+          "negativeStockMode": {
+            "type": "string",
+            "enum": [
+              "ALLOW",
+              "WARN",
+              "BLOCK"
+            ],
+            "description": "Negative-stock behavior for this branch."
+          }
+        },
+        "required": [
+          "negativeStockMode"
+        ]
+      },
+      "LowStockAlertResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "string"
+          },
+          "itemName": {
+            "type": "string"
+          },
+          "locationId": {
+            "type": "string"
+          },
+          "locationName": {
+            "type": "string"
+          },
+          "thresholdBase": {
+            "type": "number"
+          },
+          "onHandBase": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "RESOLVED"
+            ]
+          },
+          "raisedAt": {
+            "type": "string"
+          },
+          "resolvedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "itemId",
+          "itemName",
+          "locationId",
+          "locationName",
+          "thresholdBase",
+          "onHandBase",
+          "status",
+          "raisedAt",
+          "resolvedAt"
+        ]
+      },
+      "CreateTransferDto": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "description": "Inventory item id (must belong to your restaurant + branch)."
+          },
+          "fromLocationId": {
+            "type": "string",
+            "description": "Source location id (same branch)."
+          },
+          "toLocationId": {
+            "type": "string",
+            "description": "Destination location id (same branch, ≠ source)."
+          },
+          "unit": {
+            "type": "string",
+            "description": "Base unit (e.g. \"GRAM\") or a defined alternate name (e.g. \"kg\")."
+          },
+          "qty": {
+            "type": "number",
+            "description": "Quantity in the entered unit (positive integer).",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "itemId",
+          "fromLocationId",
+          "toLocationId",
+          "unit",
+          "qty"
+        ]
+      },
+      "TransferSliceResponse": {
+        "type": "object",
+        "properties": {
+          "sourceLayerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "destinationLayerId": {
+            "type": "string"
+          },
+          "baseQty": {
+            "type": "number"
+          },
+          "cost_amount": {
+            "type": "number"
+          },
+          "unitCostMicro": {
+            "type": "string",
+            "description": "Carrying unit cost (MICRO precision, BigInt as string)."
+          }
+        },
+        "required": [
+          "sourceLayerId",
+          "destinationLayerId",
+          "baseQty",
+          "cost_amount",
+          "unitCostMicro"
+        ]
+      },
+      "CreateTransferResponse": {
+        "type": "object",
+        "properties": {
+          "transferId": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "string"
+          },
+          "fromLocationId": {
+            "type": "string"
+          },
+          "toLocationId": {
+            "type": "string"
+          },
+          "baseQty": {
+            "type": "number"
+          },
+          "occurredAt": {
+            "type": "string"
+          },
+          "fromOnHandAfter": {
+            "type": "number"
+          },
+          "toOnHandAfter": {
+            "type": "number"
+          },
+          "slices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransferSliceResponse"
+            }
+          }
+        },
+        "required": [
+          "transferId",
+          "itemId",
+          "fromLocationId",
+          "toLocationId",
+          "baseQty",
+          "occurredAt",
+          "fromOnHandAfter",
+          "toOnHandAfter",
+          "slices"
+        ]
+      },
+      "TransferResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "restaurantId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "string"
+          },
+          "fromLocationId": {
+            "type": "string"
+          },
+          "toLocationId": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "performedByUserId": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string"
+          },
+          "slices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransferSliceResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "restaurantId",
+          "branchId",
+          "itemId",
+          "fromLocationId",
+          "toLocationId",
+          "quantity",
+          "performedByUserId",
+          "occurredAt",
+          "slices"
+        ]
+      },
+      "StockOnHandRowResponse": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string"
+          },
+          "locationId": {
+            "type": "string"
+          },
+          "locationName": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "string"
+          },
+          "itemName": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "baseUnit": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "description": "On-hand in base units (may be negative)."
+          },
+          "valuation_amount": {
+            "type": "number",
+            "description": "FIFO value (minor units); negative valued at last known unit cost."
+          },
+          "lowStockThresholdBase": {
+            "type": "number",
+            "nullable": true
+          },
+          "lowStock": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "branchId",
+          "locationId",
+          "locationName",
+          "itemId",
+          "itemName",
+          "sku",
+          "categoryId",
+          "baseUnit",
+          "quantity",
+          "valuation_amount",
+          "lowStockThresholdBase",
+          "lowStock"
+        ]
+      },
+      "ValuationBucketResponse": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string"
+          },
+          "locationId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null for a per-branch bucket."
+          },
+          "locationName": {
+            "type": "string",
+            "nullable": true
+          },
+          "valuation_amount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "branchId",
+          "locationId",
+          "locationName",
+          "valuation_amount"
+        ]
+      },
+      "ValuationSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "byLocation": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValuationBucketResponse"
+            }
+          },
+          "byBranch": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValuationBucketResponse"
+            }
+          },
+          "totalValuation_amount": {
+            "type": "number",
+            "description": "Aggregate value across every in-scope branch."
+          }
+        },
+        "required": [
+          "byLocation",
+          "byBranch",
+          "totalValuation_amount"
         ]
       },
       "ImportBodyDto": {
@@ -16302,7 +19876,9 @@
               "STOCK_MOVEMENT",
               "GOODS_RECEIPT",
               "WRITE_OFF",
-              "PROCESS_RUN"
+              "PROCESS_RUN",
+              "STAFF_PIN_AUTH",
+              "AUDIT_LOG"
             ]
           },
           "op": {

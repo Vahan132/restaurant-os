@@ -8,6 +8,8 @@
 import type { GoodsReceiptLineDto } from './goodsReceiptLineDto';
 
 export interface CreateGoodsReceiptDto {
+  /** 6C: target inventory location for the received stock (defaults to Main Storage). */
+  locationId?: string;
   supplierId?: string;
   reference?: string;
   /** When goods were received (defaults to now). */

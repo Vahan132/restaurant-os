@@ -18,7 +18,8 @@ export interface AddModifierOptionInput {
   groupId: string;
   name: string;
   priceDeltaAmount?: number;
-  displayOrder?: number;
+  sortOrder?: number;
+  isDefault?: boolean;
 }
 
 /** Add an option to a modifier group (verifies the group belongs to the restaurant). */
@@ -44,8 +45,9 @@ export class AddModifierOptionUseCase implements UseCase<AddModifierOptionInput,
       branchId: input.branchId,
       modifierGroupId: input.groupId,
       name: input.name,
-      priceDeltaAmount: input.priceDeltaAmount, // aggregate rejects negatives
-      displayOrder: input.displayOrder,
+      priceDeltaAmount: input.priceDeltaAmount, // may be 0 or negative (Prompt 1A)
+      sortOrder: input.sortOrder,
+      isDefault: input.isDefault,
     });
     await this.options.create(option);
     return option;

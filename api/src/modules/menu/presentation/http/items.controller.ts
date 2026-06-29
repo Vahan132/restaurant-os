@@ -15,14 +15,21 @@ import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
 import { CurrentUser } from '../../../../shared/tenancy/current-user.decorator';
 import { CurrentUserContext, TenantContext } from '../../../../shared/tenancy/tenant-context';
-import { AddModifierGroupUseCase } from '../../application/commands/add-modifier-group.usecase';
+import { AttachModifierGroupToDishUseCase } from '../../application/commands/add-modifier-group.usecase';
 import { ChangeItemPriceUseCase } from '../../application/commands/change-item-price.usecase';
 import { CreateMenuItemUseCase } from '../../application/commands/create-menu-item.usecase';
 import { DeleteMenuItemUseCase } from '../../application/commands/delete-menu-item.usecase';
+import { DetachModifierGroupFromDishUseCase } from '../../application/commands/detach-modifier-group.usecase';
+import { ReorderDishModifierGroupsUseCase } from '../../application/commands/reorder-dish-modifier-groups.usecase';
+import { SetDishModifierOverridesUseCase } from '../../application/commands/set-dish-modifier-overrides.usecase';
 import { SetItemAvailabilityUseCase } from '../../application/commands/set-item-availability.usecase';
 import { SetItemStatusUseCase } from '../../application/commands/set-item-status.usecase';
 import { UpdateMenuItemUseCase } from '../../application/commands/update-menu-item.usecase';
-import { CreateModifierGroupDto } from '../../application/dto/modifier.dto';
+import {
+  AttachModifierGroupDto,
+  ReorderDishModifierGroupsDto,
+  SetDishModifierOverridesDto,
+} from '../../application/dto/dish-modifier.dto';
 import {
   ChangeItemPriceDto,
   CreateMenuItemDto,
@@ -32,9 +39,9 @@ import {
   UpdateMenuItemDto,
 } from '../../application/dto/item.dto';
 import {
+  DishModifierGroupResponse,
   MenuItemDetailResponse,
   MenuItemResponse,
-  ModifierGroupResponse,
 } from '../../application/dto/responses';
 import { GetMenuItemUseCase } from '../../application/queries/get-menu-item.usecase';
 import { ListMenuItemsUseCase } from '../../application/queries/list-menu-items.usecase';
@@ -56,7 +63,10 @@ export class ItemsController {
     private readonly setStatus: SetItemStatusUseCase,
     private readonly setAvailability: SetItemAvailabilityUseCase,
     private readonly deleteItem: DeleteMenuItemUseCase,
-    private readonly addGroup: AddModifierGroupUseCase,
+    private readonly attachGroup: AttachModifierGroupToDishUseCase,
+    private readonly detachGroup: DetachModifierGroupFromDishUseCase,
+    private readonly setOverrides: SetDishModifierOverridesUseCase,
+    private readonly reorderGroups: ReorderDishModifierGroupsUseCase,
   ) {}
 
   @Get()
@@ -232,28 +242,97 @@ export class ItemsController {
     return { success: true };
   }
 
+  // ── Dish ↔ reusable modifier-group attachments (Prompt 1A) ─────────────────
+
   @Post(':itemId/modifier-groups')
   @RequirePermissions(MENU_MANAGE)
   @ApiForbiddenResponse({ description: 'Missing MENU_MANAGE permission.' })
-  @ApiOperation({ summary: 'Add a modifier group to an item.' })
-  @ApiCreatedResponse({ type: ModifierGroupResponse })
-  async addModifierGroup(
+  @ApiOperation({ summary: 'Attach a reusable modifier group to a dish.' })
+  @ApiCreatedResponse({ type: DishModifierGroupResponse })
+  async attachModifierGroup(
     @CurrentTenant() tenant: TenantContext,
     @ActiveBranchId() branchId: string,
     @Param('itemId') itemId: string,
-    @Body() dto: CreateModifierGroupDto,
-  ): Promise<ModifierGroupResponse> {
-    const group = await this.addGroup.execute({
+    @Body() dto: AttachModifierGroupDto,
+  ): Promise<DishModifierGroupResponse> {
+    const attachment = await this.attachGroup.execute({
       restaurantId: tenant.restaurantId,
       branchId,
       itemId,
-      name: dto.name,
-      selectionType: dto.selectionType,
-      required: dto.required,
-      minSelect: dto.minSelect ?? null,
-      maxSelect: dto.maxSelect ?? null,
-      displayOrder: dto.displayOrder,
+      groupId: dto.groupId,
+      requiredOverride: dto.requiredOverride,
+      minOverride: dto.minOverride,
+      maxOverride: dto.maxOverride,
+      sortOrder: dto.sortOrder,
     });
-    return ModifierGroupResponse.from(group);
+    return DishModifierGroupResponse.from(attachment);
+  }
+
+  // NOTE: declared BEFORE ':itemId/modifier-groups/:groupId' so "reorder" is
+  // matched ahead of the :groupId param.
+  @Patch(':itemId/modifier-groups/reorder')
+  @RequirePermissions(MENU_MANAGE)
+  @ApiForbiddenResponse({ description: 'Missing MENU_MANAGE permission.' })
+  @ApiOperation({ summary: "Reorder a dish's attached modifier groups." })
+  @ApiOkResponse({ type: [DishModifierGroupResponse] })
+  async reorderModifierGroups(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: ReorderDishModifierGroupsDto,
+  ): Promise<DishModifierGroupResponse[]> {
+    const attachments = await this.reorderGroups.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      itemId,
+      orderedGroupIds: dto.groupIds,
+    });
+    return attachments.map(DishModifierGroupResponse.from);
+  }
+
+  @Patch(':itemId/modifier-groups/:groupId')
+  @RequirePermissions(MENU_MANAGE)
+  @ApiForbiddenResponse({ description: 'Missing MENU_MANAGE permission.' })
+  @ApiOperation({ summary: "Set or clear a dish attachment's per-group overrides." })
+  @ApiOkResponse({ type: DishModifierGroupResponse })
+  async setModifierGroupOverrides(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+    @Param('itemId') itemId: string,
+    @Param('groupId') groupId: string,
+    @Body() dto: SetDishModifierOverridesDto,
+  ): Promise<DishModifierGroupResponse> {
+    const attachment = await this.setOverrides.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      itemId,
+      groupId,
+      requiredOverride: dto.requiredOverride,
+      minOverride: dto.minOverride,
+      maxOverride: dto.maxOverride,
+      sortOrder: dto.sortOrder,
+    });
+    return DishModifierGroupResponse.from(attachment);
+  }
+
+  @Delete(':itemId/modifier-groups/:groupId')
+  @RequirePermissions(MENU_MANAGE)
+  @HttpCode(200)
+  @ApiForbiddenResponse({ description: 'Missing MENU_MANAGE permission.' })
+  @ApiOperation({ summary: 'Detach a modifier group from a dish.' })
+  @ApiOkResponse({ schema: { example: { success: true } } })
+  async detachModifierGroup(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+    @Param('itemId') itemId: string,
+    @Param('groupId') groupId: string,
+  ): Promise<{ success: true }> {
+    await this.detachGroup.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      itemId,
+      groupId,
+    });
+    return { success: true };
   }
 }

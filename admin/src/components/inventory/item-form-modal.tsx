@@ -60,7 +60,7 @@ export function ItemFormModal({
     item?.lowStockThresholdBase != null ? String(item.lowStockThresholdBase) : '',
   );
   const [alts, setAlts] = useState<AltRow[]>(
-    item?.alternateUnits?.map((u) => ({ name: u.name, factor: String(u.conversionFactor) })) ?? [],
+    item?.alternateUnits?.map((u) => ({ name: u.name, factor: String(u.factor) })) ?? [],
   );
   const [errors, setErrors] = useState<{ name?: string; alts?: string }>({});
 
@@ -75,20 +75,20 @@ export function ItemFormModal({
 
   const validate = (): {
     ok: boolean;
-    alternateUnits: { name: string; conversionFactor: number }[];
+    alternateUnits: { name: string; factor: number }[];
   } => {
     const next: typeof errors = {};
     if (!name.trim()) next.name = t('validName');
 
     const filled = alts.filter((r) => r.name.trim() !== '' || r.factor.trim() !== '');
-    const parsed: { name: string; conversionFactor: number }[] = [];
+    const parsed: { name: string; factor: number }[] = [];
     for (const row of filled) {
       const factor = Number(row.factor);
       if (!row.name.trim() || !Number.isInteger(factor) || factor < 1) {
         next.alts = t('validFactor');
         break;
       }
-      parsed.push({ name: row.name.trim(), conversionFactor: factor });
+      parsed.push({ name: row.name.trim(), factor });
     }
     setErrors(next);
     return { ok: Object.keys(next).length === 0, alternateUnits: parsed };
@@ -107,7 +107,6 @@ export function ItemFormModal({
           sku: sku.trim() || undefined,
           categoryId: categoryId || undefined,
           kind: kind as UpdateInventoryItemDto['kind'],
-          baseUnit: baseUnit as UpdateInventoryItemDto['baseUnit'],
           trackExpiry,
           lowStockThresholdBase: thresholdNum,
           alternateUnits,

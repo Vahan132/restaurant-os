@@ -73,7 +73,7 @@ export function ItemEditorDrawer({
 
   // Recipe estimated cost drives the margin helper (read-only to everyone).
   const { recipe } = useRecipeForMenuItem(workingId);
-  const estimatedCost = recipe?.estimatedUnitCost ?? null;
+  const estimatedCost = recipe?.estimatedUnitCost_amount ?? null;
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -130,19 +130,27 @@ export function ItemEditorDrawer({
 
     try {
       if (!workingId) {
-        // CREATE: general fields + price together, then status/availability if
-        // the user changed them away from the server defaults.
+        // CREATE: general fields first, then price/status/availability via their
+        // dedicated endpoints (the create DTO no longer carries those).
         const created = (await create.mutateAsync({
           data: {
             name: name.trim(),
             categoryId: formCategoryId,
-            priceAmount: canSetPrice ? (priceMinor ?? 0) : 0,
             description: description.trim() || undefined,
             imageUrl: imageUrl.trim() || undefined,
             preparationStation: station as CreateMenuItemDtoPreparationStation,
             prepTimeMinutes,
           },
         })) as MenuItemResponse;
+
+        // Price is set via its dedicated (audited) endpoint after create, since
+        // CreateMenuItemDto no longer accepts a price.
+        if (canSetPrice && (priceMinor ?? 0) > 0) {
+          await priceMut.mutateAsync({
+            id: created.id,
+            data: { priceAmount: priceMinor ?? 0 },
+          });
+        }
 
         if (status !== MenuItemResponseStatus.ACTIVE) {
           await statusMut.mutateAsync({

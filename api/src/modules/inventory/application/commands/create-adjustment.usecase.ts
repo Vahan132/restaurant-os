@@ -17,6 +17,8 @@ import {
   InventoryItemRepository,
 } from '../../domain/repositories/inventory-item.repository';
 import { costFromUnitCostMicro } from '../../domain/value-objects/money';
+import { InventoryLocationProvisioner } from '../services/inventory-location-provisioner.service';
+import { NegativeStockPolicyService } from '../services/negative-stock-policy.service';
 import { InventoryItemNotFound, NoRestaurantInScope } from '../application.errors';
 
 export interface CreateAdjustmentInput {
@@ -53,6 +55,8 @@ export class CreateAdjustmentUseCase implements UseCase<CreateAdjustmentInput, A
     @Inject(INVENTORY_LEDGER_GATEWAY) private readonly ledger: InventoryLedgerGateway,
     @Inject(STOCK_CONSUMPTION_PORT) private readonly consumption: StockConsumptionPort,
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
+    private readonly locations: InventoryLocationProvisioner,
+    private readonly negativeStock: NegativeStockPolicyService,
     private readonly events: DomainEventPublisher,
   ) {}
 
@@ -67,6 +71,21 @@ export class CreateAdjustmentUseCase implements UseCase<CreateAdjustmentInput, A
     const baseQty = item.toBaseQty(input.unit, input.qty); // throws UnknownUnitError
 
     if (input.direction === AdjustmentDirection.OUT) {
+      // 6C: a manual OUT depletes the item's consumption location. §5: BLOCK
+      // rejects a manual depletion that would drive THAT location below zero
+      // (ALLOW/WARN fall through; consume() still never throws).
+      const consumptionLocationId = await this.locations.resolveConsumptionLocationId(
+        input.restaurantId,
+        item.branchId,
+        item.consumptionLocationId,
+      );
+      await this.negativeStock.assertLocationDepletionAllowed(
+        input.restaurantId,
+        item.branchId,
+        input.itemId,
+        consumptionLocationId,
+        baseQty,
+      );
       const result = await this.consumption.consume({
         restaurantId: input.restaurantId,
         itemId: input.itemId,
@@ -76,6 +95,7 @@ export class CreateAdjustmentUseCase implements UseCase<CreateAdjustmentInput, A
         refType: null,
         refId: null,
         createdByUserId: input.actorUserId,
+        locationId: consumptionLocationId,
       });
       return {
         itemId: item.id,
@@ -95,12 +115,18 @@ export class CreateAdjustmentUseCase implements UseCase<CreateAdjustmentInput, A
 
     const occurredAt = new Date();
     const layerId = this.ids.generate();
+    // 6A: manual IN lands on the branch default (Main Storage) location.
+    const locationId = await this.locations.resolveDefaultLocationId(
+      input.restaurantId,
+      item.branchId,
+    );
     await this.ledger.recordInboundAdjustment({
       layer: {
         id: layerId,
         restaurantId: input.restaurantId,
         // §4: stock follows the item — the layer lives in the item's branch.
         branchId: item.branchId,
+        locationId,
         itemId: input.itemId,
         sourceReceiptLineId: null,
         baseQtyReceived: baseQty,
@@ -114,6 +140,7 @@ export class CreateAdjustmentUseCase implements UseCase<CreateAdjustmentInput, A
         restaurantId: input.restaurantId,
         // §4: stock follows the item — the movement lives in the item's branch.
         branchId: item.branchId,
+        locationId,
         itemId: input.itemId,
         type: StockMovementType.ADJUSTMENT_IN,
         baseQty,

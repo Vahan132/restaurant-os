@@ -52,6 +52,7 @@ export class GoodsReceiptsController {
     const receipt = await this.createReceipt.execute({
       restaurantId: tenant.restaurantId,
       branchId,
+      locationId: dto.locationId ?? null,
       supplierId: dto.supplierId ?? null,
       reference: dto.reference ?? null,
       receivedAt: dto.receivedAt ? new Date(dto.receivedAt) : null,

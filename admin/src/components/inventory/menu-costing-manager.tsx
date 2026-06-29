@@ -53,8 +53,10 @@ export function MenuCostingManager() {
   // Recipe estimate map (menuItemId -> estimatedUnitCost).
   const { recipes } = useRecipesList({ limit: 100 });
   const costByItem = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const r of recipes) m.set(r.menuItemId, r.estimatedUnitCost);
+    const m = new Map<string, number | null>();
+    // RecipeListItemResponse no longer carries the cost estimate; track recipe
+    // existence here (cost/margin require the full recipe and are shown there).
+    for (const r of recipes) m.set(r.menuItemId, null);
     return m;
   }, [recipes]);
 
@@ -62,7 +64,7 @@ export function MenuCostingManager() {
     () =>
       items.map((item) => {
         const hasRec = costByItem.has(item.id);
-        const cost = hasRec ? (costByItem.get(item.id) as number) : null;
+        const cost = hasRec ? (costByItem.get(item.id) ?? null) : null;
         const price = item.priceAmount;
         const hasPrice = price > 0;
         const margin = cost != null && hasPrice ? price - cost : null;

@@ -1,6 +1,6 @@
 import { AggregateRoot } from '../../../../shared/domain/aggregate-root';
 import { MenuStatus } from '../enums';
-import { NegativePriceError } from '../menu.errors';
+import { InvalidPriceDeltaError } from '../menu.errors';
 
 export interface ModifierOptionProps {
   restaurantId: string;
@@ -8,7 +8,8 @@ export interface ModifierOptionProps {
   modifierGroupId: string;
   name: string;
   priceDeltaAmount: number;
-  displayOrder: number;
+  sortOrder: number;
+  isDefault: boolean;
   status: MenuStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -22,7 +23,8 @@ export interface CreateModifierOptionInput {
   modifierGroupId: string;
   name: string;
   priceDeltaAmount?: number;
-  displayOrder?: number;
+  sortOrder?: number;
+  isDefault?: boolean;
 }
 
 /** ModifierOption aggregate (child of a ModifierGroup; tenant-scoped). */
@@ -34,9 +36,11 @@ export class ModifierOption extends AggregateRoot<string> {
     this.props = props;
   }
 
+  // Prompt 1A: a price delta may be 0 or NEGATIVE (a discount). Only non-integers
+  // are rejected — money is stored as integer minor units.
   private static assertDelta(amount: number): void {
-    if (!Number.isInteger(amount) || amount < 0) {
-      throw new NegativePriceError('priceDeltaAmount');
+    if (!Number.isInteger(amount)) {
+      throw new InvalidPriceDeltaError('priceDeltaAmount');
     }
   }
 
@@ -50,7 +54,8 @@ export class ModifierOption extends AggregateRoot<string> {
       modifierGroupId: input.modifierGroupId,
       name: input.name,
       priceDeltaAmount: delta,
-      displayOrder: input.displayOrder ?? 0,
+      sortOrder: input.sortOrder ?? 0,
+      isDefault: input.isDefault ?? false,
       status: MenuStatus.ACTIVE,
       createdAt: now,
       updatedAt: now,
@@ -77,8 +82,11 @@ export class ModifierOption extends AggregateRoot<string> {
   get priceDeltaAmount(): number {
     return this.props.priceDeltaAmount;
   }
-  get displayOrder(): number {
-    return this.props.displayOrder;
+  get sortOrder(): number {
+    return this.props.sortOrder;
+  }
+  get isDefault(): boolean {
+    return this.props.isDefault;
   }
   get status(): MenuStatus {
     return this.props.status;
@@ -100,7 +108,8 @@ export class ModifierOption extends AggregateRoot<string> {
   update(input: {
     name?: string;
     priceDeltaAmount?: number;
-    displayOrder?: number;
+    sortOrder?: number;
+    isDefault?: boolean;
     status?: MenuStatus;
   }): void {
     if (input.priceDeltaAmount !== undefined) {
@@ -108,7 +117,8 @@ export class ModifierOption extends AggregateRoot<string> {
       this.props.priceDeltaAmount = input.priceDeltaAmount;
     }
     if (input.name !== undefined) this.props.name = input.name;
-    if (input.displayOrder !== undefined) this.props.displayOrder = input.displayOrder;
+    if (input.sortOrder !== undefined) this.props.sortOrder = input.sortOrder;
+    if (input.isDefault !== undefined) this.props.isDefault = input.isDefault;
     if (input.status !== undefined) this.props.status = input.status;
     this.touch();
   }

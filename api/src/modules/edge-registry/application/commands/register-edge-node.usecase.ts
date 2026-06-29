@@ -30,9 +30,10 @@ export interface RegisterEdgeNodeResult {
  * install on the hub.
  */
 @Injectable()
-export class RegisterEdgeNodeUseCase
-  implements UseCase<RegisterEdgeNodeInput, RegisterEdgeNodeResult>
-{
+export class RegisterEdgeNodeUseCase implements UseCase<
+  RegisterEdgeNodeInput,
+  RegisterEdgeNodeResult
+> {
   constructor(
     @Inject(EDGE_NODE_REPOSITORY) private readonly nodes: EdgeNodeRepository,
     @Inject(BRANCH_LOOKUP) private readonly branches: BranchLookup,

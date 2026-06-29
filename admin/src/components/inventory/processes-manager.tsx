@@ -133,10 +133,10 @@ export function ProcessesManager() {
               {processes.map((process) => (
                 <tr key={process.id} className="border-b border-gray-100">
                   <td className="px-4 py-2 font-medium text-gray-800">{process.name}</td>
-                  <td className="px-4 py-2 text-gray-600">{process.inputCount}</td>
-                  <td className="px-4 py-2 text-gray-600">{process.outputCount}</td>
+                  <td className="px-4 py-2 text-gray-600">{process.inputs.length}</td>
+                  <td className="px-4 py-2 text-gray-600">{process.outputs.length}</td>
                   <td className="px-4 py-2 text-gray-700">
-                    {formatMoney(process.processingCost, currency)}
+                    {formatMoney(process.processingCost_amount, currency)}
                   </td>
                   <td className="px-4 py-2">
                     <Badge tone={process.status === 'ACTIVE' ? 'green' : 'gray'}>

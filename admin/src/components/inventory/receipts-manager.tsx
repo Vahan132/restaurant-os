@@ -54,7 +54,11 @@ export function ReceiptsManager() {
     usePaginatedReceipts(params);
   const hasNext = pagination?.hasNext ?? receipts.length === PAGE_SIZE;
 
-  const lineCountOf = (r: GoodsReceiptResponse) => r.lineCount ?? r.lines?.length ?? 0;
+  const lineCountOf = (r: GoodsReceiptResponse) => r.lines?.length ?? 0;
+  const totalOf = (r: GoodsReceiptResponse) =>
+    r.lines?.reduce((sum, l) => sum + l.lineTotalCost_amount, 0) ?? 0;
+  const supplierName = (id: string | null) =>
+    id ? (suppliers.find((s) => s.id === id)?.name ?? '—') : '—';
 
   return (
     <div className="space-y-4">
@@ -130,11 +134,11 @@ export function ReceiptsManager() {
                   onClick={() => setDetailId(receipt.id)}
                 >
                   <td className="px-4 py-2 text-gray-700">{formatDate(receipt.receivedAt)}</td>
-                  <td className="px-4 py-2 text-gray-700">{receipt.supplierName ?? '—'}</td>
+                  <td className="px-4 py-2 text-gray-700">{supplierName(receipt.supplierId)}</td>
                   <td className="px-4 py-2 text-gray-600">{receipt.reference ?? '—'}</td>
                   <td className="px-4 py-2 text-gray-600">{lineCountOf(receipt)}</td>
                   <td className="px-4 py-2 text-gray-700">
-                    {formatMoney(receipt.totalCost, currency)}
+                    {formatMoney(totalOf(receipt), currency)}
                   </td>
                 </tr>
               ))}

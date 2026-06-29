@@ -5,10 +5,10 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { AttachedModifierGroupResponse } from './attachedModifierGroupResponse';
 import type { MenuItemDetailResponseAvailability } from './menuItemDetailResponseAvailability';
 import type { MenuItemDetailResponsePreparationStation } from './menuItemDetailResponsePreparationStation';
 import type { MenuItemDetailResponseStatus } from './menuItemDetailResponseStatus';
-import type { ModifierGroupWithOptionsResponse } from './modifierGroupWithOptionsResponse';
 
 export interface MenuItemDetailResponse {
   id: string;
@@ -27,5 +27,5 @@ export interface MenuItemDetailResponse {
   prepTimeMinutes: number | null;
   status: MenuItemDetailResponseStatus;
   availability: MenuItemDetailResponseAvailability;
-  modifierGroups: ModifierGroupWithOptionsResponse[];
+  modifierGroups: AttachedModifierGroupResponse[];
 }

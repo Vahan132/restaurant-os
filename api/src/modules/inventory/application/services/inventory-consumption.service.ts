@@ -16,6 +16,7 @@ import {
   INVENTORY_ITEM_REPOSITORY,
   InventoryItemRepository,
 } from '../../domain/repositories/inventory-item.repository';
+import { InventoryLocationProvisioner } from './inventory-location-provisioner.service';
 import { InventoryItemNotFound } from '../application.errors';
 
 /**
@@ -32,6 +33,7 @@ export class InventoryConsumptionService implements StockConsumptionPort {
   constructor(
     @Inject(INVENTORY_ITEM_REPOSITORY) private readonly items: InventoryItemRepository,
     @Inject(INVENTORY_LEDGER_GATEWAY) private readonly ledger: InventoryLedgerGateway,
+    private readonly locations: InventoryLocationProvisioner,
     private readonly events: DomainEventPublisher,
   ) {}
 
@@ -42,6 +44,17 @@ export class InventoryConsumptionService implements StockConsumptionPort {
     if (!item) {
       throw InventoryItemNotFound();
     }
+
+    // 6C: deplete from the item's resolved consumption location (per-item default
+    // for the branch) unless the caller pinned a specific location. NEVER blocks a
+    // sale — the gateway draws this location's FIFO and goes negative on shortfall.
+    const locationId =
+      command.locationId ??
+      (await this.locations.resolveConsumptionLocationId(
+        command.restaurantId,
+        item.branchId,
+        item.consumptionLocationId,
+      ));
 
     const result = await this.ledger.consume({
       restaurantId: command.restaurantId,
@@ -56,6 +69,7 @@ export class InventoryConsumptionService implements StockConsumptionPort {
       occurredAt: command.occurredAt ?? new Date(),
       trackExpiry: item.trackExpiry,
       lastUnitCostMicro: item.lastUnitCostMicro,
+      locationId,
     });
 
     await this.events.publish(

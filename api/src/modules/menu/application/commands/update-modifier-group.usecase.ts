@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
 import { ModifierGroup } from '../../domain/entities/modifier-group';
-import { ModifierSelectionType } from '../../domain/enums';
+import { MenuStatus, ModifierSelectionType } from '../../domain/enums';
 import {
   MODIFIER_GROUP_REPOSITORY,
   ModifierGroupRepository,
@@ -21,7 +21,7 @@ export interface UpdateModifierGroupInput {
   required?: boolean;
   minSelect?: number | null;
   maxSelect?: number | null;
-  displayOrder?: number;
+  status?: MenuStatus;
 }
 
 /** Update a modifier group; validates maxSelect against the current option count. */
@@ -49,7 +49,7 @@ export class UpdateModifierGroupUseCase implements UseCase<
       required: input.required,
       minSelect: input.minSelect,
       maxSelect: input.maxSelect,
-      displayOrder: input.displayOrder,
+      status: input.status,
     });
     const optionCount = await this.options.countByGroup(
       input.restaurantId,

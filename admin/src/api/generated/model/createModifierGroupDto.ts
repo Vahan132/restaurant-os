@@ -15,6 +15,4 @@ export interface CreateModifierGroupDto {
   minSelect?: number;
   /** @minimum 1 */
   maxSelect?: number;
-  /** @minimum 0 */
-  displayOrder?: number;
 }

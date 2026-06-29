@@ -25,7 +25,7 @@ export function WasteSummary() {
 
   const params = useMemo(() => ({ from: from || undefined, to: to || undefined }), [from, to]);
   const { data: summary, isLoading, isError } = useWasteSummary(params);
-  const rows = summary?.rows ?? [];
+  const rows = summary?.byReason ?? [];
 
   return (
     <div className="space-y-4">
@@ -77,7 +77,7 @@ export function WasteSummary() {
                     <ReasonBadge reason={r.reason} />
                   </td>
                   <td className="px-4 py-2 text-gray-600">{r.lineCount}</td>
-                  <td className="px-4 py-2 text-gray-700">{formatMoney(r.totalCost, currency)}</td>
+                  <td className="px-4 py-2 text-gray-700">{formatMoney(r.totalCost_amount, currency)}</td>
                 </tr>
               ))}
             </tbody>
@@ -87,7 +87,7 @@ export function WasteSummary() {
                   {t('sumOverall')}
                 </td>
                 <td className="px-4 py-2 text-gray-900">
-                  {formatMoney(summary?.totalCost ?? 0, currency)}
+                  {formatMoney(summary?.overallTotalCost_amount ?? 0, currency)}
                 </td>
               </tr>
             </tfoot>

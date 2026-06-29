@@ -111,6 +111,26 @@ export class PrismaOutboxRecorder implements OutboxRecorder {
         const row = await tx.processRun.findUnique({ where: { id } });
         return row ? toJson(row) : null;
       }
+      case 'STAFF_PIN_AUTH': {
+        // 3B: COUNTERS ONLY — never ship the pinHash back up (the cloud has it).
+        const row = await tx.staffPin.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            userId: true,
+            restaurantId: true,
+            failedAttempts: true,
+            lockedUntil: true,
+          },
+        });
+        return row ? toJson(row) : null;
+      }
+      case 'AUDIT_LOG': {
+        // 4A: audit rows are immutable — capture the whole row for an idempotent
+        // upsert-by-id on the cloud.
+        const row = await tx.auditLog.findUnique({ where: { id } });
+        return row ? toJson(row) : null;
+      }
       default: {
         // Exhaustiveness guard — a new aggregate type must add a loader above.
         const _exhaustive: never = type;

@@ -61,8 +61,23 @@ function reconcileActiveBranch(branches: MeBranch[], defaultBranchId: string | n
   branchStore.setActiveBranch(fallback);
 }
 
-export async function login(email: string, password: string): Promise<void> {
-  const { data: tokens } = await api.post<AuthTokens>('/auth/login', { email, password });
+/**
+ * Email/password login. `deviceSecret` (3A) anchors the ADMIN surface: a
+ * non-Owner admin/manager must present this machine's enrolled ADMIN device
+ * secret when the restaurant requires anchored admin login. The Owner is always
+ * exempt (break-glass), and when the restaurant allows unanchored admin login
+ * the secret is ignored — so it is sent opportunistically when present.
+ */
+export async function login(
+  email: string,
+  password: string,
+  deviceSecret?: string,
+): Promise<void> {
+  const { data: tokens } = await api.post<AuthTokens>('/auth/login', {
+    email,
+    password,
+    ...(deviceSecret ? { deviceSecret } : {}),
+  });
   useAuthStore.getState().setAuth({
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,

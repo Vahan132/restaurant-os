@@ -585,34 +585,43 @@ export class CatalogImportService {
   ): Promise<void> {
     // Existing groups/options for this item (skip entirely in dry-run for a
     // would-create item whose id is a sentinel).
-    const existingGroups =
+    // Prompt 1A: groups are reusable + attached via dish_modifier_groups. Import
+    // keeps the bundle's per-dish model: each bundle group maps to a group ATTACHED
+    // to this dish (matched by name among the dish's current attachments). The group
+    // `displayOrder` from the bundle drives the attachment's sortOrder. NOTE: a group
+    // absent from the bundle is detached AND soft-deleted (OVERWRITE semantics,
+    // unchanged) — safe because import-created groups are item-private.
+    const existingLinks =
       dryRun || menuItemId.startsWith(DRY)
         ? []
-        : await db.modifierGroup.findMany({
-            where: { menuItemId, deletedAt: null },
-            include: { options: { where: { deletedAt: null } } },
+        : await db.dishModifierGroup.findMany({
+            where: { menuItemId, modifierGroup: { deletedAt: null } },
+            include: { modifierGroup: { include: { options: { where: { deletedAt: null } } } } },
           });
 
-    const existingGroupByName = new Map(existingGroups.map((g) => [g.name, g]));
+    const existingLinkByGroupName = new Map(existingLinks.map((l) => [l.modifierGroup.name, l]));
     const now = new Date();
 
     const keepGroupIds = new Set<string>();
     for (const g of groups) {
-      const existing = existingGroupByName.get(g.name);
+      const existingLink = existingLinkByGroupName.get(g.name);
       let groupId: string;
-      if (existing) {
-        groupId = existing.id;
+      if (existingLink) {
+        groupId = existingLink.modifierGroup.id;
         keepGroupIds.add(groupId);
         if (!dryRun) {
           await db.modifierGroup.update({
-            where: { id: existing.id },
+            where: { id: groupId },
             data: {
               selectionType: g.selectionType,
               required: g.required,
               minSelect: g.minSelect,
               maxSelect: g.maxSelect,
-              displayOrder: g.displayOrder,
             },
+          });
+          await db.dishModifierGroup.update({
+            where: { id: existingLink.id },
+            data: { sortOrder: g.displayOrder },
           });
         }
       } else {
@@ -623,20 +632,28 @@ export class CatalogImportService {
               id: groupId,
               restaurantId,
               branchId,
-              menuItemId,
               name: g.name,
               selectionType: g.selectionType,
               required: g.required,
               minSelect: g.minSelect,
               maxSelect: g.maxSelect,
-              displayOrder: g.displayOrder,
+            },
+          });
+          await db.dishModifierGroup.create({
+            data: {
+              id: newId(),
+              restaurantId,
+              branchId,
+              menuItemId,
+              modifierGroupId: groupId,
+              sortOrder: g.displayOrder,
             },
           });
         }
       }
 
       // Reconcile options within the group.
-      const existingOptions = existing ? existing.options : [];
+      const existingOptions = existingLink ? existingLink.modifierGroup.options : [];
       const existingOptionByName = new Map(existingOptions.map((o) => [o.name, o]));
       const keepOptionIds = new Set<string>();
       for (const o of g.options) {
@@ -646,7 +663,7 @@ export class CatalogImportService {
           if (!dryRun) {
             await db.modifierOption.update({
               where: { id: exOpt.id },
-              data: { priceDeltaAmount: o.priceDeltaAmount, displayOrder: o.displayOrder },
+              data: { priceDeltaAmount: o.priceDeltaAmount, sortOrder: o.displayOrder },
             });
           }
         } else if (!dryRun) {
@@ -658,7 +675,7 @@ export class CatalogImportService {
               modifierGroupId: groupId,
               name: o.name,
               priceDeltaAmount: o.priceDeltaAmount,
-              displayOrder: o.displayOrder,
+              sortOrder: o.displayOrder,
             },
           });
         }
@@ -675,10 +692,14 @@ export class CatalogImportService {
       }
     }
 
-    // Soft-delete groups present in the target but absent from the bundle.
-    if (!dryRun && existingGroups.length) {
-      const removeGroupIds = existingGroups.filter((g) => !keepGroupIds.has(g.id)).map((g) => g.id);
+    // Detach + soft-delete groups present on the dish but absent from the bundle.
+    if (!dryRun && existingLinks.length) {
+      const removeLinks = existingLinks.filter((l) => !keepGroupIds.has(l.modifierGroup.id));
+      const removeGroupIds = removeLinks.map((l) => l.modifierGroup.id);
       if (removeGroupIds.length) {
+        await db.dishModifierGroup.deleteMany({
+          where: { id: { in: removeLinks.map((l) => l.id) } },
+        });
         await db.modifierGroup.updateMany({
           where: { id: { in: removeGroupIds } },
           data: { deletedAt: now },
@@ -697,18 +718,22 @@ export class CatalogImportService {
     branchId: string,
     menuItemId: string,
   ): Promise<Map<string, string>> {
-    const groups = await db.modifierGroup.findMany({
-      where: { menuItemId, restaurantId, branchId, deletedAt: null },
-      orderBy: { displayOrder: 'asc' },
+    // Prompt 1A: read the dish's attached groups via the join, in attachment order.
+    const links = await db.dishModifierGroup.findMany({
+      where: { menuItemId, restaurantId, branchId, modifierGroup: { deletedAt: null } },
+      orderBy: { sortOrder: 'asc' },
       include: {
-        options: { where: { deletedAt: null }, orderBy: { displayOrder: 'asc' } },
+        modifierGroup: {
+          include: { options: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } } },
+        },
       },
     });
     const map = new Map<string, string>();
     // Mirror the export's key derivation: slug(name) with -2/-3 collision
     // suffixes, applied in the same ASC order export emits modifier rows.
     const usedGroupKeys = new Set<string>();
-    for (const g of groups) {
+    for (const link of links) {
+      const g = link.modifierGroup;
       const gKey = uniqueKey(slugLocal(g.name), usedGroupKeys);
       usedGroupKeys.add(gKey);
       const usedOptionKeys = new Set<string>();

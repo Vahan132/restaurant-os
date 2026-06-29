@@ -5,9 +5,17 @@ export const STOCK_MOVEMENT_REPOSITORY = Symbol('StockMovementRepository');
 
 export interface MovementListFilter {
   restaurantId: string;
-  branchId: string;
+  /** Single-branch filter (existing per-item history). */
+  branchId?: string;
+  /** 6D: multi-branch scope for the movement-history report (AND with branchId). */
+  branchIds?: string[];
   itemId?: string;
+  /** 6D: filter to one location. */
+  locationId?: string;
   types?: StockMovementType[];
+  /** 6D: inclusive occurredAt lower/upper bounds. */
+  from?: Date;
+  to?: Date;
   skip: number;
   take: number;
 }

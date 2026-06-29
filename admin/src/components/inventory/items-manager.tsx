@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { inputClass } from '@/components/ui/form';
 import { useConfirm } from '@/components/ui/use-confirm';
+import { ConsumptionLocationModal } from '@/components/inventory/consumption-location-modal';
 import { ItemFormModal } from '@/components/inventory/item-form-modal';
 import { KindBadge, Pagination } from '@/components/inventory/shared';
 import { getErrorMessage } from '@/lib/api-error';
@@ -42,6 +43,7 @@ export function ItemsManager() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<InventoryItemResponse | null>(null);
+  const [consumptionItem, setConsumptionItem] = useState<InventoryItemResponse | null>(null);
 
   useEffect(() => {
     const id = window.setTimeout(() => setDebounced(search.trim()), 300);
@@ -50,6 +52,10 @@ export function ItemsManager() {
   useEffect(() => setPage(1), [debounced, categoryId, kind]);
 
   const { categories } = useCategoriesList();
+  const categoryName = useMemo(() => {
+    const map = new Map(categories.map((c) => [c.id, c.name]));
+    return (id: string | null) => (id ? (map.get(id) ?? t('uncategorized')) : t('uncategorized'));
+  }, [categories, t]);
   const params = useMemo<InventoryItemsControllerListParams>(
     () => ({
       page,
@@ -170,9 +176,7 @@ export function ItemsManager() {
                   <td className="px-4 py-2 text-gray-600">
                     {BASE_UNIT_ABBR[item.baseUnit as BaseUnit] ?? item.baseUnit}
                   </td>
-                  <td className="px-4 py-2 text-gray-600">
-                    {item.categoryName ?? t('uncategorized')}
-                  </td>
+                  <td className="px-4 py-2 text-gray-600">{categoryName(item.categoryId)}</td>
                   <td className="px-4 py-2 text-gray-600">
                     {item.trackExpiry ? tc('yes') : tc('no')}
                   </td>
@@ -188,6 +192,14 @@ export function ItemsManager() {
                       <div className="flex justify-end gap-1">
                         <Button size="sm" variant="secondary" onClick={() => openEdit(item)}>
                           {tc('edit')}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setConsumptionItem(item)}
+                          title={t('consumptionLocationTitle')}
+                        >
+                          {t('consumptionLocationAction')}
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => onDelete(item)}>
                           {tc('delete')}
@@ -215,6 +227,12 @@ export function ItemsManager() {
           item={editing}
           categories={categories}
           onClose={() => setFormOpen(false)}
+        />
+      )}
+      {consumptionItem && (
+        <ConsumptionLocationModal
+          item={consumptionItem}
+          onClose={() => setConsumptionItem(null)}
         />
       )}
       {dialog}

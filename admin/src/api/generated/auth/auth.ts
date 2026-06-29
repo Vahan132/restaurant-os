@@ -30,8 +30,11 @@ import type {
   LoginDto,
   LogoutDto,
   MeResponse,
+  PinLoginDto,
+  PinLoginResponse,
   RefreshDto,
-  ResetPasswordDto
+  ResetPasswordDto,
+  StaffPickerEntryResponse
 } from '../model';
 
 import { customInstance } from '../../mutator';
@@ -448,3 +451,158 @@ export function useAuthControllerMe<TData = Awaited<ReturnType<typeof authContro
 
 
 
+/**
+ * @summary Branch staff list for the POS/KDS login grid (device-authenticated).
+ */
+export const pinAuthControllerStaffPicker = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<StaffPickerEntryResponse[]>(
+      {url: `/auth/staff-picker`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getPinAuthControllerStaffPickerQueryKey = () => {
+    return [
+    `/auth/staff-picker`
+    ] as const;
+    }
+
+
+export const getPinAuthControllerStaffPickerQueryOptions = <TData = Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError = void>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPinAuthControllerStaffPickerQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>> = ({ signal }) => pinAuthControllerStaffPicker(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PinAuthControllerStaffPickerQueryResult = NonNullable<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>>
+export type PinAuthControllerStaffPickerQueryError = void
+
+
+export function usePinAuthControllerStaffPicker<TData = Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError = void>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>,
+          TError,
+          Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePinAuthControllerStaffPicker<TData = Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>,
+          TError,
+          Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePinAuthControllerStaffPicker<TData = Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Branch staff list for the POS/KDS login grid (device-authenticated).
+ */
+
+export function usePinAuthControllerStaffPicker<TData = Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPinAuthControllerStaffPickerQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * @summary PIN login (POS/KDS): device secret + chosen user + 6-digit PIN.
+ */
+export const pinAuthControllerLogin = (
+    pinLoginDto: PinLoginDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<PinLoginResponse>(
+      {url: `/auth/pin-login`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: pinLoginDto, signal
+    },
+      options);
+    }
+
+
+
+export const getPinAuthControllerLoginMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pinAuthControllerLogin>>, TError,{data: PinLoginDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof pinAuthControllerLogin>>, TError,{data: PinLoginDto}, TContext> => {
+
+const mutationKey = ['pinAuthControllerLogin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof pinAuthControllerLogin>>, {data: PinLoginDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  pinAuthControllerLogin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PinAuthControllerLoginMutationResult = NonNullable<Awaited<ReturnType<typeof pinAuthControllerLogin>>>
+    export type PinAuthControllerLoginMutationBody = PinLoginDto
+    export type PinAuthControllerLoginMutationError = void
+
+    /**
+ * @summary PIN login (POS/KDS): device secret + chosen user + 6-digit PIN.
+ */
+export const usePinAuthControllerLogin = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof pinAuthControllerLogin>>, TError,{data: PinLoginDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof pinAuthControllerLogin>>,
+        TError,
+        {data: PinLoginDto},
+        TContext
+      > => {
+      return useMutation(getPinAuthControllerLoginMutationOptions(options), queryClient);
+    }

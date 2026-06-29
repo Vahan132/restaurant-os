@@ -9,8 +9,8 @@ import {
 } from '@/api/generated/inventory-processes/inventory-processes';
 import type {
   CreateProcessDto,
-  CreateProcessInputDto,
-  CreateProcessOutputDto,
+  ProcessInputDto,
+  ProcessOutputDto,
   InventoryItemResponse,
   UpdateProcessDto,
 } from '@/api/generated/model';
@@ -82,7 +82,7 @@ export function ProcessFormDrawer({
   useEffect(() => {
     if (!isEdit || hydrated || !existing) return;
     setName(existing.name);
-    setProcessingCost(minorToInput(existing.processingCost, currency));
+    setProcessingCost(minorToInput(existing.processingCost_amount, currency));
     setNote(existing.note ?? '');
     setInputs(
       existing.inputs.length
@@ -150,12 +150,12 @@ export function ProcessFormDrawer({
 
   const validate = (): {
     ok: boolean;
-    inputsDto: CreateProcessInputDto[];
-    outputsDto: CreateProcessOutputDto[];
+    inputsDto: ProcessInputDto[];
+    outputsDto: ProcessOutputDto[];
   } => {
     const errs: string[] = [];
 
-    const inputsDto: CreateProcessInputDto[] = [];
+    const inputsDto: ProcessInputDto[] = [];
     for (const r of inputs) {
       const q = Number(r.baseQty);
       if (!r.itemId || !Number.isFinite(q) || q <= 0) continue;
@@ -164,7 +164,7 @@ export function ProcessFormDrawer({
     if (inputsDto.length === 0) errs.push(t('needInput'));
 
     const filledOut = outputs.filter((o) => o.itemId || o.baseQty.trim() !== '');
-    const outputsDto: CreateProcessOutputDto[] = [];
+    const outputsDto: ProcessOutputDto[] = [];
     let badOutput = false;
     for (const o of filledOut) {
       const q = Number(o.baseQty);
@@ -178,7 +178,7 @@ export function ProcessFormDrawer({
         errs.push(t('outputsMustBeProcessed'));
         continue;
       }
-      const dto: CreateProcessOutputDto = { itemId: o.itemId, baseQty: q, isPrimary: o.isPrimary };
+      const dto: ProcessOutputDto = { itemId: o.itemId, baseQty: q, isPrimary: o.isPrimary };
       if (o.costShare.trim() !== '') dto.costShareBps = Number(o.costShare);
       outputsDto.push(dto);
     }

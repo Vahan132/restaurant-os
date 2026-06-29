@@ -64,3 +64,25 @@ export const ApprovalRequired = (action: string) =>
     code: 'APPROVAL_REQUIRED',
     message: `This ${action} requires approval by a user holding the required permission.`,
   });
+
+/**
+ * The caller lacks DISCOUNT_APPLY and supplied no step-up authorization block.
+ * This is the legitimate "prompt for manager authorization" signal — it does NOT
+ * leak any factor of a step-up attempt.
+ */
+export const DiscountAuthorizationRequired = () =>
+  new ForbiddenException({
+    code: 'DISCOUNT_AUTHORIZATION_REQUIRED',
+    message: 'Manager authorization is required to apply this discount.',
+  });
+
+/**
+ * A step-up authorization attempt failed. DELIBERATELY GENERIC — it never
+ * reveals which factor failed (wrong PIN vs. no capability vs. bad/locked
+ * device); the specifics live only in the audit log + server logs.
+ */
+export const DiscountAuthorizationFailed = () =>
+  new ForbiddenException({
+    code: 'DISCOUNT_AUTHORIZATION_FAILED',
+    message: 'Discount authorization failed.',
+  });

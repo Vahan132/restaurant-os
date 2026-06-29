@@ -15,6 +15,26 @@ async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
   const config = app.get(ConfigService<AppConfig, true>);
 
+  // Trust the reverse proxy (Nginx + Tailscale) so `req.ip` / `X-Forwarded-For`
+  // resolve to the REAL client IP (3A). Without this every request looks like the
+  // proxy IP and branch IP policy is meaningless. Accepts a hop count, a boolean,
+  // or a subnet/keyword Express understands.
+  const trustProxyRaw = config.get('TRUST_PROXY', { infer: true });
+  const trustProxy: boolean | number | string =
+    trustProxyRaw === 'true'
+      ? true
+      : trustProxyRaw === 'false'
+        ? false
+        : /^\d+$/.test(trustProxyRaw)
+          ? Number(trustProxyRaw)
+          : trustProxyRaw;
+  // Set on the underlying Express instance (INestApplication has no `.set`).
+  (app.getHttpAdapter().getInstance() as { set(k: string, v: unknown): void }).set(
+    'trust proxy',
+    trustProxy,
+  );
+  logger.log(`trust proxy = ${String(trustProxy)} (real client IP from X-Forwarded-For)`);
+
   // Global request validation.
   app.useGlobalPipes(
     new ValidationPipe({

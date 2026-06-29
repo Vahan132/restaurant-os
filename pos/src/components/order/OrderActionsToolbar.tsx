@@ -26,7 +26,9 @@ export function OrderActionsToolbar({ order, actions }: OrderActionsToolbarProps
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Can perform={PERMISSIONS.DISCOUNT_APPLY}>
+      {/* Any order editor can open the discount sheet. Holders of DISCOUNT_APPLY
+          apply directly; everyone else is taken through the manager-PIN step-up. */}
+      <Can perform={PERMISSIONS.ORDER_EDIT}>
         <ToolbarButton
           label={t('discount')}
           disabled={!actions.allowDiscounts}

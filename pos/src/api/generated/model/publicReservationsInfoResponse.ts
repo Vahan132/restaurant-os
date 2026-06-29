@@ -10,6 +10,8 @@ import type { PublicReservationsInfoResponseBusinessHours } from './publicReserv
 export interface PublicReservationsInfoResponse {
   enableReservations: boolean;
   restaurantName: string;
+  /** BR-9: the resolved branch name. */
+  branchName: string;
   timezone: string;
   /**
    * Business hours, if configured. Opaque JSON for the client to render.

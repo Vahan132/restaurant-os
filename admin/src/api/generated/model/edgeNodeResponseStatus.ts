@@ -6,13 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type EdgeNodeResponseStatus =
-  (typeof EdgeNodeResponseStatus)[keyof typeof EdgeNodeResponseStatus];
+export type EdgeNodeResponseStatus = typeof EdgeNodeResponseStatus[keyof typeof EdgeNodeResponseStatus];
 
 
 export const EdgeNodeResponseStatus = {
-  ONLINE: 'ONLINE',
-  OFFLINE: 'OFFLINE',
-  SYNC_BACKLOG: 'SYNC_BACKLOG',
-  NEEDS_UPDATE: 'NEEDS_UPDATE',
+  ACTIVE: 'ACTIVE',
+  REVOKED: 'REVOKED',
 } as const;

@@ -1,9 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { DishModifierGroup } from '../../domain/entities/dish-modifier-group';
 import { MenuCategory } from '../../domain/entities/menu-category';
 import { MenuItem } from '../../domain/entities/menu-item';
 import { ModifierGroup } from '../../domain/entities/modifier-group';
 import { ModifierOption } from '../../domain/entities/modifier-option';
-import { MenuItemWithModifiers } from '../queries/get-menu-item.usecase';
+import { EffectiveModifierRules } from '../../domain/modifier-rules';
+import { MenuItemAttachedGroup, MenuItemWithModifiers } from '../queries/get-menu-item.usecase';
+import { ModifierGroupWithOptions } from '../queries/get-modifier-group.usecase';
 
 export class CategoryResponse {
   @ApiProperty() id!: string;
@@ -67,8 +70,9 @@ export class ModifierOptionResponse {
   @ApiProperty() id!: string;
   @ApiProperty() modifierGroupId!: string;
   @ApiProperty() name!: string;
-  @ApiProperty() priceDeltaAmount!: number;
-  @ApiProperty() displayOrder!: number;
+  @ApiProperty({ description: 'May be 0 or negative (minor units).' }) priceDeltaAmount!: number;
+  @ApiProperty() sortOrder!: number;
+  @ApiProperty() isDefault!: boolean;
   @ApiProperty({ enum: ['ACTIVE', 'INACTIVE'] }) status!: string;
 
   static from(o: ModifierOption): ModifierOptionResponse {
@@ -77,52 +81,116 @@ export class ModifierOptionResponse {
       modifierGroupId: o.modifierGroupId,
       name: o.name,
       priceDeltaAmount: o.priceDeltaAmount,
-      displayOrder: o.displayOrder,
+      sortOrder: o.sortOrder,
+      isDefault: o.isDefault,
       status: o.status,
     };
   }
 }
 
+/** A reusable library modifier group (Prompt 1A — no longer dish-owned). */
 export class ModifierGroupResponse {
   @ApiProperty() id!: string;
-  @ApiProperty() menuItemId!: string;
+  @ApiProperty() restaurantId!: string;
+  @ApiProperty() branchId!: string;
   @ApiProperty() name!: string;
   @ApiProperty({ enum: ['SINGLE', 'MULTIPLE'] }) selectionType!: string;
   @ApiProperty() required!: boolean;
   @ApiProperty({ nullable: true, type: Number }) minSelect!: number | null;
   @ApiProperty({ nullable: true, type: Number }) maxSelect!: number | null;
-  @ApiProperty() displayOrder!: number;
+  @ApiProperty({ enum: ['ACTIVE', 'INACTIVE'] }) status!: string;
 
   static from(g: ModifierGroup): ModifierGroupResponse {
     return {
       id: g.id,
-      menuItemId: g.menuItemId,
+      restaurantId: g.restaurantId,
+      branchId: g.branchId,
       name: g.name,
       selectionType: g.selectionType,
       required: g.required,
       minSelect: g.minSelect,
       maxSelect: g.maxSelect,
-      displayOrder: g.displayOrder,
+      status: g.status,
     };
   }
 }
 
 export class ModifierGroupWithOptionsResponse extends ModifierGroupResponse {
   @ApiProperty({ type: [ModifierOptionResponse] }) options!: ModifierOptionResponse[];
+
+  static fromGroup(detail: ModifierGroupWithOptions): ModifierGroupWithOptionsResponse {
+    return {
+      ...ModifierGroupResponse.from(detail.group),
+      options: detail.options.map(ModifierOptionResponse.from),
+    };
+  }
+}
+
+/** The dish↔group attachment, including its raw per-attachment overrides. */
+export class DishModifierGroupResponse {
+  @ApiProperty() menuItemId!: string;
+  @ApiProperty() modifierGroupId!: string;
+  @ApiProperty({ nullable: true, type: Boolean }) requiredOverride!: boolean | null;
+  @ApiProperty({ nullable: true, type: Number }) minOverride!: number | null;
+  @ApiProperty({ nullable: true, type: Number }) maxOverride!: number | null;
+  @ApiProperty() sortOrder!: number;
+
+  static from(a: DishModifierGroup): DishModifierGroupResponse {
+    return {
+      menuItemId: a.menuItemId,
+      modifierGroupId: a.modifierGroupId,
+      requiredOverride: a.requiredOverride,
+      minOverride: a.minOverride,
+      maxOverride: a.maxOverride,
+      sortOrder: a.sortOrder,
+    };
+  }
+}
+
+/** Effective rules = group rules with attachment overrides applied (server-resolved). */
+export class EffectiveModifierRulesResponse {
+  @ApiProperty({ enum: ['SINGLE', 'MULTIPLE'] }) selectionType!: string;
+  @ApiProperty() required!: boolean;
+  @ApiProperty() minSelect!: number;
+  @ApiProperty({ nullable: true, type: Number }) maxSelect!: number | null;
+
+  static from(e: EffectiveModifierRules): EffectiveModifierRulesResponse {
+    return {
+      selectionType: e.selectionType,
+      required: e.required,
+      minSelect: e.minSelect,
+      maxSelect: e.maxSelect,
+    };
+  }
+}
+
+/** A modifier group AS ATTACHED to a dish: base group + options + overrides + effective rules. */
+export class AttachedModifierGroupResponse extends ModifierGroupResponse {
+  @ApiProperty() sortOrder!: number;
+  @ApiProperty({ type: DishModifierGroupResponse }) attachment!: DishModifierGroupResponse;
+  @ApiProperty({ type: EffectiveModifierRulesResponse }) effective!: EffectiveModifierRulesResponse;
+  @ApiProperty({ type: [ModifierOptionResponse] }) options!: ModifierOptionResponse[];
+
+  static fromAttached(g: MenuItemAttachedGroup): AttachedModifierGroupResponse {
+    return {
+      ...ModifierGroupResponse.from(g.group),
+      sortOrder: g.attachment.sortOrder,
+      attachment: DishModifierGroupResponse.from(g.attachment),
+      effective: EffectiveModifierRulesResponse.from(g.effective),
+      options: g.options.map(ModifierOptionResponse.from),
+    };
+  }
 }
 
 export class MenuItemDetailResponse extends MenuItemResponse {
-  @ApiProperty({ type: [ModifierGroupWithOptionsResponse] })
-  modifierGroups!: ModifierGroupWithOptionsResponse[];
+  @ApiProperty({ type: [AttachedModifierGroupResponse] })
+  modifierGroups!: AttachedModifierGroupResponse[];
 
   static fromDetail(detail: MenuItemWithModifiers): MenuItemDetailResponse {
     const base = MenuItemResponse.from(detail.item);
     return {
       ...base,
-      modifierGroups: detail.groups.map((g) => ({
-        ...ModifierGroupResponse.from(g.group),
-        options: g.options.map(ModifierOptionResponse.from),
-      })),
+      modifierGroups: detail.groups.map(AttachedModifierGroupResponse.fromAttached),
     };
   }
 }

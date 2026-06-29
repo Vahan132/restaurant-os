@@ -34,6 +34,7 @@ export class PrismaRestaurantSettingsRepository implements RestaurantSettingsRep
         allowManualTableStatus: p.allowManualTableStatus,
         enableQrMenu: p.enableQrMenu,
         enableCustomerOrdering: p.enableCustomerOrdering,
+        allowUnanchoredAdminLogin: p.allowUnanchoredAdminLogin,
         updatedAt: p.updatedAt,
       },
     });
@@ -58,6 +59,7 @@ export class PrismaRestaurantSettingsRepository implements RestaurantSettingsRep
       allowManualTableStatus: r.allowManualTableStatus,
       enableQrMenu: r.enableQrMenu,
       enableCustomerOrdering: r.enableCustomerOrdering,
+      allowUnanchoredAdminLogin: r.allowUnanchoredAdminLogin,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     });

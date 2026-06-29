@@ -52,6 +52,7 @@ export class AuthController {
       organizationId: resolved?.organizationId ?? null,
       ip: req.ip ?? null,
       userAgent: req.headers['user-agent'] ?? null,
+      deviceSecret: dto.deviceSecret ?? null,
     });
 
     return {

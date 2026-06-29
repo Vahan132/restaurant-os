@@ -5,15 +5,42 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { RegisterEdgeNodeResponseHealthStatus } from './registerEdgeNodeResponseHealthStatus';
+import type { RegisterEdgeNodeResponseStatus } from './registerEdgeNodeResponseStatus';
 
 export interface RegisterEdgeNodeResponse {
   id: string;
   branchId: string;
   name: string;
+  status: RegisterEdgeNodeResponseStatus;
+  /** @nullable */
+  lastSeenAt: string | null;
+  /** @nullable */
+  lastSnapshotAt: string | null;
+  /** @nullable */
+  schemaVersion: string | null;
   /**
-   * The node token, returned ONCE at registration. Paste into the hub's config
-   * as EDGE_NODE_TOKEN. It is not stored in retrievable form and is never
-   * returned again.
-   */
+     * When the hub last sent a heartbeat.
+     * @nullable
+     */
+  lastHeartbeatAt: string | null;
+  /**
+     * Pending edge→cloud outbox entries.
+     * @nullable
+     */
+  pendingOutboxCount: number | null;
+  /**
+     * The hub application version.
+     * @nullable
+     */
+  appVersion: string | null;
+  /** Live health (OFFLINE derived from heartbeat recency). */
+  healthStatus: RegisterEdgeNodeResponseHealthStatus;
+  /** True if a heartbeat arrived within the offline threshold. */
+  online: boolean;
+  /** True if the hub is behind the cloud schema/app version. */
+  updateAvailable: boolean;
+  createdAt: string;
+  /** The plaintext node token. Shown ONCE — store it on the hub now. */
   token: string;
 }

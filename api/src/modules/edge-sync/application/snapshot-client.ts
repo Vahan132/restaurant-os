@@ -91,7 +91,9 @@ export class SnapshotClient {
    * lastConfigCursor (ISO-8601); omit for a full config pull.
    */
   async fetchConfigSync(since: string | null): Promise<ConfigChanges> {
-    const path = since ? `/edge/config-sync?since=${encodeURIComponent(since)}` : '/edge/config-sync';
+    const path = since
+      ? `/edge/config-sync?since=${encodeURIComponent(since)}`
+      : '/edge/config-sync';
     const res = await this.get(path);
     await this.assertOk(res, 'Config-sync fetch');
     return (await res.json()) as ConfigChanges;

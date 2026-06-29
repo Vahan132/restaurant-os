@@ -1,17 +1,16 @@
 import { AggregateRoot } from '../../../../shared/domain/aggregate-root';
-import { ModifierSelectionType } from '../enums';
+import { MenuStatus, ModifierSelectionType } from '../enums';
 import { InvalidModifierSelectionError } from '../menu.errors';
 
 export interface ModifierGroupProps {
   restaurantId: string;
   branchId: string;
-  menuItemId: string;
   name: string;
   selectionType: ModifierSelectionType;
   required: boolean;
   minSelect: number | null;
   maxSelect: number | null;
-  displayOrder: number;
+  status: MenuStatus;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -21,21 +20,23 @@ export interface CreateModifierGroupInput {
   id: string;
   restaurantId: string;
   branchId: string;
-  menuItemId: string;
   name: string;
   selectionType: ModifierSelectionType;
   required?: boolean;
   minSelect?: number | null;
   maxSelect?: number | null;
-  displayOrder?: number;
 }
 
 /**
- * ModifierGroup aggregate (per-item; no shared/reusable groups).
- * Invariants:
+ * ModifierGroup aggregate — a reusable, restaurant+branch-scoped library entity
+ * (Prompt 1A). No longer owned by a dish; attached many-to-many via
+ * DishModifierGroup. Per-attachment overrides + effective-rule resolution live in
+ * `../modifier-rules.ts`.
+ *
+ * Base invariants (the group's own rules, before any attachment override):
  *  - SINGLE: pick exactly one when required (min=1,max=1), else (min=0,max=1).
- *  - MULTIPLE: minSelect <= maxSelect (when set); maxSelect <= option count (checked
- *    by the use case via assertConsistentWithOptionCount once options are known).
+ *  - MULTIPLE: minSelect <= maxSelect (when set); `required` implies min >= 1;
+ *    maxSelect <= option count (checked by the use case once options are known).
  */
 export class ModifierGroup extends AggregateRoot<string> {
   private props: ModifierGroupProps;
@@ -56,13 +57,12 @@ export class ModifierGroup extends AggregateRoot<string> {
     return new ModifierGroup(input.id, {
       restaurantId: input.restaurantId,
       branchId: input.branchId,
-      menuItemId: input.menuItemId,
       name: input.name,
       selectionType: input.selectionType,
       required: input.required ?? false,
       minSelect: normalized.minSelect,
       maxSelect: normalized.maxSelect,
-      displayOrder: input.displayOrder ?? 0,
+      status: MenuStatus.ACTIVE,
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
@@ -84,7 +84,7 @@ export class ModifierGroup extends AggregateRoot<string> {
       return { minSelect: required ? 1 : 0, maxSelect: 1 };
     }
     // MULTIPLE
-    const min = minSelect ?? (required ? 1 : 0);
+    let min = minSelect ?? (required ? 1 : 0);
     const max = maxSelect ?? null;
     if (min < 0) {
       throw new InvalidModifierSelectionError('minSelect must be >= 0.');
@@ -95,6 +95,10 @@ export class ModifierGroup extends AggregateRoot<string> {
     if (max !== null && min > max) {
       throw new InvalidModifierSelectionError('minSelect must be <= maxSelect.');
     }
+    // `required` implies at least one selection (coerced, not rejected).
+    if (required && min < 1) {
+      min = 1;
+    }
     return { minSelect: min, maxSelect: max };
   }
 
@@ -103,9 +107,6 @@ export class ModifierGroup extends AggregateRoot<string> {
   }
   get branchId(): string {
     return this.props.branchId;
-  }
-  get menuItemId(): string {
-    return this.props.menuItemId;
   }
   get name(): string {
     return this.props.name;
@@ -122,8 +123,8 @@ export class ModifierGroup extends AggregateRoot<string> {
   get maxSelect(): number | null {
     return this.props.maxSelect;
   }
-  get displayOrder(): number {
-    return this.props.displayOrder;
+  get status(): MenuStatus {
+    return this.props.status;
   }
   get createdAt(): Date {
     return this.props.createdAt;
@@ -145,12 +146,12 @@ export class ModifierGroup extends AggregateRoot<string> {
     required?: boolean;
     minSelect?: number | null;
     maxSelect?: number | null;
-    displayOrder?: number;
+    status?: MenuStatus;
   }): void {
     if (input.name !== undefined) this.props.name = input.name;
-    if (input.displayOrder !== undefined) this.props.displayOrder = input.displayOrder;
     if (input.selectionType !== undefined) this.props.selectionType = input.selectionType;
     if (input.required !== undefined) this.props.required = input.required;
+    if (input.status !== undefined) this.props.status = input.status;
 
     const normalized = ModifierGroup.normalize(
       this.props.selectionType,
@@ -160,6 +161,11 @@ export class ModifierGroup extends AggregateRoot<string> {
     );
     this.props.minSelect = normalized.minSelect;
     this.props.maxSelect = normalized.maxSelect;
+    this.touch();
+  }
+
+  setStatus(status: MenuStatus): void {
+    this.props.status = status;
     this.touch();
   }
 

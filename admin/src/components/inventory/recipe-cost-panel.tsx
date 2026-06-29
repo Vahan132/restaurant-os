@@ -9,8 +9,8 @@ import {
 } from '@/api/generated/inventory-recipes/inventory-recipes';
 import type {
   CreateRecipeDto,
-  CreateRecipeLineDto,
-  CreateRecipeModifierMappingDto,
+  ModifierConsumptionDto,
+  RecipeLineDto,
   InventoryItemResponse,
   ModifierOptionResponse,
   RecipeWarningResponse,
@@ -72,7 +72,7 @@ export function RecipeCostPanel({
         : [{ itemId: '', baseQty: '' }],
     );
     setMappings(
-      recipe.modifierMappings.map((m) => ({
+      recipe.modifierConsumptions.map((m) => ({
         modifierOptionId: m.modifierOptionId,
         itemId: m.itemId,
         baseQty: String(m.baseQty),
@@ -105,12 +105,12 @@ export function RecipeCostPanel({
     setMappings((rows) => rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
   const save = async () => {
-    const linesDto: CreateRecipeLineDto[] = [];
+    const linesDto: RecipeLineDto[] = [];
     for (const l of lines) {
       const q = Number(l.baseQty);
       if (l.itemId && Number.isFinite(q) && q > 0) linesDto.push({ itemId: l.itemId, baseQty: q });
     }
-    const mappingsDto: CreateRecipeModifierMappingDto[] = [];
+    const mappingsDto: ModifierConsumptionDto[] = [];
     for (const m of mappings) {
       const q = Number(m.baseQty);
       if (m.modifierOptionId && m.itemId && Number.isFinite(q) && q > 0) {
@@ -119,7 +119,7 @@ export function RecipeCostPanel({
     }
     try {
       if (recipeId) {
-        const data: UpdateRecipeDto = { lines: linesDto, modifierMappings: mappingsDto };
+        const data: UpdateRecipeDto = { lines: linesDto, modifierConsumptions: mappingsDto };
         const res = await update.mutateAsync({ id: recipeId, data });
         setWarnings(res?.warnings ?? []);
         await invalidate(recipeId);
@@ -127,7 +127,7 @@ export function RecipeCostPanel({
         const data: CreateRecipeDto = {
           menuItemId,
           lines: linesDto,
-          modifierMappings: mappingsDto,
+          modifierConsumptions: mappingsDto,
         };
         const res = await create.mutateAsync({ data });
         setWarnings(res?.warnings ?? []);
@@ -167,31 +167,36 @@ export function RecipeCostPanel({
     <div className="space-y-5">
       {warnings.length > 0 && (
         <div className="space-y-1">
-          {warnings.map((w, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800"
-            >
-              <span>{w.message}</span>
-              {canManage && w.counterpartItemId && (
-                <button
-                  type="button"
-                  className="ml-auto shrink-0 font-medium underline hover:no-underline"
-                  onClick={() =>
-                    setLines((rows) =>
-                      rows.map((r) =>
-                        r.itemId === w.itemId
-                          ? { ...r, itemId: w.counterpartItemId as string }
-                          : r,
-                      ),
-                    )
-                  }
-                >
-                  {t('switchTo', { name: w.counterpartName ?? '' })}
-                </button>
-              )}
-            </div>
-          ))}
+          {warnings.map((w, i) => {
+            const cp = w.counterparts[0];
+            return (
+              <div
+                key={i}
+                className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800"
+              >
+                <span>
+                  {w.type === 'HAS_PROCESSED_COUNTERPART'
+                    ? t('rawProcessedWarn')
+                    : t('rawSourceWarn')}
+                </span>
+                {canManage && cp && (
+                  <button
+                    type="button"
+                    className="ml-auto shrink-0 font-medium underline hover:no-underline"
+                    onClick={() =>
+                      setLines((rows) =>
+                        rows.map((r) =>
+                          r.itemId === w.itemId ? { ...r, itemId: cp.itemId } : r,
+                        ),
+                      )
+                    }
+                  >
+                    {t('switchTo', { name: cp.name })}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -312,10 +317,10 @@ export function RecipeCostPanel({
         <div className="flex justify-between">
           <span className="font-medium text-gray-700">{t('estUnitCost')}</span>
           <span className="text-gray-900">
-            {formatMoney(recipe?.estimatedUnitCost ?? livePreview, currency)}
+            {formatMoney(recipe?.estimatedUnitCost_amount ?? livePreview, currency)}
           </span>
         </div>
-        {recipe && Math.round(livePreview) !== Math.round(recipe.estimatedUnitCost) && (
+        {recipe && Math.round(livePreview) !== Math.round(recipe.estimatedUnitCost_amount) && (
           <div className="mt-1 flex justify-between text-xs text-gray-400">
             <span>≈</span>
             <span>{formatMoney(livePreview, currency)}</span>

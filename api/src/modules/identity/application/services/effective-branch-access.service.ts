@@ -8,7 +8,11 @@ import {
   BranchAccessResult,
   DefaultBranchAccess,
 } from '../../../../shared/auth/branch-access.resolver';
-import { hasAllBranches, isRestaurantWideRole } from '../../domain/permissions.catalog';
+import {
+  hasAllBranches,
+  isRestaurantWideRole,
+  snapshotPermissionsForRole,
+} from '../../domain/permissions.catalog';
 import { ROLE_REPOSITORY, RoleRepository } from '../../domain/repositories/role.repository';
 import { USER_REPOSITORY, UserRepository } from '../../domain/repositories/user.repository';
 import {
@@ -69,7 +73,7 @@ export class EffectiveBranchAccessService implements BranchAccessResolver {
       return {
         branchExists: true,
         hasAccess: true,
-        permissions: this.union(role?.permissions ?? [], branchPerms),
+        permissions: this.union(snapshotPermissionsForRole(role), branchPerms),
       };
     }
 
@@ -92,7 +96,7 @@ export class EffectiveBranchAccessService implements BranchAccessResolver {
     const user = await this.users.findById(organizationId, userId);
     const role = user ? await this.roles.findById(organizationId, user.roleId) : null;
     const allBranch = hasAllBranches(role);
-    const rolePerms = role?.permissions ?? [];
+    const rolePerms = snapshotPermissionsForRole(role);
     const restaurantWide = isRestaurantWideRole(role?.code);
     const restaurantWidePerms = restaurantWide ? rolePerms : [];
 
@@ -171,7 +175,7 @@ export class EffectiveBranchAccessService implements BranchAccessResolver {
 
   private async permissionsOfRole(organizationId: string, roleId: string): Promise<string[]> {
     const role = await this.roles.findById(organizationId, roleId);
-    return role?.permissions ?? [];
+    return snapshotPermissionsForRole(role);
   }
 
   private union(a: readonly string[], b: readonly string[]): string[] {

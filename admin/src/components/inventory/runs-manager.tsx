@@ -29,6 +29,7 @@ export function RunsManager() {
   useEffect(() => setPage(1), [processId, runFrom, runTo]);
 
   const { processes } = useProcessesForSelect();
+  const processName = (id: string) => processes.find((p) => p.id === id)?.name ?? id;
   const params = useMemo<ProcessRunsControllerListParams>(
     () => ({
       page,
@@ -109,9 +110,9 @@ export function RunsManager() {
                   onClick={() => setDetailId(r.id)}
                 >
                   <td className="px-4 py-2 text-gray-700">{formatDateTime(r.runAt)}</td>
-                  <td className="px-4 py-2 font-medium text-gray-800">{r.processName}</td>
+                  <td className="px-4 py-2 font-medium text-gray-800">{processName(r.processId)}</td>
                   <td className="px-4 py-2 text-gray-600">×{r.multiplier}</td>
-                  <td className="px-4 py-2 text-gray-700">{formatMoney(r.totalCost, currency)}</td>
+                  <td className="px-4 py-2 text-gray-700">{formatMoney(r.totalCost_amount, currency)}</td>
                   <td className="px-4 py-2">
                     {r.wentNegative && <Badge tone="amber">{t('wentNegativeBadge')}</Badge>}
                   </td>

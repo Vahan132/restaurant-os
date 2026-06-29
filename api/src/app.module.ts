@@ -8,6 +8,7 @@ import { PlatformModule } from './modules/platform/platform.module';
 import { RestaurantModule } from './modules/restaurant/restaurant.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { SalesImportModule } from './modules/sales-import/sales-import.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { StorefrontModule } from './modules/storefront/storefront.module';
@@ -80,6 +81,7 @@ const edgeOnlyModules = IS_EDGE ? [EdgeSyncModule] : [];
     KdsModule,
     ReservationsModule,
     ReportsModule,
+    SalesImportModule,
     AuditModule,
     StorefrontModule,
     OrderRequestsModule,

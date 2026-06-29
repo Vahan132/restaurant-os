@@ -30,5 +30,10 @@ export interface InventoryItemResponse {
      * @nullable
      */
   lastUnitCostMicro: string | null;
+  /**
+     * 6C: per-item consumption location (null => branch default Main Storage).
+     * @nullable
+     */
+  consumptionLocationId: string | null;
   status: InventoryItemResponseStatus;
 }

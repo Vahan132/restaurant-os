@@ -16,8 +16,11 @@ import { CurrentUser } from '../../../../shared/tenancy/current-user.decorator';
 import { CurrentUserContext, TenantContext } from '../../../../shared/tenancy/tenant-context';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { CreateAdjustmentUseCase } from '../../application/commands/create-adjustment.usecase';
+import { SetCountedOnHandUseCase } from '../../application/commands/set-counted-on-hand.usecase';
 import { CreateAdjustmentDto, ListAdjustmentsQuery } from '../../application/dto/adjustment.dto';
+import { SetCountedOnHandDto } from '../../application/dto/location.dto';
 import { AdjustmentResultResponse, StockMovementResponse } from '../../application/dto/responses';
+import { CountAdjustmentResultResponse } from '../../application/dto/location-responses';
 import { ListAdjustmentsUseCase } from '../../application/queries/list-adjustments.usecase';
 
 const READ = PERMISSIONS.INVENTORY_READ;
@@ -30,6 +33,7 @@ const ADJUSTMENT_CREATE = PERMISSIONS.INVENTORY_ADJUSTMENT_CREATE;
 export class AdjustmentsController {
   constructor(
     private readonly createAdjustment: CreateAdjustmentUseCase,
+    private readonly setCountedOnHand: SetCountedOnHandUseCase,
     private readonly listAdjustments: ListAdjustmentsUseCase,
   ) {}
 
@@ -64,6 +68,34 @@ export class AdjustmentsController {
       wentNegative: result.wentNegative,
       uncosted: result.uncosted,
     };
+  }
+
+  @Post('count')
+  @RequirePermissions(ADJUSTMENT_CREATE)
+  @ApiForbiddenResponse({ description: 'Missing inventory:adjustment:create permission.' })
+  @ApiOperation({
+    summary:
+      'Correction adjustment (6A §6): set the ACTUAL counted on-hand for an (item, location). ' +
+      'Writes the signed-difference ADJUSTMENT and reconciles lots + projection atomically.',
+  })
+  @ApiCreatedResponse({ type: CountAdjustmentResultResponse })
+  async count(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+    @CurrentUser() actor: CurrentUserContext,
+    @Body() dto: SetCountedOnHandDto,
+  ): Promise<CountAdjustmentResultResponse> {
+    const result = await this.setCountedOnHand.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      itemId: dto.itemId,
+      locationId: dto.locationId,
+      unit: dto.unit,
+      countedQty: dto.countedQty,
+      reason: dto.reason ?? null,
+      actorUserId: actor.sub,
+    });
+    return CountAdjustmentResultResponse.from(result);
   }
 
   @Get()

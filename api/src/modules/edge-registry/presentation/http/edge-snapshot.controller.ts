@@ -1,5 +1,11 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiSecurity, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiQuery,
+  ApiSecurity,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { Public } from '../../../../shared/auth/public.decorator';
 import { ConfigChanges } from '../../../../shared/edge/contracts/config-sync.contract';
 import { BranchSnapshot } from '../../../../shared/edge/contracts/snapshot.contract';
@@ -44,7 +50,11 @@ export class EdgeSnapshotController {
   @ApiOperation({
     summary: "Incremental CONFIG changes for the node's branch since a cursor (node-token auth).",
   })
-  @ApiQuery({ name: 'since', required: false, description: 'ISO-8601 cursor; omit for a full pull.' })
+  @ApiQuery({
+    name: 'since',
+    required: false,
+    description: 'ISO-8601 cursor; omit for a full pull.',
+  })
   @ApiUnauthorizedResponse({ description: 'Missing, invalid, or revoked node token.' })
   async configSync(
     @CurrentEdgeNode() node: EdgeNodeContext,

@@ -4,7 +4,7 @@ import { RouteGuard } from '@/components/RouteGuard';
 import { NoKitchenAccess } from '@/components/NoKitchenAccess';
 import { KioskShell } from '@/components/KioskShell';
 import { StationPicker } from '@/components/StationPicker';
-import { TicketBoard } from '@/components/board/TicketBoard';
+import { KitchenView } from '@/components/KitchenView';
 import {
   PERMISSIONS,
   useHasPermissionAnyBranch,
@@ -52,7 +52,7 @@ function KioskHome() {
       {!pinned ? (
         <StationPicker />
       ) : canAccessKdsHere ? (
-        <TicketBoard />
+        <KitchenView />
       ) : (
         // Pinned to a branch where this user lacks KDS access — deny, but let
         // them re-pin to a branch they can use (header "Change" also re-pins).

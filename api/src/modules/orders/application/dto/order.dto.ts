@@ -7,9 +7,11 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Length,
   Max,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '../../../../shared/application/pagination';
 import { DiscountType, OrderStatus, OrderType, PaymentMethod } from '../../domain/enums';
@@ -69,6 +71,24 @@ export class EditOrderItemDto {
   selectedOptionIds?: string[];
 }
 
+/**
+ * Manager step-up authorization block (4A). Supplied ONLY when the caller does
+ * not hold DISCOUNT_APPLY: a capable manager authorizes the discount by entering
+ * their PIN on the enrolled POS device. No login happens; the requesting user
+ * stays in their own session.
+ */
+export class DiscountAuthorizationDto {
+  @ApiProperty({ description: 'Enrolled POS device secret (the step-up first factor).' })
+  @IsString()
+  @MinLength(1)
+  deviceSecret!: string;
+
+  @ApiProperty({ description: "Authorizing manager's 6-digit PIN.", minLength: 6, maxLength: 6 })
+  @IsString()
+  @Length(6, 6)
+  pin!: string;
+}
+
 export class ApplyDiscountDto {
   @ApiProperty({ enum: DiscountType })
   @IsEnum(DiscountType)
@@ -83,6 +103,18 @@ export class ApplyDiscountDto {
   @IsOptional()
   @IsString()
   approvedByUserId?: string;
+
+  @ApiPropertyOptional({
+    type: DiscountAuthorizationDto,
+    description:
+      'Manager step-up authorization. Required ONLY when the caller lacks ' +
+      'DISCOUNT_APPLY — a capable manager authorizes the discount with their PIN ' +
+      'on the enrolled POS device. Omit when the caller already holds DISCOUNT_APPLY.',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DiscountAuthorizationDto)
+  authorization?: DiscountAuthorizationDto;
 }
 
 export class CancelDto {

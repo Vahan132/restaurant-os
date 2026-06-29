@@ -53,9 +53,11 @@ export class OrderItemBuilder {
       if (!found) {
         throw InvalidModifierSelection(`Option ${optId} does not belong to this item.`);
       }
-      if (found.delta < 0) {
-        throw InvalidModifierSelection('Modifier option has an invalid price.');
-      }
+      // NOTE (Prompt 1A): a modifier option price delta may be 0 or NEGATIVE (a
+      // discount), so the builder no longer rejects negative deltas. The delta is
+      // snapshotted onto the order line unchanged; KDS tickets/receipts read it
+      // off the order line and should be sanity-checked separately to confirm they
+      // render negative deltas correctly.
     }
     const countByGroup = new Map<string, number>();
     for (const optId of selected) {

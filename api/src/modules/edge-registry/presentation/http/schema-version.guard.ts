@@ -46,7 +46,9 @@ export class SchemaVersionGuard implements CanActivate {
         }
       } catch (err) {
         // Best-effort: never let bookkeeping mask the real 426.
-        this.logger.warn(`Failed to record schema mismatch on node ${node.nodeId}: ${(err as Error).message}`);
+        this.logger.warn(
+          `Failed to record schema mismatch on node ${node.nodeId}: ${(err as Error).message}`,
+        );
       }
     }
 

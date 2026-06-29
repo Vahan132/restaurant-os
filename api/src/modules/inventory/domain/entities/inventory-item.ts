@@ -17,6 +17,8 @@ export interface InventoryItemProps {
   trackExpiry: boolean;
   lowStockThresholdBase: number | null;
   lastUnitCostMicro: bigint | null;
+  /** 6C: per-item consumption location (null => branch default Main Storage). */
+  consumptionLocationId: string | null;
   status: InventoryItemStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -61,6 +63,7 @@ export class InventoryItem extends AggregateRoot<string> {
       trackExpiry: input.trackExpiry ?? false,
       lowStockThresholdBase: input.lowStockThresholdBase ?? null,
       lastUnitCostMicro: null,
+      consumptionLocationId: null,
       status: InventoryItemStatus.ACTIVE,
       createdAt: now,
       updatedAt: now,
@@ -113,6 +116,9 @@ export class InventoryItem extends AggregateRoot<string> {
   }
   get lastUnitCostMicro(): bigint | null {
     return this.props.lastUnitCostMicro;
+  }
+  get consumptionLocationId(): string | null {
+    return this.props.consumptionLocationId;
   }
   get status(): InventoryItemStatus {
     return this.props.status;
@@ -188,6 +194,12 @@ export class InventoryItem extends AggregateRoot<string> {
     if (input.lowStockThresholdBase !== undefined)
       this.props.lowStockThresholdBase = input.lowStockThresholdBase;
     if (input.status !== undefined) this.props.status = input.status;
+    this.touch();
+  }
+
+  /** 6C: reassign the item's consumption location (null => branch default). */
+  setConsumptionLocation(locationId: string | null): void {
+    this.props.consumptionLocationId = locationId;
     this.touch();
   }
 

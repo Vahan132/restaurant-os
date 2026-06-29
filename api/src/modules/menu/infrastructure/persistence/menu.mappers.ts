@@ -1,9 +1,11 @@
 import {
+  DishModifierGroup as PrismaDishGroup,
   MenuCategory as PrismaCategory,
   MenuItem as PrismaItem,
   ModifierGroup as PrismaGroup,
   ModifierOption as PrismaOption,
 } from '@prisma/client';
+import { DishModifierGroup } from '../../domain/entities/dish-modifier-group';
 import { MenuCategory } from '../../domain/entities/menu-category';
 import { MenuItem } from '../../domain/entities/menu-item';
 import { ModifierGroup } from '../../domain/entities/modifier-group';
@@ -123,13 +125,12 @@ export class GroupMapper {
     return ModifierGroup.reconstitute(r.id, {
       restaurantId: r.restaurantId,
       branchId: r.branchId,
-      menuItemId: r.menuItemId,
       name: r.name,
       selectionType: r.selectionType as ModifierSelectionType,
       required: r.required,
       minSelect: r.minSelect,
       maxSelect: r.maxSelect,
-      displayOrder: r.displayOrder,
+      status: r.status as MenuStatus,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       deletedAt: r.deletedAt,
@@ -141,13 +142,12 @@ export class GroupMapper {
       id: g.id,
       restaurantId: g.restaurantId,
       branchId: g.branchId,
-      menuItemId: g.menuItemId,
       name: g.name,
       selectionType: g.selectionType as ModifierSelectionType,
       required: g.required,
       minSelect: g.minSelect,
       maxSelect: g.maxSelect,
-      displayOrder: g.displayOrder,
+      status: g.status as MenuStatus,
       createdAt: g.createdAt,
       updatedAt: g.updatedAt,
       deletedAt: g.deletedAt,
@@ -161,7 +161,7 @@ export class GroupMapper {
       required: g.required,
       minSelect: g.minSelect,
       maxSelect: g.maxSelect,
-      displayOrder: g.displayOrder,
+      status: g.status as MenuStatus,
       updatedAt: g.updatedAt,
       deletedAt: g.deletedAt,
     };
@@ -176,7 +176,8 @@ export class OptionMapper {
       modifierGroupId: r.modifierGroupId,
       name: r.name,
       priceDeltaAmount: r.priceDeltaAmount,
-      displayOrder: r.displayOrder,
+      sortOrder: r.sortOrder,
+      isDefault: r.isDefault,
       status: r.status as MenuStatus,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
@@ -192,7 +193,8 @@ export class OptionMapper {
       modifierGroupId: o.modifierGroupId,
       name: o.name,
       priceDeltaAmount: o.priceDeltaAmount,
-      displayOrder: o.displayOrder,
+      sortOrder: o.sortOrder,
+      isDefault: o.isDefault,
       status: o.status as MenuStatus,
       createdAt: o.createdAt,
       updatedAt: o.updatedAt,
@@ -204,10 +206,54 @@ export class OptionMapper {
     return {
       name: o.name,
       priceDeltaAmount: o.priceDeltaAmount,
-      displayOrder: o.displayOrder,
+      sortOrder: o.sortOrder,
+      isDefault: o.isDefault,
       status: o.status as MenuStatus,
       updatedAt: o.updatedAt,
       deletedAt: o.deletedAt,
+    };
+  }
+}
+
+export class DishModifierGroupMapper {
+  static toDomain(r: PrismaDishGroup): DishModifierGroup {
+    return DishModifierGroup.reconstitute(r.id, {
+      restaurantId: r.restaurantId,
+      branchId: r.branchId,
+      menuItemId: r.menuItemId,
+      modifierGroupId: r.modifierGroupId,
+      requiredOverride: r.requiredOverride,
+      minOverride: r.minOverride,
+      maxOverride: r.maxOverride,
+      sortOrder: r.sortOrder,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    });
+  }
+
+  static toCreate(a: DishModifierGroup) {
+    return {
+      id: a.id,
+      restaurantId: a.restaurantId,
+      branchId: a.branchId,
+      menuItemId: a.menuItemId,
+      modifierGroupId: a.modifierGroupId,
+      requiredOverride: a.requiredOverride,
+      minOverride: a.minOverride,
+      maxOverride: a.maxOverride,
+      sortOrder: a.sortOrder,
+      createdAt: a.createdAt,
+      updatedAt: a.updatedAt,
+    };
+  }
+
+  static toUpdate(a: DishModifierGroup) {
+    return {
+      requiredOverride: a.requiredOverride,
+      minOverride: a.minOverride,
+      maxOverride: a.maxOverride,
+      sortOrder: a.sortOrder,
+      updatedAt: a.updatedAt,
     };
   }
 }

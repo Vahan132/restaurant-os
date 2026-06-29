@@ -1,24 +1,29 @@
 import type {
+  AttachedModifierGroupResponse,
   MenuItemDetailResponse,
-  ModifierGroupWithOptionsResponse,
 } from '@/api/generated/model';
 
 /** Selected option ids keyed by modifier group id. */
 export type ModifierSelection = Record<string, string[]>;
 
-/** Min/max selections a group requires, normalized across SINGLE/MULTIPLE. */
-export function groupBounds(group: ModifierGroupWithOptionsResponse): { min: number; max: number } {
-  if (group.selectionType === 'SINGLE') {
-    return { min: group.required ? 1 : 0, max: 1 };
+/**
+ * Min/max selections a group requires, normalized across SINGLE/MULTIPLE.
+ * Reads the backend-resolved (`effective`) rules — overrides are already applied
+ * server-side, so POS consumes them rather than recomputing.
+ */
+export function groupBounds(group: AttachedModifierGroupResponse): { min: number; max: number } {
+  const { selectionType, required, minSelect, maxSelect } = group.effective;
+  if (selectionType === 'SINGLE') {
+    return { min: required ? 1 : 0, max: 1 };
   }
-  const min = group.required ? Math.max(group.minSelect ?? 1, 1) : (group.minSelect ?? 0);
-  const max = group.maxSelect ?? Number.POSITIVE_INFINITY;
+  const min = required ? Math.max(minSelect ?? 1, 1) : (minSelect ?? 0);
+  const max = maxSelect ?? Number.POSITIVE_INFINITY;
   return { min, max };
 }
 
 /** Whether a single group's current selection satisfies its rules. */
 export function isGroupValid(
-  group: ModifierGroupWithOptionsResponse,
+  group: AttachedModifierGroupResponse,
   selectedIds: string[],
 ): boolean {
   const { min, max } = groupBounds(group);
@@ -27,7 +32,7 @@ export function isGroupValid(
 
 /** Whether the whole selection satisfies every group's rules. */
 export function isSelectionValid(
-  groups: ModifierGroupWithOptionsResponse[],
+  groups: AttachedModifierGroupResponse[],
   selection: ModifierSelection,
 ): boolean {
   return groups.every((g) => isGroupValid(g, selection[g.id] ?? []));
@@ -55,16 +60,16 @@ export function computeUnitPrice(
 
 /** Toggle an option within a group, honoring SINGLE (replace) vs MULTIPLE (add up to max). */
 export function toggleOption(
-  group: ModifierGroupWithOptionsResponse,
+  group: AttachedModifierGroupResponse,
   selection: ModifierSelection,
   optionId: string,
 ): ModifierSelection {
   const current = selection[group.id] ?? [];
   const has = current.includes(optionId);
 
-  if (group.selectionType === 'SINGLE') {
+  if (group.effective.selectionType === 'SINGLE') {
     // Radio: selecting replaces; tapping the selected one clears it only if optional.
-    const next = has && !group.required ? [] : [optionId];
+    const next = has && !group.effective.required ? [] : [optionId];
     return { ...selection, [group.id]: next };
   }
 

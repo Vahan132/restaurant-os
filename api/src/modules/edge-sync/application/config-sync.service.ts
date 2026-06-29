@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  OnApplicationBootstrap,
-  OnModuleDestroy,
-} from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EdgeConfigService } from '../../../shared/edge/edge-config.service';
 import { EdgeSyncGate } from '../../../shared/edge/edge-sync-gate';
@@ -121,7 +116,9 @@ export class ConfigSyncService implements OnApplicationBootstrap, OnModuleDestro
         return { synced: false, reason: 'SCHEMA_MISMATCH' };
       }
       await this.markOffline();
-      this.logger.warn(`Config sync failed (staying on last-synced config): ${(err as Error).message}`);
+      this.logger.warn(
+        `Config sync failed (staying on last-synced config): ${(err as Error).message}`,
+      );
       return { synced: false, reason: (err as Error).message };
     }
   }

@@ -1,11 +1,20 @@
-import { CanActivate, ExecutionContext, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import {
   RESTAURANT_KEY_PROVIDER,
   RestaurantKeyProvider,
 } from '../../modules/identity/application/ports/restaurant-key.provider';
-import { TOKEN_SERVICE, TokenService } from '../../modules/identity/application/ports/token.service';
+import {
+  TOKEN_SERVICE,
+  TokenService,
+} from '../../modules/identity/application/ports/token.service';
 import { IS_PUBLIC_KEY } from './public.decorator';
 
 /**

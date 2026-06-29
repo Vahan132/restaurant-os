@@ -8,6 +8,10 @@ import { API_BASE_URL } from '@/lib/env';
 import { resolveApiBaseUrl } from '@/lib/endpoint/store';
 import { authStore } from '@/lib/auth/store';
 import { readPersistedTokens, withRefreshLock } from '@/lib/auth/refresh-lock';
+import { getDeviceSecret } from '@/lib/device/store';
+
+/** Transport header carrying this device's enrollment secret (the 3A anchor). */
+const DEVICE_SECRET_HEADER = 'X-Device-Secret';
 
 /**
  * Axios mutator used by every orval-generated hook.
@@ -45,12 +49,19 @@ const rawAxios = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// --- request: target the active endpoint + attach Bearer --------------------
+// --- request: target the active endpoint + attach Bearer + device anchor -----
 axiosInstance.interceptors.request.use((config) => {
   config.baseURL = resolveApiBaseUrl();
   const token = authStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // Attach the device anchor on every call from an enrolled device. This covers
+  // the device-authenticated staff picker (which has no bearer yet) and every
+  // anchored request once a PIN session exists, mirroring the bearer above.
+  const deviceSecret = getDeviceSecret();
+  if (deviceSecret) {
+    config.headers[DEVICE_SECRET_HEADER] = deviceSecret;
   }
   return config;
 });
@@ -166,6 +177,16 @@ axiosInstance.interceptors.response.use(
     const status = error.response?.status;
     const url = original?.url ?? '';
     const isAuthRoute = url.includes('/auth/refresh') || url.includes('/auth/login');
+    // Device-anchored sign-in routes: a 401 here means wrong PIN, a locked PIN,
+    // or a bad/expired device secret — all of which the sign-in screen shows the
+    // user. Never refresh, clear or redirect (there's no session to refresh and
+    // it would reload the screen mid-entry); just surface the normalized error.
+    const isDeviceAuthRoute =
+      url.includes('/auth/pin-login') || url.includes('/auth/staff-picker');
+
+    if (status === 401 && isDeviceAuthRoute) {
+      return Promise.reject(normalizeError(error));
+    }
 
     if (status === 401 && original && !original._retry && !isAuthRoute) {
       original._retry = true; // loop guard: only one retry per request

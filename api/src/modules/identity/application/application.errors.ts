@@ -95,3 +95,66 @@ export const SigningKeyUnavailable = () =>
     code: 'SIGNING_KEY_UNAVAILABLE',
     message: 'Token signing is temporarily unavailable for this restaurant.',
   });
+
+// ── Device-anchored staff auth (3A) ─────────────────────────────────────────
+
+/** No enrolled, active device matched the presented secret (PIN/anchored login).
+ * Deliberately generic so it never reveals whether a device exists. */
+export const InvalidDeviceSecret = () =>
+  new UnauthorizedException({
+    code: 'INVALID_DEVICE_SECRET',
+    message: 'No active device matched the presented device secret.',
+  });
+
+export const DeviceNotFound = () =>
+  new NotFoundException({ code: 'DEVICE_NOT_FOUND', message: 'Device not found.' });
+
+/** The matched device cannot be used for the attempted surface (e.g. an ADMIN
+ * device used for a POS/KDS PIN login, or vice versa). */
+export const DeviceSurfaceNotAllowed = () =>
+  new ForbiddenException({
+    code: 'DEVICE_SURFACE_NOT_ALLOWED',
+    message: 'This device is not allowed for the requested login surface.',
+  });
+
+/** Branch IP policy is STRICT and the request source IP is not in the allowlist. */
+export const IpNotAllowed = () =>
+  new ForbiddenException({
+    code: 'IP_NOT_ALLOWED',
+    message: 'This location is not permitted to sign in to this branch.',
+  });
+
+/** Generic PIN failure (wrong PIN or no PIN). Generic so it never reveals which. */
+export const InvalidPin = () =>
+  new UnauthorizedException({ code: 'INVALID_PIN', message: 'Invalid staff selection or PIN.' });
+
+/** The user's PIN is temporarily locked after too many failed attempts. */
+export const PinLocked = () =>
+  new ForbiddenException({
+    code: 'PIN_LOCKED',
+    message: 'Too many failed attempts. This PIN is temporarily locked.',
+  });
+
+export const PinAlreadyExists = () =>
+  new ConflictException({
+    code: 'PIN_ALREADY_EXISTS',
+    message: 'This user already has an active PIN. Reset it instead.',
+  });
+
+/** Could not mint a restaurant-unique PIN after several attempts (extremely rare). */
+export const PinGenerationFailed = () =>
+  new ServiceUnavailableException({
+    code: 'PIN_GENERATION_FAILED',
+    message: 'Could not allocate a unique PIN. Please try again.',
+  });
+
+export const StaffPinNotFound = () =>
+  new NotFoundException({ code: 'STAFF_PIN_NOT_FOUND', message: 'This user has no PIN set.' });
+
+/** Admin/manager email login requires an enrolled ADMIN-surface device and none
+ * (valid) was presented; the restaurant has not enabled unanchored admin login. */
+export const AdminDeviceRequired = () =>
+  new ForbiddenException({
+    code: 'ADMIN_DEVICE_REQUIRED',
+    message: 'Sign-in from this account requires an enrolled admin device.',
+  });

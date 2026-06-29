@@ -32,7 +32,7 @@ export function ModifierSheet({ item, busy, onCancel, onConfirm }: ModifierSheet
   const { format } = useMoney();
 
   const groups = useMemo(
-    () => [...item.modifierGroups].sort((a, b) => a.displayOrder - b.displayOrder),
+    () => [...item.modifierGroups].sort((a, b) => a.sortOrder - b.sortOrder),
     [item.modifierGroups],
   );
 
@@ -69,8 +69,8 @@ export function ModifierSheet({ item, busy, onCancel, onConfirm }: ModifierSheet
             const selected = selection[group.id] ?? [];
             const { min, max } = groupBounds(group);
             const rule =
-              group.selectionType === 'SINGLE'
-                ? group.required
+              group.effective.selectionType === 'SINGLE'
+                ? group.effective.required
                   ? t('chooseOne')
                   : t('optional')
                 : max === Number.POSITIVE_INFINITY
@@ -84,7 +84,7 @@ export function ModifierSheet({ item, busy, onCancel, onConfirm }: ModifierSheet
                 </legend>
                 <div className="mt-2 space-y-2">
                   {[...group.options]
-                    .sort((a, b) => a.displayOrder - b.displayOrder)
+                    .sort((a, b) => a.sortOrder - b.sortOrder)
                     .map((opt) => {
                       const checked = selected.includes(opt.id);
                       return (
@@ -99,7 +99,7 @@ export function ModifierSheet({ item, busy, onCancel, onConfirm }: ModifierSheet
                           <span className="flex items-center gap-3">
                             <span
                               className={`flex h-6 w-6 items-center justify-center border-2 ${
-                                group.selectionType === 'SINGLE' ? 'rounded-full' : 'rounded-md'
+                                group.effective.selectionType === 'SINGLE' ? 'rounded-full' : 'rounded-md'
                               } ${checked ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300'}`}
                             >
                               {checked ? '✓' : ''}

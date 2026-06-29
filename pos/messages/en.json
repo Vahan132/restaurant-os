@@ -75,6 +75,38 @@
     "submitting": "Signing in…",
     "error": "Sign in failed. Check your email and password."
   },
+  "enroll": {
+    "loading": "Loading…",
+    "title": "Enroll this device",
+    "subtitle": "This terminal isn't set up yet. A manager signs in once to register it for the POS.",
+    "deviceLabel": "Device name",
+    "deviceLabelPlaceholder": "e.g. Front counter POS",
+    "managerHint": "A manager must sign in to enroll this device. This is a one-time setup.",
+    "managerEmail": "Manager email",
+    "managerEmailPlaceholder": "manager@restaurant.com",
+    "managerPassword": "Manager password",
+    "managerPasswordPlaceholder": "Manager password",
+    "enroll": "Enroll device",
+    "enrolling": "Enrolling…",
+    "errorLabelRequired": "Give this device a name.",
+    "errorBadCredentials": "Invalid manager credentials.",
+    "errorNoCapability": "This account can't enroll devices for this branch.",
+    "error": "Couldn't enroll this device. Please try again."
+  },
+  "staffLogin": {
+    "title": "Who's signing in?",
+    "subtitle": "Tap your name, then enter your PIN.",
+    "loading": "Loading staff…",
+    "loadError": "Couldn't load the staff list.",
+    "retry": "Retry",
+    "empty": "No staff to show for this branch.",
+    "back": "Back",
+    "enterPin": "Enter your 6-digit PIN",
+    "invalidPin": "Incorrect PIN. Try again.",
+    "locked": "Too many attempts. Try again in {seconds}s.",
+    "backspace": "Delete",
+    "verifying": "Signing in…"
+  },
   "home": {
     "title": "Select a table",
     "noFloors": "No floors configured yet.",
@@ -236,6 +268,14 @@
     "verifying": "Verifying…",
     "badCredentials": "Invalid manager credentials.",
     "missingPermission": "That user can't approve this action."
+  },
+  "stepup": {
+    "title": "Manager authorization",
+    "subtitle": "Enter a manager's PIN to authorize this discount.",
+    "authorizing": "Authorizing…",
+    "failed": "Authorization failed. Try again.",
+    "lockout": "Too many attempts. Try again shortly.",
+    "lockoutCountdown": "Too many attempts. Try again in {seconds}s."
   },
   "checkout": {
     "title": "Checkout",

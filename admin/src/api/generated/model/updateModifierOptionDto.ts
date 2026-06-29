@@ -9,9 +9,10 @@ import type { UpdateModifierOptionDtoStatus } from './updateModifierOptionDtoSta
 
 export interface UpdateModifierOptionDto {
   name?: string;
-  /** @minimum 0 */
+  /** Price delta in minor units. May be 0 or negative. */
   priceDeltaAmount?: number;
   /** @minimum 0 */
-  displayOrder?: number;
+  sortOrder?: number;
+  isDefault?: boolean;
   status?: UpdateModifierOptionDtoStatus;
 }

@@ -22,6 +22,12 @@ export interface ConsumeStockCommand {
   createdByUserId: string;
   /** Defaults to now() if omitted. */
   occurredAt?: Date;
+  /**
+   * 6C: location to deplete from. When omitted, the implementation resolves the
+   * item's consumption location (per-item default for that branch). Callers that
+   * need a specific shelf may pin it here.
+   */
+  locationId?: string | null;
 }
 
 export interface StockConsumptionResult {

@@ -1,12 +1,12 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useGoodsReceiptsControllerCreate } from '@/api/generated/inventory-goods-receipts/inventory-goods-receipts';
 import type {
   CreateGoodsReceiptDto,
-  CreateGoodsReceiptLineDto,
+  GoodsReceiptLineDto,
   InventoryItemResponse,
 } from '@/api/generated/model';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import {
   useItemsForSelect,
   useSuppliersList,
 } from '@/lib/inventory/use-inventory-data';
+import { useDefaultLocation, useLocations } from '@/lib/inventory/use-locations-data';
 import {
   BASE_UNIT_ABBR,
   toBaseQty,
@@ -58,13 +59,20 @@ export function ReceiptFormDrawer({ onClose }: { onClose: () => void }) {
   const invalidate = useInventoryInvalidation();
   const { items } = useItemsForSelect();
   const { suppliers } = useSuppliersList();
+  const { locations } = useLocations();
+  const defaultLocation = useDefaultLocation();
 
   const [supplierId, setSupplierId] = useState('');
   const [reference, setReference] = useState('');
   const [receivedAt, setReceivedAt] = useState(nowLocalInput());
   const [note, setNote] = useState('');
+  const [locationId, setLocationId] = useState('');
   const [lines, setLines] = useState<LineRow[]>([emptyLine()]);
   const [error, setError] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (!locationId && defaultLocation) setLocationId(defaultLocation.id);
+  }, [defaultLocation, locationId]);
 
   const itemById = useMemo(() => {
     const map = new Map<string, InventoryItemResponse>();
@@ -84,7 +92,6 @@ export function ReceiptFormDrawer({ onClose }: { onClose: () => void }) {
   const onSelectLineItem = (i: number, itemId: string) =>
     setLine(i, { itemId, unit: '', expiryDate: '' });
 
-  /** Derived "≈ cost per base unit" preview for a line, or null if not computable. */
   const unitCostPreview = (row: LineRow): string | null => {
     const item = itemById.get(row.itemId);
     if (!item) return null;
@@ -101,7 +108,7 @@ export function ReceiptFormDrawer({ onClose }: { onClose: () => void }) {
 
   const save = async () => {
     setError(undefined);
-    const payloadLines: CreateGoodsReceiptLineDto[] = [];
+    const payloadLines: GoodsReceiptLineDto[] = [];
     for (const row of lines) {
       const item = itemById.get(row.itemId);
       if (!item) continue;
@@ -129,6 +136,7 @@ export function ReceiptFormDrawer({ onClose }: { onClose: () => void }) {
       reference: reference.trim() || undefined,
       receivedAt: receivedAt ? new Date(receivedAt).toISOString() : undefined,
       note: note.trim() || undefined,
+      locationId: locationId || undefined,
       lines: payloadLines,
     };
 
@@ -192,7 +200,21 @@ export function ReceiptFormDrawer({ onClose }: { onClose: () => void }) {
           <Field label={t('rNote')}>
             <input className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} />
           </Field>
+          <Field label={t('rLocation')}>
+            <select
+              className={inputClass}
+              value={locationId}
+              onChange={(e) => setLocationId(e.target.value)}
+            >
+              {locations.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </Field>
         </div>
+        <p className="-mt-3 text-xs text-gray-500">{t('rLocationHint')}</p>
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">

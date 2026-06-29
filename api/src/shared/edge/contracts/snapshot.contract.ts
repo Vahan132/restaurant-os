@@ -1,9 +1,12 @@
 import type {
   Branch,
+  BranchInventoryPolicy,
   BranchMembership,
+  Device,
   Floor,
   InventoryCategory,
   InventoryItem,
+  InventoryLocation,
   MenuCategory,
   MenuItem,
   ModifierConsumption,
@@ -25,7 +28,9 @@ import type {
   RestaurantSettings,
   RestaurantTable,
   Role,
+  StaffPin,
   StockLayer,
+  StockOnHand,
   Supplier,
   User,
 } from '@prisma/client';
@@ -74,6 +79,13 @@ export interface BranchSnapshot {
     roles: Jsonify<Role>[];
     users: Jsonify<User>[];
     branchMemberships: Jsonify<BranchMembership>[];
+    /**
+     * 3B: enrolled devices for this branch + staff PIN rows (HASHES ONLY — never
+     * plaintext) so device-anchored PIN login works offline. Branch IP policy
+     * rides the `branch` row and the admin toggle rides the `settings` row above.
+     */
+    devices: Jsonify<Device>[];
+    staffPins: Jsonify<StaffPin>[];
   };
 
   /** Branch-owned catalog: menu + inventory + recipes + processes. */
@@ -83,7 +95,12 @@ export interface BranchSnapshot {
     modifierGroups: Jsonify<ModifierGroup>[];
     modifierOptions: Jsonify<ModifierOption>[];
     inventoryCategories: Jsonify<InventoryCategory>[];
+    // 6C: locations + per-branch policy so the edge resolves consumption
+    // locations + the negative-stock policy offline. Each item's
+    // consumptionLocationId rides the inventoryItems rows.
+    inventoryLocations: Jsonify<InventoryLocation>[];
     inventoryItems: Jsonify<InventoryItem>[];
+    branchInventoryPolicies: Jsonify<BranchInventoryPolicy>[];
     suppliers: Jsonify<Supplier>[];
     recipes: Jsonify<Recipe>[];
     recipeLines: Jsonify<RecipeLine>[];
@@ -93,9 +110,14 @@ export interface BranchSnapshot {
     processOutputs: Jsonify<ProcessOutput>[];
   };
 
-  /** Current OPEN FIFO stock layers (so FIFO works on the edge from day one). */
+  /**
+   * Current OPEN FIFO stock layers (so FIFO works on the edge from day one) +
+   * the per-(item, location) on-hand projection (6C) so the edge starts with the
+   * correct location balances; the edge maintains both on local writes.
+   */
   stock: {
     stockLayers: Jsonify<StockLayer>[];
+    stockOnHand: Jsonify<StockOnHand>[];
   };
 
   /** Operational starter set: tables + currently-open orders + upcoming bookings. */

@@ -9,6 +9,13 @@ import { useBranchStore } from '@/lib/branch/store';
 export const PERMISSIONS = {
   /** Required to view the kitchen display and subscribe to station rooms. */
   KDS_ACCESS: 'KDS_ACCESS',
+  /**
+   * Required to execute a prep/production run from the kitchen (consume inputs +
+   * produce output). Held by process-capability roles (Chef / Sous-Chef by
+   * default); line cooks lack it, so the processes view stays hidden for them.
+   * Matches the backend's `inventory:process:run` check on POST .../run.
+   */
+  PROCESS_RUN: 'inventory:process:run',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS] | (string & {});

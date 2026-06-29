@@ -1,11 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  ApiCreatedResponse,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
@@ -78,10 +73,7 @@ export class EdgeNodesController {
   @Post(':id/revoke')
   @HttpCode(204)
   @ApiOperation({ summary: 'Revoke an edge node (idempotent).' })
-  async revokeNode(
-    @CurrentTenant() tenant: TenantContext,
-    @Param('id') id: string,
-  ): Promise<void> {
+  async revokeNode(@CurrentTenant() tenant: TenantContext, @Param('id') id: string): Promise<void> {
     await this.revoke.execute({ restaurantId: tenant.restaurantId, nodeId: id });
   }
 }

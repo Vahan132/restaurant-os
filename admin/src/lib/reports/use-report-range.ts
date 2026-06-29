@@ -10,6 +10,8 @@ interface PersistedRange {
   preset: RangePreset;
   custom: DateRange;
   groupBy: GroupBy;
+  /** Whether imported (non-fiscal) sales are included in the report (5B). */
+  includeImported?: boolean;
 }
 
 function load(): PersistedRange | null {
@@ -31,6 +33,7 @@ export function useReportRange(timeZone: string) {
   const [preset, setPresetState] = useState<RangePreset>('today');
   const [custom, setCustom] = useState<DateRange>({ from: '', to: '' });
   const [groupBy, setGroupByState] = useState<GroupBy>('day');
+  const [includeImported, setIncludeImportedState] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -39,14 +42,18 @@ export function useReportRange(timeZone: string) {
       setPresetState(saved.preset);
       setCustom(saved.custom);
       setGroupByState(saved.groupBy);
+      setIncludeImportedState(saved.includeImported ?? false);
     }
     setReady(true);
   }, []);
 
   useEffect(() => {
     if (!ready || typeof window === 'undefined') return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ preset, custom, groupBy }));
-  }, [ready, preset, custom, groupBy]);
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ preset, custom, groupBy, includeImported }),
+    );
+  }, [ready, preset, custom, groupBy, includeImported]);
 
   const range: DateRange =
     preset === 'custom' ? custom : presetRange(preset, timeZone);
@@ -57,6 +64,16 @@ export function useReportRange(timeZone: string) {
     setPresetState('custom');
   }, []);
   const setGroupBy = useCallback((g: GroupBy) => setGroupByState(g), []);
+  const setIncludeImported = useCallback((v: boolean) => setIncludeImportedState(v), []);
 
-  return { preset, groupBy, range, setPreset, setCustomRange, setGroupBy };
+  return {
+    preset,
+    groupBy,
+    range,
+    includeImported,
+    setPreset,
+    setCustomRange,
+    setGroupBy,
+    setIncludeImported,
+  };
 }

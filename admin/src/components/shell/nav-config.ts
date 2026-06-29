@@ -2,34 +2,29 @@ import type { PermissionScope } from '@/lib/auth/use-permission';
 import { PERMISSIONS, type PermissionKey } from '@/lib/permissions';
 
 export interface NavChild {
-  /** Translation key under the `nav` namespace. */
   key: string;
   href: string;
 }
 
 export interface NavItem {
-  /** Translation key under the `nav` namespace. */
   key: string;
   href: string;
-  /** User needs at least one of these permissions to see the item. */
   anyOf: PermissionKey[];
-  /**
-   * Permission resolution scope (BR-7). Branch-scoped items (menu, inventory,
-   * orders, tables, reservations, dashboard, reports, catalog tools) resolve at
-   * the active branch; restaurant-level items (branch management, users,
-   * settings, audit) resolve restaurant-wide. Defaults to `branch`.
-   */
   scope?: PermissionScope;
-  /**
-   * Optional sub-navigation. When present the item renders as a section
-   * header with these children (children inherit the section's `anyOf`).
-   */
   children?: NavChild[];
 }
 
 export const NAV_ITEMS: NavItem[] = [
   { key: 'dashboard', href: '/', anyOf: [PERMISSIONS.DASHBOARD_VIEW] },
-  { key: 'menu', href: '/menu', anyOf: [PERMISSIONS.MENU_MANAGE] },
+  {
+    key: 'menu',
+    href: '/menu',
+    anyOf: [PERMISSIONS.MENU_MANAGE],
+    children: [
+      { key: 'menuItems', href: '/menu' },
+      { key: 'menuModifierGroups', href: '/menu/modifier-groups' },
+    ],
+  },
   {
     key: 'tables',
     href: '/tables',
@@ -54,6 +49,8 @@ export const NAV_ITEMS: NavItem[] = [
       PERMISSIONS.INVENTORY_ITEM_MANAGE,
       PERMISSIONS.INVENTORY_RECEIPT_CREATE,
       PERMISSIONS.INVENTORY_ADJUSTMENT_CREATE,
+      PERMISSIONS.INVENTORY_LOCATION_MANAGE,
+      PERMISSIONS.INVENTORY_TRANSFER_CREATE,
       PERMISSIONS.INVENTORY_PROCESS_MANAGE,
       PERMISSIONS.INVENTORY_PROCESS_RUN,
       PERMISSIONS.INVENTORY_WRITEOFF_CREATE,
@@ -61,9 +58,13 @@ export const NAV_ITEMS: NavItem[] = [
     ],
     children: [
       { key: 'invStock', href: '/inventory/stock' },
+      { key: 'invReports', href: '/inventory/reports' },
       { key: 'invItems', href: '/inventory/items' },
       { key: 'invReceipts', href: '/inventory/goods-receipts' },
       { key: 'invAdjustments', href: '/inventory/adjustments' },
+      { key: 'invLocations', href: '/inventory/locations' },
+      { key: 'invTransfers', href: '/inventory/transfers' },
+      { key: 'invCorrections', href: '/inventory/corrections' },
       { key: 'invProcesses', href: '/inventory/processes' },
       { key: 'invRuns', href: '/inventory/process-runs' },
       { key: 'invCosting', href: '/inventory/menu-costing' },
@@ -71,6 +72,12 @@ export const NAV_ITEMS: NavItem[] = [
       { key: 'invSuppliers', href: '/inventory/suppliers' },
       { key: 'invCategories', href: '/inventory/categories' },
     ],
+  },
+  { key: 'reports', href: '/reports', anyOf: [PERMISSIONS.REPORTS_VIEW] },
+  {
+    key: 'salesImport',
+    href: '/sales-import',
+    anyOf: [PERMISSIONS.SALES_IMPORT_MANAGE],
   },
   {
     key: 'catalogTools',
@@ -82,7 +89,7 @@ export const NAV_ITEMS: NavItem[] = [
       PERMISSIONS.INVENTORY_PROCESS_MANAGE,
     ],
   },
-  { key: 'reports', href: '/reports', anyOf: [PERMISSIONS.REPORTS_VIEW] },
+  { key: 'devices', href: '/devices', anyOf: [PERMISSIONS.DEVICE_ENROLL] },
   {
     key: 'branches',
     href: '/branches',
@@ -98,7 +105,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'users',
     href: '/users',
-    anyOf: [PERMISSIONS.USER_MANAGE],
+    anyOf: [PERMISSIONS.USER_MANAGE, PERMISSIONS.ROLE_MANAGE],
     scope: 'restaurant',
   },
   {

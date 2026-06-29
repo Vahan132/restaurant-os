@@ -192,14 +192,21 @@ export class CatalogExportService {
 
     // ── Menu items (+ modifier groups + options) ──────────────────────────────
     if (needMenuItems) {
+      // Prompt 1A: a dish's groups come via the dish_modifier_groups join (in
+      // attachment order). The bundle still nests each group under its dish, so a
+      // shared group is exported once per attached dish (no cross-dish dedupe).
       const items = await this.prisma.menuItem.findMany({
         where: { restaurantId, branchId, deletedAt: null },
         include: {
-          modifierGroups: {
-            where: { deletedAt: null },
-            orderBy: { displayOrder: 'asc' },
+          modifierGroupLinks: {
+            where: { modifierGroup: { deletedAt: null } },
+            orderBy: { sortOrder: 'asc' },
             include: {
-              options: { where: { deletedAt: null }, orderBy: { displayOrder: 'asc' } },
+              modifierGroup: {
+                include: {
+                  options: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
+                },
+              },
             },
           },
         },
@@ -211,7 +218,8 @@ export class CatalogExportService {
 
         // Build group/option key maps for this item (needed by recipes too).
         const usedGroupKeys = new Set<string>();
-        const groups = it.modifierGroups.map((g) => {
+        const groups = it.modifierGroupLinks.map((link) => {
+          const g = link.modifierGroup;
           const gKey = uniqueKey(modifierGroupKey(g), usedGroupKeys);
           usedGroupKeys.add(gKey);
           const usedOptionKeys = new Set<string>();
@@ -223,7 +231,9 @@ export class CatalogExportService {
               key: oKey,
               name: o.name,
               priceDeltaAmount: o.priceDeltaAmount,
-              displayOrder: o.displayOrder,
+              // Bundle `displayOrder` keeps its name for format stability; sourced
+              // from the option's sortOrder.
+              displayOrder: o.sortOrder,
             };
           });
           return {
@@ -233,7 +243,8 @@ export class CatalogExportService {
             required: g.required,
             minSelect: g.minSelect,
             maxSelect: g.maxSelect,
-            displayOrder: g.displayOrder,
+            // Group order within a dish is the attachment's sortOrder.
+            displayOrder: link.sortOrder,
             options,
           };
         });

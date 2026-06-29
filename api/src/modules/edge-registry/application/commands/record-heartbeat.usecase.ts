@@ -35,9 +35,10 @@ export interface RecordHeartbeatOutput {
  * update is required. Tenant + node come from the authenticated node token.
  */
 @Injectable()
-export class RecordHeartbeatUseCase
-  implements UseCase<RecordHeartbeatInput, RecordHeartbeatOutput>
-{
+export class RecordHeartbeatUseCase implements UseCase<
+  RecordHeartbeatInput,
+  RecordHeartbeatOutput
+> {
   constructor(@Inject(EDGE_NODE_REPOSITORY) private readonly nodes: EdgeNodeRepository) {}
 
   async execute(input: RecordHeartbeatInput): Promise<RecordHeartbeatOutput> {

@@ -5,6 +5,12 @@ export enum BranchStatus {
   INACTIVE = 'INACTIVE',
 }
 
+/** 3A: per-branch IP binding policy for device-anchored logins. */
+export enum BranchIpBindingMode {
+  STRICT = 'STRICT',
+  SOFT = 'SOFT',
+}
+
 export interface BranchProps {
   restaurantId: string;
   name: string;
@@ -12,6 +18,10 @@ export interface BranchProps {
   slug: string;
   isDefault: boolean;
   status: BranchStatus;
+  /** 3A: STRICT enforces ipAllowlist; SOFT records + trusts the seen IP. */
+  ipBindingMode: BranchIpBindingMode;
+  /** 3A: manager-editable CIDRs evaluated under STRICT. */
+  ipAllowlist: string[];
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -42,6 +52,8 @@ export class Branch extends AggregateRoot<string> {
       slug: input.slug,
       isDefault: input.isDefault ?? false,
       status: BranchStatus.ACTIVE,
+      ipBindingMode: BranchIpBindingMode.SOFT,
+      ipAllowlist: [],
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
@@ -68,6 +80,12 @@ export class Branch extends AggregateRoot<string> {
   get status(): BranchStatus {
     return this.props.status;
   }
+  get ipBindingMode(): BranchIpBindingMode {
+    return this.props.ipBindingMode;
+  }
+  get ipAllowlist(): string[] {
+    return this.props.ipAllowlist;
+  }
 
   isActive(): boolean {
     return this.props.status === BranchStatus.ACTIVE && this.props.deletedAt === null;
@@ -86,6 +104,31 @@ export class Branch extends AggregateRoot<string> {
   rename(name: string): void {
     this.props.name = name;
     this.touch();
+  }
+
+  /**
+   * 3A: set the branch IP policy. Returns true if anything actually changed (so
+   * the use case can audit only real changes). Allowlist is de-duplicated.
+   */
+  updateIpPolicy(mode?: BranchIpBindingMode, allowlist?: string[]): boolean {
+    let changed = false;
+    if (mode !== undefined && mode !== this.props.ipBindingMode) {
+      this.props.ipBindingMode = mode;
+      changed = true;
+    }
+    if (allowlist !== undefined) {
+      const next = Array.from(new Set(allowlist.map((c) => c.trim()).filter((c) => c.length > 0)));
+      const prev = this.props.ipAllowlist;
+      const differs = next.length !== prev.length || next.some((c, i) => c !== prev[i]);
+      if (differs) {
+        this.props.ipAllowlist = next;
+        changed = true;
+      }
+    }
+    if (changed) {
+      this.touch();
+    }
+    return changed;
   }
 
   activate(): void {

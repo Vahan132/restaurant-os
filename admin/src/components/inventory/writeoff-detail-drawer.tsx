@@ -11,6 +11,7 @@ import { ReasonBadge } from '@/components/inventory/writeoff-shared';
 import { formatDateTime } from '@/components/inventory/shared';
 import { getErrorMessage } from '@/lib/api-error';
 import { usePermission } from '@/lib/auth/use-permission';
+import { useItemsForSelect } from '@/lib/inventory/use-inventory-data';
 import { useWriteOff, useWriteOffsInvalidation } from '@/lib/inventory/use-writeoff-data';
 import { formatNumber } from '@/lib/inventory/units';
 import { formatMoney } from '@/lib/money';
@@ -34,6 +35,9 @@ export function WriteOffDetailDrawer({
   const { ask, dialog } = useConfirm();
 
   const { data: writeOff, isLoading } = useWriteOff(writeOffId);
+  const { items } = useItemsForSelect();
+  const itemName = (id: string | null) =>
+    id ? (items.find((i) => i.id === id)?.name ?? id) : '—';
   const voidMut = useWriteOffsControllerVoid();
 
   const onVoid = async () => {
@@ -60,7 +64,7 @@ export function WriteOffDetailDrawer({
       title={t('woDetailTitle')}
       onClose={onClose}
       footer={
-        writeOff && canVoid && !writeOff.voided ? (
+        writeOff && canVoid && !writeOff.voidedAt ? (
           <Button variant="danger" onClick={onVoid} disabled={voidMut.isPending}>
             {t('woVoid')}
           </Button>
@@ -79,7 +83,7 @@ export function WriteOffDetailDrawer({
             <dt className="text-gray-500">{t('woReason')}</dt>
             <dd>
               <ReasonBadge reason={writeOff.reason} />
-              {writeOff.voided && (
+              {writeOff.voidedAt && (
                 <span className="ml-2">
                   <Badge tone="gray">{t('voidedBadge')}</Badge>
                 </span>
@@ -89,11 +93,11 @@ export function WriteOffDetailDrawer({
             <dd className="text-gray-800">{formatDateTime(writeOff.occurredAt)}</dd>
             <dt className="text-gray-500">{t('woCreatedBy')}</dt>
             <dd className="text-gray-800">
-              {writeOff.createdByName ?? '—'} · {formatDateTime(writeOff.createdAt)}
+              {writeOff.createdByUserId}
             </dd>
             <dt className="text-gray-500">{t('woTotal')}</dt>
             <dd className="font-medium text-gray-900">
-              {formatMoney(writeOff.totalCost, currency)}
+              {formatMoney(writeOff.totalCost_amount, currency)}
             </dd>
             {writeOff.note && (
               <>
@@ -121,19 +125,19 @@ export function WriteOffDetailDrawer({
                     </Badge>
                   </td>
                   <td className="py-2 pr-3 text-gray-800">
-                    {line.name}
-                    {line.modifierOptions && line.modifierOptions.length > 0 && (
+                    {line.kind === 'DISH' ? (line.menuItemId ?? '—') : itemName(line.itemId)}
+                    {line.modifierOptionIds && line.modifierOptionIds.length > 0 && (
                       <span className="block text-xs text-gray-400">
-                        {line.modifierOptions.join(', ')}
+                        {line.modifierOptionIds.join(', ')}
                       </span>
                     )}
                   </td>
                   <td className="py-2 pr-3 text-gray-700">
                     {line.kind === 'DISH'
                       ? `×${formatNumber(line.units ?? 0)}`
-                      : `${formatNumber(line.qty ?? 0)}${line.unit ? ` ${line.unit}` : ''}`}
+                      : `${formatNumber(line.enteredQty ?? 0)}${line.enteredUnit ? ` ${line.enteredUnit}` : ''}`}
                   </td>
-                  <td className="py-2 text-gray-700">{formatMoney(line.cost, currency)}</td>
+                  <td className="py-2 text-gray-700">{formatMoney(line.cost_amount, currency)}</td>
                 </tr>
               ))}
             </tbody>

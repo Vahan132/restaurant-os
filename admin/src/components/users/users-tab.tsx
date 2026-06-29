@@ -10,6 +10,7 @@ import {
 import { UserResponseStatus, type UserResponse } from '@/api/generated/model';
 import { PasswordRevealModal } from '@/components/users/password-reveal-modal';
 import { ResetPasswordModal } from '@/components/users/reset-password-modal';
+import { StaffPinModal } from '@/components/users/staff-pin-modal';
 import { UserBranchAccessCell } from '@/components/users/user-branch-access-cell';
 import { UserFormModal } from '@/components/users/user-form-modal';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,8 @@ import { Button } from '@/components/ui/button';
 import { inputClass } from '@/components/ui/form';
 import { useConfirm } from '@/components/ui/use-confirm';
 import { getErrorMessage } from '@/lib/api-error';
+import { usePermission } from '@/lib/auth/use-permission';
+import { PERMISSIONS } from '@/lib/permissions';
 import {
   useCurrentUser,
   usePaginatedUsers,
@@ -33,6 +36,8 @@ export function UsersTab() {
   const invalidate = useUsersInvalidation();
   const { ask, dialog } = useConfirm();
   const currentUser = useCurrentUser();
+  // Staff PIN management (3B) is branch-scoped: gate on the active branch.
+  const canManagePins = usePermission(PERMISSIONS.STAFF_PIN_MANAGE);
 
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -59,6 +64,7 @@ export function UsersTab() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
   const [resetUser, setResetUser] = useState<UserResponse | null>(null);
+  const [pinUser, setPinUser] = useState<UserResponse | null>(null);
   const [revealPassword, setRevealPassword] = useState<string | null>(null);
 
   const block = useUsersControllerBlock();
@@ -179,6 +185,11 @@ export function UsersTab() {
                         <Button size="sm" variant="ghost" onClick={() => setResetUser(user)}>
                           {t('resetPassword')}
                         </Button>
+                        {canManagePins && (
+                          <Button size="sm" variant="ghost" onClick={() => setPinUser(user)}>
+                            {t('pin.action')}
+                          </Button>
+                        )}
                         {blocked ? (
                           <Button size="sm" variant="ghost" onClick={() => onUnblock(user)}>
                             {t('unblock')}
@@ -251,6 +262,7 @@ export function UsersTab() {
           onClose={() => setRevealPassword(null)}
         />
       )}
+      {pinUser && <StaffPinModal user={pinUser} onClose={() => setPinUser(null)} />}
       {dialog}
     </div>
   );

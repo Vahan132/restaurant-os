@@ -1,6 +1,7 @@
 import type {
   Branch,
   BranchMembership,
+  Device,
   InventoryCategory,
   InventoryItem,
   MenuCategory,
@@ -17,6 +18,7 @@ import type {
   Restaurant,
   RestaurantSettings,
   Role,
+  StaffPin,
   Supplier,
   User,
 } from '@prisma/client';
@@ -53,6 +55,12 @@ export interface ConfigChanges {
     users: Jsonify<User>[];
     /** FULL current membership set for the branch — the edge reconciles removals. */
     branchMemberships: Jsonify<BranchMembership>[];
+
+    // 3B: device-anchored auth material (changed-since). Devices + StaffPin rows
+    // (HASHES ONLY). Revocations ride as status changes (updatedAt bumps). The
+    // edge PRESERVES its local PIN lockout counters when applying these.
+    devices: Jsonify<Device>[];
+    staffPins: Jsonify<StaffPin>[];
 
     // catalog: menu + inventory (each row carries its own updatedAt + deletedAt)
     menuCategories: Jsonify<MenuCategory>[];
