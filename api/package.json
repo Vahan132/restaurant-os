@@ -21,6 +21,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "db:seed": "ts-node --transpile-only prisma/seed.ts",
+    "db:seed:e2e": "ts-node --transpile-only prisma/seed-e2e.ts",
     "db:seed:edge": "ts-node --transpile-only prisma/seed.edge.ts",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",

@@ -245,7 +245,7 @@ export default function MenuView() {
         />
       ) : null}
 
-      <main className="mx-auto max-w-2xl px-4 pt-2">
+      <main className="mx-auto max-w-2xl px-4 pt-2" data-testid="menu-root">
         {categories.length === 0 ? (
           <EmptyMenu />
         ) : filtered.length === 0 ? (

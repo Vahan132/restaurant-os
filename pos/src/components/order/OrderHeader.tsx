@@ -48,6 +48,8 @@ export function OrderHeader({ order, tableName }: OrderHeaderProps) {
             #{order.orderNumber} · {where}
           </h1>
           <span
+            data-testid="pos-order-status"
+            data-status={order.status}
             className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${ORDER_STATUS_BADGE[order.status]}`}
           >
             {tStatus(order.status)}

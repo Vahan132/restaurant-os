@@ -33,7 +33,7 @@ export default function OrderStatusScreen({ orderId, onBackToMenu }: Props) {
     data?.rejectedReason ?? (data as { reason?: string } | undefined)?.reason ?? null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white">
+    <div className="fixed inset-0 z-50 flex flex-col bg-white" data-testid="order-status" data-status={status ?? ''}>
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-6 text-center">
         {status === 'CONFIRMED' ? (
           <>

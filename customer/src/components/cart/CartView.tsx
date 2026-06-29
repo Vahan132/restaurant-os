@@ -55,7 +55,7 @@ export default function CartView({ qr, currency, locale, onClose, onPlaced }: Pr
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-50 flex flex-col bg-white" role="dialog" aria-modal="true" data-testid="cart-view">
       <header className="sticky top-0 flex items-center gap-3 border-b border-gray-100 bg-white px-4 py-3">
         <button
           type="button"
@@ -150,6 +150,7 @@ export default function CartView({ qr, currency, locale, onClose, onPlaced }: Pr
           </div>
           <button
             type="button"
+            data-testid="place-order"
             onClick={placeOrder}
             disabled={createOrder.isPending}
             className="w-full rounded-xl bg-brand px-4 py-3.5 text-sm font-semibold text-white disabled:opacity-50"

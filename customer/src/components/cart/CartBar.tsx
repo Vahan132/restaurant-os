@@ -23,6 +23,7 @@ export default function CartBar({ currency, locale, onOpen }: Props) {
     <div className="fixed inset-x-0 bottom-0 z-40 px-3 pb-3">
       <button
         type="button"
+        data-testid="open-cart"
         onClick={onOpen}
         className="mx-auto flex w-full max-w-2xl items-center justify-between rounded-2xl bg-brand px-4 py-3.5 text-white shadow-lg"
       >

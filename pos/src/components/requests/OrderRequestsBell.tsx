@@ -40,13 +40,17 @@ export function OrderRequestsBell() {
       <div className="flex items-center gap-1">
         <button
           type="button"
+          data-testid="requests-bell"
           onClick={() => setOpen(true)}
           aria-label={t('title')}
           className="relative flex h-12 w-12 select-none items-center justify-center rounded-xl border border-gray-300 bg-white text-xl active:scale-95"
         >
           🔔
           {count > 0 ? (
-            <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-bold text-white">
+            <span
+              data-testid="requests-badge"
+              className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-bold text-white"
+            >
               {count > 99 ? '99+' : count}
             </span>
           ) : null}

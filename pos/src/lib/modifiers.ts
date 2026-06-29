@@ -1,5 +1,6 @@
 import type {
   AttachedModifierGroupResponse,
+  EffectiveModifierRulesResponse,
   MenuItemDetailResponse,
 } from '@/api/generated/model';
 
@@ -7,12 +8,30 @@ import type {
 export type ModifierSelection = Record<string, string[]>;
 
 /**
+ * Resolve a group's selection rules. Prefers the backend-resolved (`effective`)
+ * rules when present, since per-dish overrides are already applied there. The
+ * `/menu` tree endpoint serializes modifier groups in the public shape, which
+ * omits `effective` — fall back to the group's own top-level fields so the POS
+ * never crashes on a missing `effective`.
+ */
+export function resolveRules(
+  group: AttachedModifierGroupResponse,
+): EffectiveModifierRulesResponse {
+  return (
+    group.effective ?? {
+      selectionType: group.selectionType,
+      required: group.required,
+      minSelect: group.minSelect ?? 0,
+      maxSelect: group.maxSelect,
+    }
+  );
+}
+
+/**
  * Min/max selections a group requires, normalized across SINGLE/MULTIPLE.
- * Reads the backend-resolved (`effective`) rules — overrides are already applied
- * server-side, so POS consumes them rather than recomputing.
  */
 export function groupBounds(group: AttachedModifierGroupResponse): { min: number; max: number } {
-  const { selectionType, required, minSelect, maxSelect } = group.effective;
+  const { selectionType, required, minSelect, maxSelect } = resolveRules(group);
   if (selectionType === 'SINGLE') {
     return { min: required ? 1 : 0, max: 1 };
   }
@@ -66,10 +85,11 @@ export function toggleOption(
 ): ModifierSelection {
   const current = selection[group.id] ?? [];
   const has = current.includes(optionId);
+  const rules = resolveRules(group);
 
-  if (group.effective.selectionType === 'SINGLE') {
+  if (rules.selectionType === 'SINGLE') {
     // Radio: selecting replaces; tapping the selected one clears it only if optional.
-    const next = has && !group.effective.required ? [] : [optionId];
+    const next = has && !rules.required ? [] : [optionId];
     return { ...selection, [group.id]: next };
   }
 

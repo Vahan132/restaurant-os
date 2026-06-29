@@ -10,6 +10,7 @@ import {
   computeUnitPrice,
   groupBounds,
   isSelectionValid,
+  resolveRules,
   toggleOption,
   type ModifierSelection,
 } from '@/lib/modifiers';
@@ -68,9 +69,10 @@ export function ModifierSheet({ item, busy, onCancel, onConfirm }: ModifierSheet
           {groups.map((group) => {
             const selected = selection[group.id] ?? [];
             const { min, max } = groupBounds(group);
+            const rules = resolveRules(group);
             const rule =
-              group.effective.selectionType === 'SINGLE'
-                ? group.effective.required
+              rules.selectionType === 'SINGLE'
+                ? rules.required
                   ? t('chooseOne')
                   : t('optional')
                 : max === Number.POSITIVE_INFINITY
@@ -99,7 +101,7 @@ export function ModifierSheet({ item, busy, onCancel, onConfirm }: ModifierSheet
                           <span className="flex items-center gap-3">
                             <span
                               className={`flex h-6 w-6 items-center justify-center border-2 ${
-                                group.effective.selectionType === 'SINGLE' ? 'rounded-full' : 'rounded-md'
+                                rules.selectionType === 'SINGLE' ? 'rounded-full' : 'rounded-md'
                               } ${checked ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300'}`}
                             >
                               {checked ? '✓' : ''}

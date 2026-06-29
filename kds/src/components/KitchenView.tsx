@@ -23,11 +23,15 @@ export function KitchenView() {
   const [tab, setTab] = useState<Tab>('tickets');
 
   if (!branchId || !canProcesses) {
-    return <TicketBoard />;
+    return (
+      <div data-testid="kds-board">
+        <TicketBoard />
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" data-testid="kds-board">
       <nav className="flex gap-2">
         <TabButton active={tab === 'tickets'} onClick={() => setTab('tickets')}>
           {t('tickets')}

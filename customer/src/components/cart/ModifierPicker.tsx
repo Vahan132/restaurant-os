@@ -43,7 +43,12 @@ export default function ModifierPicker({
               : t('pickManyRange', { min: minFor(group), max });
 
         return (
-          <fieldset key={group.id}>
+          <fieldset
+            key={group.id}
+            data-testid="modifier-group"
+            data-group-id={group.id}
+            data-required={group.required ? 'true' : 'false'}
+          >
             <legend className="flex w-full items-baseline justify-between">
               <span className="text-sm font-semibold text-gray-900">{group.name}</span>
               <span
@@ -70,6 +75,8 @@ export default function ModifierPicker({
                       <input
                         type={group.selectionType === 'SINGLE' ? 'radio' : 'checkbox'}
                         name={group.id}
+                        data-testid="modifier-option"
+                        data-option-id={opt.id}
                         checked={checked}
                         disabled={disabled}
                         onChange={() => onToggle(group, opt.id)}

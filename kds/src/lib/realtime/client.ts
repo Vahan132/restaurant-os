@@ -26,13 +26,38 @@ export interface KdsTicketEvent {
   [key: string]: unknown;
 }
 
+/**
+ * Logical ticket events the board subscribes to. The VALUES are the real event
+ * names the backend emits on the /realtime namespace (verified on the wire:
+ * `order.updated` with `{ orderId }`). The board only uses these as a nudge to
+ * refetch the HTTP read model, so the dispatcher routes by the `order.` prefix
+ * and is tolerant of suffix variants (created/new, cancelled/deleted, …).
+ */
 export const KDS_EVENTS = {
-  ticketNew: 'kds:ticket.new',
-  ticketUpdated: 'kds:ticket.updated',
-  ticketCancelled: 'kds:ticket.cancelled',
+  ticketNew: 'order.created',
+  ticketUpdated: 'order.updated',
+  ticketCancelled: 'order.cancelled',
 } as const;
 
+/** Prefix every server ticket event shares. */
+const ORDER_EVENT_PREFIX = 'order.';
+
 type TicketEventName = (typeof KDS_EVENTS)[keyof typeof KDS_EVENTS];
+
+/**
+ * Map a raw server event name to the logical ticket event the board listens for.
+ * Returns null for anything that isn't an order event. Suffix matching keeps us
+ * resilient to backend naming (`order.new` vs `order.created`, `order.deleted`
+ * vs `order.cancelled`, …); unknown order suffixes fall through to "updated" so
+ * the board still refetches.
+ */
+function classifyOrderEvent(event: string): TicketEventName | null {
+  if (!event.startsWith(ORDER_EVENT_PREFIX)) return null;
+  const suffix = event.slice(ORDER_EVENT_PREFIX.length);
+  if (/^(new|created|placed|added)/.test(suffix)) return KDS_EVENTS.ticketNew;
+  if (/^(cancel|delet|void|remov)/.test(suffix)) return KDS_EVENTS.ticketCancelled;
+  return KDS_EVENTS.ticketUpdated;
+}
 
 type StatusListener = (status: ConnectionStatus) => void;
 type ReconnectedListener = () => void;
@@ -65,6 +90,10 @@ class RealtimeClient {
 
   private statusListeners = new Set<StatusListener>();
   private reconnectedListeners = new Set<ReconnectedListener>();
+  // Ticket listeners live on the client (not the socket) so they survive socket
+  // (re)creation and don't depend on subscribe-vs-connect ordering. A single
+  // dispatcher per event is bound to each socket and fans out to this registry.
+  private ticketListeners = new Map<TicketEventName, Set<TicketListener>>();
 
   getStatus(): ConnectionStatus {
     return this.status;
@@ -117,6 +146,11 @@ class RealtimeClient {
       reconnectionDelayMax: 5000,
     });
 
+    // Fan socket events out to the persistent listener registry. Bound once per
+    // socket so listeners registered before/after connect, or across a socket
+    // rebuild, always receive events.
+    this.bindTicketDispatchers();
+
     this.socket.on('connect', () => {
       this.setStatus('connected');
       // Subscribe to ONLY the pinned branch:station room.
@@ -152,8 +186,13 @@ class RealtimeClient {
 
   /** Subscribe to a ticket event. Returns an unsubscribe function. */
   onTicketEvent(event: TicketEventName, cb: TicketListener): () => void {
-    this.socket?.on(event, cb as (...args: unknown[]) => void);
-    return () => this.socket?.off(event, cb as (...args: unknown[]) => void);
+    let listeners = this.ticketListeners.get(event);
+    if (!listeners) {
+      listeners = new Set();
+      this.ticketListeners.set(event, listeners);
+    }
+    listeners.add(cb);
+    return () => this.ticketListeners.get(event)?.delete(cb);
   }
 
   onStatusChange(cb: StatusListener): () => void {
@@ -174,6 +213,22 @@ class RealtimeClient {
       branchId: this.pin?.branchId,
       station: this.pin?.station,
     };
+  }
+
+  /**
+   * Route incoming order events to the persistent listener registry. Bound once
+   * per socket via `onAny`, so it tolerates the server's exact event name
+   * (`order.created` / `order.updated` / `order.cancelled` and suffix variants)
+   * and survives socket rebuilds without depending on subscribe-vs-connect order.
+   */
+  private bindTicketDispatchers(): void {
+    if (!this.socket) return;
+    this.socket.onAny((event: string, payload?: KdsTicketEvent) => {
+      const kind = classifyOrderEvent(event);
+      if (!kind) return;
+      const evt = payload ?? ({ orderId: '' } as KdsTicketEvent);
+      this.ticketListeners.get(kind)?.forEach((cb) => cb(evt));
+    });
   }
 
   private emitSubscribe(): void {

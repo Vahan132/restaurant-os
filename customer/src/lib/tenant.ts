@@ -36,18 +36,18 @@ export function setActiveSlug(slug: string): void {
 }
 
 /**
- * Resolve the active restaurant slug.
+ * Resolve the active restaurant slug — the slug published by TenantProvider from
+ * Next's `usePathname()` (i.e. the real tenant from the page route).
  *
- * Priority:
- *   1. NEXT_PUBLIC_RESTAURANT_SLUG env override (handy in dev / single-tenant builds)
- *   2. The slug published by TenantProvider (from Next's `usePathname()`)
+ * This is the single source of truth. There is deliberately NO default/override
+ * fallback (e.g. a `NEXT_PUBLIC_RESTAURANT_SLUG=demo` env): in a multi-tenant
+ * deployment that would mask every route's slug and silently serve one fixed
+ * tenant. A missing slug returns '' so dependent queries stay disabled and the
+ * request surfaces as not-found rather than silently resolving to `demo`.
  *
- * Returns an empty string when nothing can be resolved (e.g. during SSR before the
- * browser context exists). The backend treats a missing slug via its own fallback.
+ * Returns '' during SSR (before the browser context exists) or for the root path.
  */
 export function resolveSlug(): string {
-  const envSlug = process.env.NEXT_PUBLIC_RESTAURANT_SLUG?.trim();
-  if (envSlug) return envSlug;
   return activeSlug;
 }
 
