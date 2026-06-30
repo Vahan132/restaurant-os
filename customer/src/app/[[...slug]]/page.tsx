@@ -1,17 +1,13 @@
 import MenuView from '@/components/MenuView';
-import ReservePage from '@/components/reserve/ReservePage';
 
 /**
  * Single catch-all storefront route. The first path segment is the restaurant
- * slug (resolved by TenantProvider); an optional second segment selects the
- * sub-page. A real optional catch-all (`[[...slug]]`) cannot coexist with a
- * sibling dynamic route at the root, so sub-routes branch here instead:
+ * slug (resolved by TenantProvider). The QR menu is an at-the-table surface:
+ * browse menu -> order -> waiter confirmation. Booking lives in the consumer
+ * app, not here.
  *
- *   /<slug>          -> menu storefront
- *   /<slug>/reserve  -> public reservation booking
+ *   /<slug>  -> menu storefront
  */
-export default function Page({ params }: { params: { slug?: string[] } }) {
-  const segments = params.slug ?? [];
-  if (segments[1] === 'reserve') return <ReservePage />;
+export default function Page() {
   return <MenuView />;
 }

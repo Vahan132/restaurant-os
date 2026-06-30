@@ -87,6 +87,7 @@ export function OrderPane({ order, builder, actions }: OrderPaneProps) {
 
         <button
           type="button"
+          data-testid="go-to-checkout"
           onClick={() => router.push(`/orders/${order.id}/checkout`)}
           className="h-16 w-full select-none rounded-xl bg-gray-900 text-xl font-bold text-white transition active:scale-[0.98]"
         >

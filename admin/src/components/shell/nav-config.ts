@@ -109,6 +109,11 @@ export const NAV_ITEMS: NavItem[] = [
     scope: 'restaurant',
   },
   {
+    key: 'consumerListing',
+    href: '/consumer-listing',
+    anyOf: [PERMISSIONS.SETTINGS_MANAGE, PERMISSIONS.RESERVATION_MANAGE],
+  },
+  {
     key: 'settings',
     href: '/settings',
     anyOf: [PERMISSIONS.SETTINGS_MANAGE],

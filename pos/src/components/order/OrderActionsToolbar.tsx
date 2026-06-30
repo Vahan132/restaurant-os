@@ -43,6 +43,7 @@ export function OrderActionsToolbar({ order, actions }: OrderActionsToolbarProps
 
       <Can perform={PERMISSIONS.ORDER_EDIT}>
         <ToolbarButton
+          testId="mark-served"
           label={t('markServed')}
           disabled={actions.serving || order.items.length === 0}
           highlight={anyReady}
@@ -122,16 +123,19 @@ function ToolbarButton({
   disabled,
   highlight,
   title,
+  testId,
 }: {
   label: string;
   onClick: () => void;
   disabled?: boolean;
   highlight?: boolean;
   title?: string;
+  testId?: string;
 }) {
   return (
     <button
       type="button"
+      data-testid={testId}
       onClick={onClick}
       disabled={disabled}
       title={title}
