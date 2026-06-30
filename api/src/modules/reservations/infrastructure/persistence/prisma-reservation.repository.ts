@@ -92,6 +92,24 @@ export class PrismaReservationRepository implements ReservationRepository {
     return rows.map(ReservationMapper.toDomain);
   }
 
+  async findActiveStartingBefore(
+    restaurantId: string,
+    branchId: string,
+    windowEnd: Date,
+  ): Promise<Reservation[]> {
+    const rows = await this.prisma.reservation.findMany({
+      where: {
+        restaurantId,
+        branchId,
+        deletedAt: null,
+        status: { in: [...ACTIVE_RESERVATION_STATUSES] },
+        reservedAt: { lt: windowEnd },
+      },
+      orderBy: { reservedAt: 'asc' },
+    });
+    return rows.map(ReservationMapper.toDomain);
+  }
+
   async countRecentBySourceAndPhone(
     restaurantId: string,
     branchId: string,

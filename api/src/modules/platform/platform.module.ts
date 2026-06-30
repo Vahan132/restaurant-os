@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { IdentityModule } from '../identity/identity.module';
+import { ConsumerModule } from '../consumer/consumer.module';
 import { PASSWORD_HASHER } from '../identity/application/ports/password-hasher';
 import { Argon2PasswordHasher } from '../identity/infrastructure/services/argon2-password-hasher';
 
@@ -46,6 +47,7 @@ import { PlansController } from './presentation/http/plans.controller';
 import { OrganizationsController } from './presentation/http/organizations.controller';
 import { SubscriptionsController } from './presentation/http/subscriptions.controller';
 import { PlatformAdminController } from './presentation/http/platform-admin.controller';
+import { PlatformConsumerListingController } from './presentation/http/platform-consumer-listing.controller';
 import { PLATFORM_ADMIN_QUERY } from './application/ports/platform-admin-query.port';
 import { PrismaPlatformAdminQueryService } from './infrastructure/persistence/prisma-platform-admin-query.service';
 import { GetOrgRestaurantsUseCase } from './application/queries/get-org-restaurants.usecase';
@@ -59,13 +61,14 @@ import { GetPlatformDashboardUseCase } from './application/queries/get-platform-
  * live under /platform and are protected solely by PlatformAuthGuard.
  */
 @Module({
-  imports: [JwtModule.register({}), IdentityModule],
+  imports: [JwtModule.register({}), IdentityModule, ConsumerModule],
   controllers: [
     PlatformAuthController,
     PlansController,
     OrganizationsController,
     SubscriptionsController,
     PlatformAdminController,
+    PlatformConsumerListingController,
   ],
   providers: [
     PlatformAuthGuard,

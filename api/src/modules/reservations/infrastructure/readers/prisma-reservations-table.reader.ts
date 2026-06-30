@@ -32,6 +32,11 @@ export class PrismaReservationsTableReader implements ReservationsTableReader {
       where: { restaurantId, branchId, deletedAt: null },
       orderBy: { name: 'asc' },
     });
-    return tables.map((t) => ({ id: t.id, name: t.name, status: t.status }));
+    return tables.map((t) => ({
+      id: t.id,
+      name: t.name,
+      status: t.status,
+      seatCapacity: t.seatCapacity,
+    }));
   }
 }

@@ -4,6 +4,8 @@ export interface ActiveTableInfo {
   id: string;
   name: string;
   status: string; // TableStatus
+  /** Seats the table holds — capacity input for consumer slot derivation (CX-3). */
+  seatCapacity: number;
 }
 
 export interface ReservationsTableRef {

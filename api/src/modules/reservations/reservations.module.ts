@@ -31,6 +31,7 @@ import { CreateReservationFromCallUseCase } from './application/commands/create-
 import { ListReservationsUseCase } from './application/queries/list-reservations.usecase';
 import { GetReservationUseCase } from './application/queries/get-reservation.usecase';
 import { GetTableAvailabilityUseCase } from './application/queries/get-table-availability.usecase';
+import { GetBookableSlotsUseCase } from './application/queries/get-bookable-slots.usecase';
 import { GetPublicReservationsInfoUseCase } from './application/queries/get-public-reservations-info.usecase';
 import { ListCallDevicesUseCase } from './application/queries/list-call-devices.usecase';
 import { ListMissedCallsUseCase } from './application/queries/list-missed-calls.usecase';
@@ -94,6 +95,7 @@ import { PublicRestaurantResolverGuard } from '../../shared/storefront/public-re
     ListReservationsUseCase,
     GetReservationUseCase,
     GetTableAvailabilityUseCase,
+    GetBookableSlotsUseCase,
     GetPublicReservationsInfoUseCase,
     ListCallDevicesUseCase,
     ListMissedCallsUseCase,
@@ -108,6 +110,19 @@ import { PublicRestaurantResolverGuard } from '../../shared/storefront/public-re
     { provide: RESERVATION_PUBLIC_INFO_READER, useClass: PrismaReservationPublicInfoReader },
     { provide: RESERVATIONS_TABLE_READER, useClass: PrismaReservationsTableReader },
     { provide: TABLE_STATUS_GATEWAY, useClass: TablesTableStatusGateway },
+  ],
+  // CX-1: the consumer discovery module REUSES per-table availability for its
+  // anonymous availability endpoint (it strips PII before exposing it).
+  // CX-2: consumer-identity DeleteMyAccount REUSES CancelReservationUseCase to cancel
+  // a deleted consumer's FUTURE bookings through the real path (releases the table).
+  // CX-3: the consumer booking context REUSES CreateReservationUseCase (PENDING,
+  // stamped consumerId), GetBookableSlotsUseCase (engine slot derivation) and
+  // CancelReservationUseCase (self-cancel frees the table) — no duplication.
+  exports: [
+    GetTableAvailabilityUseCase,
+    GetBookableSlotsUseCase,
+    CreateReservationUseCase,
+    CancelReservationUseCase,
   ],
 })
 export class ReservationsModule {}

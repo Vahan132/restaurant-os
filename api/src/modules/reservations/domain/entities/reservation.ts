@@ -31,6 +31,8 @@ export interface ReservationProps {
   source: ReservationSource;
   notes: string | null;
   customerNote: string | null;
+  /** CX-3: the consumer (CustomerAccount) who booked, if via the consumer app. */
+  consumerId: string | null;
   arrivedAt: Date | null;
   seatedAt: Date | null;
   completedAt: Date | null;
@@ -56,6 +58,8 @@ export interface CreateReservationInput {
   notes?: string | null;
   source?: ReservationSource;
   customerNote?: string | null;
+  /** CX-3: stamp the booking consumer (null for staff/public/phone bookings). */
+  consumerId?: string | null;
   createdByUserId: string;
 }
 
@@ -101,6 +105,7 @@ export class Reservation extends AggregateRoot<string> {
       source: input.source ?? ReservationSource.STAFF,
       notes: input.notes ?? null,
       customerNote: input.customerNote ?? null,
+      consumerId: input.consumerId ?? null,
       arrivedAt: null,
       seatedAt: null,
       completedAt: null,
@@ -176,6 +181,9 @@ export class Reservation extends AggregateRoot<string> {
   }
   get customerNote(): string | null {
     return this.props.customerNote;
+  }
+  get consumerId(): string | null {
+    return this.props.consumerId;
   }
   get arrivedAt(): Date | null {
     return this.props.arrivedAt;

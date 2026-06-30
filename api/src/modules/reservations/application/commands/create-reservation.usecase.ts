@@ -37,6 +37,8 @@ export interface CreateReservationInput {
   notes?: string | null;
   source?: ReservationSource;
   customerNote?: string | null;
+  /** CX-3: stamp the booking consumer (CustomerAccount id) when via the consumer app. */
+  consumerId?: string | null;
   initialStatus?: 'PENDING' | 'CONFIRMED';
 }
 
@@ -83,6 +85,7 @@ export class CreateReservationUseCase implements UseCase<CreateReservationInput,
       notes: input.notes ?? null,
       source: input.source ?? ReservationSource.STAFF,
       customerNote: input.customerNote ?? null,
+      consumerId: input.consumerId ?? null,
       createdByUserId: input.createdByUserId,
     });
     if (input.initialStatus === 'CONFIRMED') {

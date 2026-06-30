@@ -12,6 +12,8 @@ import { SalesImportModule } from './modules/sales-import/sales-import.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { StorefrontModule } from './modules/storefront/storefront.module';
+import { ConsumerModule } from './modules/consumer/consumer.module';
+import { ConsumerIdentityModule } from './modules/consumer-identity/consumer-identity.module';
 import { OrderRequestsModule } from './modules/order-requests/order-requests.module';
 import { AccountModule } from './modules/account/account.module';
 import { TablesModule } from './modules/tables/tables.module';
@@ -47,7 +49,14 @@ const IS_EDGE = APP_MODE === 'EDGE';
  */
 const cloudOnlyModules = IS_EDGE
   ? []
-  : [RedisModule, PlatformModule, AccountModule, EdgeRegistryModule];
+  : [
+      RedisModule,
+      PlatformModule,
+      AccountModule,
+      EdgeRegistryModule,
+      ConsumerModule,
+      ConsumerIdentityModule,
+    ];
 
 /**
  * Edge-only modules, loaded ONLY on a hub:
