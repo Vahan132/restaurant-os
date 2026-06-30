@@ -35,11 +35,24 @@ export interface MeResult {
   defaultBranchId: string | null;
 }
 
+function responseErrorCode(bodyText: string): string | undefined {
+  try {
+    const body = JSON.parse(bodyText) as { error?: { code?: unknown }; code?: unknown };
+    const code = body.error?.code ?? body.code;
+    return typeof code === 'string' ? code : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function pinLogin(input: {
   deviceSecret: string;
   userId: string;
   pin: string;
-}): Promise<PinLoginResult> {
+}, options: {
+  actorLabel?: string;
+  diagnostics?: string;
+} = {}): Promise<PinLoginResult> {
   const ctx = await request.newContext({ ignoreHTTPSErrors: true });
   try {
     const res = await ctx.post(`${ENV.apiBaseUrl}/auth/pin-login`, {
@@ -47,7 +60,31 @@ export async function pinLogin(input: {
       headers: { 'content-type': 'application/json' },
     });
     if (!res.ok()) {
-      throw new Error(`pin-login failed: ${res.status()} ${await res.text()}`);
+      const bodyText = await res.text();
+      const code = responseErrorCode(bodyText);
+      const actorPrefix = options.actorLabel ? `${options.actorLabel} ` : '';
+      const details = [`${actorPrefix}pin-login failed: ${res.status()} ${bodyText}`];
+
+      if (code === 'INVALID_PIN') {
+        details.push(
+          'INVALID_PIN means the device secret was accepted enough to reach PIN validation.',
+          'The selected staff/user ID or PIN is invalid, or the helper is using the wrong fixture field.',
+          'The fixture may not match the backend DB behind E2E_API_BASE_URL.',
+          'Rerun/copy e2e/fixtures/seeded.json from the same backend DB used by E2E_API_BASE_URL.',
+        );
+      }
+      if (code === 'PIN_LOCKED') {
+        details.push(
+          'PIN_LOCKED means this staff PIN has had too many failed attempts against the live backend.',
+          'Wait for the backend lockout window to expire, or rerun the E2E seed against the backend DB used by E2E_API_BASE_URL and copy the fresh fixture.',
+        );
+      }
+
+      if (options.diagnostics) {
+        details.push(options.diagnostics);
+      }
+
+      throw new Error(details.join('\n'));
     }
     return unwrap<PinLoginResult>(await res.json());
   } finally {

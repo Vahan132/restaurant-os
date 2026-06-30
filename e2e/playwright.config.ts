@@ -1,18 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
+import { ENV } from './config/env';
 
-/**
- * One orchestrated test drives three actors (see tests/order-lifecycle.spec.ts),
- * each created as its own device-emulated context inside the test. The project
- * below is just the default harness; trace + video are forced ON both here and
- * per-actor so every device produces a replayable artifact.
- *
- * globalSetup mints authenticated POS + KDS sessions (via the API) and writes
- * artifacts/session.json — it requires `pnpm db:seed && pnpm db:seed:e2e` to have
- * run in ../api first (see README).
- */
 export default defineConfig({
   testDir: './tests',
-  globalSetup: './global-setup.ts',
   timeout: 180_000,
   expect: { timeout: 20_000 },
   fullyParallel: false,
@@ -22,11 +12,58 @@ export default defineConfig({
   reporter: [['list'], ['html', { outputFolder: 'artifacts/html', open: 'never' }]],
   outputDir: 'artifacts/test-results',
   use: {
+    browserName: 'chromium',
     ignoreHTTPSErrors: true,
     trace: 'on',
     video: 'on',
     screenshot: 'on',
     actionTimeout: 20_000,
   },
-  projects: [{ name: 'golden-path', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'health',
+      testMatch: 'health/**/*.spec.ts',
+      use: { ...devices['Desktop Chrome'], browserName: 'chromium', baseURL: ENV.websiteBaseUrl },
+    },
+    {
+      name: 'api',
+      testMatch: 'api/**/*.spec.ts',
+      use: { ...devices['Desktop Chrome'], browserName: 'chromium', baseURL: ENV.apiBaseUrl },
+    },
+    {
+      name: 'website',
+      testMatch: 'website/**/*.spec.ts',
+      use: { ...devices['Desktop Chrome'], browserName: 'chromium', baseURL: ENV.websiteBaseUrl },
+    },
+    {
+      name: 'admin',
+      testMatch: 'admin/**/*.spec.ts',
+      use: { ...devices['Desktop Chrome'], browserName: 'chromium', baseURL: ENV.adminBaseUrl },
+    },
+    {
+      name: 'pos',
+      testMatch: 'pos/**/*.spec.ts',
+      use: { ...devices['iPad Pro 11 landscape'], browserName: 'chromium', baseURL: ENV.posBaseUrl },
+    },
+    {
+      name: 'kds',
+      testMatch: 'kds/**/*.spec.ts',
+      use: { ...devices['Desktop Chrome'], browserName: 'chromium', baseURL: ENV.kdsBaseUrl },
+    },
+    {
+      name: 'customer',
+      testMatch: 'customer/**/*.spec.ts',
+      use: { ...devices['Pixel 5'], browserName: 'chromium', baseURL: ENV.customerBaseUrl },
+    },
+    {
+      name: 'mobile-reservation',
+      testMatch: 'mobile-reservation/**/*.spec.ts',
+      use: { ...devices['Pixel 5'], browserName: 'chromium' },
+    },
+    {
+      name: 'all-flow',
+      testMatch: 'all-flow/**/*.spec.ts',
+      use: { ...devices['Desktop Chrome'], browserName: 'chromium' },
+    },
+  ],
 });

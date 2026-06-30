@@ -3,8 +3,8 @@
  * that exercises the cross-app WebSocket handoffs the way production does:
  *   QR  = mobile (Pixel-class)   POS = tablet (iPad-class)   KDS = desktop.
  *
- * Per-actor trace + video are started here so each device can be watched /
- * replayed independently (artifacts/actors/<name>/...).
+ * Playwright Test owns trace recording through playwright.config.ts. This helper
+ * only records per-actor video and creates isolated browser contexts.
  */
 import { devices } from '@playwright/test';
 import type { Browser, BrowserContext, Page, BrowserContextOptions } from '@playwright/test';
@@ -41,17 +41,10 @@ export async function openActor(
     // storageState accepts an object (localStorage origins) directly.
     storageState: opts.storageState,
   });
-  await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
   const page = await context.newPage();
   return { name, context, page };
 }
 
-export async function closeActor(actor: Actor, artifactsDir: string): Promise<void> {
-  try {
-    await actor.context.tracing.stop({
-      path: path.join(artifactsDir, actor.name, 'trace.zip'),
-    });
-  } finally {
-    await actor.context.close(); // flushes the video file
-  }
+export async function closeActor(actor: Actor, _artifactsDir: string): Promise<void> {
+  await actor.context.close(); // flushes the video file
 }
