@@ -32,6 +32,17 @@ export interface ReservationRepository {
     windowEnd: Date,
   ): Promise<Reservation[]>;
   /**
+   * Active (non-terminal) reservations of the branch that START before `windowEnd`
+   * (table or not) — used by consumer slot derivation (CX-3) to measure how much
+   * seating capacity each candidate slot already consumes. The application filters
+   * the [reservedAt, +duration) overlap against each slot.
+   */
+  findActiveStartingBefore(
+    restaurantId: string,
+    branchId: string,
+    windowEnd: Date,
+  ): Promise<Reservation[]>;
+  /**
    * Count reservations from a given source + phone created at/after `since`
    * (anti-abuse rate limiting for the public request-to-book surface).
    */

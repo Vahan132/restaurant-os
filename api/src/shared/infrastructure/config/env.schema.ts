@@ -127,6 +127,78 @@ export const envSchema = z
       (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
       z.coerce.number().int().min(1).default(10),
     ),
+
+    // ── Consumer identity (CX-2) ─────────────────────────────────────────────
+    // Consumer auth is a SEPARATE audience from staff/platform. The access secret
+    // MUST differ from the tenant + platform secrets. Refresh tokens are opaque
+    // random strings (hash-only at rest); the refresh secret is reserved for a
+    // future signed-refresh variant.
+    CONSUMER_JWT_ACCESS_SECRET: z
+      .string()
+      .min(16, 'CONSUMER_JWT_ACCESS_SECRET must be at least 16 chars'),
+    CONSUMER_JWT_REFRESH_SECRET: z
+      .string()
+      .min(16, 'CONSUMER_JWT_REFRESH_SECRET must be at least 16 chars'),
+    CONSUMER_ACCESS_TTL_MINUTES: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(1).default(15),
+    ),
+    CONSUMER_REFRESH_TTL_DAYS: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(1).default(30),
+    ),
+
+    // Phone OTP: TTL, resend cooldown, and the reused lockout primitive limits.
+    OTP_TTL_MINUTES: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(1).default(5),
+    ),
+    OTP_RESEND_COOLDOWN_SECONDS: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(1).default(60),
+    ),
+    OTP_MAX_ATTEMPTS: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(1).default(5),
+    ),
+    OTP_LOCKOUT_MINUTES: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(1).default(15),
+    ),
+    OTP_CODE_LENGTH: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(4).max(8).default(6),
+    ),
+
+    // Provider audiences (comma-separated client IDs the ID token's aud must match).
+    // Blank in dev (provider sign-in then fails verification; OTP still works).
+    GOOGLE_CLIENT_IDS: z.string().default(''),
+    APPLE_CLIENT_IDS: z.string().default(''),
+
+    // Nikita SMS gateway. When URL+USER+PASS are present the Nikita adapter is used;
+    // otherwise a console-stub sender is auto-selected (dev), so OTP works without
+    // real SMS. All blank-safe/optional.
+    SMS_NIKITA_URL: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().url().optional(),
+    ),
+    SMS_NIKITA_USER: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
+    SMS_NIKITA_PASS: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
+    SMS_NIKITA_ORIGINATOR: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
+    SMS_NIKITA_PRIORITY: z.string().default('0'),
+    SMS_NIKITA_TIMEOUT_MS: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(1000).default(10_000),
+    ),
   })
   // Fail-fast: in EDGE mode the four edge identity ids are mandatory. CLOUD
   // validation is unchanged (these stay optional and unused).

@@ -87,7 +87,12 @@ export function CheckoutScreen({ orderId }: { orderId: string }) {
       {cancelled ? (
         <Notice text={t('orderCancelledNotice')} onHome={() => router.push('/')} homeLabel={t('backHome')} />
       ) : closed ? (
-        <Notice text={t('orderClosedNotice')} onHome={() => router.push('/')} homeLabel={t('backHome')} />
+        <Notice
+          testId="order-closed"
+          text={t('orderClosedNotice')}
+          onHome={() => router.push('/')}
+          homeLabel={t('backHome')}
+        />
       ) : (
         <div className="grid flex-1 grid-cols-1 gap-4 p-4 md:grid-cols-2">
           {/* Left: bill */}
@@ -146,6 +151,7 @@ export function CheckoutScreen({ orderId }: { orderId: string }) {
             <div className="rounded-2xl bg-white p-4 shadow-sm">
               <button
                 type="button"
+                data-testid="close-order"
                 onClick={() => checkout.close()}
                 disabled={!paid || !checkout.canPay || checkout.closing}
                 className="h-16 w-full select-none rounded-xl bg-gray-900 text-xl font-bold text-white active:scale-[0.98] disabled:opacity-50"
@@ -182,13 +188,18 @@ function Notice({
   text,
   onHome,
   homeLabel,
+  testId,
 }: {
   text: string;
   onHome: () => void;
   homeLabel: string;
+  testId?: string;
 }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+    <div
+      data-testid={testId}
+      className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center"
+    >
       <p className="text-lg text-gray-600">{text}</p>
       <button
         type="button"

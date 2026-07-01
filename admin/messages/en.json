@@ -62,7 +62,8 @@
     "invLocations": "Locations",
     "invTransfers": "Transfers",
     "invCorrections": "Corrections",
-    "invReports": "Reports"
+    "invReports": "Reports",
+    "consumerListing": "Consumer Listing"
   },
   "topbar": {
     "userMenu": "Account",
@@ -1602,6 +1603,91 @@
     "validation": {
       "branchRequired": "Pick a branch.",
       "nameRequired": "Name is required."
+    }
+  },
+  "consumerListing": {
+    "title": "Consumer Listing",
+    "subtitle": "Control how your restaurant appears in the consumer app.",
+    "readOnly": "You have read-only access to these settings.",
+    "tabs": {
+      "restaurant": "Brand",
+      "branch": "Branch"
+    },
+    "suppressionBanner": "Listing suspended by platform admin. Your branches won't appear in the consumer app until this is lifted.",
+    "i18nPlaceholder": "{lang}",
+    "about": {
+      "title": "About & website",
+      "label": "About",
+      "website": "Website"
+    },
+    "photos": {
+      "title": "Photos",
+      "addLabel": "Photo URL",
+      "httpsError": "Enter a valid https:// image URL.",
+      "added": "Photo added.",
+      "deleted": "Photo removed.",
+      "deleteTitle": "Remove photo",
+      "deleteConfirm": "Remove this photo from your listing?",
+      "empty": "No photos yet. Add one by URL below.",
+      "rightsNote": "Paste a public image URL (v1). You must have the rights to use these images.",
+      "addAlt": "Add alt text",
+      "hideAlt": "Hide alt text",
+      "addButton": "Add photo",
+      "moveUp": "Move up",
+      "moveDown": "Move down"
+    },
+    "attributes": {
+      "title": "Attributes",
+      "hint": "Select the tags that describe your restaurant. These help diners find you.",
+      "saved": "Attributes saved.",
+      "empty": "No attributes are available to select."
+    },
+    "toast": {
+      "profileSaved": "Brand profile saved.",
+      "contactSaved": "Contact details saved.",
+      "hoursSaved": "Public hours saved."
+    },
+    "hours": {
+      "closed": "Closed",
+      "opensAt": "Opens",
+      "closesAt": "Closes",
+      "overnight": "overnight",
+      "overnightNote": "A closing time earlier than the opening time is treated as the next day (e.g. 20:00–03:00).",
+      "invalid": "Set both an opening and closing time for open days."
+    },
+    "checklist": {
+      "title": "Readiness checklist",
+      "goLiveHint": "Complete these items to make this branch go live."
+    },
+    "check": {
+      "name": "Restaurant name",
+      "logo": "Logo",
+      "photos": "At least one photo",
+      "about": "About text",
+      "address": "Branch address"
+    },
+    "branch": {
+      "select": "Branch",
+      "noBranches": "No branches found.",
+      "contactTitle": "Public contact",
+      "phone": "Public phone",
+      "address": "Address",
+      "city": "City",
+      "hoursTitle": "Public hours",
+      "visibilityTitle": "Visibility",
+      "menuPublic": "Show menu in consumer app",
+      "menuPublicDesc": "Diners can view this branch's menu.",
+      "reservationsPublic": "Accept reservations in consumer app",
+      "reservationsPublicDesc": "Diners can request reservations at this branch.",
+      "reservationsReason": "Requires reservations permission.",
+      "listed": "List this branch in the consumer app",
+      "listedDesc": "Make this branch discoverable to diners.",
+      "listedBlocked": "Complete the readiness checklist to enable listing.",
+      "listedServerBlocked": "Listing blocked — missing: {fields}",
+      "effectiveListed": "Currently visible",
+      "live": "Live",
+      "notLive": "Not live",
+      "suppressedHint": "Suspended by platform admin."
     }
   }
 }

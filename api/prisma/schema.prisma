@@ -173,12 +173,24 @@ model Restaurant {
   // a token from either side validates on both. Flows to the edge via the OFF-2
   // snapshot / OFF-3 config (the Restaurant row). NEVER exposed to clients.
   tokenSigningKey String?          @map("token_signing_key")
+  // CX-1 (consumer discovery): brand-level marketing profile, inherited by all
+  // branches for consumer-app display. i18n is per-column hy/ru/en — a DELIBERATE
+  // localized model for consumer-facing copy (the operational catalog stores the
+  // primary locale only; see CONVENTIONS). `consumerListingSuppressed` is the
+  // platform-admin brand kill switch (read here in CX-1; controlled in CX-ADMIN).
+  aboutHy                   String?
+  aboutRu                   String?
+  aboutEn                   String?
+  website                   String?
+  consumerListingSuppressed Boolean @default(false)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   deletedAt       DateTime?
 
   organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   branches        Branch[]
+  marketingPhotos     RestaurantPhoto[]
+  attributeSelections RestaurantAttribute[]
   users           User[]
   settings        RestaurantSettings?
   menuCategories  MenuCategory[]
@@ -215,14 +227,29 @@ model Branch {
   // a PIN/anchored login is allowed only from a source IP inside the allowlist.
   ipBindingMode BranchIpBindingMode @default(SOFT)
   ipAllowlist   String[]            @default([])
+  // CX-1 (consumer discovery): the Branch is the consumer "listing unit". Location
+  // data is branch-owned here (operational address/phone on RestaurantSettings is
+  // restaurant-scoped/single-location, so the consumer context carries its own
+  // per-branch public location fields). The three visibility flags are independent;
+  // effective listing = listedInConsumerApp && !restaurant.consumerListingSuppressed.
+  publicPhone         String?
+  address             String?
+  city                String?
+  menuPublic          Boolean @default(false)
+  reservationsPublic  Boolean @default(false)
+  listedInConsumerApp Boolean @default(false)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   deletedAt    DateTime?
 
   restaurant  Restaurant         @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   memberships BranchMembership[]
+  publicHours BranchPublicHours[]
+  // CX-3: consumers who saved this branch.
+  savedBy     SavedRestaurant[]
 
   @@unique([restaurantId, slug])
+  @@index([listedInConsumerApp])
   @@index([restaurantId])
   @@map("branches")
 }
@@ -877,16 +904,23 @@ model Reservation {
   cancelledAt     DateTime?
   cancelledReason String?
   createdByUserId String
+  // Consumer (CX-2) who booked, if this reservation came from the consumer app.
+  // Nullable + SetNull: deleting a CustomerAccount severs the link (delete-account
+  // also anonymizes the denormalized customer* PII below in the same operation).
+  // CX-3 populates this when a consumer creates a booking.
+  consumerId      String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   deletedAt       DateTime?
 
   restaurant Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   table      RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  consumer   CustomerAccount? @relation(fields: [consumerId], references: [id], onDelete: SetNull)
 
   @@index([restaurantId])
   @@index([tableId])
   @@index([reservedAt])
+  @@index([consumerId])
   @@index([restaurantId, branchId, reservedAt])
   @@map("reservations")
 }
@@ -1542,6 +1576,235 @@ model ProcessRun {
   @@index([restaurantId, processId, runAt])
   @@index([restaurantId, branchId])
   @@map("inventory_process_runs")
+}
+
+// ── Consumer discovery (CX-1) ────────────────────────────────────────────────
+//   Backend for the consumer-facing discovery + reservation app. Listing unit is
+//   the Branch (location fields live on Branch above); brand identity (name on
+//   Restaurant, logo on RestaurantSettings, about/website/gallery/attributes) is
+//   inherited from the parent Restaurant for display. i18n is per-column hy/ru/en
+//   for these consumer-facing tables (a deliberate localized model; the
+//   operational catalog stores the primary locale only). Read API is anonymous.
+
+// Platform-defined taxonomy. Restaurants SELECT values; the same taxonomy powers
+// the Filters sheet and the detail "Features" list. Attribute selection is stored
+// at Restaurant level for v1.
+// FUTURE: per-branch attribute override (deferred — do not build in CX-1).
+model AttributeCategory {
+  id           String           @id @default(cuid())
+  slug         String           @unique
+  labelHy      String
+  labelRu      String
+  labelEn      String
+  position     Int              @default(0)
+  isFilterable Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  values AttributeValue[]
+
+  @@index([position])
+  @@map("consumer_attribute_categories")
+}
+
+model AttributeValue {
+  id         String   @id @default(cuid())
+  categoryId String
+  slug       String
+  labelHy    String
+  labelRu    String
+  labelEn    String
+  position   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category   AttributeCategory     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  selections RestaurantAttribute[]
+
+  // slug unique WITHIN a category.
+  @@unique([categoryId, slug])
+  @@index([categoryId, position])
+  @@map("consumer_attribute_values")
+}
+
+// Join: a restaurant's selected attribute values (brand-level for v1).
+model RestaurantAttribute {
+  restaurantId     String
+  attributeValueId String
+  createdAt        DateTime @default(now())
+
+  restaurant Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  value      AttributeValue @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
+
+  @@id([restaurantId, attributeValueId])
+  // For filter queries (find restaurants having a given value).
+  @@index([attributeValueId])
+  @@map("consumer_restaurant_attributes")
+}
+
+// Brand photo gallery (Restaurant-scoped). URLs are set by admin (CX-ADMIN);
+// CX-1 only models + reads them. `url` is validated as a parseable https URL in
+// the domain. alt text is per-column i18n.
+model RestaurantPhoto {
+  id           String   @id @default(cuid())
+  restaurantId String
+  position     Int      @default(0)
+  url          String
+  altHy        String?
+  altRu        String?
+  altEn        String?
+  width        Int?
+  height       Int?
+  createdAt    DateTime @default(now())
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId, position])
+  @@map("consumer_restaurant_photos")
+}
+
+// Per-branch public opening hours (one row per weekday). dayOfWeek: 0=Mon … 6=Sun.
+// A closesAt < opensAt means the slot crosses midnight (e.g. 20:00–03:00).
+model BranchPublicHours {
+  id        String   @id @default(cuid())
+  branchId  String
+  dayOfWeek Int
+  isClosed  Boolean  @default(false)
+  opensAt   String?
+  closesAt  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, dayOfWeek])
+  @@map("consumer_branch_public_hours")
+}
+
+// ── Consumer identity (CX-2) ─────────────────────────────────────────────────
+//   Customer accounts for the consumer app: Google / Apple / phone-OTP auth.
+//   A SEPARATE audience from ALL staff auth — consumer access tokens are signed
+//   with a dedicated platform-level key and carry `aud: consumer`; a consumer
+//   token never authorizes a staff/platform route and vice-versa. Refresh tokens
+//   rotate as a FAMILY with reuse detection; OTP codes + refresh tokens are
+//   stored HASHED only (never plaintext). OTP request rate-limit + verify lockout
+//   reuse the staff throttle primitive (ConsumerOtpThrottle, keyed by phone).
+
+enum ConsumerGender {
+  MALE
+  FEMALE
+  OTHER
+  UNDISCLOSED
+}
+
+enum CustomerIdentityProvider {
+  GOOGLE
+  APPLE
+  PHONE
+}
+
+model CustomerAccount {
+  id        String          @id @default(cuid())
+  name      String?
+  // Unique WHERE present (Postgres treats multiple NULLs as distinct).
+  email     String?         @unique
+  phone     String?         @unique // E.164
+  gender    ConsumerGender?
+  birthday  DateTime?       @db.Date
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  identities    CustomerIdentity[]
+  refreshTokens CustomerRefreshToken[]
+  reservations  Reservation[]
+  // CX-3: branches this consumer has saved (per-branch bookmark).
+  savedRestaurants SavedRestaurant[]
+
+  @@map("customer_accounts")
+}
+
+// CX-3: a consumer's saved (bookmarked) branch. The Branch is the listing unit
+// (see CX-1), so "saved restaurant" is keyed to a branch. Both FKs cascade: a
+// deleted account or branch removes the bookmark. Unique per (account, branch)
+// makes save idempotent; the account index serves the "my saved" list.
+model SavedRestaurant {
+  id                String   @id @default(cuid())
+  customerAccountId String
+  branchId          String
+  createdAt         DateTime @default(now())
+
+  account CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+  branch  Branch          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([customerAccountId, branchId])
+  @@index([customerAccountId])
+  @@map("consumer_saved_restaurants")
+}
+
+model CustomerIdentity {
+  id                String                   @id @default(cuid())
+  customerAccountId String
+  provider          CustomerIdentityProvider
+  // Provider `sub` (GOOGLE/APPLE) or E.164 phone (PHONE).
+  subject           String
+  emailVerified     Boolean                  @default(false)
+  createdAt         DateTime                 @default(now())
+
+  account CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+
+  // One identity per provider subject; enables find-or-link.
+  @@unique([provider, subject])
+  @@index([customerAccountId])
+  @@map("customer_identities")
+}
+
+// Rotating refresh-token family. Only the HASH is stored. Lookup is by tokenHash
+// (unique); a presented token whose row is already revoked => reuse => revoke the
+// whole family.
+model CustomerRefreshToken {
+  id                String    @id @default(cuid())
+  customerAccountId String
+  familyId          String
+  tokenHash         String    @unique
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  replacedById      String?
+  createdAt         DateTime  @default(now())
+
+  account CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+
+  @@index([customerAccountId])
+  @@index([familyId])
+  @@map("consumer_refresh_tokens")
+}
+
+// A single phone-OTP challenge. Code stored HASHED; short TTL; `attemptCount` is
+// per-challenge verify attempts. Request rate-limit + lockout live in
+// ConsumerOtpThrottle (the reused primitive), keyed by phone.
+model PhoneOtp {
+  id           String    @id @default(cuid())
+  phone        String // E.164
+  codeHash     String
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  attemptCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  @@index([phone])
+  @@map("consumer_phone_otps")
+}
+
+// OTP rate-limit / lockout state — one row per phone. Clone of the staff
+// StepUpThrottle primitive (failedAttempts + lockedUntil), reused for OTP.
+model ConsumerOtpThrottle {
+  id             String    @id @default(cuid())
+  phone          String    @unique // E.164
+  failedAttempts Int       @default(0)
+  lockedUntil    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("consumer_otp_throttles")
 }
 
 // ── Dish recipes / BOM (INV-3) ───────────────────────────────────────────────

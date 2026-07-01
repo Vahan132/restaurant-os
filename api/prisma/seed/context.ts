@@ -33,6 +33,19 @@ import { CreateGoodsReceiptUseCase } from '../../src/modules/inventory/applicati
 import { CreateProcessUseCase } from '../../src/modules/inventory/application/commands/create-process.usecase';
 import { RunProcessUseCase } from '../../src/modules/inventory/application/commands/run-process.usecase';
 
+import { UpdateRestaurantMarketingProfileUseCase } from '../../src/modules/consumer/application/commands/update-restaurant-marketing-profile.usecase';
+import { SetRestaurantAttributesUseCase } from '../../src/modules/consumer/application/commands/set-restaurant-attributes.usecase';
+import { AddRestaurantPhotoUseCase } from '../../src/modules/consumer/application/commands/add-restaurant-photo.usecase';
+import { SetBranchPublicContactUseCase } from '../../src/modules/consumer/application/commands/set-branch-public-contact.usecase';
+import { SetBranchPublicHoursUseCase } from '../../src/modules/consumer/application/commands/set-branch-public-hours.usecase';
+import {
+  SetBranchMenuPublicUseCase,
+  SetBranchReservationsPublicUseCase,
+} from '../../src/modules/consumer/application/commands/set-branch-visibility.usecase';
+import { SetBranchListedUseCase } from '../../src/modules/consumer/application/commands/set-branch-listed.usecase';
+import { SaveRestaurantUseCase } from '../../src/modules/consumer/application/commands/save-restaurant.usecase';
+import { CreateReservationUseCase } from '../../src/modules/reservations/application/commands/create-reservation.usecase';
+
 import { CreateOrderUseCase } from '../../src/modules/orders/application/commands/create-order.usecase';
 import { AddOrderItemUseCase } from '../../src/modules/orders/application/commands/add-order-item.usecase';
 import { SendToKitchenUseCase } from '../../src/modules/orders/application/commands/send-to-kitchen.usecase';
@@ -58,6 +71,18 @@ export interface SeedUseCases {
   recordPayment: RecordPaymentUseCase;
   closeOrder: CloseOrderUseCase;
   cancelOrder: CancelOrderUseCase;
+  // CX-1 consumer discovery (write use-cases exercised by phase 12).
+  updateMarketingProfile: UpdateRestaurantMarketingProfileUseCase;
+  setRestaurantAttributes: SetRestaurantAttributesUseCase;
+  addRestaurantPhoto: AddRestaurantPhotoUseCase;
+  setBranchPublicContact: SetBranchPublicContactUseCase;
+  setBranchPublicHours: SetBranchPublicHoursUseCase;
+  setBranchMenuPublic: SetBranchMenuPublicUseCase;
+  setBranchReservationsPublic: SetBranchReservationsPublicUseCase;
+  setBranchListed: SetBranchListedUseCase;
+  // CX-3 consumer booking + saved (phase 13).
+  saveRestaurant: SaveRestaurantUseCase;
+  createReservation: CreateReservationUseCase;
 }
 
 export interface SeedContext {
@@ -96,6 +121,20 @@ export async function bootstrapSeedContext(): Promise<SeedContext> {
     recordPayment: get<RecordPaymentUseCase>(RecordPaymentUseCase),
     closeOrder: get<CloseOrderUseCase>(CloseOrderUseCase),
     cancelOrder: get<CancelOrderUseCase>(CancelOrderUseCase),
+    updateMarketingProfile: get<UpdateRestaurantMarketingProfileUseCase>(
+      UpdateRestaurantMarketingProfileUseCase,
+    ),
+    setRestaurantAttributes: get<SetRestaurantAttributesUseCase>(SetRestaurantAttributesUseCase),
+    addRestaurantPhoto: get<AddRestaurantPhotoUseCase>(AddRestaurantPhotoUseCase),
+    setBranchPublicContact: get<SetBranchPublicContactUseCase>(SetBranchPublicContactUseCase),
+    setBranchPublicHours: get<SetBranchPublicHoursUseCase>(SetBranchPublicHoursUseCase),
+    setBranchMenuPublic: get<SetBranchMenuPublicUseCase>(SetBranchMenuPublicUseCase),
+    setBranchReservationsPublic: get<SetBranchReservationsPublicUseCase>(
+      SetBranchReservationsPublicUseCase,
+    ),
+    setBranchListed: get<SetBranchListedUseCase>(SetBranchListedUseCase),
+    saveRestaurant: get<SaveRestaurantUseCase>(SaveRestaurantUseCase),
+    createReservation: get<CreateReservationUseCase>(CreateReservationUseCase),
   };
 
   return { app, prisma, uc };

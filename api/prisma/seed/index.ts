@@ -27,6 +27,8 @@ import { seedRecipes } from './modules/08-recipes';
 import { seedProcesses } from './modules/09-processes';
 import { seedReservations } from './modules/10-reservations';
 import { seedOrders } from './modules/11-orders';
+import { seedConsumer } from './modules/12-consumer';
+import { seedConsumerIdentity } from './modules/13-consumer-identity';
 
 /* eslint-disable no-console */
 export async function main(): Promise<void> {
@@ -49,6 +51,8 @@ export async function main(): Promise<void> {
       ['09 processes', () => seedProcesses(ctx, state)],
       ['10 reservations', () => seedReservations(ctx, state)],
       ['11 orders', () => seedOrders(ctx, state)],
+      ['12 consumer', () => seedConsumer(ctx, state)],
+      ['13 consumer-identity', () => seedConsumerIdentity(ctx, state)],
     ];
     for (const [name, run] of phases) {
       process.stdout.write(`SEED-1: ${name}… `);
@@ -111,6 +115,12 @@ async function report(
     orders: await prisma.order.count({ where: w }),
     orderItems: await prisma.orderItem.count({ where: w }),
     payments: await prisma.payment.count({ where: w }),
+    // CX-1 consumer discovery
+    attributeCategories: await prisma.attributeCategory.count(),
+    attributeValues: await prisma.attributeValue.count(),
+    restaurantPhotos: await prisma.restaurantPhoto.count({ where: w }),
+    restaurantAttributes: await prisma.restaurantAttribute.count({ where: { restaurantId: rid } }),
+    listedBranches: await prisma.branch.count({ where: { ...w, listedInConsumerApp: true } }),
   };
 
   // Inventory valuation from the ledger (source of truth).
