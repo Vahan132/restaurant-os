@@ -34,6 +34,7 @@ export interface StaffOrderRequestResponse extends PublicOrderRequestSummary {
   tableId: string;
   tableName?: string | null;
   linkedOrderId?: string | null;
+  rejectedReason?: string | null;
 }
 
 export interface OrderResponse {
