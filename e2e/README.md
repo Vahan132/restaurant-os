@@ -190,8 +190,11 @@ pnpm e2e:api
 pnpm e2e:website
 pnpm e2e:admin
 pnpm e2e:pos
+pnpm e2e:pos-requests
 pnpm e2e:kds
+pnpm e2e:kds-ticket
 pnpm e2e:customer
+pnpm e2e:customer-order
 pnpm e2e:mobile
 pnpm e2e:all
 ```
@@ -206,9 +209,22 @@ pnpm e2e:all
 - `website`: public website route smoke; does not depend on admin/POS/KDS/customer.
 - `admin`: admin route smoke; authenticated checks require explicit credentials.
 - `pos`: POS route + primary API/session requirements; does not require KDS/customer.
+- `pos-requests`: focused POS -> API connection test. It creates one pending
+  public customer order request through the API, opens authenticated POS, finds
+  that exact request card, confirms it, and verifies the API marks it confirmed
+  and removes it from the pending staff list.
 - `kds`: KDS route + primary API/socket requirements, then real KDS UI staff/PIN
   login from the seeded fixture; does not require POS/customer.
+- `kds-ticket`: focused KDS -> API connection test. It creates a public customer
+  order request through the API, confirms it with the seeded POS API session,
+  opens authenticated KDS, finds that exact ticket/item, marks it preparing and
+  ready from the board, and verifies the KDS API status after each action. To
+  keep reruns independent, it clears only active orders on the seeded E2E table
+  before/after the test using the standard seeded owner API account.
 - `customer`: customer QR route + primary API requirements.
+- `customer-order`: focused customer QR -> public API connection test. It opens
+  the seeded table QR menu, adds the seeded dish, places a request, asserts the
+  customer status UI, and verifies `GET /public/order-requests/:id`.
 - `mobile-reservation`: skipped placeholder; this repo contains an Expo Android
   app under `mobile-reservation/android-missed-call-sync`, not a browser route.
 - `all-flow`: full customer QR -> POS -> API -> KDS -> POS/customer propagation.
@@ -256,7 +272,18 @@ of injected KDS auth localStorage.
 - CORS issue: browser tests load but API calls fail in the page.
 - Frontend not rebuilt: `NEXT_PUBLIC_*` values are build-time inlined.
 - Missing seeded fixtures: create/copy `e2e/fixtures/seeded.json` onto the PC
-  running Playwright.
+  running Playwright. For `pnpm e2e:customer-order` and
+  `pnpm e2e:pos-requests` / `pnpm e2e:kds-ticket`, the fixture must come from
+  `pnpm db:seed` followed by `pnpm db:seed:e2e` so table `t6` has
+  `e2e-tavern-ararat-t6`, customer ordering is enabled, the seeded POS session
+  can confirm requests, and the seeded KDS session is pinned to `KITCHEN`.
+  `pnpm e2e:pos-requests` requires API + DB, POS/frontend, and the Playwright
+  E2E terminal; it does not require customer, KDS, or websocket delivery.
+  `pnpm e2e:kds-ticket` requires API + DB, KDS/frontend, and the Playwright E2E
+  terminal; it does not require customer/POS frontends or websocket delivery.
+  If `SEED_STAFF_PASSWORD` was changed from the default, update the seeded-owner
+  cleanup auth used by `pnpm e2e:kds-ticket` or rerun the seed with the default
+  test password.
 - `INVALID_PIN` or `PIN_LOCKED`: the fixture may not match the backend DB, or the
   dev E2E PIN may be locked. Stop rerunning POS/KDS after `INVALID_PIN`; ask the
   backend/dev DB owner for a fresh `fixtures/seeded.json` or refreshed/unlocked

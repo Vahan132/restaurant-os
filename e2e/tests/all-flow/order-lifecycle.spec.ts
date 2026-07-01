@@ -4,6 +4,7 @@ import { ENV, customerUrlFromFixture, type SeededFixture } from '../../config/en
 import { openActor, closeActor, type Actor } from '../../helpers/actors';
 import { pinLogin, type PinLoginResult } from '../../helpers/api';
 import { preflightAllFlow } from '../../helpers/health';
+import { seededOwnerAuthHeaders } from '../../helpers/order-requests';
 import { buildSession, readFixtures, type E2ESession } from '../../helpers/session';
 import { seedKdsDeviceSecret, seedPosDeviceSecret } from '../../helpers/storage';
 
@@ -56,7 +57,7 @@ interface ApiOrderRequest {
 interface CleanupAuth {
   accessToken: string;
   branchId: string;
-  source: 'manager' | 'pos';
+  source: 'manager' | 'seeded-owner' | 'pos';
   approvedByUserId?: string;
 }
 
@@ -132,7 +133,11 @@ function getPosCleanupAuth(session: E2ESession): CleanupAuth {
   return { accessToken, branchId, source: 'pos' };
 }
 
-async function getCleanupAuth(fixtures: FlowFixture, session: E2ESession): Promise<CleanupAuth> {
+async function getCleanupAuth(
+  request: APIRequestContext,
+  fixtures: FlowFixture,
+  session: E2ESession,
+): Promise<CleanupAuth> {
   if (fixtures.manager?.deviceSecret && fixtures.manager.userId && fixtures.manager.pin) {
     const managerLogin: PinLoginResult = await pinLogin(
       {
@@ -149,6 +154,18 @@ async function getCleanupAuth(fixtures: FlowFixture, session: E2ESession): Promi
       source: 'manager',
       approvedByUserId: fixtures.manager.userId,
     };
+  }
+
+  try {
+    const ownerAuth = await seededOwnerAuthHeaders(request, fixtures);
+    const accessToken = ownerAuth.authorization.replace(/^Bearer\s+/i, '');
+    return {
+      accessToken,
+      branchId: ownerAuth['x-branch-id'],
+      source: 'seeded-owner',
+    };
+  } catch {
+    // Fall back to POS auth for legacy fixtures that do not include branch data.
   }
 
   return getPosCleanupAuth(session);
@@ -234,7 +251,7 @@ async function resetFixtureTableState(
   session: E2ESession,
   table: FlowTable,
 ): Promise<void> {
-  const auth = await getCleanupAuth(fixtures, session);
+  const auth = await getCleanupAuth(request, fixtures, session);
   const rejectedRequestIds = await rejectPendingRequestsForTable(request, auth, table);
   const cancelledOrderIds = await cancelActiveOrdersForTable(request, auth, table);
 
@@ -311,20 +328,15 @@ async function waitForNewRequestId(
 }
 
 async function waitForCustomerOrderStatus(page: Page, expectedStatus: string): Promise<void> {
+  const orderStatus = page.getByTestId('order-status');
+  await expect(orderStatus, 'Customer order status screen disappeared before confirmation.').toBeVisible({
+    timeout: HANDOFF,
+  });
+
   await expect
     .poll(
       async () => {
-        const orderStatus = page.getByTestId('order-status');
-        const currentStatus = await orderStatus.getAttribute('data-status').catch(() => null);
-
-        if (currentStatus === expectedStatus) {
-          return currentStatus;
-        }
-
-        // Customer status polls every few seconds, but remote split-origin E2E can
-        // miss a refetch. A reload still verifies the public status endpoint/state.
-        await page.reload({ waitUntil: 'domcontentloaded' });
-        return page.getByTestId('order-status').getAttribute('data-status').catch(() => null);
+        return orderStatus.getAttribute('data-status').catch(() => null);
       },
       {
         timeout: HANDOFF,
@@ -536,5 +548,7 @@ test.describe('order lifecycle across POS, API, KDS, and customer', () => {
     await expect(posOrderStatus).toHaveAttribute('data-status', 'READY', {
       timeout: HANDOFF,
     });
+
+    await resetFixtureTableState(request, fixtures, session, table);
   });
 });

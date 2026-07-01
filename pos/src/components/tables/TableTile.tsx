@@ -22,6 +22,10 @@ export function TableTile({ table, order, busy, onSelect }: TableTileProps) {
   return (
     <button
       type="button"
+      data-testid="table-tile"
+      data-table-id={table.id}
+      data-table-name={table.name}
+      data-table-status={table.status}
       // Only block taps while an action is in flight. DISABLED tables stay tappable
       // so the home can surface an info toast.
       disabled={busy}

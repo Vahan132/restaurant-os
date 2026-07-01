@@ -15,7 +15,8 @@
  *        argon2 hasher + HMAC fingerprint and returns the plaintext once, which
  *        we capture into seeded.json. (It also sets mustRotate=true; this is
  *        advisory and does not block API pin-login / token issuance.)
- *  3. Assigns a deterministic qrIdentifier to table t6 and derives the ?qr= URL.
+ *  3. Assigns a deterministic qrIdentifier to table t6, creates a dedicated
+ *     checkout table, and derives the ?qr= URL.
  *     (Also enables QR customer ordering, which the stock settings default OFF.)
  *
  * PREREQUISITE: `pnpm db:seed` first (needs restaurant, branch, users, table t6,
@@ -44,6 +45,8 @@ const OWNER_ID = userId('owner');
 const WAITER_ID = userId('waiter-flagship'); // Դավիթ Սարգսյան, WAITER@flagship (564d…)
 const KITCHEN_ID = userId('kitchen-flagship'); // Հայկ Մկրտչյան, KITCHEN_STAFF@flagship (3415…)
 const T6_ID = seedId('table:flagship:t6'); // Պատշգամբ 2 — no seeded order
+const CHECKOUT_TABLE_ID = seedId('table:e2e:flagship:checkout');
+const CHECKOUT_FLOOR_ID = seedId('floor:flagship:terrace');
 const DISH_ID = seedId('dish:flagship:pork-khorovats'); // requires doneness + side
 
 // Required-modifier option ids the golden path selects (Medium + Fries).
@@ -57,6 +60,7 @@ const MOD = {
 const POS_DEVICE_ID = seedId('device:e2e:flagship:pos');
 const KDS_DEVICE_ID = seedId('device:e2e:flagship:kds');
 const QR_TOKEN = 'e2e-tavern-ararat-t6';
+const CHECKOUT_QR_TOKEN = 'e2e-tavern-ararat-checkout';
 
 async function enrollFixedIdDevice(
   ctx: Awaited<ReturnType<typeof bootstrapSeedContext>>,
@@ -133,24 +137,53 @@ async function main(): Promise<void> {
     console.log(`E2E PIN (captured) waiter-flagship: ${posPin}`);
     console.log(`E2E PIN (captured) kitchen-flagship: ${kdsPin}`);
 
-    // ── 3. Deterministic QR token on table t6 + enable customer ordering ──────
+    // ── 3. Deterministic QR token on table t6 + checkout table + ordering flags
     await prisma.restaurantTable.update({
       where: { id: T6_ID },
       data: { qrIdentifier: QR_TOKEN, status: 'AVAILABLE' },
+    });
+    const checkoutTable = await prisma.restaurantTable.upsert({
+      where: { qrIdentifier: CHECKOUT_QR_TOKEN },
+      update: {
+        floorId: CHECKOUT_FLOOR_ID,
+        name: 'E2E Checkout',
+        seatCapacity: 2,
+        qrIdentifier: CHECKOUT_QR_TOKEN,
+        status: 'AVAILABLE',
+        deletedAt: null,
+      },
+      create: {
+        id: CHECKOUT_TABLE_ID,
+        restaurantId: RID,
+        branchId: FLAGSHIP.id,
+        floorId: CHECKOUT_FLOOR_ID,
+        name: 'E2E Checkout',
+        seatCapacity: 2,
+        qrIdentifier: CHECKOUT_QR_TOKEN,
+        status: 'AVAILABLE',
+      },
     });
     // Public `orderingEnabled` = enableQrMenu && enableCustomerOrdering; the
     // latter defaults to false, which would hide the cart/add-to-order entirely.
     await prisma.restaurantSettings.upsert({
       where: { restaurantId: RID },
-      update: { enableQrMenu: true, enableCustomerOrdering: true, enableKds: true },
+      update: {
+        enableQrMenu: true,
+        enableCustomerOrdering: true,
+        enableKds: true,
+        allowManualTableStatus: false,
+      },
       create: {
         restaurantId: RID,
         enableQrMenu: true,
         enableCustomerOrdering: true,
         enableKds: true,
+        allowManualTableStatus: false,
       },
     });
-    console.log(`E2E QR token on t6: ${QR_TOKEN}; customer ordering enabled.`);
+    console.log(
+      `E2E QR token on t6: ${QR_TOKEN}; checkout table: ${CHECKOUT_QR_TOKEN}; customer ordering enabled.`,
+    );
 
     // ── 4. Emit fixtures the harness consumes ─────────────────────────────────
     const fixtures = {
@@ -158,6 +191,7 @@ async function main(): Promise<void> {
       restaurant: { id: RID, slug: RESTAURANT.slug },
       branch: { id: FLAGSHIP.id, name: FLAGSHIP.name },
       table: { id: T6_ID, name: 'Պատշգամբ 2', qr: QR_TOKEN },
+      checkoutTable: { id: checkoutTable.id, name: 'E2E Checkout', qr: CHECKOUT_QR_TOKEN },
       qrUrlPath: `/res/m/${RESTAURANT.slug}?qr=${QR_TOKEN}`,
       dish: { id: DISH_ID, name: dish.name, modifiers: MOD },
       pos: {
