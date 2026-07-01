@@ -133,6 +133,33 @@ export interface KdsTicketItemResponse {
   status: string;
 }
 
+export interface MenuTreeOption {
+  id: string;
+  name: string;
+}
+
+export interface MenuTreeGroup {
+  id: string;
+  name: string;
+  required: boolean;
+  minSelect: number | null;
+  options: MenuTreeOption[];
+}
+
+export interface MenuTreeItem {
+  id: string;
+  name: string;
+  preparationStation: string;
+  availability: string;
+  modifierGroups: MenuTreeGroup[];
+}
+
+export interface MenuTreeCategory {
+  id: string;
+  name: string;
+  items: MenuTreeItem[];
+}
+
 interface ApiList<T> {
   data: T[];
 }
@@ -591,6 +618,24 @@ export async function listTables(
   }
 
   return parseListBody<TableResponse>(text, 'GET /tables');
+}
+
+export async function getMenuTree(
+  request: APIRequestContext,
+  auth: PosAuthHeaders,
+): Promise<MenuTreeCategory[]> {
+  const response = await request.get(`${ENV.apiBaseUrl}/menu?includeUnavailable=false`, {
+    headers: auth,
+    failOnStatusCode: false,
+    ignoreHTTPSErrors: true,
+  });
+  const text = await responseBodyText(response);
+
+  if (!response.ok()) {
+    throw new Error(`GET /menu?includeUnavailable=false failed: ${response.status()} ${text}`);
+  }
+
+  return parseListBody<MenuTreeCategory>(text, 'GET /menu?includeUnavailable=false');
 }
 
 export async function getTable(

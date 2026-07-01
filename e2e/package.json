@@ -16,6 +16,7 @@
     "e2e:checkout": "playwright test --project=pos tests/pos/checkout.spec.ts",
     "e2e:kds": "playwright test --project=kds",
     "e2e:kds-ticket": "playwright test --project=kds tests/kds/kds-ticket.spec.ts",
+    "e2e:kds-station-filtering": "playwright test --project=kds tests/kds/kds-station-filtering.spec.ts",
     "e2e:customer": "playwright test --project=customer",
     "e2e:customer-order": "playwright test --project=customer tests/customer/customer-order.spec.ts",
     "e2e:mobile": "playwright test --project=mobile-reservation",
