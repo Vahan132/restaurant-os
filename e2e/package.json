@@ -26,6 +26,7 @@
     "e2e:kds": "playwright test --project=kds",
     "e2e:kds-ticket": "playwright test --project=kds tests/kds/kds-ticket.spec.ts",
     "e2e:kds-station-filtering": "playwright test --project=kds tests/kds/kds-station-filtering.spec.ts",
+    "e2e:kds-bar-board": "playwright test --project=kds tests/kds/kds-bar-board.spec.ts",
     "e2e:customer": "playwright test --project=customer",
     "e2e:customer-order": "playwright test --project=customer tests/customer/customer-order.spec.ts",
     "e2e:menu-availability": "playwright test --project=customer tests/customer/menu-availability.spec.ts",
