@@ -22,6 +22,7 @@
     "e2e:checkout": "playwright test --project=pos tests/pos/checkout.spec.ts",
     "e2e:payment-permissions": "playwright test --project=security tests/security/payment-permissions.spec.ts",
     "e2e:discount-approval": "playwright test --project=security tests/security/discount-approval.spec.ts",
+    "e2e:discount-invalid-pin": "playwright test --project=security tests/security/discount-invalid-pin.spec.ts",
     "e2e:kds": "playwright test --project=kds",
     "e2e:kds-ticket": "playwright test --project=kds tests/kds/kds-ticket.spec.ts",
     "e2e:kds-station-filtering": "playwright test --project=kds tests/kds/kds-station-filtering.spec.ts",
