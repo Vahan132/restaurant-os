@@ -768,6 +768,25 @@ export async function cancelOrder(
   return body;
 }
 
+export async function moveOrderToTableRaw(
+  request: APIRequestContext,
+  auth: PosAuthHeaders,
+  orderId: string,
+  tableId: string,
+): Promise<{ status: number; ok: boolean; text: string }> {
+  const response = await request.post(`${ENV.apiBaseUrl}/orders/${encodeURIComponent(orderId)}/move-table`, {
+    headers: auth,
+    data: { tableId },
+    failOnStatusCode: false,
+    ignoreHTTPSErrors: true,
+  });
+  return {
+    status: response.status(),
+    ok: response.ok(),
+    text: await responseBodyText(response),
+  };
+}
+
 export async function getStationTickets(
   request: APIRequestContext,
   auth: KdsAuthHeaders,
