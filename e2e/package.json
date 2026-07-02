@@ -17,6 +17,7 @@
     "e2e:pos-requests": "playwright test --project=pos tests/pos/pos-requests.spec.ts",
     "e2e:reject-request": "playwright test --project=pos tests/pos/reject-request.spec.ts",
     "e2e:checkout": "playwright test --project=pos tests/pos/checkout.spec.ts",
+    "e2e:payment-permissions": "playwright test --project=security tests/security/payment-permissions.spec.ts",
     "e2e:kds": "playwright test --project=kds",
     "e2e:kds-ticket": "playwright test --project=kds tests/kds/kds-ticket.spec.ts",
     "e2e:kds-station-filtering": "playwright test --project=kds tests/kds/kds-station-filtering.spec.ts",
