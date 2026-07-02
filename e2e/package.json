@@ -11,6 +11,7 @@
     "e2e:reservation-lifecycle": "playwright test --project=reservations tests/reservations/reservation-lifecycle.spec.ts",
     "e2e:reservation-completed-release": "playwright test --project=reservations tests/reservations/reservation-completed-release.spec.ts",
     "e2e:reservation-order-integration": "playwright test --project=reservations tests/reservations/reservation-order-integration.spec.ts",
+    "e2e:reservation-double-booking": "playwright test --project=reservations tests/reservations/reservation-double-booking.spec.ts",
     "e2e:move-table-conflict": "playwright test --project=orders tests/orders/move-table-conflict.spec.ts",
     "e2e:move-table-reserved-conflict": "playwright test --project=orders tests/orders/move-table-reserved-conflict.spec.ts",
     "e2e:inventory-consumption": "playwright test --project=inventory tests/inventory/inventory-consumption.spec.ts",
