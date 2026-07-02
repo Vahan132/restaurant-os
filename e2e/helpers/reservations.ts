@@ -175,6 +175,22 @@ export async function markReservationArrived(
   return postReservationTransition(request, auth, reservationId, 'arrive');
 }
 
+export async function markReservationSeated(
+  request: APIRequestContext,
+  auth: PosAuthHeaders,
+  reservationId: string,
+): Promise<ReservationResponse> {
+  return postReservationTransition(request, auth, reservationId, 'seat');
+}
+
+export async function completeReservation(
+  request: APIRequestContext,
+  auth: PosAuthHeaders,
+  reservationId: string,
+): Promise<ReservationResponse> {
+  return postReservationTransition(request, auth, reservationId, 'complete');
+}
+
 export async function cancelReservation(
   request: APIRequestContext,
   auth: PosAuthHeaders,
@@ -276,7 +292,7 @@ async function postReservationTransition(
   request: APIRequestContext,
   auth: PosAuthHeaders,
   reservationId: string,
-  action: 'confirm' | 'arrive',
+  action: 'confirm' | 'arrive' | 'seat' | 'complete',
 ): Promise<ReservationResponse> {
   const response = await request.post(
     `${ENV.apiBaseUrl}/reservations/${encodeURIComponent(reservationId)}/${action}`,
