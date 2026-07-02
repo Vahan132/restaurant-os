@@ -42,6 +42,8 @@ export interface OrderResponse {
   tableId?: string | null;
   status?: string;
   orderNumber?: number | string;
+  discountType?: string | null;
+  discountValue?: number | null;
   paymentStatus?: string;
   paidAmount?: number;
   totals?: {
