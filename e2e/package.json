@@ -25,6 +25,7 @@
     "e2e:reject-request": "playwright test --project=pos tests/pos/reject-request.spec.ts",
     "e2e:checkout": "playwright test --project=pos tests/pos/checkout.spec.ts",
     "e2e:partial-payment": "playwright test --project=pos tests/pos/partial-payment.spec.ts",
+    "e2e:void-payment": "playwright test --project=pos tests/pos/void-payment.spec.ts",
     "e2e:cash-overpayment": "playwright test --project=pos tests/pos/cash-overpayment.spec.ts",
     "e2e:payment-over-amount": "playwright test --project=pos tests/pos/payment-over-amount.spec.ts",
     "e2e:payment-permissions": "playwright test --project=security tests/security/payment-permissions.spec.ts",
