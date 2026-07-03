@@ -35,6 +35,7 @@
     "e2e:kds": "playwright test --project=kds",
     "e2e:kds-ticket": "playwright test --project=kds tests/kds/kds-ticket.spec.ts",
     "e2e:kds-station-filtering": "playwright test --project=kds tests/kds/kds-station-filtering.spec.ts",
+    "e2e:kds-multi-station-completion": "playwright test --project=kds tests/kds/kds-multi-station-completion.spec.ts",
     "e2e:kds-bar-board": "playwright test --project=kds tests/kds/kds-bar-board.spec.ts",
     "e2e:customer": "playwright test --project=customer",
     "e2e:split-routing": "playwright test --project=customer tests/customer/split-routing.spec.ts",
