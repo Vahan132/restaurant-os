@@ -42,6 +42,7 @@
     "e2e:split-routing": "playwright test --project=customer tests/customer/split-routing.spec.ts",
     "e2e:customer-order": "playwright test --project=customer tests/customer/customer-order.spec.ts",
     "e2e:invalid-qr": "playwright test --project=customer tests/customer/invalid-qr.spec.ts",
+    "e2e:customer-table-occupied": "playwright test --project=customer tests/customer/customer-table-occupied.spec.ts",
     "e2e:menu-availability": "playwright test --project=customer tests/customer/menu-availability.spec.ts",
     "e2e:customer-rejected-request": "playwright test --project=customer tests/customer/customer-rejected-request.spec.ts",
     "e2e:mobile": "playwright test --project=mobile-reservation",
