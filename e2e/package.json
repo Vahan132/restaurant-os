@@ -21,6 +21,7 @@
     "e2e:branch-isolation": "playwright test --project=security tests/security/branch-isolation.spec.ts",
     "e2e:website": "playwright test --project=website",
     "e2e:admin": "playwright test --project=admin",
+    "e2e:admin-auth-smoke": "playwright test --project=admin tests/admin/admin-auth-smoke.spec.ts",
     "e2e:pos": "playwright test --project=pos",
     "e2e:pos-requests": "playwright test --project=pos tests/pos/pos-requests.spec.ts",
     "e2e:reject-request": "playwright test --project=pos tests/pos/reject-request.spec.ts",
