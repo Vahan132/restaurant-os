@@ -62,7 +62,7 @@ export default defineConfig({
     },
     {
       name: 'pos',
-      testMatch: 'pos/**/*.spec.ts',
+      testMatch: ['pos/**/*.spec.ts', 'concurrency/**/*.spec.ts'],
       use: { ...devices['iPad Pro 11 landscape'], browserName: 'chromium', baseURL: ENV.posBaseUrl },
     },
     {
