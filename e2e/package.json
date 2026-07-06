@@ -27,6 +27,7 @@
     "e2e:reject-request": "playwright test --project=pos tests/pos/reject-request.spec.ts",
     "e2e:confirm-request-race": "playwright test --project=pos tests/concurrency/confirm-request-race.spec.ts",
     "e2e:payment-race": "playwright test --project=pos tests/concurrency/payment-race.spec.ts",
+    "e2e:close-order-race": "playwright test --project=pos tests/concurrency/close-order-race.spec.ts",
     "e2e:checkout": "playwright test --project=pos tests/pos/checkout.spec.ts",
     "e2e:discount-step-up-ui": "playwright test --project=pos tests/pos/discount-step-up-ui.spec.ts",
     "e2e:partial-payment": "playwright test --project=pos tests/pos/partial-payment.spec.ts",
