@@ -1,6 +1,11 @@
 import { Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { IdentityModule } from '../identity/identity.module';
 import { TablesModule } from '../tables/tables.module';
+import { TableSessionsModule } from '../table-sessions/table-sessions.module';
+import { FiscalizationModule } from '../fiscalization/fiscalization.module';
+import { PaymentModule } from '../payment/payment.module';
+import { PublicRestaurantResolverGuard } from '../../shared/storefront/public-restaurant.resolver';
 
 import { ORDER_REPOSITORY } from './domain/repositories/order.repository';
 import { MENU_READER } from './application/ports/menu-reader.port';
@@ -31,6 +36,12 @@ import { CloseOrderUseCase } from './application/commands/close-order.usecase';
 import { SplitEvenUseCase } from './application/commands/split-even.usecase';
 import { SplitItemsToNewCheckUseCase } from './application/commands/split-items-to-new-check.usecase';
 import { GetReceiptUseCase } from './application/queries/get-receipt.usecase';
+import { ValidateCartUseCase } from './application/commands/validate-cart.usecase';
+import { CreatePrepaymentOrderUseCase } from './application/commands/create-prepayment-order.usecase';
+import { ConfirmPaymentUseCase } from './application/commands/confirm-payment.usecase';
+import { GetOrderReceiptUseCase } from './application/queries/get-order-receipt.usecase';
+import { CartPricingService } from './application/services/cart-pricing.service';
+import { FiscalizeOrderService } from './application/services/fiscalize-order.service';
 import { MarkOrderItemPreparingUseCase } from './application/commands/mark-order-item-preparing.usecase';
 import { MarkOrderItemReadyUseCase } from './application/commands/mark-order-item-ready.usecase';
 import { MarkOrderReadyUseCase } from './application/commands/mark-order-ready.usecase';
@@ -49,19 +60,39 @@ import { PrismaReceiptReader } from './infrastructure/readers/prisma-receipt.rea
 import { TablesTableStatusGateway } from './infrastructure/gateways/tables-table-status.gateway';
 
 import { OrdersController } from './presentation/http/orders.controller';
+import { PublicQrOrdersController } from './presentation/http/public-qr-orders.controller';
 
 /**
  * Orders module (core; tenant-scoped). Imports IdentityModule (ID_GENERATOR) and
- * TablesModule (TableStatusService, for auto-mode table-status wiring).
+ * TablesModule (TableStatusService). ORDER-2 adds the QR-web prepayment surface:
+ * imports TableSessionsModule (create-or-join + SessionTokenGuard), Fiscalization
+ * + Payment modules (stubbed seams), and a per-module Throttler for the public
+ * QR endpoints.
  */
 @Module({
-  imports: [IdentityModule, TablesModule],
-  controllers: [OrdersController],
+  imports: [
+    IdentityModule,
+    TablesModule,
+    TableSessionsModule,
+    FiscalizationModule,
+    PaymentModule,
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
+  ],
+  controllers: [OrdersController, PublicQrOrdersController],
   providers: [
     // application services
     OrderItemBuilder,
     OrderTableSync,
     ApprovalChecker,
+    CartPricingService,
+    FiscalizeOrderService,
+    // ORDER-2 QR-web prepayment use-cases
+    ValidateCartUseCase,
+    CreatePrepaymentOrderUseCase,
+    ConfirmPaymentUseCase,
+    GetOrderReceiptUseCase,
+    // guard for the public QR surface (host/slug resolution)
+    PublicRestaurantResolverGuard,
     // use cases
     CreateOrderUseCase,
     AddOrderItemUseCase,

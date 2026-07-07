@@ -3,6 +3,8 @@ export const MENU_READER = Symbol('OrdersMenuReader');
 export interface MenuItemForOrder {
   id: string;
   branchId: string;
+  /** Internal item code — snapshotted as the fiscal `goodCode` (ORDER-2). */
+  code: string;
   name: string;
   priceAmount: number;
   preparationStation: string;

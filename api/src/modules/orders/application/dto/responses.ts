@@ -85,7 +85,8 @@ export class OrderResponse {
   @ApiProperty() orderNumber!: number;
   @ApiProperty({ enum: ['DINE_IN', 'TAKEAWAY'] }) type!: string;
   @ApiProperty({ nullable: true, type: String }) tableId!: string | null;
-  @ApiProperty() waiterId!: string;
+  @ApiProperty({ nullable: true, type: String, description: 'Null for QR-web customer orders.' })
+  waiterId!: string | null;
   @ApiProperty({
     enum: ['DRAFT', 'SENT_TO_KITCHEN', 'PREPARING', 'READY', 'SERVED', 'CLOSED', 'CANCELLED'],
   })

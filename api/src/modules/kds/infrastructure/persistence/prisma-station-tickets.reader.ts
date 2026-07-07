@@ -49,7 +49,9 @@ export class PrismaStationTicketsReader implements StationTicketsReader {
     const itemIds = liveItems.map((i) => i.id);
     const menuItemIds = [...new Set(liveItems.map((i) => i.menuItemId))];
     const tableIds = [...new Set(liveOrders.map((o) => o.tableId).filter((t): t is string => !!t))];
-    const waiterIds = [...new Set(liveOrders.map((o) => o.waiterId))];
+    const waiterIds = [
+      ...new Set(liveOrders.map((o) => o.waiterId).filter((w): w is string => w !== null)),
+    ];
 
     const [mods, menuItems, tables, users] = await Promise.all([
       this.prisma.orderItemModifier.findMany({ where: { orderItemId: { in: itemIds } } }),
@@ -83,7 +85,7 @@ export class PrismaStationTicketsReader implements StationTicketsReader {
         orderId: o.id,
         orderNumber: o.orderNumber,
         tableName: o.tableId ? (tableName.get(o.tableId) ?? null) : null,
-        waiterName: userName.get(o.waiterId) ?? null,
+        waiterName: o.waiterId ? (userName.get(o.waiterId) ?? null) : null,
         orderNote: o.note,
         items: (itemsByOrder.get(o.id) ?? []).map((it) => ({
           orderItemId: it.id,

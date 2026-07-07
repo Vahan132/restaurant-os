@@ -17,6 +17,13 @@ export interface TableSessionRepository {
   findById(restaurantId: string, id: string): Promise<TableSession | null>;
 
   /**
+   * ORDER-2 read-path: resolve the NON-TERMINAL session for an opaque reattach
+   * token's SHA-256 hash, tenant-scoped. Terminal sessions clear their hash, so
+   * they never match. Returns null when no active session holds that hash.
+   */
+  findByTokenHash(restaurantId: string, tokenHash: string): Promise<TableSession | null>;
+
+  /**
    * Insert a new session. Throws ActiveTableSessionConflictError if the partial
    * unique index rejects a second non-terminal session for the (branch, table).
    */

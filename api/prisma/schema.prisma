@@ -751,10 +751,12 @@ model Order {
   orderNumber  Int
   type         OrderType   @default(DINE_IN)
   tableId      String?
-  // ORDER-1: nullable ordering-container link. Non-breaking seam; order append
-  // mechanics land in a later prompt (the Order aggregate is otherwise untouched).
+  // ORDER-1: nullable ordering-container link. ORDER-2 lifts this into the Order
+  // aggregate so a QR-web prepayment order can be attached to a PREPAYMENT session.
   tableSessionId String?
-  waiterId     String
+  // ORDER-2: nullable — a QR-web (customer-placed) order has no waiter. Staff
+  // (POS) orders always carry one; null carries "customer-placed" semantics.
+  waiterId     String?
   status       OrderStatus @default(DRAFT)
   currency     String
 
@@ -769,6 +771,23 @@ model Order {
   paymentStatus    PaymentStatus @default(UNPAID) @map("payment_status")
   paidAmount       Int           @default(0) @map("paid_amount")
   splitFromOrderId String?       @map("split_from_order_id")
+
+  // ORDER-2: fiscal-aware tender split (integer minor units; QR v1: card only).
+  cardAmount       Int     @default(0) @map("card_amount")
+  cashAmount       Int     @default(0) @map("cash_amount")
+  partialAmount    Int     @default(0) @map("partial_amount")
+  prePaymentAmount Int     @default(0) @map("prepayment_amount")
+  changeAmount     Int     @default(0) @map("change_amount")
+  // Buyer TIN for a partner receipt (out of scope v1 — reserved nullable).
+  partnerTin       String? @map("partner_tin")
+  // PaymentPort charge reference (traceability; supports idempotent re-confirm).
+  paymentReference String? @map("payment_reference")
+  // ORDER-2: fiscal result, null until fiscalised (recoverable paid-but-
+  // unfiscalized state = paymentStatus PAID with these null, pending retry).
+  fiscalReceiptId  String?   @map("fiscal_receipt_id")
+  fiscalNumber     String?   @map("fiscal_number")
+  fiscalQr         String?   @map("fiscal_qr")
+  fiscalizedAt     DateTime? @map("fiscalized_at")
 
   note                  String?
   cancelledReason       String?
@@ -865,6 +884,20 @@ model OrderItem {
   preparingAt        DateTime?
   readyAt            DateTime?
   cancelledReason    String?
+  // ORDER-2 fiscal-ready line fields. Populated for QR-web lines (goodCode/
+  // goodName/unit); null for POS lines until the catalog carries them.
+  goodCode           String?            @map("good_code")
+  goodName           String?            @map("good_name")
+  unit               String?
+  // RESERVED (fiscal-ready, no logic in v1): ATG/department + SRC discount codes +
+  // marked-goods emarks. Sourced in catalog / roadmap #6.
+  adgCode                String?        @map("adg_code")
+  dep                    String?
+  discount               Int?
+  discountType           Int?           @map("line_discount_type")
+  additionalDiscount     Int?           @map("additional_discount")
+  additionalDiscountType Int?           @map("additional_discount_type")
+  emarks                 String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
@@ -918,7 +951,8 @@ model Payment {
   amount       Int
   tenderedAmount Int?        @map("tendered_amount")
   state        PaymentState  @default(ACTIVE)
-  processedByUserId String
+  // ORDER-2: nullable — a gateway-processed QR prepayment has no staff user.
+  processedByUserId String?
   voidedByUserId    String?
   voidedReason      String?
   createdAt    DateTime      @default(now())

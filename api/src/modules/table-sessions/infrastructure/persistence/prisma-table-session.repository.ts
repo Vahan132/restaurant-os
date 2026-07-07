@@ -29,6 +29,17 @@ export class PrismaTableSessionRepository implements TableSessionRepository {
     return row ? TableSessionMapper.toDomain(row) : null;
   }
 
+  async findByTokenHash(restaurantId: string, tokenHash: string): Promise<TableSession | null> {
+    // Empty hash never resolves a session (terminal sessions clear their hash).
+    if (!tokenHash) {
+      return null;
+    }
+    const row = await this.prisma.tableSession.findFirst({
+      where: { restaurantId, tokenHash, state: { in: NON_TERMINAL } },
+    });
+    return row ? TableSessionMapper.toDomain(row) : null;
+  }
+
   async create(session: TableSession): Promise<void> {
     try {
       await this.prisma.tableSession.create({ data: TableSessionMapper.toCreateRow(session) });

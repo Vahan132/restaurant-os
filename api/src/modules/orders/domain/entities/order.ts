@@ -30,11 +30,13 @@ import {
   InvalidOrderItemTransitionError,
   InvalidOrderTransitionError,
   NoItemsToSendError,
+  OrderAlreadyPaidError,
   OrderItemNotEditableError,
   OrderItemNotFoundError,
   OrderNotMutableError,
   OrderNotPaidError,
   PaymentExceedsRemainingError,
+  PrepaymentNotSettledError,
   PaymentNotActiveError,
   PaymentNotFoundError,
   SplitItemNotEligibleError,
@@ -50,7 +52,10 @@ export interface OrderProps {
   orderNumber: number;
   type: OrderType;
   tableId: string | null;
-  waiterId: string;
+  /** ORDER-2: the PREPAYMENT ordering container this order is attached to. */
+  tableSessionId: string | null;
+  /** ORDER-2: null for a QR-web (customer-placed) order; set for staff orders. */
+  waiterId: string | null;
   status: OrderStatus;
   currency: string;
   subtotalAmount: number;
@@ -68,6 +73,19 @@ export interface OrderProps {
   paymentStatus: PaymentStatus;
   paidAmount: number;
   splitFromOrderId: string | null;
+  // ── ORDER-2 fiscal-aware tender split (integer minor units) ──────────────
+  cardAmount: number;
+  cashAmount: number;
+  partialAmount: number;
+  prePaymentAmount: number;
+  changeAmount: number;
+  partnerTin: string | null;
+  paymentReference: string | null;
+  // ── ORDER-2 fiscal result (null until fiscalised) ────────────────────────
+  fiscalReceiptId: string | null;
+  fiscalNumber: string | null;
+  fiscalQr: string | null;
+  fiscalizedAt: Date | null;
   items: OrderItem[];
   payments: Payment[];
   createdAt: Date;
@@ -80,7 +98,10 @@ export interface CreateOrderInput {
   branchId: string;
   type: OrderType;
   tableId?: string | null;
-  waiterId: string;
+  /** ORDER-2: the attached PREPAYMENT session (QR-web). Optional for staff orders. */
+  tableSessionId?: string | null;
+  /** Null for a QR-web customer order; required for staff-placed orders. */
+  waiterId: string | null;
   currency: string;
   splitFromOrderId?: string | null;
 }
@@ -106,6 +127,7 @@ export class Order extends AggregateRoot<string> {
       orderNumber: 0,
       type: input.type,
       tableId: input.tableId ?? null,
+      tableSessionId: input.tableSessionId ?? null,
       waiterId: input.waiterId,
       status: OrderStatus.DRAFT,
       currency: input.currency,
@@ -124,6 +146,17 @@ export class Order extends AggregateRoot<string> {
       paymentStatus: PaymentStatus.UNPAID,
       paidAmount: 0,
       splitFromOrderId: input.splitFromOrderId ?? null,
+      cardAmount: 0,
+      cashAmount: 0,
+      partialAmount: 0,
+      prePaymentAmount: 0,
+      changeAmount: 0,
+      partnerTin: null,
+      paymentReference: null,
+      fiscalReceiptId: null,
+      fiscalNumber: null,
+      fiscalQr: null,
+      fiscalizedAt: null,
       items: [],
       payments: [],
       createdAt: now,
@@ -151,7 +184,10 @@ export class Order extends AggregateRoot<string> {
   get tableId(): string | null {
     return this.props.tableId;
   }
-  get waiterId(): string {
+  get tableSessionId(): string | null {
+    return this.props.tableSessionId;
+  }
+  get waiterId(): string | null {
     return this.props.waiterId;
   }
   get status(): OrderStatus {
@@ -204,6 +240,42 @@ export class Order extends AggregateRoot<string> {
   }
   get splitFromOrderId(): string | null {
     return this.props.splitFromOrderId;
+  }
+  get cardAmount(): number {
+    return this.props.cardAmount;
+  }
+  get cashAmount(): number {
+    return this.props.cashAmount;
+  }
+  get partialAmount(): number {
+    return this.props.partialAmount;
+  }
+  get prePaymentAmount(): number {
+    return this.props.prePaymentAmount;
+  }
+  get changeAmount(): number {
+    return this.props.changeAmount;
+  }
+  get partnerTin(): string | null {
+    return this.props.partnerTin;
+  }
+  get paymentReference(): string | null {
+    return this.props.paymentReference;
+  }
+  get fiscalReceiptId(): string | null {
+    return this.props.fiscalReceiptId;
+  }
+  get fiscalNumber(): string | null {
+    return this.props.fiscalNumber;
+  }
+  get fiscalQr(): string | null {
+    return this.props.fiscalQr;
+  }
+  get fiscalizedAt(): Date | null {
+    return this.props.fiscalizedAt;
+  }
+  isFiscalized(): boolean {
+    return this.props.fiscalizedAt !== null;
   }
   get items(): OrderItem[] {
     return [...this.props.items];
@@ -457,7 +529,8 @@ export class Order extends AggregateRoot<string> {
     method: PaymentMethod;
     amount: number;
     tenderedAmount?: number | null;
-    processedByUserId: string;
+    /** Null for a gateway-processed QR prepayment (no staff user). */
+    processedByUserId: string | null;
   }): Payment {
     this.assertNotTerminal();
     const remaining = this.remainingAmount();
@@ -529,6 +602,77 @@ export class Order extends AggregateRoot<string> {
     );
   }
 
+  // ── ORDER-2: QR-web prepayment settlement + fiscalization ────────────────
+
+  /**
+   * Settle a QR-web prepayment IN FULL (card only, v1). Records a gateway-
+   * processed CARD payment (no staff user), fills the fiscal tender split, and
+   * stores the gateway reference. Requires a fresh, unpaid, non-terminal order;
+   * on success paymentStatus becomes PAID (via recomputePaymentStatus).
+   */
+  settlePrepaymentCard(input: { paymentId: string; amount: number; paymentReference: string }): Payment {
+    this.assertNotTerminal();
+    if (this.props.paymentStatus === PaymentStatus.PAID) {
+      throw new OrderAlreadyPaidError();
+    }
+    const payment = this.recordPayment({
+      id: input.paymentId,
+      method: PaymentMethod.CARD,
+      amount: input.amount,
+      tenderedAmount: null,
+      processedByUserId: null,
+    });
+    // Tender split: card only. Products-mode receipt → prePayment 0, no change.
+    this.props.cardAmount = input.amount;
+    this.props.cashAmount = 0;
+    this.props.partialAmount = 0;
+    this.props.prePaymentAmount = 0;
+    this.props.changeAmount = 0;
+    this.props.paymentReference = input.paymentReference;
+    this.touch();
+    return payment;
+  }
+
+  /**
+   * Persist the fiscal result onto the order. IDEMPOTENT: a no-op once already
+   * fiscalised, so a retried confirm (recoverable paid-but-unfiscalized branch)
+   * never overwrites or double-issues.
+   */
+  applyFiscalResult(result: {
+    receiptId: string;
+    fiscalNumber: string;
+    qr: string;
+    issuedAt: Date;
+  }): boolean {
+    if (this.isFiscalized()) {
+      return false;
+    }
+    this.props.fiscalReceiptId = result.receiptId;
+    this.props.fiscalNumber = result.fiscalNumber;
+    this.props.fiscalQr = result.qr;
+    this.props.fiscalizedAt = result.issuedAt;
+    this.touch();
+    return true;
+  }
+
+  /**
+   * ORDER-2 prepayment gate + KDS dispatch. SENT_TO_KITCHEN is unreachable until
+   * paymentStatus = PAID; this reuses the existing sendToKitchen path (raises
+   * OrderItemsSentToKitchenEvent → realtime relay → KDS), so there is no parallel
+   * dispatch. Only valid from DRAFT; callers guard idempotency on status.
+   */
+  dispatchPrepaid(now: Date = new Date()): void {
+    if (this.props.paymentStatus !== PaymentStatus.PAID) {
+      throw new PrepaymentNotSettledError();
+    }
+    this.sendToKitchen(now);
+  }
+
+  /** True once the order has left DRAFT (dispatched to the kitchen or terminal). */
+  hasBeenDispatched(): boolean {
+    return this.props.status !== OrderStatus.DRAFT;
+  }
+
   /** paidAmount = sum of ACTIVE payments; status derived against the current total. */
   private recomputePaymentStatus(): void {
     const paid = this.props.payments
@@ -580,6 +724,7 @@ export class Order extends AggregateRoot<string> {
       orderNumber: 0,
       type: this.props.type,
       tableId: this.props.tableId,
+      tableSessionId: this.props.tableSessionId,
       waiterId: this.props.waiterId,
       status: childStatus,
       currency: this.props.currency,
@@ -598,6 +743,17 @@ export class Order extends AggregateRoot<string> {
       paymentStatus: PaymentStatus.UNPAID,
       paidAmount: 0,
       splitFromOrderId: this.id,
+      cardAmount: 0,
+      cashAmount: 0,
+      partialAmount: 0,
+      prePaymentAmount: 0,
+      changeAmount: 0,
+      partnerTin: null,
+      paymentReference: null,
+      fiscalReceiptId: null,
+      fiscalNumber: null,
+      fiscalQr: null,
+      fiscalizedAt: null,
       items: moved,
       payments: [],
       createdAt: now,
