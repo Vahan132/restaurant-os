@@ -20,7 +20,6 @@ export function HubTokenModal({
   onClose: () => void;
 }) {
   const t = useTranslations('hubs');
-  const tc = useTranslations('common');
   const [copied, setCopied] = useState<'token' | 'env' | null>(null);
 
   const envLine = `EDGE_NODE_TOKEN=${result.token}`;

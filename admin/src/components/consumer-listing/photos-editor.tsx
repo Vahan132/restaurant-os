@@ -107,7 +107,12 @@ export function PhotosEditor({
     const next = [...ordered];
     const target = index + dir;
     if (target < 0 || target >= next.length) return;
-    [next[index], next[target]] = [next[target], next[index]];
+    // Both indices are in-range per the guard above; swap via temps so
+    // noUncheckedIndexedAccess doesn't widen the slots to `| undefined`.
+    const a = next[index]!;
+    const b = next[target]!;
+    next[index] = b;
+    next[target] = a;
     try {
       await orderPhotos.mutateAsync({
         data: { orderedPhotoIds: next.map((p) => p.id) },

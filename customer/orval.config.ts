@@ -14,7 +14,19 @@ export default defineConfig({
         // Only the public, no-auth storefront surface.
         tags: ['public'],
         // Prune model files down to the public schemas only.
-        schemas: [/^Public/, /OrderRequest/],
+        // NOTE: this is a strict allowlist — orval does NOT auto-include schemas
+        // referenced by kept endpoints, so any DTO used by a public endpoint
+        // (signup, email/subdomain availability) must be listed explicitly or
+        // its import in public.ts will dangle and break the type-check.
+        schemas: [
+          /^Public/,
+          /OrderRequest/,
+          'EmailAvailableResponse',
+          'SubdomainAvailableResponse',
+          'SignupDto',
+          'SignupResponse',
+          'UserResponse',
+        ],
       },
     },
     output: {

@@ -1,4 +1,5 @@
 import { AggregateRoot } from '../../../../shared/domain/aggregate-root';
+import { RolePermissionsUpdatedEvent } from '../events/role-events';
 import { SystemRoleNotDeletableError, UnknownPermissionError } from '../identity.errors';
 import { PermissionKey, unknownPermissionKeys } from '../permissions.catalog';
 
@@ -99,6 +100,9 @@ export class Role extends AggregateRoot<string> {
   replacePermissions(permissions: string[]): void {
     this.props.permissions = Role.assertValidPermissions(permissions);
     this.touch();
+    // Notify open sessions so gated UI + backend authz re-resolve live (no
+    // re-login). The relay fans this out to the role's org room.
+    this.addDomainEvent(new RolePermissionsUpdatedEvent(this.id, this.props.organizationId));
   }
 
   rename(name: string): void {

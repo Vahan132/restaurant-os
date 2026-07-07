@@ -20,3 +20,10 @@ export const branchRoom = (restaurantId: string, branchId: string): string =>
 
 export const stationRoom = (restaurantId: string, branchId: string, station: string): string =>
   `restaurant:${restaurantId}:branch:${branchId}:station:${station}`;
+
+/**
+ * Org room = org:<o>. Cross-branch, tenant-scoped fan-out for events that affect
+ * a user regardless of their active branch — e.g. a role's permissions changing.
+ * Every authenticated socket joins its org room in addition to its branch room.
+ */
+export const orgRoom = (organizationId: string): string => `org:${organizationId}`;

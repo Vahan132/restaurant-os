@@ -251,8 +251,6 @@ export function RecipeCostPanel({
           <p className="text-xs text-gray-400">{t('noModifierOptions')}</p>
         ) : (
           mappings.map((m, i) => {
-            const it = m.itemId ? itemById.get(m.itemId) : undefined;
-            const unit = it ? it.baseUnit : '';
             return (
               <div key={i} className="flex items-end gap-2">
                 <div className="flex-1">

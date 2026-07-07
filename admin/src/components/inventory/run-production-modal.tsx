@@ -68,7 +68,7 @@ export function RunProductionModal({
 
   const expiryOutputs = useMemo(
     () => (process?.outputs ?? []).filter((o) => itemById.get(o.itemId)?.trackExpiry),
-    [process],
+    [process, itemById],
   );
 
   const submit = async () => {

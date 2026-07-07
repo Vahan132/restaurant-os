@@ -8,6 +8,7 @@ import { Toaster } from '@/lib/toast';
 import { ConnectionBanner } from '@/components/shell/ConnectionBanner';
 import { HubBlockingOverlay } from '@/components/shell/HubBlockingOverlay';
 import { OrderReadyNotifier } from '@/components/shell/OrderReadyNotifier';
+import { PermissionsSync } from '@/components/shell/PermissionsSync';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { BranchGate } from '@/components/branch/BranchGate';
 import { DeviceEnrollmentGate } from '@/components/device/DeviceEnrollmentGate';
@@ -42,6 +43,7 @@ export function Providers({ children }: { children: ReactNode }) {
           <ConnectionBanner />
           <HubBlockingOverlay />
           <OrderReadyNotifier />
+          <PermissionsSync />
           <Toaster />
         </RealtimeProvider>
       </HubHealthProvider>
