@@ -32,6 +32,11 @@ export default defineConfig({
           'SignupDto',
           'SignupResponse',
           'UserResponse',
+          // ORDER-2: public QR-web ordering DTOs (cart, order, receipt + nested lines).
+          /^QrCart/,
+          /^ValidatedCart/,
+          /^OrderReceipt/,
+          'CreatedQrOrderResponse',
         ],
       },
     },

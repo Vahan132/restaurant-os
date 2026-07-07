@@ -7,14 +7,19 @@
  */
 
 export * from './attachedOrderStatusResponse';
-export * from './attachedOrderStatusResponseStatus';
+export * from './attachedOrderStatusResponseOrderStatus';
+export * from './attachedOrderStatusResponsePaymentStatus';
 export * from './createOrderRequestDto';
+export * from './createdQrOrderResponse';
 export * from './emailAvailableResponse';
 export * from './openQrTableSessionDto';
 export * from './openTableSessionResponse';
 export * from './openTableSessionResponseChannel';
 export * from './openTableSessionResponseFlow';
 export * from './openTableSessionResponseState';
+export * from './orderReceiptFiscalResponse';
+export * from './orderReceiptResponse';
+export * from './orderReceiptResponseFiscal';
 export * from './orderRequestItemDto';
 export * from './orderRequestItemLine';
 export * from './orderRequestModifierDto';
@@ -48,6 +53,9 @@ export * from './publicTableSessionViewResponseChannel';
 export * from './publicTableSessionViewResponseFlow';
 export * from './publicTableSessionViewResponseState';
 export * from './publicTableSessionsControllerViewParams';
+export * from './qrCartDto';
+export * from './qrCartLineDto';
+export * from './qrCartLineDtoNote';
 export * from './rejectOrderRequestDto';
 export * from './signupDto';
 export * from './signupResponse';
@@ -62,3 +70,6 @@ export * from './staffTableSessionViewResponseSession';
 export * from './subdomainAvailableResponse';
 export * from './userResponse';
 export * from './userResponseStatus';
+export * from './validatedCartLineModifierResponse';
+export * from './validatedCartLineResponse';
+export * from './validatedCartResponse';

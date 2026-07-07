@@ -6,12 +6,29 @@ import { OpenOrJoinTableSessionResult } from '../commands/open-or-join-table-ses
 const STATES = ['PENDING_CONFIRM', 'OPEN', 'LOCKED', 'CLOSED', 'EXPIRED'];
 const FLOWS = ['PREPAYMENT', 'PAY_AT_END'];
 const CHANNELS = ['QR_WEB', 'APP'];
+const ORDER_STATES = [
+  'DRAFT',
+  'SENT_TO_KITCHEN',
+  'PREPARING',
+  'READY',
+  'SERVED',
+  'CLOSED',
+  'CANCELLED',
+];
+const PAYMENT_STATES = ['UNPAID', 'PARTIALLY_PAID', 'PAID'];
 
+/**
+ * A single order attached to the table's session. Carries the order's own axes —
+ * kitchen lifecycle (`orderStatus`) and payment (`paymentStatus`) — never a
+ * session state. The session's own state lives on the parent view response.
+ */
 export class AttachedOrderStatusResponse {
   @ApiProperty() orderId!: string;
   @ApiProperty() orderNumber!: number;
-  @ApiProperty({ enum: STATES, description: 'Order status (order enum, not session).' })
-  status!: string;
+  @ApiProperty({ enum: ORDER_STATES, description: "Order's kitchen lifecycle status." })
+  orderStatus!: string;
+  @ApiProperty({ enum: PAYMENT_STATES, description: "Order's payment status." })
+  paymentStatus!: string;
 }
 
 /**

@@ -4735,6 +4735,132 @@
         ]
       }
     },
+    "/public/qr/orders/validate-cart": {
+      "post": {
+        "operationId": "PublicQrOrdersController_validate",
+        "summary": "Recompute cart pricing server-side (QR-web).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QrCartDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidatedCartResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/public/qr/orders": {
+      "post": {
+        "operationId": "PublicQrOrdersController_create",
+        "summary": "Create a prepayment order from the validated cart (QR-web).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QrCartDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedQrOrderResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/public/qr/orders/{orderId}/confirm-payment": {
+      "post": {
+        "operationId": "PublicQrOrdersController_confirm",
+        "summary": "Pay, fiscalise and dispatch the order (idempotent).",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderReceiptResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/public/qr/orders/{orderId}/receipt": {
+      "get": {
+        "operationId": "PublicQrOrdersController_receipt",
+        "summary": "Fetch the fiscal receipt (incl. QR) for customer display.",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderReceiptResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
     "/kds/stations/{station}/tickets": {
       "get": {
         "operationId": "KdsController_tickets",
@@ -15831,22 +15957,34 @@
           "orderNumber": {
             "type": "number"
           },
-          "status": {
+          "orderStatus": {
             "type": "string",
             "enum": [
-              "PENDING_CONFIRM",
-              "OPEN",
-              "LOCKED",
+              "DRAFT",
+              "SENT_TO_KITCHEN",
+              "PREPARING",
+              "READY",
+              "SERVED",
               "CLOSED",
-              "EXPIRED"
+              "CANCELLED"
             ],
-            "description": "Order status (order enum, not session)."
+            "description": "Order's kitchen lifecycle status."
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "UNPAID",
+              "PARTIALLY_PAID",
+              "PAID"
+            ],
+            "description": "Order's payment status."
           }
         },
         "required": [
           "orderId",
           "orderNumber",
-          "status"
+          "orderStatus",
+          "paymentStatus"
         ]
       },
       "PublicTableSessionViewResponse": {
@@ -16202,7 +16340,9 @@
             "nullable": true
           },
           "waiterId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Null for QR-web customer orders."
           },
           "status": {
             "type": "string",
@@ -16711,6 +16851,233 @@
           "payments",
           "paymentStatus",
           "footer"
+        ]
+      },
+      "QrCartLineDto": {
+        "type": "object",
+        "properties": {
+          "menuItemId": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 1
+          },
+          "modifierOptionIds": {
+            "description": "Selected modifier option ids.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "note": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "menuItemId",
+          "quantity",
+          "modifierOptionIds"
+        ]
+      },
+      "QrCartDto": {
+        "type": "object",
+        "properties": {
+          "lines": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QrCartLineDto"
+            }
+          }
+        },
+        "required": [
+          "lines"
+        ]
+      },
+      "ValidatedCartLineModifierResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "priceDeltaAmount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "priceDeltaAmount"
+        ]
+      },
+      "ValidatedCartLineResponse": {
+        "type": "object",
+        "properties": {
+          "menuItemId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "unitPriceAmount": {
+            "type": "number"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "modifiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidatedCartLineModifierResponse"
+            }
+          },
+          "lineTotalAmount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "menuItemId",
+          "name",
+          "unitPriceAmount",
+          "quantity",
+          "modifiers",
+          "lineTotalAmount"
+        ]
+      },
+      "ValidatedCartResponse": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidatedCartLineResponse"
+            }
+          },
+          "subtotalAmount": {
+            "type": "number"
+          },
+          "serviceFeeAmount": {
+            "type": "number"
+          },
+          "totalAmount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "currency",
+          "lines",
+          "subtotalAmount",
+          "serviceFeeAmount",
+          "totalAmount"
+        ]
+      },
+      "CreatedQrOrderResponse": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "number"
+          },
+          "tableSessionId": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "description": "Order status (DRAFT until paid)."
+          },
+          "paymentStatus": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "orderNumber",
+          "tableSessionId",
+          "currency",
+          "totalAmount",
+          "status",
+          "paymentStatus"
+        ]
+      },
+      "OrderReceiptFiscalResponse": {
+        "type": "object",
+        "properties": {
+          "receiptId": {
+            "type": "string"
+          },
+          "fiscalNumber": {
+            "type": "string"
+          },
+          "qr": {
+            "type": "string",
+            "description": "Fixed-format string the client renders as a QR code."
+          },
+          "fiscalizedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "receiptId",
+          "fiscalNumber",
+          "qr",
+          "fiscalizedAt"
+        ]
+      },
+      "OrderReceiptResponse": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "paymentStatus": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "fiscalized": {
+            "type": "boolean",
+            "description": "False = paid but fiscalisation still pending (poll)."
+          },
+          "fiscal": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderReceiptFiscalResponse"
+              }
+            ]
+          }
+        },
+        "required": [
+          "orderId",
+          "orderNumber",
+          "status",
+          "paymentStatus",
+          "currency",
+          "totalAmount",
+          "fiscalized",
+          "fiscal"
         ]
       },
       "KdsTicketModifierResponse": {

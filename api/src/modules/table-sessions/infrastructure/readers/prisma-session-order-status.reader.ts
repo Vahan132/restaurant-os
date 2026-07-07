@@ -15,13 +15,14 @@ export class PrismaSessionOrderStatusReader implements SessionOrderStatusReader 
   ): Promise<AttachedOrderStatus[]> {
     const orders = await this.prisma.order.findMany({
       where: { restaurantId, tableSessionId },
-      select: { id: true, orderNumber: true, status: true },
+      select: { id: true, orderNumber: true, status: true, paymentStatus: true },
       orderBy: { createdAt: 'asc' },
     });
     return orders.map((o) => ({
       orderId: o.id,
       orderNumber: o.orderNumber,
-      status: o.status,
+      orderStatus: o.status,
+      paymentStatus: o.paymentStatus,
     }));
   }
 }
