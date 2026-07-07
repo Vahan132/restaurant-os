@@ -168,6 +168,14 @@ export class ReceiptItemLine {
 export class ReceiptPaymentLine {
   @ApiProperty({ enum: ['CASH', 'CARD', 'BANK_TRANSFER', 'OTHER'] }) method!: string;
   @ApiProperty() amount!: number;
+  @ApiProperty({
+    nullable: true,
+    type: Number,
+    description: 'Cash tendered by the customer; null for non-cash or when not recorded.',
+  })
+  tenderedAmount!: number | null;
+  @ApiProperty({ description: 'Cash change (tendered - amount); 0 otherwise.' })
+  changeAmount!: number;
 }
 
 /** Structured receipt read model. serviceFee is its own line. NO tax field. */
@@ -217,7 +225,12 @@ export class ReceiptResponse {
       totalAmount: o.totalAmount,
       payments: o.payments
         .filter((p) => p.isActive())
-        .map((p) => ({ method: p.method, amount: p.amount })),
+        .map((p) => ({
+          method: p.method,
+          amount: p.amount,
+          tenderedAmount: p.tenderedAmount,
+          changeAmount: p.changeAmount(),
+        })),
       paymentStatus: o.paymentStatus,
       footer: meta.footer,
     };

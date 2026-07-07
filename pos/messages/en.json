@@ -348,6 +348,8 @@
     "discount": "Discount",
     "serviceFee": "Service fee",
     "total": "Total",
+    "cashReceived": "Cash received",
+    "change": "Change",
     "print": "Print",
     "done": "Done"
   },
