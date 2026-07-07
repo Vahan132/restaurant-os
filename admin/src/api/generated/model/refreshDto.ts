@@ -7,6 +7,5 @@
  */
 
 export interface RefreshDto {
-  /** A valid, non-revoked refresh token. */
   refreshToken: string;
 }

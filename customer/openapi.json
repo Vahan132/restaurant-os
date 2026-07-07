@@ -1541,6 +1541,55 @@
         ]
       }
     },
+    "/branches/{id}/ordering-config": {
+      "patch": {
+        "operationId": "BranchesController_updateOrderingConfig",
+        "summary": "ORDER-1: set the branch ordering flow config (prepayment / pay-at-end / QR / idle).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBranchOrderingConfigDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing BRANCH_MANAGE permission."
+          }
+        },
+        "tags": [
+          "branches"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
     "/branches/{id}/disable": {
       "post": {
         "operationId": "BranchesController_disable",
@@ -3524,6 +3573,194 @@
         ]
       }
     },
+    "/public/table-sessions/open": {
+      "post": {
+        "operationId": "PublicTableSessionsController_open",
+        "summary": "Open or join the table session for the scanned table (QR-web).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenQrTableSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenTableSessionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No table matches the scanned QR."
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/public/table-sessions/view": {
+      "get": {
+        "operationId": "PublicTableSessionsController_view",
+        "summary": "View the active session + attached order statuses for a scanned table.",
+        "parameters": [
+          {
+            "name": "qr",
+            "required": true,
+            "in": "query",
+            "description": "The scanned table QR identifier (required).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTableSessionViewResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No table matches the scanned QR."
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/table-sessions/view": {
+      "get": {
+        "operationId": "TableSessionsController_view",
+        "summary": "View the active session + attached order statuses for a table.",
+        "parameters": [
+          {
+            "name": "tableId",
+            "required": true,
+            "in": "query",
+            "description": "Table id (in the active branch).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffTableSessionViewResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing ORDER_EDIT permission."
+          }
+        },
+        "tags": [
+          "table-sessions"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/table-sessions/{id}/confirm": {
+      "post": {
+        "operationId": "TableSessionsController_confirm",
+        "summary": "Waiter confirm: PENDING_CONFIRM -> OPEN (confirm-once binding).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffTableSessionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing ORDER_CREATE permission."
+          }
+        },
+        "tags": [
+          "table-sessions"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/table-sessions/{id}/close": {
+      "post": {
+        "operationId": "TableSessionsController_close",
+        "summary": "Staff clear / settled: OPEN|LOCKED -> CLOSED (invalidates tokens).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffTableSessionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing ORDER_EDIT permission."
+          }
+        },
+        "tags": [
+          "table-sessions"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
     "/orders": {
       "post": {
         "operationId": "OrdersController_create",
@@ -3942,7 +4179,7 @@
       "post": {
         "operationId": "OrdersController_discount",
         "summary": "Apply a discount.",
-        "description": "Discount authority is DISCOUNT_APPLY. A caller holding it applies directly. A caller without it must include an `authorization` block (enrolled POS device secret + a capable manager\u2019s 6-digit PIN); the manager is then recorded as the approver. The requesting user is never logged out.",
+        "description": "Discount authority is DISCOUNT_APPLY. A caller holding it applies directly. A caller without it must include an `authorization` block (enrolled POS device secret + a capable manager’s 6-digit PIN); the manager is then recorded as the approver. The requesting user is never logged out.",
         "parameters": [
           {
             "name": "id",
@@ -6566,7 +6803,8 @@
                 "BRANCH_IP_POLICY_CHANGED",
                 "ADMIN_LOGIN_POLICY_CHANGED",
                 "INVENTORY_COUNT_ADJUSTED",
-                "INVENTORY_TRANSFERRED"
+                "INVENTORY_TRANSFERRED",
+                "INVENTORY_PROCESS_RUN"
               ],
               "type": "string"
             }
@@ -6583,6 +6821,8 @@
                 "WAITER",
                 "CASHIER",
                 "KITCHEN_STAFF",
+                "CHEF",
+                "SOUS_CHEF",
                 "RECEPTIONIST",
                 "BRANCH_SCOPED"
               ],
@@ -6593,7 +6833,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch id filter (within the caller\u2019s reachable scope).",
+            "description": "Branch id filter (within the caller’s reachable scope).",
             "schema": {
               "type": "string"
             }
@@ -6655,7 +6895,7 @@
     "/audit-logs/export": {
       "get": {
         "operationId": "AuditController_export",
-        "summary": "Export audit logs as CSV (same filters as the list \u2014 what you see is what you export).",
+        "summary": "Export audit logs as CSV (same filters as the list — what you see is what you export).",
         "parameters": [
           {
             "name": "page",
@@ -6731,7 +6971,8 @@
                 "BRANCH_IP_POLICY_CHANGED",
                 "ADMIN_LOGIN_POLICY_CHANGED",
                 "INVENTORY_COUNT_ADJUSTED",
-                "INVENTORY_TRANSFERRED"
+                "INVENTORY_TRANSFERRED",
+                "INVENTORY_PROCESS_RUN"
               ],
               "type": "string"
             }
@@ -6748,6 +6989,8 @@
                 "WAITER",
                 "CASHIER",
                 "KITCHEN_STAFF",
+                "CHEF",
+                "SOUS_CHEF",
                 "RECEPTIONIST",
                 "BRANCH_SCOPED"
               ],
@@ -6758,7 +7001,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch id filter (within the caller\u2019s reachable scope).",
+            "description": "Branch id filter (within the caller’s reachable scope).",
             "schema": {
               "type": "string"
             }
@@ -8202,7 +8445,7 @@
     "/inventory/adjustments/count": {
       "post": {
         "operationId": "AdjustmentsController_count",
-        "summary": "Correction adjustment (6A \u00a76): set the ACTUAL counted on-hand for an (item, location). Writes the signed-difference ADJUSTMENT and reconciles lots + projection atomically.",
+        "summary": "Correction adjustment (6A §6): set the ACTUAL counted on-hand for an (item, location). Writes the signed-difference ADJUSTMENT and reconciles lots + projection atomically.",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -8729,7 +8972,7 @@
     "/inventory/items/{id}/related": {
       "get": {
         "operationId": "RelatedItemsController_related",
-        "summary": "Raw\u2194processed counterparts of an item, derived from the process graph.",
+        "summary": "Raw↔processed counterparts of an item, derived from the process graph.",
         "parameters": [
           {
             "name": "id",
@@ -9700,6 +9943,439 @@
         },
         "tags": [
           "inventory-transfers"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/reports/stock-on-hand": {
+      "get": {
+        "operationId": "InventoryReportsController_getStockOnHand",
+        "summary": "Per-(item, location) on-hand + FIFO value (paginated, roll-up totals).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one location.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one item.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one category.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lowStock",
+            "required": false,
+            "in": "query",
+            "description": "Only rows at/below their low-stock threshold. Pass \"true\".",
+            "schema": {
+              "enum": [
+                "true",
+                "false"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockOnHandRowResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:read, or branch out of scope."
+          }
+        },
+        "tags": [
+          "inventory-reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/reports/valuation": {
+      "get": {
+        "operationId": "InventoryReportsController_getValuation",
+        "summary": "Inventory valuation roll-ups: per location, per branch, aggregate.",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one location.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one item.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one category.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValuationSummaryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:read, or branch out of scope."
+          }
+        },
+        "tags": [
+          "inventory-reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/reports/low-stock": {
+      "get": {
+        "operationId": "InventoryReportsController_getLowStock",
+        "summary": "Items at/below their low-stock threshold per (item, location).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one location.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one item.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one category.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockOnHandRowResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:read, or branch out of scope."
+          }
+        },
+        "tags": [
+          "inventory-reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/reports/negative-stock": {
+      "get": {
+        "operationId": "InventoryReportsController_getNegativeStock",
+        "summary": "Items currently negative at a location (correction worklist).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one location.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one item.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one category.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockOnHandRowResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:read, or branch out of scope."
+          }
+        },
+        "tags": [
+          "inventory-reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/reports/movements": {
+      "get": {
+        "operationId": "InventoryReportsController_getMovements",
+        "summary": "Movement-history ledger filtered by item/location/branch/type/date (AND).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one item.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to one location.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Filter by exact movement type.",
+            "schema": {
+              "enum": [
+                "RECEIPT_IN",
+                "ADJUSTMENT_IN",
+                "ADJUSTMENT_OUT",
+                "CONSUMPTION_OUT",
+                "WRITE_OFF_OUT",
+                "PROCESS_OUT",
+                "PROCESS_IN",
+                "CONSUMPTION_REVERSAL",
+                "OPENING",
+                "TRANSFER_OUT",
+                "TRANSFER_IN"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "From occurredAt (ISO 8601, inclusive).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "To occurredAt (ISO 8601, inclusive).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StockMovementResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:read, or branch out of scope."
+          }
+        },
+        "tags": [
+          "inventory-reports"
         ],
         "security": [
           {
@@ -10711,6 +11387,1642 @@
         ]
       }
     },
+    "/platform-admin/consumer-listing/restaurants/{restaurantId}/suppressed": {
+      "put": {
+        "operationId": "PlatformConsumerListingController_suppress",
+        "summary": "Set the brand consumer-listing kill switch (overrides owner listing).",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "required": true,
+            "in": "path",
+            "description": "Target restaurant id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetSuppressedDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuppressionStateResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Platform Consumer Listing"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform-admin/attributes": {
+      "get": {
+        "operationId": "PlatformConsumerListingController_listAttributes",
+        "summary": "Full attribute taxonomy (incl. non-filterable categories).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AttributeCategoryResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Platform Consumer Listing"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform-admin/attributes/categories": {
+      "post": {
+        "operationId": "PlatformConsumerListingController_postCategory",
+        "summary": "Create an attribute category.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAttributeCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeCategoryResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Platform Consumer Listing"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform-admin/attributes/categories/{id}": {
+      "patch": {
+        "operationId": "PlatformConsumerListingController_patchCategory",
+        "summary": "Update an attribute category.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Attribute category id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAttributeCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeCategoryResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Platform Consumer Listing"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "PlatformConsumerListingController_deleteCategoryRoute",
+        "summary": "Delete an attribute category (blocked if any value is in use).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Attribute category id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Consumer Listing"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform-admin/attributes/categories/{id}/values": {
+      "post": {
+        "operationId": "PlatformConsumerListingController_postValue",
+        "summary": "Add a value to a category.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Attribute category id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAttributeValueDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeValueResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Platform Consumer Listing"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform-admin/attributes/values/{id}": {
+      "patch": {
+        "operationId": "PlatformConsumerListingController_patchValue",
+        "summary": "Update an attribute value.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Attribute value id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAttributeValueDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeValueResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Platform Consumer Listing"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "PlatformConsumerListingController_deleteValueRoute",
+        "summary": "Delete an attribute value (blocked if in use → ATTRIBUTE_VALUE_IN_USE).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Attribute value id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Consumer Listing"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/public/discovery/attributes": {
+      "get": {
+        "operationId": "PublicDiscoveryController_attributes",
+        "summary": "Attribute taxonomy (categories + values) for the Filters sheet.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AttributeCategoryResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Discovery"
+        ]
+      }
+    },
+    "/public/discovery/restaurants": {
+      "get": {
+        "operationId": "PublicDiscoveryController_restaurants",
+        "summary": "Discovery list of effectively-listed branch cards (search + attribute filter).",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Free-text search over brand name + address/city.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attributeValueIds",
+            "required": false,
+            "in": "query",
+            "description": "Repeated attributeValueId filter. A branch matches when its restaurant has ALL selected values (AND across categories).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConsumerBranchCardResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Discovery"
+        ]
+      }
+    },
+    "/public/discovery/restaurants/{branchId}": {
+      "get": {
+        "operationId": "PublicDiscoveryController_detail",
+        "summary": "Full detail for an effectively-listed branch (404 BRANCH_NOT_LISTED).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "description": "Globally-unique branch id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerBranchDetailResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Discovery"
+        ]
+      }
+    },
+    "/public/discovery/restaurants/{branchId}/availability": {
+      "get": {
+        "operationId": "PublicDiscoveryController_availability",
+        "summary": "Reservation availability (reuses reservations; 409 RESERVATIONS_NOT_PUBLIC).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "description": "Globally-unique branch id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "windowStart",
+            "required": false,
+            "in": "query",
+            "description": "ISO-8601 window start (defaults to now).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "windowEnd",
+            "required": false,
+            "in": "query",
+            "description": "ISO-8601 window end (defaults to start + 24h).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerAvailabilityResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Discovery"
+        ]
+      }
+    },
+    "/consumer/branches/{branchId}/slots": {
+      "get": {
+        "operationId": "ConsumerBookingController_slots",
+        "summary": "Engine-computed bookable slots for a branch (anonymous).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "description": "Globally-unique branch id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": true,
+            "in": "query",
+            "description": "Local calendar date to derive slots for (\"YYYY-MM-DD\").",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "partySize",
+            "required": true,
+            "in": "query",
+            "description": "Party size to test capacity against.",
+            "schema": {
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerBookableSlotsResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Booking"
+        ]
+      }
+    },
+    "/consumer/reservations": {
+      "post": {
+        "operationId": "ConsumerBookingController_create",
+        "summary": "Create a PENDING booking (stamped consumerId) at a slot.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConsumerReservationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerReservationConfirmationResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Booking"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "ConsumerBookingController_list",
+        "summary": "This consumer's reservations, split upcoming | past.",
+        "parameters": [
+          {
+            "name": "scope",
+            "required": true,
+            "in": "query",
+            "description": "Which set of reservations to return.",
+            "schema": {
+              "enum": [
+                "upcoming",
+                "past"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConsumerReservationResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Booking"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/reservations/{id}/cancel": {
+      "post": {
+        "operationId": "ConsumerBookingController_cancel",
+        "summary": "Self-cancel an upcoming booking (frees the table via the real path).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Reservation id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerActionAckResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Booking"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/saved": {
+      "get": {
+        "operationId": "ConsumerSavedController_list",
+        "summary": "Saved branches as cards (unlisted ones flagged listed:false).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SavedRestaurantCardResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Saved"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/saved/{branchId}": {
+      "put": {
+        "operationId": "ConsumerSavedController_save",
+        "summary": "Save a branch (idempotent).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "description": "Globally-unique branch id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerActionAckResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Saved"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "ConsumerSavedController_unsave",
+        "summary": "Unsave a branch (idempotent).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "description": "Globally-unique branch id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerActionAckResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Saved"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/admin/consumer-listing/restaurant": {
+      "get": {
+        "operationId": "AdminConsumerListingController_readRestaurant",
+        "summary": "Current brand listing config + brand completeness (any listed state).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerRestaurantListingResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SETTINGS_MANAGE."
+          }
+        },
+        "tags": [
+          "Admin Consumer Listing"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "AdminConsumerListingController_patchRestaurant",
+        "summary": "Update brand marketing profile (about, website).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMarketingProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerRestaurantListingResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SETTINGS_MANAGE."
+          }
+        },
+        "tags": [
+          "Admin Consumer Listing"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/consumer-listing/restaurant/attributes": {
+      "put": {
+        "operationId": "AdminConsumerListingController_putAttributes",
+        "summary": "Replace selected attribute value ids.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAttributesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerRestaurantListingResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SETTINGS_MANAGE."
+          }
+        },
+        "tags": [
+          "Admin Consumer Listing"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/consumer-listing/restaurant/photos": {
+      "post": {
+        "operationId": "AdminConsumerListingController_createPhoto",
+        "summary": "Add a brand photo (https URL-paste; appended at the end).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPhotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerRestaurantListingResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SETTINGS_MANAGE."
+          }
+        },
+        "tags": [
+          "Admin Consumer Listing"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/consumer-listing/restaurant/photos/order": {
+      "patch": {
+        "operationId": "AdminConsumerListingController_orderPhotos",
+        "summary": "Reorder brand photos to the given id order.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderPhotosDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerRestaurantListingResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SETTINGS_MANAGE."
+          }
+        },
+        "tags": [
+          "Admin Consumer Listing"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/consumer-listing/restaurant/photos/{photoId}": {
+      "delete": {
+        "operationId": "AdminConsumerListingController_deletePhoto",
+        "summary": "Remove a brand photo.",
+        "parameters": [
+          {
+            "name": "photoId",
+            "required": true,
+            "in": "path",
+            "description": "Brand photo id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerRestaurantListingResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SETTINGS_MANAGE."
+          }
+        },
+        "tags": [
+          "Admin Consumer Listing"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/consumer-listing/branches/{branchId}": {
+      "get": {
+        "operationId": "AdminConsumerListingController_readBranch",
+        "summary": "Branch listing config + effective-listing + full completeness.",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "description": "Branch id within the current restaurant.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerBranchListingResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SETTINGS_MANAGE, or branch out of scope."
+          }
+        },
+        "tags": [
+          "Admin Consumer Listing"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/consumer-listing/branches/{branchId}/contact": {
+      "put": {
+        "operationId": "AdminConsumerListingController_putContact",
+        "summary": "Set branch public contact (phone) + branch-owned address/city.",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "description": "Branch id within the current restaurant.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetBranchContactDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerBranchListingResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SETTINGS_MANAGE, or branch out of scope."
+          }
+        },
+        "tags": [
+          "Admin Consumer Listing"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/consumer-listing/branches/{branchId}/hours": {
+      "put": {
+        "operationId": "AdminConsumerListingController_putHours",
+        "summary": "Replace branch weekly public hours.",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "description": "Branch id within the current restaurant.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPublicHoursDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerBranchListingResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SETTINGS_MANAGE, or branch out of scope."
+          }
+        },
+        "tags": [
+          "Admin Consumer Listing"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/consumer-listing/branches/{branchId}/menu-public": {
+      "put": {
+        "operationId": "AdminConsumerListingController_putMenuPublic",
+        "summary": "Toggle branch menuPublic.",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "description": "Branch id within the current restaurant.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BooleanValueDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerBranchListingResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SETTINGS_MANAGE, or branch out of scope."
+          }
+        },
+        "tags": [
+          "Admin Consumer Listing"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/consumer-listing/branches/{branchId}/listed": {
+      "put": {
+        "operationId": "AdminConsumerListingController_putListed",
+        "summary": "Toggle listedInConsumerApp (true is completeness-gated).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "description": "Branch id within the current restaurant.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BooleanValueDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerBranchListingResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SETTINGS_MANAGE, or branch out of scope."
+          }
+        },
+        "tags": [
+          "Admin Consumer Listing"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/admin/consumer-listing/branches/{branchId}/reservations-public": {
+      "put": {
+        "operationId": "AdminConsumerListingController_putReservationsPublic",
+        "summary": "Toggle reservationsPublic (requires MANAGE_RESERVATIONS).",
+        "parameters": [
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "description": "Branch id within the current restaurant.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BooleanValueDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerBranchListingResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing RESERVATION_MANAGE, or branch out of scope."
+          }
+        },
+        "tags": [
+          "Admin Consumer Listing"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/consumer/auth/google": {
+      "post": {
+        "operationId": "ConsumerAuthController_signInWithGoogle",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleSignInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/apple": {
+      "post": {
+        "operationId": "ConsumerAuthController_signInWithApple",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppleSignInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/otp/request": {
+      "post": {
+        "operationId": "ConsumerAuthController_requestOtpCode",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcknowledgementResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/otp/verify": {
+      "post": {
+        "operationId": "ConsumerAuthController_verifyOtpCode",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/refresh": {
+      "post": {
+        "operationId": "ConsumerAuthController_refreshToken",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/signout": {
+      "post": {
+        "operationId": "ConsumerAuthController_signOutConsumer",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignOutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcknowledgementResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/me": {
+      "get": {
+        "operationId": "ConsumerProfileController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerProfileResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "ConsumerProfileController_updateMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerProfileResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "ConsumerProfileController_deleteMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcknowledgementResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/me/phone/request": {
+      "post": {
+        "operationId": "ConsumerProfileController_requestPhone",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPhoneChangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcknowledgementResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/me/phone/confirm": {
+      "post": {
+        "operationId": "ConsumerProfileController_confirmPhone",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPhoneChangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerProfileResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/public/plans": {
       "get": {
         "operationId": "PublicAccountController_plans",
@@ -10801,7 +13113,7 @@
     "/public/signup": {
       "post": {
         "operationId": "PublicAccountController_createAccount",
-        "summary": "Self-serve signup \u2014 provisions an account and auto-logs in the owner.",
+        "summary": "Self-serve signup — provisions an account and auto-logs in the owner.",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -11035,7 +13347,7 @@
       },
       "patch": {
         "operationId": "AccountController_billingUpsert",
-        "summary": "Upsert billing info (no payment method \u2014 future).",
+        "summary": "Upsert billing info (no payment method — future).",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -11257,7 +13569,7 @@
   },
   "info": {
     "title": "Restaurant OS API",
-    "description": "Multi-tenant SaaS restaurant platform \u2014 backend API.",
+    "description": "Multi-tenant SaaS restaurant platform — backend API.",
     "version": "0.1.0",
     "contact": {}
   },
@@ -11380,8 +13692,7 @@
         "type": "object",
         "properties": {
           "refreshToken": {
-            "type": "string",
-            "description": "A valid, non-revoked refresh token."
+            "type": "string"
           }
         },
         "required": [
@@ -11823,7 +14134,7 @@
           },
           "secret": {
             "type": "string",
-            "description": "Plaintext device secret \u2014 shown once, never retrievable again."
+            "description": "Plaintext device secret — shown once, never retrievable again."
           }
         },
         "required": [
@@ -11836,7 +14147,7 @@
         "properties": {
           "pin": {
             "type": "string",
-            "description": "Plaintext PIN \u2014 shown once to the manager."
+            "description": "Plaintext PIN — shown once to the manager."
           },
           "mustRotate": {
             "type": "boolean",
@@ -12172,6 +14483,31 @@
           }
         }
       },
+      "BranchOrderingConfigResponse": {
+        "type": "object",
+        "properties": {
+          "prepaymentEnabled": {
+            "type": "boolean"
+          },
+          "payAtEndEnabled": {
+            "type": "boolean"
+          },
+          "qrOrderingEnabled": {
+            "type": "boolean",
+            "description": "QR-web channel may open sessions (always prepayment)."
+          },
+          "idleExpiryMinutes": {
+            "type": "number",
+            "description": "Idle auto-expiry threshold, minutes."
+          }
+        },
+        "required": [
+          "prepaymentEnabled",
+          "payAtEndEnabled",
+          "qrOrderingEnabled",
+          "idleExpiryMinutes"
+        ]
+      },
       "BranchResponse": {
         "type": "object",
         "properties": {
@@ -12213,6 +14549,14 @@
             "items": {
               "type": "string"
             }
+          },
+          "orderingConfig": {
+            "description": "ORDER-1: ordering flow config.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BranchOrderingConfigResponse"
+              }
+            ]
           }
         },
         "required": [
@@ -12223,7 +14567,8 @@
           "isDefault",
           "status",
           "ipBindingMode",
-          "ipAllowlist"
+          "ipAllowlist",
+          "orderingConfig"
         ]
       },
       "MyBranchAccessResponse": {
@@ -12282,6 +14627,30 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "UpdateBranchOrderingConfigDto": {
+        "type": "object",
+        "properties": {
+          "prepaymentEnabled": {
+            "type": "boolean",
+            "description": "Enable pay-before (prepayment) ordering at this branch."
+          },
+          "payAtEndEnabled": {
+            "type": "boolean",
+            "description": "Enable pay-at-end (open tab) ordering at this branch."
+          },
+          "qrOrderingEnabled": {
+            "type": "boolean",
+            "description": "Allow the QR-web channel to open sessions (always prepayment). Requires prepayment."
+          },
+          "idleExpiryMinutes": {
+            "type": "number",
+            "minimum": 30,
+            "maximum": 480,
+            "default": 150,
+            "description": "Idle auto-expiry threshold in minutes."
           }
         }
       },
@@ -13397,6 +15766,234 @@
           "status"
         ]
       },
+      "OpenQrTableSessionDto": {
+        "type": "object",
+        "properties": {
+          "qr": {
+            "type": "string",
+            "description": "The scanned table QR identifier (required)."
+          }
+        },
+        "required": [
+          "qr"
+        ]
+      },
+      "OpenTableSessionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING_CONFIRM",
+              "OPEN",
+              "LOCKED",
+              "CLOSED",
+              "EXPIRED"
+            ]
+          },
+          "flow": {
+            "type": "string",
+            "enum": [
+              "PREPAYMENT",
+              "PAY_AT_END"
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "QR_WEB",
+              "APP"
+            ]
+          },
+          "token": {
+            "type": "string",
+            "nullable": true,
+            "description": "Reattach token; only on create."
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "flow",
+          "channel",
+          "token"
+        ]
+      },
+      "AttachedOrderStatusResponse": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_CONFIRM",
+              "OPEN",
+              "LOCKED",
+              "CLOSED",
+              "EXPIRED"
+            ],
+            "description": "Order status (order enum, not session)."
+          }
+        },
+        "required": [
+          "orderId",
+          "orderNumber",
+          "status"
+        ]
+      },
+      "PublicTableSessionViewResponse": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Whether an active (non-terminal) session exists for this table."
+          },
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "state": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "PENDING_CONFIRM",
+              "OPEN",
+              "LOCKED",
+              "CLOSED",
+              "EXPIRED"
+            ]
+          },
+          "flow": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "PREPAYMENT",
+              "PAY_AT_END"
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "QR_WEB",
+              "APP"
+            ]
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttachedOrderStatusResponse"
+            }
+          }
+        },
+        "required": [
+          "active",
+          "id",
+          "state",
+          "flow",
+          "channel",
+          "orders"
+        ]
+      },
+      "StaffTableSessionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING_CONFIRM",
+              "OPEN",
+              "LOCKED",
+              "CLOSED",
+              "EXPIRED"
+            ]
+          },
+          "flow": {
+            "type": "string",
+            "enum": [
+              "PREPAYMENT",
+              "PAY_AT_END"
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "QR_WEB",
+              "APP"
+            ]
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "tableId": {
+            "type": "string"
+          },
+          "consumerAccountId": {
+            "type": "string",
+            "nullable": true
+          },
+          "openedAt": {
+            "type": "string"
+          },
+          "lastActivityAt": {
+            "type": "string"
+          },
+          "closedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "flow",
+          "channel",
+          "branchId",
+          "tableId",
+          "consumerAccountId",
+          "openedAt",
+          "lastActivityAt",
+          "closedAt"
+        ]
+      },
+      "StaffTableSessionViewResponse": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "session": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StaffTableSessionResponse"
+              }
+            ]
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttachedOrderStatusResponse"
+            }
+          }
+        },
+        "required": [
+          "active",
+          "session",
+          "orders"
+        ]
+      },
       "CreateOrderDto": {
         "type": "object",
         "properties": {
@@ -13780,7 +16377,7 @@
             "description": "Approver user id (required if approvals are enforced)."
           },
           "authorization": {
-            "description": "Manager step-up authorization. Required ONLY when the caller lacks DISCOUNT_APPLY \u2014 a capable manager authorizes the discount with their PIN on the enrolled POS device. Omit when the caller already holds DISCOUNT_APPLY.",
+            "description": "Manager step-up authorization. Required ONLY when the caller lacks DISCOUNT_APPLY — a capable manager authorizes the discount with their PIN on the enrolled POS device. Omit when the caller already holds DISCOUNT_APPLY.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/DiscountAuthorizationDto"
@@ -14013,10 +16610,12 @@
           },
           "tenderedAmount": {
             "type": "number",
-            "nullable": true
+            "nullable": true,
+            "description": "Cash tendered by the customer; null for non-cash or when not recorded."
           },
           "changeAmount": {
-            "type": "number"
+            "type": "number",
+            "description": "Cash change (tendered - amount); 0 otherwise."
           }
         },
         "required": [
@@ -16248,17 +18847,26 @@
           "branchId": {
             "type": "string"
           },
+          "locationId": {
+            "type": "string"
+          },
           "itemId": {
             "type": "string"
           },
           "type": {
             "type": "string",
             "enum": [
+              "OPENING",
               "RECEIPT_IN",
               "ADJUSTMENT_IN",
               "ADJUSTMENT_OUT",
               "CONSUMPTION_OUT",
-              "WRITE_OFF_OUT"
+              "WRITE_OFF_OUT",
+              "PROCESS_OUT",
+              "PROCESS_IN",
+              "CONSUMPTION_REVERSAL",
+              "TRANSFER_OUT",
+              "TRANSFER_IN"
             ]
           },
           "baseQty": {
@@ -16295,6 +18903,7 @@
         "required": [
           "id",
           "branchId",
+          "locationId",
           "itemId",
           "type",
           "baseQty",
@@ -16878,7 +19487,7 @@
           },
           "baseQty": {
             "type": "number",
-            "description": "Quantity in the item base unit consumed per 1\u00d7 batch.",
+            "description": "Quantity in the item base unit consumed per 1× batch.",
             "minimum": 1
           }
         },
@@ -16896,7 +19505,7 @@
           },
           "baseQty": {
             "type": "number",
-            "description": "Quantity produced per 1\u00d7 batch (base unit).",
+            "description": "Quantity produced per 1× batch (base unit).",
             "minimum": 1
           },
           "isPrimary": {
@@ -17320,7 +19929,7 @@
           },
           "estimatedUnitCost_amount": {
             "type": "number",
-            "description": "Forward-looking estimate (\u00a73); NOT actual COGS."
+            "description": "Forward-looking estimate (§3); NOT actual COGS."
           },
           "warnings": {
             "type": "array",
@@ -17910,7 +20519,7 @@
           },
           "toLocationId": {
             "type": "string",
-            "description": "Destination location id (same branch, \u2260 source)."
+            "description": "Destination location id (same branch, ≠ source)."
           },
           "unit": {
             "type": "string",
@@ -18053,6 +20662,118 @@
           "performedByUserId",
           "occurredAt",
           "slices"
+        ]
+      },
+      "StockOnHandRowResponse": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string"
+          },
+          "locationId": {
+            "type": "string"
+          },
+          "locationName": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "string"
+          },
+          "itemName": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "baseUnit": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "description": "On-hand in base units (may be negative)."
+          },
+          "valuation_amount": {
+            "type": "number",
+            "description": "FIFO value (minor units); negative valued at last known unit cost."
+          },
+          "lowStockThresholdBase": {
+            "type": "number",
+            "nullable": true
+          },
+          "lowStock": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "branchId",
+          "locationId",
+          "locationName",
+          "itemId",
+          "itemName",
+          "sku",
+          "categoryId",
+          "baseUnit",
+          "quantity",
+          "valuation_amount",
+          "lowStockThresholdBase",
+          "lowStock"
+        ]
+      },
+      "ValuationBucketResponse": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string"
+          },
+          "locationId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null for a per-branch bucket."
+          },
+          "locationName": {
+            "type": "string",
+            "nullable": true
+          },
+          "valuation_amount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "branchId",
+          "locationId",
+          "locationName",
+          "valuation_amount"
+        ]
+      },
+      "ValuationSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "byLocation": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValuationBucketResponse"
+            }
+          },
+          "byBranch": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValuationBucketResponse"
+            }
+          },
+          "totalValuation_amount": {
+            "type": "number",
+            "description": "Aggregate value across every in-scope branch."
+          }
+        },
+        "required": [
+          "byLocation",
+          "byBranch",
+          "totalValuation_amount"
         ]
       },
       "ImportBodyDto": {
@@ -18577,7 +21298,7 @@
           },
           "paymentsEnabled": {
             "type": "boolean",
-            "description": "No payment processing yet \u2014 billing/payments integration pending."
+            "description": "No payment processing yet — billing/payments integration pending."
           }
         },
         "required": [
@@ -18876,6 +21597,1352 @@
           "createdAt"
         ]
       },
+      "SetSuppressedDto": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "boolean",
+            "description": "true hides every branch of the restaurant from the consumer API."
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "SuppressionStateResponse": {
+        "type": "object",
+        "properties": {
+          "restaurantId": {
+            "type": "string"
+          },
+          "consumerListingSuppressed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "restaurantId",
+          "consumerListingSuppressed"
+        ]
+      },
+      "AttributeValueResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "labelHy": {
+            "type": "string"
+          },
+          "labelRu": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "labelHy",
+          "labelRu",
+          "labelEn",
+          "position"
+        ]
+      },
+      "AttributeCategoryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "labelHy": {
+            "type": "string"
+          },
+          "labelRu": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          },
+          "isFilterable": {
+            "type": "boolean"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttributeValueResponse"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "labelHy",
+          "labelRu",
+          "labelEn",
+          "position",
+          "isFilterable",
+          "values"
+        ]
+      },
+      "CreateAttributeCategoryDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "cuisine"
+          },
+          "labelHy": {
+            "type": "string"
+          },
+          "labelRu": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          },
+          "isFilterable": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "slug",
+          "labelHy",
+          "labelRu",
+          "labelEn"
+        ]
+      },
+      "UpdateAttributeCategoryDto": {
+        "type": "object",
+        "properties": {
+          "labelHy": {
+            "type": "string"
+          },
+          "labelRu": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0
+          },
+          "isFilterable": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateAttributeValueDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "italian"
+          },
+          "labelHy": {
+            "type": "string"
+          },
+          "labelRu": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0
+          }
+        },
+        "required": [
+          "slug",
+          "labelHy",
+          "labelRu",
+          "labelEn"
+        ]
+      },
+      "UpdateAttributeValueDto": {
+        "type": "object",
+        "properties": {
+          "labelHy": {
+            "type": "string"
+          },
+          "labelRu": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "AttributeSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "labelHy": {
+            "type": "string"
+          },
+          "labelRu": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "labelHy",
+          "labelRu",
+          "labelEn"
+        ]
+      },
+      "ConsumerBranchCardResponse": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string"
+          },
+          "restaurantId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "Brand name (Restaurant.name)."
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "heroPhotoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "First brand photo by position."
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "menuPublic": {
+            "type": "boolean"
+          },
+          "reservationsPublic": {
+            "type": "boolean"
+          },
+          "attributes": {
+            "description": "Short attribute summary.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttributeSummaryResponse"
+            }
+          }
+        },
+        "required": [
+          "branchId",
+          "restaurantId",
+          "name",
+          "logoUrl",
+          "heroPhotoUrl",
+          "address",
+          "city",
+          "menuPublic",
+          "reservationsPublic",
+          "attributes"
+        ]
+      },
+      "I18nTextResponse": {
+        "type": "object",
+        "properties": {
+          "hy": {
+            "type": "string",
+            "nullable": true
+          },
+          "ru": {
+            "type": "string",
+            "nullable": true
+          },
+          "en": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "hy",
+          "ru",
+          "en"
+        ]
+      },
+      "PublicHoursResponse": {
+        "type": "object",
+        "properties": {
+          "dayOfWeek": {
+            "type": "number",
+            "description": "0=Mon … 6=Sun."
+          },
+          "isClosed": {
+            "type": "boolean"
+          },
+          "opensAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "\"HH:mm\"."
+          },
+          "closesAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "\"HH:mm\"."
+          },
+          "crossesMidnight": {
+            "type": "boolean",
+            "description": "closesAt < opensAt ⇒ slot crosses midnight."
+          }
+        },
+        "required": [
+          "dayOfWeek",
+          "isClosed",
+          "opensAt",
+          "closesAt",
+          "crossesMidnight"
+        ]
+      },
+      "PhotoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          },
+          "url": {
+            "type": "string"
+          },
+          "alt": {
+            "$ref": "#/components/schemas/I18nTextResponse"
+          },
+          "width": {
+            "type": "number",
+            "nullable": true
+          },
+          "height": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "url",
+          "alt",
+          "width",
+          "height"
+        ]
+      },
+      "FeatureGroupResponse": {
+        "type": "object",
+        "properties": {
+          "categorySlug": {
+            "type": "string"
+          },
+          "labelHy": {
+            "type": "string"
+          },
+          "labelRu": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttributeSummaryResponse"
+            }
+          }
+        },
+        "required": [
+          "categorySlug",
+          "labelHy",
+          "labelRu",
+          "labelEn",
+          "values"
+        ]
+      },
+      "ConsumerBranchDetailResponse": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string"
+          },
+          "restaurantId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "Brand name (Restaurant.name)."
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "publicPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "website": {
+            "type": "string",
+            "nullable": true
+          },
+          "about": {
+            "$ref": "#/components/schemas/I18nTextResponse"
+          },
+          "todayHours": {
+            "nullable": true,
+            "description": "Today's hours in branch-local time (null if no row for today).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicHoursResponse"
+              }
+            ]
+          },
+          "weeklyHours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicHoursResponse"
+            }
+          },
+          "gallery": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhotoResponse"
+            }
+          },
+          "features": {
+            "description": "Attributes grouped by category.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeatureGroupResponse"
+            }
+          },
+          "menuPublic": {
+            "type": "boolean"
+          },
+          "reservationsPublic": {
+            "type": "boolean"
+          },
+          "menuUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Public storefront menu path; present only when menuPublic."
+          }
+        },
+        "required": [
+          "branchId",
+          "restaurantId",
+          "name",
+          "logoUrl",
+          "address",
+          "city",
+          "publicPhone",
+          "website",
+          "about",
+          "todayHours",
+          "weeklyHours",
+          "gallery",
+          "features",
+          "menuPublic",
+          "reservationsPublic",
+          "menuUrl"
+        ]
+      },
+      "BusyWindowResponse": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "description": "ISO start of a reserved window."
+          },
+          "end": {
+            "type": "string",
+            "description": "ISO end of a reserved window."
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ]
+      },
+      "TableBusyResponse": {
+        "type": "object",
+        "properties": {
+          "tableId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "Live table status."
+          },
+          "busyWindows": {
+            "description": "Reserved windows overlapping the query.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BusyWindowResponse"
+            }
+          }
+        },
+        "required": [
+          "tableId",
+          "name",
+          "status",
+          "busyWindows"
+        ]
+      },
+      "ConsumerAvailabilityResponse": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string"
+          },
+          "windowStart": {
+            "type": "string"
+          },
+          "windowEnd": {
+            "type": "string"
+          },
+          "tables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TableBusyResponse"
+            }
+          }
+        },
+        "required": [
+          "branchId",
+          "windowStart",
+          "windowEnd",
+          "tables"
+        ]
+      },
+      "BookableSlotResponse": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "string",
+            "description": "ISO-8601 slot start."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "False when capacity for this slot is full or the party cannot be seated."
+          }
+        },
+        "required": [
+          "time",
+          "available"
+        ]
+      },
+      "ConsumerBookableSlotsResponse": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "partySize": {
+            "type": "number"
+          },
+          "slots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookableSlotResponse"
+            }
+          }
+        },
+        "required": [
+          "branchId",
+          "date",
+          "partySize",
+          "slots"
+        ]
+      },
+      "CreateConsumerReservationDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "Globally-unique branch id (the listing unit)."
+          },
+          "date": {
+            "type": "string",
+            "description": "Local calendar date of the chosen slot (\"YYYY-MM-DD\")."
+          },
+          "time": {
+            "type": "string",
+            "description": "ISO-8601 slot start, taken verbatim from the slots endpoint."
+          },
+          "partySize": {
+            "type": "number",
+            "minimum": 1,
+            "description": "Party size (required)."
+          },
+          "note": {
+            "type": "string",
+            "description": "Optional note to the restaurant."
+          }
+        },
+        "required": [
+          "branchId",
+          "date",
+          "time",
+          "partySize"
+        ]
+      },
+      "ConsumerReservationConfirmationResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "Always PENDING — enters the staff-confirm flow."
+          },
+          "reservedAt": {
+            "type": "string",
+            "description": "ISO-8601 reserved time."
+          },
+          "branchId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reservationId",
+          "status",
+          "reservedAt",
+          "branchId"
+        ]
+      },
+      "ReservationBranchSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string"
+          },
+          "restaurantId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "Brand name (Restaurant.name)."
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "branchId",
+          "restaurantId",
+          "name",
+          "logoUrl",
+          "address",
+          "city"
+        ]
+      },
+      "ConsumerReservationResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "description": "Reservation status (PENDING, CONFIRMED, …)."
+          },
+          "reservedAt": {
+            "type": "string",
+            "description": "ISO-8601 reserved time."
+          },
+          "guestCount": {
+            "type": "number"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "branch": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReservationBranchSummaryResponse"
+              }
+            ]
+          }
+        },
+        "required": [
+          "reservationId",
+          "status",
+          "reservedAt",
+          "guestCount",
+          "note",
+          "branch"
+        ]
+      },
+      "ConsumerActionAckResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "success"
+        ]
+      },
+      "SavedRestaurantCardResponse": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string"
+          },
+          "savedAt": {
+            "type": "string",
+            "description": "ISO-8601 time the branch was saved."
+          },
+          "listed": {
+            "type": "boolean",
+            "description": "False when the branch is no longer effectively listed."
+          },
+          "restaurantId": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Brand name; null when unlisted."
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "heroPhotoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "menuPublic": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "reservationsPublic": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "attributes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttributeSummaryResponse"
+            }
+          }
+        },
+        "required": [
+          "branchId",
+          "savedAt",
+          "listed",
+          "restaurantId",
+          "name",
+          "logoUrl",
+          "heroPhotoUrl",
+          "address",
+          "city",
+          "menuPublic",
+          "reservationsPublic",
+          "attributes"
+        ]
+      },
+      "CompletenessResponse": {
+        "type": "object",
+        "properties": {
+          "isComplete": {
+            "type": "boolean"
+          },
+          "missing": {
+            "description": "Stable missing-field keys (restaurant.* / branch.*); empty when complete.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "isComplete",
+          "missing"
+        ]
+      },
+      "OwnerRestaurantListingResponse": {
+        "type": "object",
+        "properties": {
+          "restaurantId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "about": {
+            "$ref": "#/components/schemas/I18nTextResponse"
+          },
+          "website": {
+            "type": "string",
+            "nullable": true
+          },
+          "attributeValueIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhotoResponse"
+            }
+          },
+          "consumerListingSuppressed": {
+            "type": "boolean",
+            "description": "Platform kill switch (read-only for the owner)."
+          },
+          "completeness": {
+            "description": "Brand-level completeness.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CompletenessResponse"
+              }
+            ]
+          }
+        },
+        "required": [
+          "restaurantId",
+          "name",
+          "logoUrl",
+          "about",
+          "website",
+          "attributeValueIds",
+          "photos",
+          "consumerListingSuppressed",
+          "completeness"
+        ]
+      },
+      "I18nTextDto": {
+        "type": "object",
+        "properties": {
+          "hy": {
+            "type": "string",
+            "nullable": true
+          },
+          "ru": {
+            "type": "string",
+            "nullable": true
+          },
+          "en": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "UpdateMarketingProfileDto": {
+        "type": "object",
+        "properties": {
+          "about": {
+            "description": "Brand \"about\" copy (hy/ru/en).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/I18nTextDto"
+              }
+            ]
+          },
+          "website": {
+            "type": "string",
+            "nullable": true,
+            "description": "Brand website URL. Null clears."
+          }
+        },
+        "required": [
+          "about"
+        ]
+      },
+      "SetAttributesDto": {
+        "type": "object",
+        "properties": {
+          "attributeValueIds": {
+            "description": "Replacement set of selected attributeValueIds.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "attributeValueIds"
+        ]
+      },
+      "AddPhotoDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Photo URL (https only; URL-paste, no upload in v1)."
+          },
+          "alt": {
+            "description": "Alt text (hy/ru/en).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/I18nTextDto"
+              }
+            ]
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Reserved for forward-compat; v1 appends at the end (use reorder to move)."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "ReorderPhotosDto": {
+        "type": "object",
+        "properties": {
+          "orderedPhotoIds": {
+            "description": "Photo ids in the desired display order.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "orderedPhotoIds"
+        ]
+      },
+      "OwnerPublicHoursResponse": {
+        "type": "object",
+        "properties": {
+          "dayOfWeek": {
+            "type": "number",
+            "description": "0=Mon … 6=Sun."
+          },
+          "isClosed": {
+            "type": "boolean"
+          },
+          "opensAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "closesAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "dayOfWeek",
+          "isClosed",
+          "opensAt",
+          "closesAt"
+        ]
+      },
+      "OwnerBranchListingResponse": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string"
+          },
+          "restaurantId": {
+            "type": "string"
+          },
+          "publicPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "menuPublic": {
+            "type": "boolean"
+          },
+          "reservationsPublic": {
+            "type": "boolean"
+          },
+          "listedInConsumerApp": {
+            "type": "boolean"
+          },
+          "consumerListingSuppressed": {
+            "type": "boolean",
+            "description": "Platform kill switch on the parent restaurant (read-only)."
+          },
+          "effectiveListed": {
+            "type": "boolean",
+            "description": "listedInConsumerApp && !consumerListingSuppressed."
+          },
+          "weeklyHours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnerPublicHoursResponse"
+            }
+          },
+          "completeness": {
+            "description": "Full brand+branch gate result.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CompletenessResponse"
+              }
+            ]
+          }
+        },
+        "required": [
+          "branchId",
+          "restaurantId",
+          "publicPhone",
+          "address",
+          "city",
+          "menuPublic",
+          "reservationsPublic",
+          "listedInConsumerApp",
+          "consumerListingSuppressed",
+          "effectiveListed",
+          "weeklyHours",
+          "completeness"
+        ]
+      },
+      "SetBranchContactDto": {
+        "type": "object",
+        "properties": {
+          "publicPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true,
+            "description": "Branch-owned public address."
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "PublicHoursRowDto": {
+        "type": "object",
+        "properties": {
+          "dayOfWeek": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 6,
+            "description": "0=Mon … 6=Sun."
+          },
+          "isClosed": {
+            "type": "boolean"
+          },
+          "opensAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "\"HH:mm\" (required when open)."
+          },
+          "closesAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "\"HH:mm\" (required when open)."
+          }
+        },
+        "required": [
+          "dayOfWeek",
+          "isClosed"
+        ]
+      },
+      "SetPublicHoursDto": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "description": "Weekly schedule (replaces existing rows).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicHoursRowDto"
+            }
+          }
+        },
+        "required": [
+          "rows"
+        ]
+      },
+      "BooleanValueDto": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "GoogleSignInDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "description": "Google ID token obtained natively by the app."
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "ConsumerSessionResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "Opaque rotating refresh token (store securely)."
+          },
+          "tokenType": {
+            "type": "string",
+            "enum": [
+              "Bearer"
+            ],
+            "default": "Bearer"
+          },
+          "expiresIn": {
+            "type": "number",
+            "description": "Access token lifetime in seconds."
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "tokenType",
+          "expiresIn"
+        ]
+      },
+      "AppleSignInDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "description": "Apple identity token obtained natively by the app."
+          },
+          "firstAuthName": {
+            "type": "string",
+            "description": "Name captured on the FIRST Apple authorization."
+          },
+          "firstAuthEmail": {
+            "type": "string",
+            "description": "Email captured on the FIRST Apple authorization."
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "RequestOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Recipient phone (E.164 or light formatting)."
+          },
+          "locale": {
+            "type": "string",
+            "description": "SMS locale: hy | ru | en."
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "AcknowledgementResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "success"
+        ]
+      },
+      "VerifyOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "description": "The OTP code from the SMS."
+          }
+        },
+        "required": [
+          "phone",
+          "code"
+        ]
+      },
+      "SignOutDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "ConsumerProfileResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "OTHER",
+              "UNDISCLOSED"
+            ]
+          },
+          "birthday": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO date (YYYY-MM-DD)."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "gender",
+          "birthday"
+        ]
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string"
+          }
+        }
+      },
+      "RequestPhoneChangeDto": {
+        "type": "object",
+        "properties": {
+          "newPhone": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string",
+            "description": "SMS locale: hy | ru | en."
+          }
+        }
+      },
+      "ConfirmPhoneChangeDto": {
+        "type": "object",
+        "properties": {
+          "newPhone": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      },
       "PublicPlanResponse": {
         "type": "object",
         "properties": {
@@ -18964,7 +23031,7 @@
           },
           "slug": {
             "type": "string",
-            "description": "Desired subdomain (a-z0-9-, 3\u201363)."
+            "description": "Desired subdomain (a-z0-9-, 3–63)."
           },
           "currency": {
             "type": "string"
@@ -19004,14 +23071,6 @@
           "refreshToken",
           "user"
         ]
-      },
-      "UpdateProfileDto": {
-        "type": "object",
-        "properties": {
-          "fullName": {
-            "type": "string"
-          }
-        }
       },
       "ChangePlanDto": {
         "type": "object",
@@ -19082,7 +23141,7 @@
             }
           },
           "invoices": {
-            "description": "Placeholder \u2014 invoicing is future.",
+            "description": "Placeholder — invoicing is future.",
             "type": "array",
             "items": {
               "type": "object"
@@ -19168,7 +23227,7 @@
           "pendingOutboxCount": {
             "type": "number",
             "nullable": true,
-            "description": "Pending edge\u2192cloud outbox entries."
+            "description": "Pending edge→cloud outbox entries."
           },
           "appVersion": {
             "type": "string",
@@ -19198,7 +23257,7 @@
           },
           "token": {
             "type": "string",
-            "description": "The plaintext node token. Shown ONCE \u2014 store it on the hub now."
+            "description": "The plaintext node token. Shown ONCE — store it on the hub now."
           }
         },
         "required": [
@@ -19258,7 +23317,7 @@
           "pendingOutboxCount": {
             "type": "number",
             "nullable": true,
-            "description": "Pending edge\u2192cloud outbox entries."
+            "description": "Pending edge→cloud outbox entries."
           },
           "appVersion": {
             "type": "string",
@@ -19378,7 +23437,7 @@
           },
           "pendingOutboxCount": {
             "type": "number",
-            "description": "Pending edge\u2192cloud outbox entries on the hub."
+            "description": "Pending edge→cloud outbox entries on the hub."
           },
           "appVersion": {
             "type": "string",

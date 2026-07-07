@@ -1541,6 +1541,55 @@
         ]
       }
     },
+    "/branches/{id}/ordering-config": {
+      "patch": {
+        "operationId": "BranchesController_updateOrderingConfig",
+        "summary": "ORDER-1: set the branch ordering flow config (prepayment / pay-at-end / QR / idle).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBranchOrderingConfigDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing BRANCH_MANAGE permission."
+          }
+        },
+        "tags": [
+          "branches"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
     "/branches/{id}/disable": {
       "post": {
         "operationId": "BranchesController_disable",
@@ -3524,6 +3573,194 @@
         ]
       }
     },
+    "/public/table-sessions/open": {
+      "post": {
+        "operationId": "PublicTableSessionsController_open",
+        "summary": "Open or join the table session for the scanned table (QR-web).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpenQrTableSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenTableSessionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No table matches the scanned QR."
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/public/table-sessions/view": {
+      "get": {
+        "operationId": "PublicTableSessionsController_view",
+        "summary": "View the active session + attached order statuses for a scanned table.",
+        "parameters": [
+          {
+            "name": "qr",
+            "required": true,
+            "in": "query",
+            "description": "The scanned table QR identifier (required).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTableSessionViewResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No table matches the scanned QR."
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/table-sessions/view": {
+      "get": {
+        "operationId": "TableSessionsController_view",
+        "summary": "View the active session + attached order statuses for a table.",
+        "parameters": [
+          {
+            "name": "tableId",
+            "required": true,
+            "in": "query",
+            "description": "Table id (in the active branch).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffTableSessionViewResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing ORDER_EDIT permission."
+          }
+        },
+        "tags": [
+          "table-sessions"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/table-sessions/{id}/confirm": {
+      "post": {
+        "operationId": "TableSessionsController_confirm",
+        "summary": "Waiter confirm: PENDING_CONFIRM -> OPEN (confirm-once binding).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffTableSessionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing ORDER_CREATE permission."
+          }
+        },
+        "tags": [
+          "table-sessions"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/table-sessions/{id}/close": {
+      "post": {
+        "operationId": "TableSessionsController_close",
+        "summary": "Staff clear / settled: OPEN|LOCKED -> CLOSED (invalidates tokens).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffTableSessionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing ORDER_EDIT permission."
+          }
+        },
+        "tags": [
+          "table-sessions"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
     "/orders": {
       "post": {
         "operationId": "OrdersController_create",
@@ -3942,7 +4179,7 @@
       "post": {
         "operationId": "OrdersController_discount",
         "summary": "Apply a discount.",
-        "description": "Discount authority is DISCOUNT_APPLY. A caller holding it applies directly. A caller without it must include an `authorization` block (enrolled POS device secret + a capable manager\u2019s 6-digit PIN); the manager is then recorded as the approver. The requesting user is never logged out.",
+        "description": "Discount authority is DISCOUNT_APPLY. A caller holding it applies directly. A caller without it must include an `authorization` block (enrolled POS device secret + a capable manager’s 6-digit PIN); the manager is then recorded as the approver. The requesting user is never logged out.",
         "parameters": [
           {
             "name": "id",
@@ -6596,7 +6833,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch id filter (within the caller\u2019s reachable scope).",
+            "description": "Branch id filter (within the caller’s reachable scope).",
             "schema": {
               "type": "string"
             }
@@ -6658,7 +6895,7 @@
     "/audit-logs/export": {
       "get": {
         "operationId": "AuditController_export",
-        "summary": "Export audit logs as CSV (same filters as the list \u2014 what you see is what you export).",
+        "summary": "Export audit logs as CSV (same filters as the list — what you see is what you export).",
         "parameters": [
           {
             "name": "page",
@@ -6764,7 +7001,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch id filter (within the caller\u2019s reachable scope).",
+            "description": "Branch id filter (within the caller’s reachable scope).",
             "schema": {
               "type": "string"
             }
@@ -8208,7 +8445,7 @@
     "/inventory/adjustments/count": {
       "post": {
         "operationId": "AdjustmentsController_count",
-        "summary": "Correction adjustment (6A \u00a76): set the ACTUAL counted on-hand for an (item, location). Writes the signed-difference ADJUSTMENT and reconciles lots + projection atomically.",
+        "summary": "Correction adjustment (6A §6): set the ACTUAL counted on-hand for an (item, location). Writes the signed-difference ADJUSTMENT and reconciles lots + projection atomically.",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -8735,7 +8972,7 @@
     "/inventory/items/{id}/related": {
       "get": {
         "operationId": "RelatedItemsController_related",
-        "summary": "Raw\u2194processed counterparts of an item, derived from the process graph.",
+        "summary": "Raw↔processed counterparts of an item, derived from the process graph.",
         "parameters": [
           {
             "name": "id",
@@ -9723,7 +9960,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch filter (within the caller\u2019s reach; omit = all reachable).",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
             "schema": {
               "type": "string"
             }
@@ -9827,7 +10064,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch filter (within the caller\u2019s reach; omit = all reachable).",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
             "schema": {
               "type": "string"
             }
@@ -9894,7 +10131,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch filter (within the caller\u2019s reach; omit = all reachable).",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
             "schema": {
               "type": "string"
             }
@@ -9964,7 +10201,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch filter (within the caller\u2019s reach; omit = all reachable).",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
             "schema": {
               "type": "string"
             }
@@ -10034,7 +10271,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch filter (within the caller\u2019s reach; omit = all reachable).",
+            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
             "schema": {
               "type": "string"
             }
@@ -11434,7 +11671,7 @@
       },
       "delete": {
         "operationId": "PlatformConsumerListingController_deleteValueRoute",
-        "summary": "Delete an attribute value (blocked if in use \u2192 ATTRIBUTE_VALUE_IN_USE).",
+        "summary": "Delete an attribute value (blocked if in use → ATTRIBUTE_VALUE_IN_USE).",
         "parameters": [
           {
             "name": "id",
@@ -12876,7 +13113,7 @@
     "/public/signup": {
       "post": {
         "operationId": "PublicAccountController_createAccount",
-        "summary": "Self-serve signup \u2014 provisions an account and auto-logs in the owner.",
+        "summary": "Self-serve signup — provisions an account and auto-logs in the owner.",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -13110,7 +13347,7 @@
       },
       "patch": {
         "operationId": "AccountController_billingUpsert",
-        "summary": "Upsert billing info (no payment method \u2014 future).",
+        "summary": "Upsert billing info (no payment method — future).",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -13332,7 +13569,7 @@
   },
   "info": {
     "title": "Restaurant OS API",
-    "description": "Multi-tenant SaaS restaurant platform \u2014 backend API.",
+    "description": "Multi-tenant SaaS restaurant platform — backend API.",
     "version": "0.1.0",
     "contact": {}
   },
@@ -13897,7 +14134,7 @@
           },
           "secret": {
             "type": "string",
-            "description": "Plaintext device secret \u2014 shown once, never retrievable again."
+            "description": "Plaintext device secret — shown once, never retrievable again."
           }
         },
         "required": [
@@ -13910,7 +14147,7 @@
         "properties": {
           "pin": {
             "type": "string",
-            "description": "Plaintext PIN \u2014 shown once to the manager."
+            "description": "Plaintext PIN — shown once to the manager."
           },
           "mustRotate": {
             "type": "boolean",
@@ -14246,6 +14483,31 @@
           }
         }
       },
+      "BranchOrderingConfigResponse": {
+        "type": "object",
+        "properties": {
+          "prepaymentEnabled": {
+            "type": "boolean"
+          },
+          "payAtEndEnabled": {
+            "type": "boolean"
+          },
+          "qrOrderingEnabled": {
+            "type": "boolean",
+            "description": "QR-web channel may open sessions (always prepayment)."
+          },
+          "idleExpiryMinutes": {
+            "type": "number",
+            "description": "Idle auto-expiry threshold, minutes."
+          }
+        },
+        "required": [
+          "prepaymentEnabled",
+          "payAtEndEnabled",
+          "qrOrderingEnabled",
+          "idleExpiryMinutes"
+        ]
+      },
       "BranchResponse": {
         "type": "object",
         "properties": {
@@ -14287,6 +14549,14 @@
             "items": {
               "type": "string"
             }
+          },
+          "orderingConfig": {
+            "description": "ORDER-1: ordering flow config.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BranchOrderingConfigResponse"
+              }
+            ]
           }
         },
         "required": [
@@ -14297,7 +14567,8 @@
           "isDefault",
           "status",
           "ipBindingMode",
-          "ipAllowlist"
+          "ipAllowlist",
+          "orderingConfig"
         ]
       },
       "MyBranchAccessResponse": {
@@ -14356,6 +14627,30 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "UpdateBranchOrderingConfigDto": {
+        "type": "object",
+        "properties": {
+          "prepaymentEnabled": {
+            "type": "boolean",
+            "description": "Enable pay-before (prepayment) ordering at this branch."
+          },
+          "payAtEndEnabled": {
+            "type": "boolean",
+            "description": "Enable pay-at-end (open tab) ordering at this branch."
+          },
+          "qrOrderingEnabled": {
+            "type": "boolean",
+            "description": "Allow the QR-web channel to open sessions (always prepayment). Requires prepayment."
+          },
+          "idleExpiryMinutes": {
+            "type": "number",
+            "minimum": 30,
+            "maximum": 480,
+            "default": 150,
+            "description": "Idle auto-expiry threshold in minutes."
           }
         }
       },
@@ -15471,6 +15766,234 @@
           "status"
         ]
       },
+      "OpenQrTableSessionDto": {
+        "type": "object",
+        "properties": {
+          "qr": {
+            "type": "string",
+            "description": "The scanned table QR identifier (required)."
+          }
+        },
+        "required": [
+          "qr"
+        ]
+      },
+      "OpenTableSessionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING_CONFIRM",
+              "OPEN",
+              "LOCKED",
+              "CLOSED",
+              "EXPIRED"
+            ]
+          },
+          "flow": {
+            "type": "string",
+            "enum": [
+              "PREPAYMENT",
+              "PAY_AT_END"
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "QR_WEB",
+              "APP"
+            ]
+          },
+          "token": {
+            "type": "string",
+            "nullable": true,
+            "description": "Reattach token; only on create."
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "flow",
+          "channel",
+          "token"
+        ]
+      },
+      "AttachedOrderStatusResponse": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_CONFIRM",
+              "OPEN",
+              "LOCKED",
+              "CLOSED",
+              "EXPIRED"
+            ],
+            "description": "Order status (order enum, not session)."
+          }
+        },
+        "required": [
+          "orderId",
+          "orderNumber",
+          "status"
+        ]
+      },
+      "PublicTableSessionViewResponse": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Whether an active (non-terminal) session exists for this table."
+          },
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "state": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "PENDING_CONFIRM",
+              "OPEN",
+              "LOCKED",
+              "CLOSED",
+              "EXPIRED"
+            ]
+          },
+          "flow": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "PREPAYMENT",
+              "PAY_AT_END"
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "QR_WEB",
+              "APP"
+            ]
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttachedOrderStatusResponse"
+            }
+          }
+        },
+        "required": [
+          "active",
+          "id",
+          "state",
+          "flow",
+          "channel",
+          "orders"
+        ]
+      },
+      "StaffTableSessionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "PENDING_CONFIRM",
+              "OPEN",
+              "LOCKED",
+              "CLOSED",
+              "EXPIRED"
+            ]
+          },
+          "flow": {
+            "type": "string",
+            "enum": [
+              "PREPAYMENT",
+              "PAY_AT_END"
+            ]
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "QR_WEB",
+              "APP"
+            ]
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "tableId": {
+            "type": "string"
+          },
+          "consumerAccountId": {
+            "type": "string",
+            "nullable": true
+          },
+          "openedAt": {
+            "type": "string"
+          },
+          "lastActivityAt": {
+            "type": "string"
+          },
+          "closedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "flow",
+          "channel",
+          "branchId",
+          "tableId",
+          "consumerAccountId",
+          "openedAt",
+          "lastActivityAt",
+          "closedAt"
+        ]
+      },
+      "StaffTableSessionViewResponse": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "session": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StaffTableSessionResponse"
+              }
+            ]
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttachedOrderStatusResponse"
+            }
+          }
+        },
+        "required": [
+          "active",
+          "session",
+          "orders"
+        ]
+      },
       "CreateOrderDto": {
         "type": "object",
         "properties": {
@@ -15854,7 +16377,7 @@
             "description": "Approver user id (required if approvals are enforced)."
           },
           "authorization": {
-            "description": "Manager step-up authorization. Required ONLY when the caller lacks DISCOUNT_APPLY \u2014 a capable manager authorizes the discount with their PIN on the enrolled POS device. Omit when the caller already holds DISCOUNT_APPLY.",
+            "description": "Manager step-up authorization. Required ONLY when the caller lacks DISCOUNT_APPLY — a capable manager authorizes the discount with their PIN on the enrolled POS device. Omit when the caller already holds DISCOUNT_APPLY.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/DiscountAuthorizationDto"
@@ -16087,10 +16610,12 @@
           },
           "tenderedAmount": {
             "type": "number",
-            "nullable": true
+            "nullable": true,
+            "description": "Cash tendered by the customer; null for non-cash or when not recorded."
           },
           "changeAmount": {
-            "type": "number"
+            "type": "number",
+            "description": "Cash change (tendered - amount); 0 otherwise."
           }
         },
         "required": [
@@ -18962,7 +19487,7 @@
           },
           "baseQty": {
             "type": "number",
-            "description": "Quantity in the item base unit consumed per 1\u00d7 batch.",
+            "description": "Quantity in the item base unit consumed per 1× batch.",
             "minimum": 1
           }
         },
@@ -18980,7 +19505,7 @@
           },
           "baseQty": {
             "type": "number",
-            "description": "Quantity produced per 1\u00d7 batch (base unit).",
+            "description": "Quantity produced per 1× batch (base unit).",
             "minimum": 1
           },
           "isPrimary": {
@@ -19404,7 +19929,7 @@
           },
           "estimatedUnitCost_amount": {
             "type": "number",
-            "description": "Forward-looking estimate (\u00a73); NOT actual COGS."
+            "description": "Forward-looking estimate (§3); NOT actual COGS."
           },
           "warnings": {
             "type": "array",
@@ -19994,7 +20519,7 @@
           },
           "toLocationId": {
             "type": "string",
-            "description": "Destination location id (same branch, \u2260 source)."
+            "description": "Destination location id (same branch, ≠ source)."
           },
           "unit": {
             "type": "string",
@@ -20773,7 +21298,7 @@
           },
           "paymentsEnabled": {
             "type": "boolean",
-            "description": "No payment processing yet \u2014 billing/payments integration pending."
+            "description": "No payment processing yet — billing/payments integration pending."
           }
         },
         "required": [
@@ -21380,7 +21905,7 @@
         "properties": {
           "dayOfWeek": {
             "type": "number",
-            "description": "0=Mon \u2026 6=Sun."
+            "description": "0=Mon … 6=Sun."
           },
           "isClosed": {
             "type": "boolean"
@@ -21397,7 +21922,7 @@
           },
           "crossesMidnight": {
             "type": "boolean",
-            "description": "closesAt < opensAt \u21d2 slot crosses midnight."
+            "description": "closesAt < opensAt ⇒ slot crosses midnight."
           }
         },
         "required": [
@@ -21720,7 +22245,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Always PENDING \u2014 enters the staff-confirm flow."
+            "description": "Always PENDING — enters the staff-confirm flow."
           },
           "reservedAt": {
             "type": "string",
@@ -21780,7 +22305,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Reservation status (PENDING, CONFIRMED, \u2026)."
+            "description": "Reservation status (PENDING, CONFIRMED, …)."
           },
           "reservedAt": {
             "type": "string",
@@ -22067,7 +22592,7 @@
         "properties": {
           "dayOfWeek": {
             "type": "number",
-            "description": "0=Mon \u2026 6=Sun."
+            "description": "0=Mon … 6=Sun."
           },
           "isClosed": {
             "type": "boolean"
@@ -22181,7 +22706,7 @@
             "type": "number",
             "minimum": 0,
             "maximum": 6,
-            "description": "0=Mon \u2026 6=Sun."
+            "description": "0=Mon … 6=Sun."
           },
           "isClosed": {
             "type": "boolean"
@@ -22506,7 +23031,7 @@
           },
           "slug": {
             "type": "string",
-            "description": "Desired subdomain (a-z0-9-, 3\u201363)."
+            "description": "Desired subdomain (a-z0-9-, 3–63)."
           },
           "currency": {
             "type": "string"
@@ -22616,7 +23141,7 @@
             }
           },
           "invoices": {
-            "description": "Placeholder \u2014 invoicing is future.",
+            "description": "Placeholder — invoicing is future.",
             "type": "array",
             "items": {
               "type": "object"
@@ -22702,7 +23227,7 @@
           "pendingOutboxCount": {
             "type": "number",
             "nullable": true,
-            "description": "Pending edge\u2192cloud outbox entries."
+            "description": "Pending edge→cloud outbox entries."
           },
           "appVersion": {
             "type": "string",
@@ -22732,7 +23257,7 @@
           },
           "token": {
             "type": "string",
-            "description": "The plaintext node token. Shown ONCE \u2014 store it on the hub now."
+            "description": "The plaintext node token. Shown ONCE — store it on the hub now."
           }
         },
         "required": [
@@ -22792,7 +23317,7 @@
           "pendingOutboxCount": {
             "type": "number",
             "nullable": true,
-            "description": "Pending edge\u2192cloud outbox entries."
+            "description": "Pending edge→cloud outbox entries."
           },
           "appVersion": {
             "type": "string",
@@ -22912,7 +23437,7 @@
           },
           "pendingOutboxCount": {
             "type": "number",
-            "description": "Pending edge\u2192cloud outbox entries on the hub."
+            "description": "Pending edge→cloud outbox entries on the hub."
           },
           "appVersion": {
             "type": "string",

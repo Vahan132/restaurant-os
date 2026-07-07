@@ -21,6 +21,12 @@ export default defineConfig({
         schemas: [
           /^Public/,
           /OrderRequest/,
+          // ORDER-1: public QR-web table-session DTOs. /TableSession/ covers
+          // OpenTableSessionResponse (PublicTableSessionViewResponse is already
+          // caught by /^Public/); the two names cover the rest.
+          /TableSession/,
+          'AttachedOrderStatusResponse',
+          'OpenQrTableSessionDto',
           'EmailAvailableResponse',
           'SubdomainAvailableResponse',
           'SignupDto',
