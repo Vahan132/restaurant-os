@@ -17,7 +17,7 @@ import {
   ChangePlanDto,
   HistoryQuery,
   UpdateBillingDto,
-  UpdateProfileDto,
+  UpdateAccountProfileDto,
 } from '../../application/dto/account.dto';
 import {
   AccountOverview,
@@ -65,7 +65,7 @@ export class AccountController {
   async profile(
     @CurrentTenant() tenant: TenantContext,
     @CurrentUser() user: CurrentUserContext,
-    @Body() dto: UpdateProfileDto,
+    @Body() dto: UpdateAccountProfileDto,
   ): Promise<UserResponse> {
     const updated = await this.updateProfile.execute({
       organizationId: tenant.organizationId,

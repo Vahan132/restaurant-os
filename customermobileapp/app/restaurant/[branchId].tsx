@@ -193,22 +193,21 @@ export default function RestaurantDetailScreen() {
               </View>
             ) : null}
 
-            {/* View Menu — only when menu is public */}
-            {data.menuPublic && data.menuUrl ? (
+            {/* View Menu — native in-app menu (ORDER-3), only when menu is public */}
+            {data.menuPublic ? (
               <View className="px-5 pb-2">
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => openWeb(data.menuUrl)}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/menu/[branchId]',
+                      params: { branchId: data.branchId },
+                    })
+                  }
                   className="flex-row items-center justify-center rounded-xl bg-surface py-3 active:opacity-80"
                 >
                   <Ionicons name="restaurant-outline" size={18} color={colors.text} />
                   <Text className="ml-2 font-semibold text-text">{t('detail.viewMenu')}</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => openWeb(data.menuUrl)}
-                  className="mt-2 items-center active:opacity-70"
-                >
-                  <Text className="text-sm text-accent">{t('detail.openMenuLink')}</Text>
                 </Pressable>
               </View>
             ) : null}

@@ -51,7 +51,7 @@ export class VerifyOtpDto {
   code!: string;
 }
 
-export class RefreshDto {
+export class ConsumerRefreshDto {
   @ApiProperty()
   @IsString()
   @MinLength(1)

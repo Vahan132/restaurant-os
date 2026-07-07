@@ -153,6 +153,7 @@ export class SetItemConsumptionLocationDto {
   @ApiPropertyOptional({
     description: 'Target location id; omit or null to reset to the branch default (Main Storage).',
     nullable: true,
+    type: String,
   })
   @IsOptional()
   @IsString()

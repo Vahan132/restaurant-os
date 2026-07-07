@@ -28,7 +28,7 @@ export class QrCartLineDto {
   @IsString({ each: true })
   modifierOptionIds!: string[];
 
-  @ApiProperty({ required: false, nullable: true })
+  @ApiProperty({ required: false, nullable: true, type: String })
   @IsOptional()
   @IsString()
   note?: string | null;

@@ -20,7 +20,7 @@ export class ChangePlanDto {
   @ApiProperty() @IsString() @MinLength(1) planCode!: string;
 }
 
-export class UpdateProfileDto {
+export class UpdateAccountProfileDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MinLength(1) fullName?: string;
 }
 

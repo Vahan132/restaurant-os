@@ -12940,7 +12940,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshDto"
+                "$ref": "#/components/schemas/ConsumerRefreshDto"
               }
             }
           }
@@ -13301,7 +13301,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateProfileDto"
+                "$ref": "#/components/schemas/UpdateAccountProfileDto"
               }
             }
           }
@@ -13818,7 +13818,8 @@
         "type": "object",
         "properties": {
           "refreshToken": {
-            "type": "string"
+            "type": "string",
+            "description": "A valid, non-revoked refresh token."
           }
         },
         "required": [
@@ -15354,16 +15355,16 @@
             "description": "Id of a library modifier group in this branch."
           },
           "requiredOverride": {
-            "type": "object",
+            "type": "boolean",
             "nullable": true
           },
           "minOverride": {
-            "type": "object",
+            "type": "number",
             "nullable": true,
             "minimum": 0
           },
           "maxOverride": {
-            "type": "object",
+            "type": "number",
             "nullable": true,
             "minimum": 1
           },
@@ -15395,16 +15396,16 @@
         "type": "object",
         "properties": {
           "requiredOverride": {
-            "type": "object",
+            "type": "boolean",
             "nullable": true
           },
           "minOverride": {
-            "type": "object",
+            "type": "number",
             "nullable": true,
             "minimum": 0
           },
           "maxOverride": {
-            "type": "object",
+            "type": "number",
             "nullable": true,
             "minimum": 1
           },
@@ -16427,7 +16428,7 @@
         "type": "object",
         "properties": {
           "note": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           }
         }
@@ -16871,7 +16872,7 @@
             }
           },
           "note": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           }
         },
@@ -17501,8 +17502,9 @@
           },
           "businessHours": {
             "type": "object",
-            "description": "Business hours, if configured. Opaque JSON for the client to render.",
-            "nullable": true
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "Business hours, if configured. Opaque JSON for the client to render."
           }
         },
         "required": [
@@ -19141,7 +19143,7 @@
         "type": "object",
         "properties": {
           "locationId": {
-            "type": "object",
+            "type": "string",
             "description": "Target location id; omit or null to reset to the branch default (Main Storage).",
             "nullable": true
           }
@@ -23225,6 +23227,17 @@
           "code"
         ]
       },
+      "ConsumerRefreshDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
       "SignOutDto": {
         "type": "object",
         "properties": {
@@ -23282,8 +23295,28 @@
       "UpdateProfileDto": {
         "type": "object",
         "properties": {
-          "fullName": {
-            "type": "string"
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "OTHER",
+              "UNDISCLOSED"
+            ],
+            "nullable": true
+          },
+          "birthday": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO date (YYYY-MM-DD)."
+          },
+          "email": {
+            "type": "string",
+            "description": "Provider-owned; any value is rejected (EMAIL_IMMUTABLE)."
           }
         }
       },
@@ -23438,6 +23471,14 @@
           "refreshToken",
           "user"
         ]
+      },
+      "UpdateAccountProfileDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string"
+          }
+        }
       },
       "ChangePlanDto": {
         "type": "object",

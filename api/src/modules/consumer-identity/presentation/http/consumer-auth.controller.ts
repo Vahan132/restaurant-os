@@ -11,7 +11,7 @@ import { ConsumerSession } from '../../application/services/issue-consumer-sessi
 import {
   AppleSignInDto,
   GoogleSignInDto,
-  RefreshDto,
+  ConsumerRefreshDto,
   RequestOtpDto,
   SignOutDto,
   VerifyOtpDto,
@@ -71,7 +71,7 @@ export class ConsumerAuthController {
   @Post('refresh')
   @HttpCode(200)
   @ApiOkResponse({ type: ConsumerSessionResponse })
-  refreshToken(@Body() dto: RefreshDto): Promise<ConsumerSession> {
+  refreshToken(@Body() dto: ConsumerRefreshDto): Promise<ConsumerSession> {
     return this.refresh.execute({ refreshToken: dto.refreshToken });
   }
 

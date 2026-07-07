@@ -44,6 +44,9 @@ export default function RootLayout() {
         >
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="restaurant/[branchId]" />
+          {/* Native branch menu (ORDER-3): list + read-only item detail. */}
+          <Stack.Screen name="menu/[branchId]/index" />
+          <Stack.Screen name="menu/[branchId]/[itemId]" />
           {/* Filters = bottom sheet via modal route; login stub = dimmed bottom sheet. */}
           <Stack.Screen name="filters" options={{ presentation: 'modal' }} />
           <Stack.Screen

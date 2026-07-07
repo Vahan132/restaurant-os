@@ -57,8 +57,10 @@ export class PublicReservationsInfoResponse {
   @ApiProperty({ description: 'BR-9: the resolved branch name.' }) branchName!: string;
   @ApiProperty() timezone!: string;
   @ApiPropertyOptional({
-    description: 'Business hours, if configured. Opaque JSON for the client to render.',
+    type: Object,
+    additionalProperties: true,
     nullable: true,
+    description: 'Business hours, if configured. Opaque JSON for the client to render.',
   })
   businessHours!: unknown | null;
 }
