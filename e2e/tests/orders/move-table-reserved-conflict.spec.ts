@@ -61,15 +61,17 @@ interface ApiErrorBody {
    message?: string;
 }
 
-function futureReservationWindow(): {
+// A reservation window that is LIVE right now: it started a few minutes ago and
+// runs for the full turn, so [reservedAt, reservedAt + duration) contains the
+// current instant. The move-table guard treats a table as reserved only while a
+// reservation's window is active now — a far-future reservation does not hold the
+// table yet — so the conflict fixture must be current, not scheduled for later.
+function activeReservationWindow(): {
    reservedAt: string;
    windowStart: string;
    windowEnd: string;
 } {
-   const start = new Date();
-   start.setUTCDate(start.getUTCDate() + 58);
-   start.setUTCHours(19, 15, 0, 0);
-
+   const start = new Date(Date.now() - 5 * 60_000);
    const end = new Date(start.getTime() + RESERVATION_DURATION_MINUTES * 60_000);
 
    return {
@@ -167,7 +169,7 @@ async function createArrivedReservationForTable(
    request: APIRequestContext,
    auth: PosAuthHeaders,
    table: TableResponse,
-   window: ReturnType<typeof futureReservationWindow>,
+   window: ReturnType<typeof activeReservationWindow>,
 ): Promise<ReservationResponse> {
    const created = await createReservation(request, auth, {
       customerName: 'E2E Reserved Move Guest',
@@ -221,7 +223,7 @@ test.describe('order move-table reserved-table conflict', () => {
          'AVAILABLE',
       );
 
-      const window = futureReservationWindow();
+      const window = activeReservationWindow();
       const availabilityBefore = await getAvailabilityForTable(request, auth, targetTable.id, window);
       expect(availabilityBefore.status, `Target table ${targetTable.id} should start AVAILABLE.`).toBe(
          'AVAILABLE',
