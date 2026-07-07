@@ -188,6 +188,7 @@ export class TableSession extends AggregateRoot<string> {
     this.transitionTo(TableSessionState.CLOSED, now);
     this.props.closedAt = now;
     this.props.tokenHash = '';
+    this.raiseClosed();
   }
 
   /** Idle sweep: PENDING_CONFIRM|OPEN -> EXPIRED. Invalidates tokens (hash cleared). */
@@ -195,5 +196,19 @@ export class TableSession extends AggregateRoot<string> {
     this.transitionTo(TableSessionState.EXPIRED, now);
     this.props.closedAt = now;
     this.props.tokenHash = '';
+    this.raiseClosed();
+  }
+
+  /** CLOSED and EXPIRED share the same terminal fan-out (state distinguishes them). */
+  private raiseClosed(): void {
+    this.addDomainEvent(
+      new TableSessionClosedEvent(
+        this.id,
+        this.props.restaurantId,
+        this.props.branchId,
+        this.props.tableId,
+        this.props.state,
+      ),
+    );
   }
 }
