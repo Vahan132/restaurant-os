@@ -11,6 +11,7 @@ interface FailedResponse {
 interface ConsoleFailure {
    type: string;
    text: string;
+   url: string;
 }
 
 function splitCustomerUrl(): string {
@@ -64,18 +65,23 @@ function isImportantFailedResponse(response: Response): boolean {
    );
 }
 
-function isImportantConsoleFailure(message: ConsoleFailure): boolean {
-   const text = message.text.toLowerCase();
+// Only console errors on the split-routing surface — the same-origin API,
+// Socket.IO, or the Next dev/HMR pipeline — indicate a proxy/routing bug.
+// A broken third-party asset (e.g. a menu image whose host doesn't resolve) is
+// out of scope for this test and must NOT fail it, so match on the failing
+// resource URL rather than on generic "net::err"/"failed to load resource" text.
+const SPLIT_ROUTING_SURFACE = ['/res/api/', '/api/public/', '/res/socket.io', '/res/m/_next/'];
 
-   return (
-      text.includes('/res/api/') ||
-      text.includes('/api/public/restaurant') ||
-      text.includes('websocket connection') ||
-      text.includes('webpack-hmr') ||
-      text.includes('failed to load resource') ||
-      text.includes('404') ||
-      text.includes('net::err')
-   );
+function isImportantConsoleFailure(message: ConsoleFailure): boolean {
+   if (message.type !== 'error') return false;
+
+   const haystack = `${message.url} ${message.text}`.toLowerCase();
+
+   const touchesSplitSurface = SPLIT_ROUTING_SURFACE.some((part) => haystack.includes(part));
+   const isProxyOrHmrSignal =
+      haystack.includes('websocket connection') || haystack.includes('webpack-hmr');
+
+   return touchesSplitSurface || isProxyOrHmrSignal;
 }
 
 function diagnostics(
@@ -100,7 +106,9 @@ function diagnostics(
       '',
       'Important console failures:',
       consoleFailures.length > 0
-         ? consoleFailures.map((message) => `[${message.type}] ${message.text}`).join('\n')
+         ? consoleFailures
+            .map((message) => `[${message.type}] ${message.text} ${message.url}`.trim())
+            .join('\n')
          : '<none>',
    ].join('\n');
 }
@@ -207,6 +215,7 @@ test.describe('Nginx/Tailscale split routing', () => {
          const item = {
             type: message.type(),
             text: message.text(),
+            url: message.location()?.url ?? '',
          };
 
          if (isImportantConsoleFailure(item)) {
