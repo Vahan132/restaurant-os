@@ -12,7 +12,6 @@ import {
 } from '@/api/generated/devices/devices';
 import {
   DeviceResponseStatus,
-  DeviceResponseSurface,
   EnrollDeviceDtoSurface,
   type DeviceResponse,
 } from '@/api/generated/model';

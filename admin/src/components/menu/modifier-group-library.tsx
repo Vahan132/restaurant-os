@@ -20,7 +20,6 @@ import { Drawer } from '@/components/ui/drawer';
 import { inputClass } from '@/components/ui/form';
 import { useConfirm } from '@/components/ui/use-confirm';
 import { getErrorMessage } from '@/lib/api-error';
-import { usePermission } from '@/lib/auth/use-permission';
 import {
   useModifierGroupList,
   useModifierGroupsInvalidation,
@@ -44,7 +43,6 @@ function ruleLabel(group: ModifierGroupResponse, t: (k: string) => string): stri
 export function ModifierGroupLibrary() {
   const t = useTranslations('menu');
   const tc = useTranslations('common');
-  const canManage = usePermission(PERMISSIONS.MENU_MANAGE);
   const { ask, dialog } = useConfirm();
   const { invalidateGroups } = useModifierGroupsInvalidation();
 

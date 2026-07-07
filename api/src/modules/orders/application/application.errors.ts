@@ -31,6 +31,12 @@ export const TableHasOpenOrder = () =>
     message: 'This table already has an open order.',
   });
 
+export const TableReservedForReservation = () =>
+  new ConflictException({
+    code: 'TABLE_RESERVED',
+    message: 'This table is currently held by an active reservation.',
+  });
+
 export const MenuItemNotFound = () =>
   new NotFoundException({ code: 'MENU_ITEM_NOT_FOUND', message: 'Menu item not found.' });
 

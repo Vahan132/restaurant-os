@@ -19,7 +19,7 @@ export default defineConfig({
       // as a parameter (e.g. /branches/{id}/my-access). Skip orval's strict
       // validation and repair missing path params via the transformer so
       // codegen succeeds. Remove both once the backend declares them.
-      validation: false,
+      unsafeDisableValidation: true,
       override: {
         transformer: './orval-transformer.cjs',
       },

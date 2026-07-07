@@ -7,6 +7,7 @@
  */
 
 export * from './createOrderRequestDto';
+export * from './emailAvailableResponse';
 export * from './orderRequestItemDto';
 export * from './orderRequestItemLine';
 export * from './orderRequestModifierDto';
@@ -34,5 +35,10 @@ export * from './publicRestaurantResponseOpeningHours';
 export * from './publicStorefrontControllerTableParams';
 export * from './publicTableResponse';
 export * from './rejectOrderRequestDto';
+export * from './signupDto';
+export * from './signupResponse';
 export * from './staffOrderRequestResponse';
 export * from './staffOrderRequestResponseStatus';
+export * from './subdomainAvailableResponse';
+export * from './userResponse';
+export * from './userResponseStatus';

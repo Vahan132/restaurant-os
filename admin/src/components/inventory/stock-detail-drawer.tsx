@@ -24,7 +24,6 @@ export function StockDetailDrawer({
   itemId,
   itemName,
   baseUnit,
-  alternateUnits,
   onClose,
 }: {
   itemId: string;

@@ -77,6 +77,7 @@ import { PASSWORD_RESET_TOKEN_REPOSITORY } from './application/ports/password-re
 import { Argon2PasswordHasher } from './infrastructure/services/argon2-password-hasher';
 import { CuidIdGenerator } from './infrastructure/services/cuid-id-generator';
 import { JwtTokenService } from './infrastructure/services/jwt-token.service';
+import { RolePermissionsCache } from './infrastructure/services/role-permissions.cache';
 import { PrismaRestaurantKeyProvider } from './infrastructure/services/prisma-restaurant-key.provider';
 
 import { AuthController } from './presentation/http/auth.controller';
@@ -111,6 +112,7 @@ import { DeviceSecretGuard } from './presentation/http/device-secret.guard';
     UserFactory,
     SystemRoleSeeder,
     EffectiveBranchAccessService,
+    RolePermissionsCache,
     UpsertBranchMembershipUseCase,
     RemoveBranchMembershipUseCase,
     ListBranchMembershipsUseCase,
@@ -178,6 +180,9 @@ import { DeviceSecretGuard } from './presentation/http/device-secret.guard';
     // Exported so SecurityModule's BranchAccessGuard (and the restaurant module's
     // my-access use case) can resolve effective branch access.
     BRANCH_ACCESS_RESOLVER,
+    // Exported so SecurityModule's PermissionsGuard resolves the caller's
+    // restaurant-wide permissions fresh (never from the frozen JWT snapshot).
+    RolePermissionsCache,
     // OFF-5: exported so the JwtAuthGuard (SecurityModule) and RealtimeGateway
     // (RealtimeModule) can verify tokens with the per-restaurant key.
     TOKEN_SERVICE,

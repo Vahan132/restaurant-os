@@ -25,7 +25,7 @@ import {
   REALTIME_USER_READER,
   RealtimeUserReader,
 } from '../application/ports/realtime-user.reader';
-import { SocketAuthContext, branchRoom, stationRoom } from '../application/socket-context';
+import { SocketAuthContext, branchRoom, orgRoom, stationRoom } from '../application/socket-context';
 
 const VALID_STATIONS = new Set<string>(Object.values(PreparationStation));
 
@@ -140,6 +140,9 @@ export class RealtimeGateway implements OnGatewayConnection {
       };
       client.data.auth = auth;
       await client.join(branchRoom(auth.restaurantId, auth.branchId));
+      // Also join the org room so cross-branch, tenant-scoped events (e.g. a
+      // role's permissions changing) reach this session regardless of branch.
+      await client.join(orgRoom(auth.organizationId));
       client.emit('realtime:connected', {
         restaurantId: auth.restaurantId,
         branchId: auth.branchId,

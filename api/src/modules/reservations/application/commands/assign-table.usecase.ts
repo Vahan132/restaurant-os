@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
-import { Reservation } from '../../domain/entities/reservation';
+import {
+  DEFAULT_RESERVATION_DURATION_MIN,
+  Reservation,
+} from '../../domain/entities/reservation';
 import {
   RESERVATION_REPOSITORY,
   ReservationRepository,
@@ -10,6 +13,7 @@ import {
   NoRestaurantInScope,
   ReservationNotFound,
   ReservationsDisabled,
+  TableAlreadyReserved,
   TableNotInRestaurant,
 } from '../application.errors';
 import {
@@ -60,6 +64,25 @@ export class AssignTableUseCase implements UseCase<AssignTableInput, Reservation
     // §6 intra-branch integrity: the assigned table must be in this reservation's branch.
     if (table.branchId !== reservation.branchId) {
       throw CrossBranchReference();
+    }
+    // Reject assigning a table already held by another active reservation whose
+    // window overlaps this one's (same record-based overlap as create; exclude
+    // self so re-assigning the same table to this reservation is a no-op).
+    const startMs = reservation.reservedAt.getTime();
+    const durationMinutes = reservation.durationMinutes ?? DEFAULT_RESERVATION_DURATION_MIN;
+    const endMs = startMs + durationMinutes * 60_000;
+    const candidates = await this.reservations.findActiveOnTableBefore(
+      input.restaurantId,
+      reservation.branchId,
+      input.tableId,
+      new Date(endMs),
+      reservation.id,
+    );
+    const overlaps = candidates.some(
+      (r) => r.reservedAt.getTime() + r.durationMinutes * 60_000 > startMs,
+    );
+    if (overlaps) {
+      throw TableAlreadyReserved();
     }
     reservation.assignTable(input.tableId);
     await this.reservations.save(reservation);

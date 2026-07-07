@@ -32,6 +32,19 @@ export interface ReservationRepository {
     windowEnd: Date,
   ): Promise<Reservation[]>;
   /**
+   * Active (non-terminal) reservations assigned to `tableId` that START before
+   * `windowEnd`. The application filters the [reservedAt, +duration) overlap to
+   * detect a double-booking on the same table. `excludeReservationId`, when given,
+   * omits that reservation (used when editing/reassigning an existing one).
+   */
+  findActiveOnTableBefore(
+    restaurantId: string,
+    branchId: string,
+    tableId: string,
+    windowEnd: Date,
+    excludeReservationId?: string,
+  ): Promise<Reservation[]>;
+  /**
    * Active (non-terminal) reservations of the branch that START before `windowEnd`
    * (table or not) — used by consumer slot derivation (CX-3) to measure how much
    * seating capacity each candidate slot already consumes. The application filters

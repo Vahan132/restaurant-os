@@ -9,8 +9,13 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -60,7 +65,7 @@ export const getPublicDiscoveryControllerAttributesQueryKey = () => {
     }
 
 
-export const getPublicDiscoveryControllerAttributesQueryOptions = <TData = Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getPublicDiscoveryControllerAttributesQueryOptions = <TData = Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -75,25 +80,49 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type PublicDiscoveryControllerAttributesQueryResult = NonNullable<Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>>
 export type PublicDiscoveryControllerAttributesQueryError = unknown
 
 
+export function usePublicDiscoveryControllerAttributes<TData = Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>,
+          TError,
+          Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicDiscoveryControllerAttributes<TData = Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>,
+          TError,
+          Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicDiscoveryControllerAttributes<TData = Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Attribute taxonomy (categories + values) for the Filters sheet.
  */
 
 export function usePublicDiscoveryControllerAttributes<TData = Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAttributes>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicDiscoveryControllerAttributesQueryOptions(options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
@@ -129,7 +158,7 @@ export const getPublicDiscoveryControllerRestaurantsQueryKey = (params?: PublicD
     }
 
 
-export const getPublicDiscoveryControllerRestaurantsQueryOptions = <TData = Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError = unknown>(params?: PublicDiscoveryControllerRestaurantsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getPublicDiscoveryControllerRestaurantsQueryOptions = <TData = Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError = unknown>(params?: PublicDiscoveryControllerRestaurantsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -144,25 +173,49 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type PublicDiscoveryControllerRestaurantsQueryResult = NonNullable<Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>>
 export type PublicDiscoveryControllerRestaurantsQueryError = unknown
 
 
+export function usePublicDiscoveryControllerRestaurants<TData = Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError = unknown>(
+ params: undefined |  PublicDiscoveryControllerRestaurantsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>,
+          TError,
+          Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicDiscoveryControllerRestaurants<TData = Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError = unknown>(
+ params?: PublicDiscoveryControllerRestaurantsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>,
+          TError,
+          Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicDiscoveryControllerRestaurants<TData = Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError = unknown>(
+ params?: PublicDiscoveryControllerRestaurantsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Discovery list of effectively-listed branch cards (search + attribute filter).
  */
 
 export function usePublicDiscoveryControllerRestaurants<TData = Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError = unknown>(
- params?: PublicDiscoveryControllerRestaurantsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ params?: PublicDiscoveryControllerRestaurantsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerRestaurants>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicDiscoveryControllerRestaurantsQueryOptions(params,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
@@ -197,7 +250,7 @@ export const getPublicDiscoveryControllerDetailQueryKey = (branchId: string,) =>
     }
 
 
-export const getPublicDiscoveryControllerDetailQueryOptions = <TData = Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError = unknown>(branchId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getPublicDiscoveryControllerDetailQueryOptions = <TData = Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError = unknown>(branchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -212,25 +265,49 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: branchId !== null && branchId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: branchId !== null && branchId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type PublicDiscoveryControllerDetailQueryResult = NonNullable<Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>>
 export type PublicDiscoveryControllerDetailQueryError = unknown
 
 
+export function usePublicDiscoveryControllerDetail<TData = Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError = unknown>(
+ branchId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>,
+          TError,
+          Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicDiscoveryControllerDetail<TData = Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError = unknown>(
+ branchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>,
+          TError,
+          Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicDiscoveryControllerDetail<TData = Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError = unknown>(
+ branchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Full detail for an effectively-listed branch (404 BRANCH_NOT_LISTED).
  */
 
 export function usePublicDiscoveryControllerDetail<TData = Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError = unknown>(
- branchId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ branchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerDetail>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicDiscoveryControllerDetailQueryOptions(branchId,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
@@ -269,7 +346,7 @@ export const getPublicDiscoveryControllerAvailabilityQueryKey = (branchId: strin
 
 
 export const getPublicDiscoveryControllerAvailabilityQueryOptions = <TData = Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError = unknown>(branchId: string,
-    params?: PublicDiscoveryControllerAvailabilityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+    params?: PublicDiscoveryControllerAvailabilityParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -284,26 +361,53 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: branchId !== null && branchId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: branchId !== null && branchId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type PublicDiscoveryControllerAvailabilityQueryResult = NonNullable<Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>>
 export type PublicDiscoveryControllerAvailabilityQueryError = unknown
 
 
+export function usePublicDiscoveryControllerAvailability<TData = Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError = unknown>(
+ branchId: string,
+    params: undefined |  PublicDiscoveryControllerAvailabilityParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>,
+          TError,
+          Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicDiscoveryControllerAvailability<TData = Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError = unknown>(
+ branchId: string,
+    params?: PublicDiscoveryControllerAvailabilityParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>,
+          TError,
+          Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePublicDiscoveryControllerAvailability<TData = Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError = unknown>(
+ branchId: string,
+    params?: PublicDiscoveryControllerAvailabilityParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Reservation availability (reuses reservations; 409 RESERVATIONS_NOT_PUBLIC).
  */
 
 export function usePublicDiscoveryControllerAvailability<TData = Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError = unknown>(
  branchId: string,
-    params?: PublicDiscoveryControllerAvailabilityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+    params?: PublicDiscoveryControllerAvailabilityParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicDiscoveryControllerAvailability>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPublicDiscoveryControllerAvailabilityQueryOptions(branchId,params,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }

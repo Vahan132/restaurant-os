@@ -38,6 +38,15 @@ export interface OrderRequestEvent {
   tableId?: string;
 }
 
+/**
+ * A role's permissions changed server-side. Broadcast to the org room, so it may
+ * arrive for a role the current user doesn't hold; handlers just refetch
+ * /auth/me, which is cheap and self-correcting.
+ */
+export interface RolePermissionsUpdatedEvent {
+  roleId: string;
+}
+
 export interface RealtimeEventMap {
   'order.ready': OrderReadyEvent;
   'order.updated': OrderUpdatedEvent;
@@ -45,6 +54,7 @@ export interface RealtimeEventMap {
   'table.status_changed': TableStatusChangedEvent;
   'order_request.new': OrderRequestEvent;
   'order_request.updated': OrderRequestEvent;
+  'role.permissions.updated': RolePermissionsUpdatedEvent;
 }
 
 export type RealtimeEventName = keyof RealtimeEventMap;
