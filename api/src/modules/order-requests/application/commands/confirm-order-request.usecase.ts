@@ -62,6 +62,15 @@ export class ConfirmOrderRequestUseCase implements UseCase<ConfirmOrderRequestIn
       throw CrossBranchReference();
     }
 
+    // Atomically claim the request BEFORE creating the order. Two concurrent
+    // confirms both pass the PENDING check above (separate reads), so without this
+    // both would call submitItems and create two orders. The conditional
+    // PENDING -> CONFIRMED update lets exactly one win; the loser aborts here.
+    const claimed = await this.requests.claimPending(input.restaurantId, input.requestId);
+    if (!claimed) {
+      throw new RequestNotPendingError();
+    }
+
     const order = await this.submitItems.execute({
       restaurantId: input.restaurantId,
       branchId: input.branchId,

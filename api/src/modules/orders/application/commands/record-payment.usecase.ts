@@ -37,19 +37,30 @@ export class RecordPaymentUseCase implements UseCase<RecordPaymentInput, RecordP
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findById(input.restaurantId, input.branchId, input.orderId);
-    if (!order) {
+    // Serialize under a row lock: concurrent duplicate submits for the same order
+    // each see the other's committed payment, so the aggregate's overpayment guard
+    // holds and a full payment can only be recorded once (no double-charge).
+    const outcome = await this.orders.withOrderLock(
+      input.restaurantId,
+      input.branchId,
+      input.orderId,
+      (order) =>
+        order.recordPayment({
+          id: this.ids.generate(),
+          method: input.method,
+          amount: input.amount,
+          tenderedAmount: input.tenderedAmount ?? null,
+          processedByUserId: input.processedByUserId,
+        }),
+    );
+    if (!outcome) {
       throw OrderNotFound();
     }
-    const payment = order.recordPayment({
-      id: this.ids.generate(),
-      method: input.method,
-      amount: input.amount,
-      tenderedAmount: input.tenderedAmount ?? null,
-      processedByUserId: input.processedByUserId,
-    });
-    await this.orders.save(order);
-    await this.events.publishFromAggregate(order);
-    return { order, payment, changeAmount: payment.changeAmount() };
+    await this.events.publishFromAggregate(outcome.order);
+    return {
+      order: outcome.order,
+      payment: outcome.result,
+      changeAmount: outcome.result.changeAmount(),
+    };
   }
 }

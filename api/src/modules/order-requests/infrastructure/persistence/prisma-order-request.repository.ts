@@ -38,6 +38,19 @@ export class PrismaOrderRequestRepository implements OrderRequestRepository {
     });
   }
 
+  /**
+   * Atomic PENDING -> CONFIRMED claim. `updateMany` with `status: 'PENDING'` in the
+   * WHERE is a single conditional UPDATE, so exactly one of two racing confirms
+   * affects a row (count 1); the loser matches nothing (count 0) and must abort.
+   */
+  async claimPending(restaurantId: string, requestId: string): Promise<boolean> {
+    const res = await this.prisma.customerOrderRequest.updateMany({
+      where: { id: requestId, restaurantId, status: 'PENDING' },
+      data: { status: 'CONFIRMED' },
+    });
+    return res.count === 1;
+  }
+
   async findById(restaurantId: string, id: string): Promise<CustomerOrderRequest | null> {
     const request = await this.prisma.customerOrderRequest.findFirst({
       where: { id, restaurantId },
