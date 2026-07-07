@@ -17,12 +17,37 @@
 let activeSlug = '';
 
 /**
+ * The Next.js basePath the app is served under (path-based multi-tenant deploy).
+ * MUST mirror `basePath` in next.config.mjs — both read the same env so they can
+ * never drift. Used to strip the prefix off `window.location.pathname` in the
+ * {@link resolveSlug} fallback below. Empty string = no basePath.
+ */
+export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '/res/m';
+
+/**
  * Extract the restaurant slug from a basePath-STRIPPED path (what `usePathname()`
  * returns), e.g. "/demo" or "/demo/anything" -> "demo". Returns '' for "/".
  */
 export function slugFromPathname(pathname: string | null | undefined): string {
   const first = (pathname ?? '').split('/').filter(Boolean)[0];
   return first ? decodeURIComponent(first).toLowerCase() : '';
+}
+
+/**
+ * Fallback slug resolution straight from `window.location.pathname` (always
+ * synchronously correct on the client), stripping the known basePath first so
+ * "/res/m/tavern-ararat" -> "tavern-ararat" (NOT "res"). Returns '' on the
+ * server or for the basePath root. This is the safety net that makes the
+ * `X-Restaurant-Slug` header reliable regardless of when TenantProvider publishes.
+ */
+function slugFromLocation(): string {
+  if (typeof window === 'undefined') return '';
+  const pathname = window.location.pathname;
+  const stripped =
+    BASE_PATH && (pathname === BASE_PATH || pathname.startsWith(`${BASE_PATH}/`))
+      ? pathname.slice(BASE_PATH.length)
+      : pathname;
+  return slugFromPathname(stripped);
 }
 
 /**
@@ -39,16 +64,22 @@ export function setActiveSlug(slug: string): void {
  * Resolve the active restaurant slug — the slug published by TenantProvider from
  * Next's `usePathname()` (i.e. the real tenant from the page route).
  *
- * This is the single source of truth. There is deliberately NO default/override
- * fallback (e.g. a `NEXT_PUBLIC_RESTAURANT_SLUG=demo` env): in a multi-tenant
- * deployment that would mask every route's slug and silently serve one fixed
- * tenant. A missing slug returns '' so dependent queries stay disabled and the
- * request surfaces as not-found rather than silently resolving to `demo`.
+ * Prefers the slug published by TenantProvider; if that hasn't been published
+ * yet (React may not have committed TenantProvider's render before the first
+ * API request fires), it falls back to reading `window.location.pathname`
+ * directly (basePath stripped). This keeps the `X-Restaurant-Slug` header
+ * reliable on the very first request instead of racing render timing.
+ *
+ * There is deliberately NO fixed-tenant fallback (e.g. `NEXT_PUBLIC_RESTAURANT_SLUG=demo`):
+ * in a multi-tenant deployment that would mask every route's slug and silently
+ * serve one fixed tenant. When the URL genuinely has no slug (the basePath root)
+ * this returns '' so dependent queries stay disabled and the request surfaces as
+ * not-found rather than silently resolving to some default.
  *
  * Returns '' during SSR (before the browser context exists) or for the root path.
  */
 export function resolveSlug(): string {
-  return activeSlug;
+  return activeSlug || slugFromLocation();
 }
 
 /**
