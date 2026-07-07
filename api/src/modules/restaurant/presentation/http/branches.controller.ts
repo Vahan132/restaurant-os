@@ -20,7 +20,12 @@ import { CreateBranchUseCase } from '../../application/commands/create-branch.us
 import { DeactivateBranchUseCase } from '../../application/commands/deactivate-branch.usecase';
 import { MakeDefaultBranchUseCase } from '../../application/commands/make-default-branch.usecase';
 import { UpdateBranchUseCase } from '../../application/commands/update-branch.usecase';
-import { CreateBranchDto, UpdateBranchDto } from '../../application/dto/branch.dto';
+import { UpdateBranchOrderingConfigUseCase } from '../../application/commands/update-branch-ordering-config.usecase';
+import {
+  CreateBranchDto,
+  UpdateBranchDto,
+  UpdateBranchOrderingConfigDto,
+} from '../../application/dto/branch.dto';
 import { BranchResponse, MyBranchAccessResponse } from '../../application/dto/responses';
 import { GetBranchUseCase } from '../../application/queries/get-branch.usecase';
 import { GetMyBranchAccessUseCase } from '../../application/queries/get-my-branch-access.usecase';
@@ -41,6 +46,7 @@ export class BranchesController {
     private readonly getBranch: GetBranchUseCase,
     private readonly createBranch: CreateBranchUseCase,
     private readonly updateBranch: UpdateBranchUseCase,
+    private readonly updateBranchOrderingConfig: UpdateBranchOrderingConfigUseCase,
     private readonly deactivateBranch: DeactivateBranchUseCase,
     private readonly makeDefaultBranch: MakeDefaultBranchUseCase,
     private readonly getMyBranchAccess: GetMyBranchAccessUseCase,
@@ -132,6 +138,29 @@ export class BranchesController {
       ipAllowlist: dto.ipAllowlist,
       actorUserId: user.sub,
       ip: req.ip ?? null,
+    });
+    return BranchResponse.from(branch);
+  }
+
+  @Patch(':id/ordering-config')
+  @RequirePermissions(PERMISSIONS.BRANCH_MANAGE)
+  @ApiForbiddenResponse({ description: 'Missing BRANCH_MANAGE permission.' })
+  @ApiOperation({
+    summary: 'ORDER-1: set the branch ordering flow config (prepayment / pay-at-end / QR / idle).',
+  })
+  @ApiOkResponse({ type: BranchResponse })
+  async updateOrderingConfig(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+    @Body() dto: UpdateBranchOrderingConfigDto,
+  ): Promise<BranchResponse> {
+    const branch = await this.updateBranchOrderingConfig.execute({
+      restaurantId: tenant.restaurantId,
+      branchId: id,
+      prepaymentEnabled: dto.prepaymentEnabled,
+      payAtEndEnabled: dto.payAtEndEnabled,
+      qrOrderingEnabled: dto.qrOrderingEnabled,
+      idleExpiryMinutes: dto.idleExpiryMinutes,
     });
     return BranchResponse.from(branch);
   }

@@ -15,6 +15,7 @@ import { GetBranchUseCase } from './application/queries/get-branch.usecase';
 import { GetMyBranchAccessUseCase } from './application/queries/get-my-branch-access.usecase';
 import { CreateBranchUseCase } from './application/commands/create-branch.usecase';
 import { UpdateBranchUseCase } from './application/commands/update-branch.usecase';
+import { UpdateBranchOrderingConfigUseCase } from './application/commands/update-branch-ordering-config.usecase';
 import { DeactivateBranchUseCase } from './application/commands/deactivate-branch.usecase';
 import { MakeDefaultBranchUseCase } from './application/commands/make-default-branch.usecase';
 
@@ -43,6 +44,7 @@ import { BranchesController } from './presentation/http/branches.controller';
     GetMyBranchAccessUseCase,
     CreateBranchUseCase,
     UpdateBranchUseCase,
+    UpdateBranchOrderingConfigUseCase,
     DeactivateBranchUseCase,
     MakeDefaultBranchUseCase,
 

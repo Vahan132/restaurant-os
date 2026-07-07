@@ -75,6 +75,16 @@ export class RestaurantSettingsResponse {
   }
 }
 
+/** ORDER-1: a branch's ordering flow config (nested in BranchResponse). */
+export class BranchOrderingConfigResponse {
+  @ApiProperty() prepaymentEnabled!: boolean;
+  @ApiProperty() payAtEndEnabled!: boolean;
+  @ApiProperty({ description: 'QR-web channel may open sessions (always prepayment).' })
+  qrOrderingEnabled!: boolean;
+  @ApiProperty({ description: 'Idle auto-expiry threshold, minutes.' })
+  idleExpiryMinutes!: number;
+}
+
 export class BranchResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
@@ -88,6 +98,8 @@ export class BranchResponse {
   ipBindingMode!: string;
   @ApiProperty({ type: [String], description: '3A: allowed source CIDRs (STRICT mode).' })
   ipAllowlist!: string[];
+  @ApiProperty({ type: BranchOrderingConfigResponse, description: 'ORDER-1: ordering flow config.' })
+  orderingConfig!: BranchOrderingConfigResponse;
 
   static from(b: Branch): BranchResponse {
     return {
@@ -99,6 +111,12 @@ export class BranchResponse {
       status: b.status,
       ipBindingMode: b.ipBindingMode,
       ipAllowlist: b.ipAllowlist,
+      orderingConfig: {
+        prepaymentEnabled: b.orderingConfig.prepaymentEnabled,
+        payAtEndEnabled: b.orderingConfig.payAtEndEnabled,
+        qrOrderingEnabled: b.orderingConfig.qrOrderingEnabled,
+        idleExpiryMinutes: b.orderingConfig.idleExpiryMinutes,
+      },
     };
   }
 }

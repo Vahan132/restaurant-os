@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Branch as PrismaBranch } from '@prisma/client';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
 import { Branch, BranchIpBindingMode, BranchStatus } from '../../domain/entities/branch';
+import { OrderingConfig } from '../../domain/value-objects/ordering-config';
 import { BranchRepository } from '../../domain/repositories/branch.repository';
 
 @Injectable()
@@ -64,6 +65,10 @@ export class PrismaBranchRepository implements BranchRepository {
         slug: branch.slug,
         isDefault: branch.isDefault,
         status: branch.status as BranchStatus,
+        orderingPrepaymentEnabled: branch.orderingConfig.prepaymentEnabled,
+        orderingPayAtEndEnabled: branch.orderingConfig.payAtEndEnabled,
+        orderingQrEnabled: branch.orderingConfig.qrOrderingEnabled,
+        orderingIdleExpiryMinutes: branch.orderingConfig.idleExpiryMinutes,
         createdAt: branch.createdAt,
         updatedAt: branch.updatedAt,
       },
@@ -79,6 +84,10 @@ export class PrismaBranchRepository implements BranchRepository {
         status: branch.status as BranchStatus,
         ipBindingMode: branch.ipBindingMode as BranchIpBindingMode,
         ipAllowlist: branch.ipAllowlist,
+        orderingPrepaymentEnabled: branch.orderingConfig.prepaymentEnabled,
+        orderingPayAtEndEnabled: branch.orderingConfig.payAtEndEnabled,
+        orderingQrEnabled: branch.orderingConfig.qrOrderingEnabled,
+        orderingIdleExpiryMinutes: branch.orderingConfig.idleExpiryMinutes,
         updatedAt: branch.updatedAt,
       },
     });
@@ -93,6 +102,12 @@ export class PrismaBranchRepository implements BranchRepository {
       status: r.status as BranchStatus,
       ipBindingMode: r.ipBindingMode as BranchIpBindingMode,
       ipAllowlist: r.ipAllowlist,
+      orderingConfig: OrderingConfig.create({
+        prepaymentEnabled: r.orderingPrepaymentEnabled,
+        payAtEndEnabled: r.orderingPayAtEndEnabled,
+        qrOrderingEnabled: r.orderingQrEnabled,
+        idleExpiryMinutes: r.orderingIdleExpiryMinutes,
+      }),
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       deletedAt: r.deletedAt,

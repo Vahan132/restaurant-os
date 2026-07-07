@@ -15,6 +15,11 @@ import {
   OrderRequestRejectedEvent,
 } from '../../order-requests/domain/events/order-request-events';
 import { RolePermissionsUpdatedEvent } from '../../identity/domain/events/role-events';
+import {
+  TableSessionClosedEvent,
+  TableSessionConfirmedEvent,
+  TableSessionOpenedEvent,
+} from '../../table-sessions/domain/events/table-session-events';
 import { RealtimePublisher } from './realtime-publisher.service';
 
 /**
@@ -172,5 +177,37 @@ export class RealtimeRelay {
   @OnEvent('identity.role.permissions_updated')
   onRolePermissionsUpdated(e: RolePermissionsUpdatedEvent): void {
     this.pub.emitToOrg(e.organizationId, 'role.permissions.updated', { roleId: e.roleId });
+  }
+
+  /**
+   * ORDER-1: table-session lifecycle (opened / confirmed / closed|expired). Fans
+   * out on the BRANCH room (reusing the existing convention — no parallel
+   * channel) so POS/waiter surfaces refresh the table's session + order status.
+   */
+  @OnEvent('table_sessions.session.opened')
+  onTableSessionOpened(e: TableSessionOpenedEvent): void {
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'table_session.updated', {
+      sessionId: e.sessionId,
+      tableId: e.tableId,
+      state: e.state,
+    });
+  }
+
+  @OnEvent('table_sessions.session.confirmed')
+  onTableSessionConfirmed(e: TableSessionConfirmedEvent): void {
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'table_session.updated', {
+      sessionId: e.sessionId,
+      tableId: e.tableId,
+      state: e.state,
+    });
+  }
+
+  @OnEvent('table_sessions.session.closed')
+  onTableSessionClosed(e: TableSessionClosedEvent): void {
+    this.pub.emitToBranch(e.restaurantId, e.branchId, 'table_session.updated', {
+      sessionId: e.sessionId,
+      tableId: e.tableId,
+      state: e.state,
+    });
   }
 }

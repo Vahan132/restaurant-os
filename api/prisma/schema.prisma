@@ -227,6 +227,14 @@ model Branch {
   // a PIN/anchored login is allowed only from a source IP inside the allowlist.
   ipBindingMode BranchIpBindingMode @default(SOFT)
   ipAllowlist   String[]            @default([])
+  // ORDER-1: per-branch ordering flow policy (OrderingConfig VO). Flat columns
+  // (matches the branch-config convention). NARROWS the restaurant ceiling
+  // (RestaurantSettings.enableCustomerOrdering / enableQrMenu) — never widens it;
+  // the effective capability is computed at session start.
+  orderingPrepaymentEnabled Boolean @default(false)
+  orderingPayAtEndEnabled   Boolean @default(false)
+  orderingQrEnabled         Boolean @default(false)
+  orderingIdleExpiryMinutes Int     @default(150)
   // CX-1 (consumer discovery): the Branch is the consumer "listing unit". Location
   // data is branch-owned here (operational address/phone on RestaurantSettings is
   // restaurant-scoped/single-location, so the consumer context carries its own
@@ -743,6 +751,9 @@ model Order {
   orderNumber  Int
   type         OrderType   @default(DINE_IN)
   tableId      String?
+  // ORDER-1: nullable ordering-container link. Non-breaking seam; order append
+  // mechanics land in a later prompt (the Order aggregate is otherwise untouched).
+  tableSessionId String?
   waiterId     String
   status       OrderStatus @default(DRAFT)
   currency     String
@@ -767,18 +778,74 @@ model Order {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  restaurant Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  table      RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
-  items      OrderItem[]
-  payments   Payment[]
+  restaurant   Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  table        RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  tableSession TableSession?    @relation(fields: [tableSessionId], references: [id], onDelete: SetNull)
+  items        OrderItem[]
+  payments     Payment[]
 
   @@unique([restaurantId, orderNumber])
   @@index([restaurantId])
   @@index([tableId])
+  @@index([tableSessionId])
   @@index([status])
   @@index([restaurantId, branchId])
   @@index([restaurantId, branchId, status])
   @@map("orders")
+}
+
+// ── Table sessions (ORDER-1; ordering container, tenant-scoped) ───────────────
+enum TableSessionState {
+  PENDING_CONFIRM
+  OPEN
+  LOCKED
+  CLOSED
+  EXPIRED
+}
+
+enum TableSessionFlow {
+  PREPAYMENT
+  PAY_AT_END
+}
+
+enum TableSessionChannel {
+  QR_WEB
+  APP
+}
+
+/// The ordering CONTAINER for a (branch, table). branchId/tableId are
+/// denormalised scalars (BR-4, no FK back-relation), matching orders/inventory.
+model TableSession {
+  id                String              @id @default(cuid())
+  restaurantId      String
+  branchId          String
+  tableId           String
+  state             TableSessionState
+  flow              TableSessionFlow
+  channel           TableSessionChannel
+  // Opaque reattach token — SHA-256 only; plaintext returned once at creation.
+  tokenHash         String
+  // App participant who opened the session (null for anonymous QR-web).
+  consumerAccountId String?
+  openedAt          DateTime            @default(now())
+  lastActivityAt    DateTime            @default(now())
+  closedAt          DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  orders Order[]
+
+  // NOTE: "at most one NON-TERMINAL session per (branch, table)" is enforced by a
+  // PARTIAL UNIQUE INDEX created in raw SQL in the migration — Prisma cannot
+  // express filtered indexes: UNIQUE ("branchId","tableId") WHERE "state" IN
+  // ('PENDING_CONFIRM','OPEN','LOCKED'). Preserve it on future migrations.
+  @@index([branchId, tableId])
+  @@index([restaurantId])
+  @@index([restaurantId, branchId])
+  @@index([tableId])
+  @@index([state])
+  @@index([lastActivityAt])
+  @@map("table_sessions")
 }
 
 model OrderItem {
