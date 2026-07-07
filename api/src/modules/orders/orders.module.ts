@@ -6,6 +6,7 @@ import { TableSessionsModule } from '../table-sessions/table-sessions.module';
 import { FiscalizationModule } from '../fiscalization/fiscalization.module';
 import { PaymentModule } from '../payment/payment.module';
 import { PublicRestaurantResolverGuard } from '../../shared/storefront/public-restaurant.resolver';
+import { SessionTokenGuard } from '../table-sessions/presentation/http/session-token.guard';
 
 import { ORDER_REPOSITORY } from './domain/repositories/order.repository';
 import { MENU_READER } from './application/ports/menu-reader.port';
@@ -91,8 +92,11 @@ import { PublicQrOrdersController } from './presentation/http/public-qr-orders.c
     CreatePrepaymentOrderUseCase,
     ConfirmPaymentUseCase,
     GetOrderReceiptUseCase,
-    // guard for the public QR surface (host/slug resolution)
+    // guards for the public QR surface (host/slug resolution + session token).
+    // SessionTokenGuard's deps (TABLE_SESSION_REPOSITORY, SESSION_TOKEN_SERVICE)
+    // resolve via the TableSessionsModule import above.
     PublicRestaurantResolverGuard,
+    SessionTokenGuard,
     // use cases
     CreateOrderUseCase,
     AddOrderItemUseCase,

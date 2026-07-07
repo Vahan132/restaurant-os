@@ -16,7 +16,6 @@ import { ExpireIdleTableSessionsUseCase } from './application/commands/expire-id
 import { TouchTableSessionUseCase } from './application/commands/touch-table-session.usecase';
 import { GetTableSessionViewUseCase } from './application/queries/get-table-session-view.usecase';
 import { IdleExpiryScheduler } from './application/schedule/idle-expiry.scheduler';
-import { SessionTokenGuard } from './presentation/http/session-token.guard';
 
 import { PrismaTableSessionRepository } from './infrastructure/persistence/prisma-table-session.repository';
 import { PrismaOrderingPolicyReader } from './infrastructure/readers/prisma-ordering-policy.reader';
@@ -46,20 +45,19 @@ import { PublicTableSessionsController } from './presentation/http/public-table-
     GetTableSessionViewUseCase,
     IdleExpiryScheduler,
     PublicRestaurantResolverGuard,
-    SessionTokenGuard,
     { provide: TABLE_SESSION_REPOSITORY, useClass: PrismaTableSessionRepository },
     { provide: ORDERING_POLICY_READER, useClass: PrismaOrderingPolicyReader },
     { provide: TABLE_LOCATOR, useClass: PrismaTableLocator },
     { provide: SESSION_ORDER_STATUS_READER, useClass: PrismaSessionOrderStatusReader },
     { provide: SESSION_TOKEN_SERVICE, useClass: CryptoSessionTokenService },
   ],
-  // ORDER-2: expose the create-or-join + activity-touch use-cases and the
-  // token guard so the orders module can build the QR prepayment flow on top.
+  // ORDER-2: expose the create-or-join + activity-touch use-cases, and the repo +
+  // token-service tokens the SessionTokenGuard (provided in OrdersModule) needs.
   exports: [
     OpenOrJoinTableSessionUseCase,
     TouchTableSessionUseCase,
-    SessionTokenGuard,
-    TABLE_LOCATOR,
+    TABLE_SESSION_REPOSITORY,
+    SESSION_TOKEN_SERVICE,
   ],
 })
 export class TableSessionsModule {}

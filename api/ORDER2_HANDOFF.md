@@ -59,7 +59,7 @@ The QR endpoints require the ORDER-1 opaque session token (from `POST /public/ta
 - `orders/orders.module.ts` — import TableSessions/Fiscalization/Payment/Throttler; register QR controller + use-cases.
 - `fiscalization/.../fiscalization.port.ts` + stub — extended input (mode/channel/partnerTin/tender split) + result (`fiscalNumber`/`qr`/`sn`/`time`/`total`/`change`).
 - `table-sessions/domain/repositories/table-session.repository.ts` + prisma impl — `findByTokenHash`.
-- `table-sessions/table-sessions.module.ts` — export OpenOrJoin/Touch use-cases + `SessionTokenGuard` + `TABLE_LOCATOR`.
+- `table-sessions/table-sessions.module.ts` — export OpenOrJoin/Touch use-cases + `TABLE_SESSION_REPOSITORY` + `SESSION_TOKEN_SERVICE` tokens. `SessionTokenGuard` is *provided* in OrdersModule (a controller's guard is instantiated in the controller's module context) with its deps resolved via those exported tokens.
 - Nullability ripple fixes: `orders/application/dto/responses.ts`, `orders/application/ports/receipt-reader.port.ts` + reader, `kds/.../prisma-station-tickets.reader.ts`, `reports/.../prisma-reports-query.service.ts`.
 
 ## Key design decisions (some deviate from the literal spec — flagged intentionally)
