@@ -42,6 +42,16 @@ export const ReservationTableDisabled = () =>
     message: 'The assigned table is disabled and cannot be seated.',
   });
 
+/**
+ * The assigned table already has an active reservation whose time window overlaps
+ * the requested one — prevents double-booking the same table for the same slot.
+ */
+export const TableAlreadyReserved = () =>
+  new ConflictException({
+    code: 'TABLE_ALREADY_RESERVED',
+    message: 'The table is already reserved for an overlapping time window.',
+  });
+
 export const ReservationTimeInvalid = () =>
   new BadRequestException({
     code: 'RESERVATION_TIME_INVALID',

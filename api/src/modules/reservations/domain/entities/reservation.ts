@@ -17,6 +17,9 @@ import {
   ReservedAtRequiredError,
 } from '../reservations.errors';
 
+/** Default reservation turn time (minutes) when the caller does not specify one. */
+export const DEFAULT_RESERVATION_DURATION_MIN = 90;
+
 export interface ReservationProps {
   restaurantId: string;
   branchId: string;
@@ -99,7 +102,7 @@ export class Reservation extends AggregateRoot<string> {
       customerEmail: input.customerEmail ?? null,
       guestCount: input.guestCount,
       reservedAt: input.reservedAt,
-      durationMinutes: input.durationMinutes ?? 90,
+      durationMinutes: input.durationMinutes ?? DEFAULT_RESERVATION_DURATION_MIN,
       tableId: input.tableId ?? null,
       status: ReservationStatus.PENDING,
       source: input.source ?? ReservationSource.STAFF,

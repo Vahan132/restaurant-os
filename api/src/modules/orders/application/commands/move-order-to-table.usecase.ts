@@ -8,7 +8,12 @@ import {
   OrderNotFound,
   TableHasOpenOrder,
   TableNotInRestaurant,
+  TableReservedForReservation,
 } from '../application.errors';
+import {
+  ORDERS_RESERVATION_READER,
+  OrdersReservationReader,
+} from '../ports/reservation-conflict.reader';
 import { ORDERS_TABLE_READER, OrdersTableReader } from '../ports/table-reader.port';
 import { OrderTableSync } from '../services/order-table-sync';
 
@@ -25,6 +30,7 @@ export class MoveOrderToTableUseCase implements UseCase<MoveOrderToTableInput, O
   constructor(
     @Inject(ORDER_REPOSITORY) private readonly orders: OrderRepository,
     @Inject(ORDERS_TABLE_READER) private readonly tables: OrdersTableReader,
+    @Inject(ORDERS_RESERVATION_READER) private readonly reservations: OrdersReservationReader,
     private readonly tableSync: OrderTableSync,
   ) {}
 
@@ -52,6 +58,18 @@ export class MoveOrderToTableUseCase implements UseCase<MoveOrderToTableInput, O
       );
       if (open && open.id !== order.id) {
         throw TableHasOpenOrder();
+      }
+      // Reject moving onto a table currently held by an active reservation,
+      // mirroring the open-order guard above. Prevents double-use of a reserved
+      // table (and the tableSync.occupy() below silently overwriting its hold).
+      const reserved = await this.reservations.hasActiveReservationHold(
+        input.restaurantId,
+        order.branchId,
+        input.tableId,
+        new Date(),
+      );
+      if (reserved) {
+        throw TableReservedForReservation();
       }
     }
 

@@ -101,7 +101,15 @@ export function Receipt({ orderId, onDone }: ReceiptProps) {
                   <div className="my-3 border-t border-dashed border-gray-400" />
                   <div className="space-y-0.5">
                     {receipt.payments.map((p, i) => (
-                      <Line key={i} label={tMethod(p.method)} value={format(p.amount)} />
+                      <div key={i}>
+                        <Line label={tMethod(p.method)} value={format(p.amount)} />
+                        {p.method === 'CASH' && p.tenderedAmount != null ? (
+                          <>
+                            <Line label={t('cashReceived')} value={format(p.tenderedAmount)} />
+                            <Line label={t('change')} value={format(p.changeAmount)} />
+                          </>
+                        ) : null}
+                      </div>
                     ))}
                   </div>
                 </>

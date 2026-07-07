@@ -14,6 +14,7 @@ import {
   OrderRequestCreatedEvent,
   OrderRequestRejectedEvent,
 } from '../../order-requests/domain/events/order-request-events';
+import { RolePermissionsUpdatedEvent } from '../../identity/domain/events/role-events';
 import { RealtimePublisher } from './realtime-publisher.service';
 
 /**
@@ -160,5 +161,16 @@ export class RealtimeRelay {
       tableId: e.tableId,
       status: e.toStatus,
     });
+  }
+
+  /**
+   * A role's permissions changed. Fan out to the org room so every open POS/KDS
+   * session of a user holding that role refetches permissions (GET /auth/me) and
+   * re-gates its UI live — no re-login. Cross-branch by design (a role spans
+   * branches), so this uses the org room rather than a branch room.
+   */
+  @OnEvent('identity.role.permissions_updated')
+  onRolePermissionsUpdated(e: RolePermissionsUpdatedEvent): void {
+    this.pub.emitToOrg(e.organizationId, 'role.permissions.updated', { roleId: e.roleId });
   }
 }

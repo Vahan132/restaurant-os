@@ -6,6 +6,7 @@ import { ORDER_REPOSITORY } from './domain/repositories/order.repository';
 import { MENU_READER } from './application/ports/menu-reader.port';
 import { ORDER_SETTINGS_READER } from './application/ports/order-settings.reader';
 import { ORDERS_TABLE_READER } from './application/ports/table-reader.port';
+import { ORDERS_RESERVATION_READER } from './application/ports/reservation-conflict.reader';
 import { USER_PERMISSION_READER } from './application/ports/user-permission.reader';
 import { TABLE_STATUS_GATEWAY } from './application/ports/table-status.gateway';
 import { RECEIPT_READER } from './application/ports/receipt-reader.port';
@@ -42,6 +43,7 @@ import { PrismaOrderRepository } from './infrastructure/persistence/prisma-order
 import { PrismaMenuReader } from './infrastructure/readers/prisma-menu.reader';
 import { PrismaOrderSettingsReader } from './infrastructure/readers/prisma-order-settings.reader';
 import { PrismaOrdersTableReader } from './infrastructure/readers/prisma-table.reader';
+import { PrismaOrdersReservationReader } from './infrastructure/readers/prisma-reservation-conflict.reader';
 import { PrismaUserPermissionReader } from './infrastructure/readers/prisma-user-permission.reader';
 import { PrismaReceiptReader } from './infrastructure/readers/prisma-receipt.reader';
 import { TablesTableStatusGateway } from './infrastructure/gateways/tables-table-status.gateway';
@@ -91,6 +93,7 @@ import { OrdersController } from './presentation/http/orders.controller';
     { provide: MENU_READER, useClass: PrismaMenuReader },
     { provide: ORDER_SETTINGS_READER, useClass: PrismaOrderSettingsReader },
     { provide: ORDERS_TABLE_READER, useClass: PrismaOrdersTableReader },
+    { provide: ORDERS_RESERVATION_READER, useClass: PrismaOrdersReservationReader },
     { provide: USER_PERMISSION_READER, useClass: PrismaUserPermissionReader },
     { provide: TABLE_STATUS_GATEWAY, useClass: TablesTableStatusGateway },
     { provide: RECEIPT_READER, useClass: PrismaReceiptReader },

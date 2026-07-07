@@ -3942,7 +3942,7 @@
       "post": {
         "operationId": "OrdersController_discount",
         "summary": "Apply a discount.",
-        "description": "Discount authority is DISCOUNT_APPLY. A caller holding it applies directly. A caller without it must include an `authorization` block (enrolled POS device secret + a capable manager’s 6-digit PIN); the manager is then recorded as the approver. The requesting user is never logged out.",
+        "description": "Discount authority is DISCOUNT_APPLY. A caller holding it applies directly. A caller without it must include an `authorization` block (enrolled POS device secret + a capable manager\u2019s 6-digit PIN); the manager is then recorded as the approver. The requesting user is never logged out.",
         "parameters": [
           {
             "name": "id",
@@ -6596,7 +6596,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch id filter (within the caller’s reachable scope).",
+            "description": "Branch id filter (within the caller\u2019s reachable scope).",
             "schema": {
               "type": "string"
             }
@@ -6658,7 +6658,7 @@
     "/audit-logs/export": {
       "get": {
         "operationId": "AuditController_export",
-        "summary": "Export audit logs as CSV (same filters as the list — what you see is what you export).",
+        "summary": "Export audit logs as CSV (same filters as the list \u2014 what you see is what you export).",
         "parameters": [
           {
             "name": "page",
@@ -6764,7 +6764,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch id filter (within the caller’s reachable scope).",
+            "description": "Branch id filter (within the caller\u2019s reachable scope).",
             "schema": {
               "type": "string"
             }
@@ -8208,7 +8208,7 @@
     "/inventory/adjustments/count": {
       "post": {
         "operationId": "AdjustmentsController_count",
-        "summary": "Correction adjustment (6A §6): set the ACTUAL counted on-hand for an (item, location). Writes the signed-difference ADJUSTMENT and reconciles lots + projection atomically.",
+        "summary": "Correction adjustment (6A \u00a76): set the ACTUAL counted on-hand for an (item, location). Writes the signed-difference ADJUSTMENT and reconciles lots + projection atomically.",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -8735,7 +8735,7 @@
     "/inventory/items/{id}/related": {
       "get": {
         "operationId": "RelatedItemsController_related",
-        "summary": "Raw↔processed counterparts of an item, derived from the process graph.",
+        "summary": "Raw\u2194processed counterparts of an item, derived from the process graph.",
         "parameters": [
           {
             "name": "id",
@@ -9723,7 +9723,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "description": "Branch filter (within the caller\u2019s reach; omit = all reachable).",
             "schema": {
               "type": "string"
             }
@@ -9827,7 +9827,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "description": "Branch filter (within the caller\u2019s reach; omit = all reachable).",
             "schema": {
               "type": "string"
             }
@@ -9894,7 +9894,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "description": "Branch filter (within the caller\u2019s reach; omit = all reachable).",
             "schema": {
               "type": "string"
             }
@@ -9964,7 +9964,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "description": "Branch filter (within the caller\u2019s reach; omit = all reachable).",
             "schema": {
               "type": "string"
             }
@@ -10034,7 +10034,7 @@
             "name": "branchId",
             "required": false,
             "in": "query",
-            "description": "Branch filter (within the caller’s reach; omit = all reachable).",
+            "description": "Branch filter (within the caller\u2019s reach; omit = all reachable).",
             "schema": {
               "type": "string"
             }
@@ -11434,7 +11434,7 @@
       },
       "delete": {
         "operationId": "PlatformConsumerListingController_deleteValueRoute",
-        "summary": "Delete an attribute value (blocked if in use → ATTRIBUTE_VALUE_IN_USE).",
+        "summary": "Delete an attribute value (blocked if in use \u2192 ATTRIBUTE_VALUE_IN_USE).",
         "parameters": [
           {
             "name": "id",
@@ -12876,7 +12876,7 @@
     "/public/signup": {
       "post": {
         "operationId": "PublicAccountController_createAccount",
-        "summary": "Self-serve signup — provisions an account and auto-logs in the owner.",
+        "summary": "Self-serve signup \u2014 provisions an account and auto-logs in the owner.",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -13110,7 +13110,7 @@
       },
       "patch": {
         "operationId": "AccountController_billingUpsert",
-        "summary": "Upsert billing info (no payment method — future).",
+        "summary": "Upsert billing info (no payment method \u2014 future).",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -13332,7 +13332,7 @@
   },
   "info": {
     "title": "Restaurant OS API",
-    "description": "Multi-tenant SaaS restaurant platform — backend API.",
+    "description": "Multi-tenant SaaS restaurant platform \u2014 backend API.",
     "version": "0.1.0",
     "contact": {}
   },
@@ -13897,7 +13897,7 @@
           },
           "secret": {
             "type": "string",
-            "description": "Plaintext device secret — shown once, never retrievable again."
+            "description": "Plaintext device secret \u2014 shown once, never retrievable again."
           }
         },
         "required": [
@@ -13910,7 +13910,7 @@
         "properties": {
           "pin": {
             "type": "string",
-            "description": "Plaintext PIN — shown once to the manager."
+            "description": "Plaintext PIN \u2014 shown once to the manager."
           },
           "mustRotate": {
             "type": "boolean",
@@ -15854,7 +15854,7 @@
             "description": "Approver user id (required if approvals are enforced)."
           },
           "authorization": {
-            "description": "Manager step-up authorization. Required ONLY when the caller lacks DISCOUNT_APPLY — a capable manager authorizes the discount with their PIN on the enrolled POS device. Omit when the caller already holds DISCOUNT_APPLY.",
+            "description": "Manager step-up authorization. Required ONLY when the caller lacks DISCOUNT_APPLY \u2014 a capable manager authorizes the discount with their PIN on the enrolled POS device. Omit when the caller already holds DISCOUNT_APPLY.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/DiscountAuthorizationDto"
@@ -16084,11 +16084,20 @@
           },
           "amount": {
             "type": "number"
+          },
+          "tenderedAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "changeAmount": {
+            "type": "number"
           }
         },
         "required": [
           "method",
-          "amount"
+          "amount",
+          "tenderedAmount",
+          "changeAmount"
         ]
       },
       "ReceiptResponse": {
@@ -18953,7 +18962,7 @@
           },
           "baseQty": {
             "type": "number",
-            "description": "Quantity in the item base unit consumed per 1× batch.",
+            "description": "Quantity in the item base unit consumed per 1\u00d7 batch.",
             "minimum": 1
           }
         },
@@ -18971,7 +18980,7 @@
           },
           "baseQty": {
             "type": "number",
-            "description": "Quantity produced per 1× batch (base unit).",
+            "description": "Quantity produced per 1\u00d7 batch (base unit).",
             "minimum": 1
           },
           "isPrimary": {
@@ -19395,7 +19404,7 @@
           },
           "estimatedUnitCost_amount": {
             "type": "number",
-            "description": "Forward-looking estimate (§3); NOT actual COGS."
+            "description": "Forward-looking estimate (\u00a73); NOT actual COGS."
           },
           "warnings": {
             "type": "array",
@@ -19985,7 +19994,7 @@
           },
           "toLocationId": {
             "type": "string",
-            "description": "Destination location id (same branch, ≠ source)."
+            "description": "Destination location id (same branch, \u2260 source)."
           },
           "unit": {
             "type": "string",
@@ -20764,7 +20773,7 @@
           },
           "paymentsEnabled": {
             "type": "boolean",
-            "description": "No payment processing yet — billing/payments integration pending."
+            "description": "No payment processing yet \u2014 billing/payments integration pending."
           }
         },
         "required": [
@@ -21371,7 +21380,7 @@
         "properties": {
           "dayOfWeek": {
             "type": "number",
-            "description": "0=Mon … 6=Sun."
+            "description": "0=Mon \u2026 6=Sun."
           },
           "isClosed": {
             "type": "boolean"
@@ -21388,7 +21397,7 @@
           },
           "crossesMidnight": {
             "type": "boolean",
-            "description": "closesAt < opensAt ⇒ slot crosses midnight."
+            "description": "closesAt < opensAt \u21d2 slot crosses midnight."
           }
         },
         "required": [
@@ -21711,7 +21720,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Always PENDING — enters the staff-confirm flow."
+            "description": "Always PENDING \u2014 enters the staff-confirm flow."
           },
           "reservedAt": {
             "type": "string",
@@ -21771,7 +21780,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Reservation status (PENDING, CONFIRMED, …)."
+            "description": "Reservation status (PENDING, CONFIRMED, \u2026)."
           },
           "reservedAt": {
             "type": "string",
@@ -22058,7 +22067,7 @@
         "properties": {
           "dayOfWeek": {
             "type": "number",
-            "description": "0=Mon … 6=Sun."
+            "description": "0=Mon \u2026 6=Sun."
           },
           "isClosed": {
             "type": "boolean"
@@ -22172,7 +22181,7 @@
             "type": "number",
             "minimum": 0,
             "maximum": 6,
-            "description": "0=Mon … 6=Sun."
+            "description": "0=Mon \u2026 6=Sun."
           },
           "isClosed": {
             "type": "boolean"
@@ -22497,7 +22506,7 @@
           },
           "slug": {
             "type": "string",
-            "description": "Desired subdomain (a-z0-9-, 3–63)."
+            "description": "Desired subdomain (a-z0-9-, 3\u201363)."
           },
           "currency": {
             "type": "string"
@@ -22607,7 +22616,7 @@
             }
           },
           "invoices": {
-            "description": "Placeholder — invoicing is future.",
+            "description": "Placeholder \u2014 invoicing is future.",
             "type": "array",
             "items": {
               "type": "object"
@@ -22693,7 +22702,7 @@
           "pendingOutboxCount": {
             "type": "number",
             "nullable": true,
-            "description": "Pending edge→cloud outbox entries."
+            "description": "Pending edge\u2192cloud outbox entries."
           },
           "appVersion": {
             "type": "string",
@@ -22723,7 +22732,7 @@
           },
           "token": {
             "type": "string",
-            "description": "The plaintext node token. Shown ONCE — store it on the hub now."
+            "description": "The plaintext node token. Shown ONCE \u2014 store it on the hub now."
           }
         },
         "required": [
@@ -22783,7 +22792,7 @@
           "pendingOutboxCount": {
             "type": "number",
             "nullable": true,
-            "description": "Pending edge→cloud outbox entries."
+            "description": "Pending edge\u2192cloud outbox entries."
           },
           "appVersion": {
             "type": "string",
@@ -22903,7 +22912,7 @@
           },
           "pendingOutboxCount": {
             "type": "number",
-            "description": "Pending edge→cloud outbox entries on the hub."
+            "description": "Pending edge\u2192cloud outbox entries on the hub."
           },
           "appVersion": {
             "type": "string",

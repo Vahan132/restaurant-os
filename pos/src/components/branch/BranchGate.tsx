@@ -37,7 +37,7 @@ export function BranchGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isAuthed || !branchHydrated || isLoading || isError) return;
     if (activeIsValid) return;
-    if (branches.length === 1) {
+    if (branches.length === 1 && branches[0]) {
       // Single-branch user → land directly in their branch.
       setActiveBranch(branches[0].id);
     } else if (activeBranchId) {

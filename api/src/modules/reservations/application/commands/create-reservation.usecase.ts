@@ -12,6 +12,7 @@ import {
   CrossBranchReference,
   NoRestaurantInScope,
   ReservationsDisabled,
+  TableAlreadyReserved,
   TableNotInRestaurant,
 } from '../application.errors';
 import {
@@ -22,6 +23,7 @@ import {
   RESERVATIONS_TABLE_READER,
   ReservationsTableReader,
 } from '../ports/reservations-table.reader';
+import { tableHasOverlappingReservation } from '../services/reservation-overlap';
 
 export interface CreateReservationInput {
   restaurantId: string | null;
@@ -69,6 +71,19 @@ export class CreateReservationUseCase implements UseCase<CreateReservationInput,
       // §6 intra-branch integrity: the assigned table must be in this branch.
       if (table.branchId !== input.branchId) {
         throw CrossBranchReference();
+      }
+      // Reject a second active reservation whose [reservedAt, +duration) window
+      // overlaps an existing active one on the SAME table (prevents double-booking).
+      const overlaps = await tableHasOverlappingReservation(
+        this.reservations,
+        input.restaurantId,
+        input.branchId,
+        input.tableId,
+        input.reservedAt,
+        input.durationMinutes,
+      );
+      if (overlaps) {
+        throw TableAlreadyReserved();
       }
     }
     const reservation = Reservation.create({

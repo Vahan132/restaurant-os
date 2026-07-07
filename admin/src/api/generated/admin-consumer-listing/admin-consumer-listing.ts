@@ -10,9 +10,14 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -67,7 +72,7 @@ export const getAdminConsumerListingControllerReadRestaurantQueryKey = () => {
     }
 
 
-export const getAdminConsumerListingControllerReadRestaurantQueryOptions = <TData = Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError = void>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getAdminConsumerListingControllerReadRestaurantQueryOptions = <TData = Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError = void>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -82,25 +87,49 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type AdminConsumerListingControllerReadRestaurantQueryResult = NonNullable<Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>>
 export type AdminConsumerListingControllerReadRestaurantQueryError = void
 
 
+export function useAdminConsumerListingControllerReadRestaurant<TData = Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError = void>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>,
+          TError,
+          Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminConsumerListingControllerReadRestaurant<TData = Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>,
+          TError,
+          Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminConsumerListingControllerReadRestaurant<TData = Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Current brand listing config + brand completeness (any listed state).
  */
 
 export function useAdminConsumerListingControllerReadRestaurant<TData = Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError = void>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadRestaurant>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAdminConsumerListingControllerReadRestaurantQueryOptions(options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
@@ -165,13 +194,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useAdminConsumerListingControllerPatchRestaurant = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminConsumerListingControllerPatchRestaurant>>, TError,{data: UpdateMarketingProfileDto}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof adminConsumerListingControllerPatchRestaurant>>,
         TError,
         {data: UpdateMarketingProfileDto},
         TContext
       > => {
-      return useMutation(getAdminConsumerListingControllerPatchRestaurantMutationOptions(options));
+      return useMutation(getAdminConsumerListingControllerPatchRestaurantMutationOptions(options), queryClient);
     }
     /**
  * @summary Replace selected attribute value ids.
@@ -228,13 +257,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useAdminConsumerListingControllerPutAttributes = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminConsumerListingControllerPutAttributes>>, TError,{data: SetAttributesDto}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof adminConsumerListingControllerPutAttributes>>,
         TError,
         {data: SetAttributesDto},
         TContext
       > => {
-      return useMutation(getAdminConsumerListingControllerPutAttributesMutationOptions(options));
+      return useMutation(getAdminConsumerListingControllerPutAttributesMutationOptions(options), queryClient);
     }
     /**
  * @summary Add a brand photo (https URL-paste; appended at the end).
@@ -291,13 +320,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useAdminConsumerListingControllerCreatePhoto = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminConsumerListingControllerCreatePhoto>>, TError,{data: AddPhotoDto}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof adminConsumerListingControllerCreatePhoto>>,
         TError,
         {data: AddPhotoDto},
         TContext
       > => {
-      return useMutation(getAdminConsumerListingControllerCreatePhotoMutationOptions(options));
+      return useMutation(getAdminConsumerListingControllerCreatePhotoMutationOptions(options), queryClient);
     }
     /**
  * @summary Reorder brand photos to the given id order.
@@ -354,13 +383,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useAdminConsumerListingControllerOrderPhotos = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminConsumerListingControllerOrderPhotos>>, TError,{data: ReorderPhotosDto}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof adminConsumerListingControllerOrderPhotos>>,
         TError,
         {data: ReorderPhotosDto},
         TContext
       > => {
-      return useMutation(getAdminConsumerListingControllerOrderPhotosMutationOptions(options));
+      return useMutation(getAdminConsumerListingControllerOrderPhotosMutationOptions(options), queryClient);
     }
     /**
  * @summary Remove a brand photo.
@@ -415,13 +444,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useAdminConsumerListingControllerDeletePhoto = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminConsumerListingControllerDeletePhoto>>, TError,{photoId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof adminConsumerListingControllerDeletePhoto>>,
         TError,
         {photoId: string},
         TContext
       > => {
-      return useMutation(getAdminConsumerListingControllerDeletePhotoMutationOptions(options));
+      return useMutation(getAdminConsumerListingControllerDeletePhotoMutationOptions(options), queryClient);
     }
     /**
  * @summary Branch listing config + effective-listing + full completeness.
@@ -448,7 +477,7 @@ export const getAdminConsumerListingControllerReadBranchQueryKey = (branchId: st
     }
 
 
-export const getAdminConsumerListingControllerReadBranchQueryOptions = <TData = Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError = void>(branchId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getAdminConsumerListingControllerReadBranchQueryOptions = <TData = Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError = void>(branchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -463,25 +492,49 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: branchId !== null && branchId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: branchId !== null && branchId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type AdminConsumerListingControllerReadBranchQueryResult = NonNullable<Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>>
 export type AdminConsumerListingControllerReadBranchQueryError = void
 
 
+export function useAdminConsumerListingControllerReadBranch<TData = Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError = void>(
+ branchId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>,
+          TError,
+          Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminConsumerListingControllerReadBranch<TData = Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError = void>(
+ branchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>,
+          TError,
+          Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminConsumerListingControllerReadBranch<TData = Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError = void>(
+ branchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Branch listing config + effective-listing + full completeness.
  */
 
 export function useAdminConsumerListingControllerReadBranch<TData = Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError = void>(
- branchId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ branchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminConsumerListingControllerReadBranch>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAdminConsumerListingControllerReadBranchQueryOptions(branchId,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
@@ -547,13 +600,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useAdminConsumerListingControllerPutContact = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminConsumerListingControllerPutContact>>, TError,{branchId: string;data: SetBranchContactDto}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof adminConsumerListingControllerPutContact>>,
         TError,
         {branchId: string;data: SetBranchContactDto},
         TContext
       > => {
-      return useMutation(getAdminConsumerListingControllerPutContactMutationOptions(options));
+      return useMutation(getAdminConsumerListingControllerPutContactMutationOptions(options), queryClient);
     }
     /**
  * @summary Replace branch weekly public hours.
@@ -611,13 +664,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useAdminConsumerListingControllerPutHours = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminConsumerListingControllerPutHours>>, TError,{branchId: string;data: SetPublicHoursDto}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof adminConsumerListingControllerPutHours>>,
         TError,
         {branchId: string;data: SetPublicHoursDto},
         TContext
       > => {
-      return useMutation(getAdminConsumerListingControllerPutHoursMutationOptions(options));
+      return useMutation(getAdminConsumerListingControllerPutHoursMutationOptions(options), queryClient);
     }
     /**
  * @summary Toggle branch menuPublic.
@@ -675,13 +728,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useAdminConsumerListingControllerPutMenuPublic = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminConsumerListingControllerPutMenuPublic>>, TError,{branchId: string;data: BooleanValueDto}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof adminConsumerListingControllerPutMenuPublic>>,
         TError,
         {branchId: string;data: BooleanValueDto},
         TContext
       > => {
-      return useMutation(getAdminConsumerListingControllerPutMenuPublicMutationOptions(options));
+      return useMutation(getAdminConsumerListingControllerPutMenuPublicMutationOptions(options), queryClient);
     }
     /**
  * @summary Toggle listedInConsumerApp (true is completeness-gated).
@@ -739,13 +792,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useAdminConsumerListingControllerPutListed = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminConsumerListingControllerPutListed>>, TError,{branchId: string;data: BooleanValueDto}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof adminConsumerListingControllerPutListed>>,
         TError,
         {branchId: string;data: BooleanValueDto},
         TContext
       > => {
-      return useMutation(getAdminConsumerListingControllerPutListedMutationOptions(options));
+      return useMutation(getAdminConsumerListingControllerPutListedMutationOptions(options), queryClient);
     }
     /**
  * @summary Toggle reservationsPublic (requires MANAGE_RESERVATIONS).
@@ -803,11 +856,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useAdminConsumerListingControllerPutReservationsPublic = <TError = void,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminConsumerListingControllerPutReservationsPublic>>, TError,{branchId: string;data: BooleanValueDto}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof adminConsumerListingControllerPutReservationsPublic>>,
         TError,
         {branchId: string;data: BooleanValueDto},
         TContext
       > => {
-      return useMutation(getAdminConsumerListingControllerPutReservationsPublicMutationOptions(options));
+      return useMutation(getAdminConsumerListingControllerPutReservationsPublicMutationOptions(options), queryClient);
     }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RealtimeGateway } from '../presentation/realtime.gateway';
-import { branchRoom, stationRoom } from './socket-context';
+import { branchRoom, orgRoom, stationRoom } from './socket-context';
 
 /**
  * Broadcasts to Socket.IO rooms via the gateway's namespace server. With the
@@ -25,5 +25,10 @@ export class RealtimePublisher {
     payload: unknown,
   ): void {
     this.gateway.server?.to(stationRoom(restaurantId, branchId, station)).emit(event, payload);
+  }
+
+  /** Cross-branch, tenant-scoped broadcast (e.g. role permission changes). */
+  emitToOrg(organizationId: string, event: string, payload: unknown): void {
+    this.gateway.server?.to(orgRoom(organizationId)).emit(event, payload);
   }
 }
