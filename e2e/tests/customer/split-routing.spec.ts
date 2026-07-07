@@ -38,6 +38,19 @@ function sameOriginPublicRestaurantUrl(customerUrl: string): string {
    return `${parsed.origin}/res/api/public/restaurant`;
 }
 
+/**
+ * Restaurant slug from the customer URL path (served under /res/m/<slug>[/...]).
+ * The public API resolves the tenant from an explicit slug (X-Restaurant-Slug
+ * header) exactly as the customer app does; a slug-less call only resolves via
+ * host-based mapping, which a path-based Tailscale deployment does not use.
+ */
+function restaurantSlugFromCustomerUrl(customerUrl: string): string {
+   const { pathname } = new URL(customerUrl);
+   const afterBase = pathname.replace(/^\/res\/m\/?/, '');
+   const slug = afterBase.split('/').filter(Boolean)[0] ?? '';
+   return decodeURIComponent(slug).toLowerCase();
+}
+
 function isImportantFailedResponse(response: Response): boolean {
    if (response.status() < 400) return false;
 
@@ -95,10 +108,16 @@ function diagnostics(
 async function expectDirectSplitApiWorks(
    request: APIRequestContext,
    directApiUrl: string,
+   restaurantSlug: string,
 ): Promise<void> {
    const response = await request.get(directApiUrl, {
       failOnStatusCode: false,
       ignoreHTTPSErrors: true,
+      // Send the tenant slug exactly as the customer app does. Without it the
+      // public resolver falls back to host-based mapping, which a path-based
+      // Tailscale deployment (slug-in-URL) does not use — so it would 404 even
+      // when /res/api is proxied correctly.
+      headers: restaurantSlug ? { 'X-Restaurant-Slug': restaurantSlug } : {},
    });
 
    const text = await response.text().catch(() => '');
@@ -108,7 +127,7 @@ async function expectDirectSplitApiWorks(
       [
          'Split-routing same-origin API check failed.',
          '',
-         `Expected ${directApiUrl} to return 2xx.`,
+         `Expected ${directApiUrl} (X-Restaurant-Slug: ${restaurantSlug || '<none>'}) to return 2xx.`,
          `Actual: ${response.status()} ${response.statusText()}`,
          `Body: ${text.slice(0, 800) || '<empty>'}`,
          '',
@@ -169,6 +188,7 @@ test.describe('Nginx/Tailscale split routing', () => {
    }) => {
       const customerUrl = splitCustomerUrl();
       const directApiUrl = sameOriginPublicRestaurantUrl(customerUrl);
+      const restaurantSlug = restaurantSlugFromCustomerUrl(customerUrl);
 
       const failedResponses: FailedResponse[] = [];
       const consoleFailures: ConsoleFailure[] = [];
@@ -194,7 +214,7 @@ test.describe('Nginx/Tailscale split routing', () => {
          }
       });
 
-      await expectDirectSplitApiWorks(request, directApiUrl);
+      await expectDirectSplitApiWorks(request, directApiUrl, restaurantSlug);
 
       const response = await page.goto(customerUrl, {
          waitUntil: 'domcontentloaded',
