@@ -1,9 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
-import {
-  DEFAULT_RESERVATION_DURATION_MIN,
-  Reservation,
-} from '../../domain/entities/reservation';
+import { Reservation } from '../../domain/entities/reservation';
 import {
   RESERVATION_REPOSITORY,
   ReservationRepository,
@@ -24,6 +21,7 @@ import {
   RESERVATIONS_TABLE_READER,
   ReservationsTableReader,
 } from '../ports/reservations-table.reader';
+import { tableHasOverlappingReservation } from '../services/reservation-overlap';
 
 export interface AssignTableInput {
   restaurantId: string | null;
@@ -68,18 +66,14 @@ export class AssignTableUseCase implements UseCase<AssignTableInput, Reservation
     // Reject assigning a table already held by another active reservation whose
     // window overlaps this one's (same record-based overlap as create; exclude
     // self so re-assigning the same table to this reservation is a no-op).
-    const startMs = reservation.reservedAt.getTime();
-    const durationMinutes = reservation.durationMinutes ?? DEFAULT_RESERVATION_DURATION_MIN;
-    const endMs = startMs + durationMinutes * 60_000;
-    const candidates = await this.reservations.findActiveOnTableBefore(
+    const overlaps = await tableHasOverlappingReservation(
+      this.reservations,
       input.restaurantId,
       reservation.branchId,
       input.tableId,
-      new Date(endMs),
+      reservation.reservedAt,
+      reservation.durationMinutes,
       reservation.id,
-    );
-    const overlaps = candidates.some(
-      (r) => r.reservedAt.getTime() + r.durationMinutes * 60_000 > startMs,
     );
     if (overlaps) {
       throw TableAlreadyReserved();

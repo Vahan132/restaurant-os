@@ -2,10 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
 import { DomainEventPublisher } from '../../../../shared/infrastructure/events/domain-event-publisher';
 import { ID_GENERATOR, IdGenerator } from '../../../identity/application/ports/id-generator';
-import {
-  DEFAULT_RESERVATION_DURATION_MIN,
-  Reservation,
-} from '../../domain/entities/reservation';
+import { Reservation } from '../../domain/entities/reservation';
 import { ReservationSource } from '../../domain/enums';
 import {
   RESERVATION_REPOSITORY,
@@ -26,6 +23,7 @@ import {
   RESERVATIONS_TABLE_READER,
   ReservationsTableReader,
 } from '../ports/reservations-table.reader';
+import { tableHasOverlappingReservation } from '../services/reservation-overlap';
 
 export interface CreateReservationInput {
   restaurantId: string | null;
@@ -76,19 +74,13 @@ export class CreateReservationUseCase implements UseCase<CreateReservationInput,
       }
       // Reject a second active reservation whose [reservedAt, +duration) window
       // overlaps an existing active one on the SAME table (prevents double-booking).
-      // Record-based overlap, mirroring the availability query + orders move-table
-      // guard: candidates start before this window ends; keep those not yet ended.
-      const startMs = input.reservedAt.getTime();
-      const durationMinutes = input.durationMinutes ?? DEFAULT_RESERVATION_DURATION_MIN;
-      const endMs = startMs + durationMinutes * 60_000;
-      const candidates = await this.reservations.findActiveOnTableBefore(
+      const overlaps = await tableHasOverlappingReservation(
+        this.reservations,
         input.restaurantId,
         input.branchId,
         input.tableId,
-        new Date(endMs),
-      );
-      const overlaps = candidates.some(
-        (r) => r.reservedAt.getTime() + r.durationMinutes * 60_000 > startMs,
+        input.reservedAt,
+        input.durationMinutes,
       );
       if (overlaps) {
         throw TableAlreadyReserved();
