@@ -4861,136 +4861,84 @@
         ]
       }
     },
-    "/kds/stations/{station}/tickets": {
-      "get": {
-        "operationId": "KdsController_tickets",
-        "summary": "Active tickets for a station (oldest-sent first; elapsed/delayed).",
-        "parameters": [
-          {
-            "name": "station",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "enum": [
-                "KITCHEN",
-                "BAR",
-                "DESSERT",
-                "OTHER"
-              ],
-              "type": "string"
+    "/consumer/orders/validate-cart": {
+      "post": {
+        "operationId": "AppOrdersController_validate",
+        "summary": "Recompute cart pricing server-side for the scanned table (app).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppCartDto"
+              }
             }
           }
-        ],
+        },
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/KdsTicketResponse"
-                  }
+                  "$ref": "#/components/schemas/ValidatedCartResponse"
                 }
               }
             }
-          },
-          "403": {
-            "description": "Missing KDS_ACCESS permission."
           }
         },
         "tags": [
-          "kds"
+          "Consumer Ordering"
         ],
         "security": [
           {
-            "access-token": []
+            "bearer": []
           }
         ]
       }
     },
-    "/kds/order-items/{itemId}/preparing": {
+    "/consumer/orders": {
       "post": {
-        "operationId": "KdsController_preparing",
-        "summary": "Mark a SENT item as PREPARING.",
-        "parameters": [
-          {
-            "name": "itemId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
+        "operationId": "AppOrdersController_create",
+        "summary": "Open/join the APP session and create a prepayment order (app).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppCartDto"
+              }
             }
           }
-        ],
+        },
         "responses": {
-          "200": {
+          "201": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OrderResponse"
+                  "$ref": "#/components/schemas/CreatedQrOrderResponse"
                 }
               }
             }
-          },
-          "403": {
-            "description": "Missing KDS_ACCESS permission."
           }
         },
         "tags": [
-          "kds"
+          "Consumer Ordering"
         ],
         "security": [
           {
-            "access-token": []
+            "bearer": []
           }
         ]
       }
     },
-    "/kds/order-items/{itemId}/ready": {
+    "/consumer/orders/{orderId}/confirm-payment": {
       "post": {
-        "operationId": "KdsController_itemReady",
-        "summary": "Mark a SENT/PREPARING item as READY.",
-        "parameters": [
-          {
-            "name": "itemId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OrderResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing KDS_ACCESS permission."
-          }
-        },
-        "tags": [
-          "kds"
-        ],
-        "security": [
-          {
-            "access-token": []
-          }
-        ]
-      }
-    },
-    "/kds/orders/{orderId}/ready": {
-      "post": {
-        "operationId": "KdsController_orderReady",
-        "summary": "Mark the whole order READY (all live station items).",
+        "operationId": "AppOrdersController_confirm",
+        "summary": "Pay, fiscalise and dispatch your order (idempotent, app).",
         "parameters": [
           {
             "name": "orderId",
@@ -5007,21 +4955,396 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OrderResponse"
+                  "$ref": "#/components/schemas/OrderReceiptResponse"
                 }
               }
             }
-          },
-          "403": {
-            "description": "Missing KDS_ACCESS permission."
           }
         },
         "tags": [
-          "kds"
+          "Consumer Ordering"
         ],
         "security": [
           {
-            "access-token": []
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/orders/{orderId}/receipt": {
+      "get": {
+        "operationId": "AppOrdersController_receipt",
+        "summary": "Fetch the fiscal receipt (incl. QR) for your order (app).",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderReceiptResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Ordering"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/auth/google": {
+      "post": {
+        "operationId": "ConsumerAuthController_signInWithGoogle",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleSignInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/apple": {
+      "post": {
+        "operationId": "ConsumerAuthController_signInWithApple",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppleSignInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/otp/request": {
+      "post": {
+        "operationId": "ConsumerAuthController_requestOtpCode",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcknowledgementResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/otp/verify": {
+      "post": {
+        "operationId": "ConsumerAuthController_verifyOtpCode",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/refresh": {
+      "post": {
+        "operationId": "ConsumerAuthController_refreshToken",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsumerRefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/signout": {
+      "post": {
+        "operationId": "ConsumerAuthController_signOutConsumer",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignOutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcknowledgementResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/me": {
+      "get": {
+        "operationId": "ConsumerProfileController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerProfileResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "ConsumerProfileController_updateMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerProfileResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "ConsumerProfileController_deleteMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcknowledgementResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/me/phone/request": {
+      "post": {
+        "operationId": "ConsumerProfileController_requestPhone",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPhoneChangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcknowledgementResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/me/phone/confirm": {
+      "post": {
+        "operationId": "ConsumerProfileController_confirmPhone",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPhoneChangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerProfileResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
           }
         ]
       }
@@ -6053,6 +6376,171 @@
         "security": [
           {
             "device-token": []
+          }
+        ]
+      }
+    },
+    "/kds/stations/{station}/tickets": {
+      "get": {
+        "operationId": "KdsController_tickets",
+        "summary": "Active tickets for a station (oldest-sent first; elapsed/delayed).",
+        "parameters": [
+          {
+            "name": "station",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "KITCHEN",
+                "BAR",
+                "DESSERT",
+                "OTHER"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KdsTicketResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing KDS_ACCESS permission."
+          }
+        },
+        "tags": [
+          "kds"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/kds/order-items/{itemId}/preparing": {
+      "post": {
+        "operationId": "KdsController_preparing",
+        "summary": "Mark a SENT item as PREPARING.",
+        "parameters": [
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing KDS_ACCESS permission."
+          }
+        },
+        "tags": [
+          "kds"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/kds/order-items/{itemId}/ready": {
+      "post": {
+        "operationId": "KdsController_itemReady",
+        "summary": "Mark a SENT/PREPARING item as READY.",
+        "parameters": [
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing KDS_ACCESS permission."
+          }
+        },
+        "tags": [
+          "kds"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/kds/orders/{orderId}/ready": {
+      "post": {
+        "operationId": "KdsController_orderReady",
+        "summary": "Mark the whole order READY (all live station items).",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing KDS_ACCESS permission."
+          }
+        },
+        "tags": [
+          "kds"
+        ],
+        "security": [
+          {
+            "access-token": []
           }
         ]
       }
@@ -12807,348 +13295,6 @@
         ]
       }
     },
-    "/consumer/auth/google": {
-      "post": {
-        "operationId": "ConsumerAuthController_signInWithGoogle",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GoogleSignInDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerSessionResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Auth"
-        ]
-      }
-    },
-    "/consumer/auth/apple": {
-      "post": {
-        "operationId": "ConsumerAuthController_signInWithApple",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AppleSignInDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerSessionResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Auth"
-        ]
-      }
-    },
-    "/consumer/auth/otp/request": {
-      "post": {
-        "operationId": "ConsumerAuthController_requestOtpCode",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RequestOtpDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AcknowledgementResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Auth"
-        ]
-      }
-    },
-    "/consumer/auth/otp/verify": {
-      "post": {
-        "operationId": "ConsumerAuthController_verifyOtpCode",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyOtpDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerSessionResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Auth"
-        ]
-      }
-    },
-    "/consumer/auth/refresh": {
-      "post": {
-        "operationId": "ConsumerAuthController_refreshToken",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ConsumerRefreshDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerSessionResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Auth"
-        ]
-      }
-    },
-    "/consumer/auth/signout": {
-      "post": {
-        "operationId": "ConsumerAuthController_signOutConsumer",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SignOutDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AcknowledgementResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Auth"
-        ]
-      }
-    },
-    "/consumer/me": {
-      "get": {
-        "operationId": "ConsumerProfileController_getMe",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerProfileResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Profile"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "patch": {
-        "operationId": "ConsumerProfileController_updateMe",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProfileDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerProfileResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Profile"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "delete": {
-        "operationId": "ConsumerProfileController_deleteMe",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AcknowledgementResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Profile"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/consumer/me/phone/request": {
-      "post": {
-        "operationId": "ConsumerProfileController_requestPhone",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RequestPhoneChangeDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AcknowledgementResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Profile"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/consumer/me/phone/confirm": {
-      "post": {
-        "operationId": "ConsumerProfileController_confirmPhone",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ConfirmPhoneChangeDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerProfileResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Profile"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/public/plans": {
       "get": {
         "operationId": "PublicAccountController_plans",
@@ -17081,116 +17227,246 @@
           "fiscal"
         ]
       },
-      "KdsTicketModifierResponse": {
+      "AppCartDto": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string"
+          "qr": {
+            "type": "string",
+            "description": "The scanned table QR identifier (required)."
           },
-          "priceDelta": {
-            "type": "number"
+          "lines": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QrCartLineDto"
+            }
           }
         },
         "required": [
-          "name",
-          "priceDelta"
+          "qr",
+          "lines"
         ]
       },
-      "KdsTicketItemResponse": {
+      "GoogleSignInDto": {
         "type": "object",
         "properties": {
-          "orderItemId": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "quantity": {
-            "type": "number"
-          },
-          "modifiers": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/KdsTicketModifierResponse"
-            }
-          },
-          "note": {
+          "idToken": {
             "type": "string",
-            "nullable": true
+            "description": "Google ID token obtained natively by the app."
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "ConsumerSessionResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
           },
-          "status": {
+          "refreshToken": {
+            "type": "string",
+            "description": "Opaque rotating refresh token (store securely)."
+          },
+          "tokenType": {
             "type": "string",
             "enum": [
-              "SENT",
-              "PREPARING",
-              "READY"
-            ]
+              "Bearer"
+            ],
+            "default": "Bearer"
           },
-          "sentToKitchenAt": {
-            "type": "string"
-          },
-          "prepTimeMinutes": {
+          "expiresIn": {
             "type": "number",
-            "nullable": true
-          },
-          "elapsedSeconds": {
-            "type": "number",
-            "description": "Seconds since the item was sent to the kitchen."
-          },
-          "delayed": {
-            "type": "boolean",
-            "description": "elapsed > prepTime*60 (or > 900s when no estimate)."
+            "description": "Access token lifetime in seconds."
           }
         },
         "required": [
-          "orderItemId",
-          "name",
-          "quantity",
-          "modifiers",
-          "note",
-          "status",
-          "sentToKitchenAt",
-          "prepTimeMinutes",
-          "elapsedSeconds",
-          "delayed"
+          "accessToken",
+          "refreshToken",
+          "tokenType",
+          "expiresIn"
         ]
       },
-      "KdsTicketResponse": {
+      "AppleSignInDto": {
         "type": "object",
         "properties": {
-          "orderId": {
-            "type": "string"
-          },
-          "orderNumber": {
-            "type": "number"
-          },
-          "tableName": {
+          "idToken": {
             "type": "string",
-            "nullable": true
+            "description": "Apple identity token obtained natively by the app."
           },
-          "waiterName": {
+          "firstAuthName": {
             "type": "string",
-            "nullable": true
+            "description": "Name captured on the FIRST Apple authorization."
           },
-          "orderNote": {
+          "firstAuthEmail": {
             "type": "string",
-            "nullable": true
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/KdsTicketItemResponse"
-            }
+            "description": "Email captured on the FIRST Apple authorization."
           }
         },
         "required": [
-          "orderId",
-          "orderNumber",
-          "tableName",
-          "waiterName",
-          "orderNote",
-          "items"
+          "idToken"
         ]
+      },
+      "RequestOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Recipient phone (E.164 or light formatting)."
+          },
+          "locale": {
+            "type": "string",
+            "description": "SMS locale: hy | ru | en."
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "AcknowledgementResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "success"
+        ]
+      },
+      "VerifyOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "description": "The OTP code from the SMS."
+          }
+        },
+        "required": [
+          "phone",
+          "code"
+        ]
+      },
+      "ConsumerRefreshDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "SignOutDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "ConsumerProfileResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "OTHER",
+              "UNDISCLOSED"
+            ]
+          },
+          "birthday": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO date (YYYY-MM-DD)."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "gender",
+          "birthday"
+        ]
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "OTHER",
+              "UNDISCLOSED"
+            ],
+            "nullable": true
+          },
+          "birthday": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO date (YYYY-MM-DD)."
+          },
+          "email": {
+            "type": "string",
+            "description": "Provider-owned; any value is rejected (EMAIL_IMMUTABLE)."
+          }
+        }
+      },
+      "RequestPhoneChangeDto": {
+        "type": "object",
+        "properties": {
+          "newPhone": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string",
+            "description": "SMS locale: hy | ru | en."
+          }
+        }
+      },
+      "ConfirmPhoneChangeDto": {
+        "type": "object",
+        "properties": {
+          "newPhone": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        }
       },
       "ReservationResponse": {
         "type": "object",
@@ -17793,6 +18069,117 @@
         },
         "required": [
           "calls"
+        ]
+      },
+      "KdsTicketModifierResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "priceDelta": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "priceDelta"
+        ]
+      },
+      "KdsTicketItemResponse": {
+        "type": "object",
+        "properties": {
+          "orderItemId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "modifiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KdsTicketModifierResponse"
+            }
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SENT",
+              "PREPARING",
+              "READY"
+            ]
+          },
+          "sentToKitchenAt": {
+            "type": "string"
+          },
+          "prepTimeMinutes": {
+            "type": "number",
+            "nullable": true
+          },
+          "elapsedSeconds": {
+            "type": "number",
+            "description": "Seconds since the item was sent to the kitchen."
+          },
+          "delayed": {
+            "type": "boolean",
+            "description": "elapsed > prepTime*60 (or > 900s when no estimate)."
+          }
+        },
+        "required": [
+          "orderItemId",
+          "name",
+          "quantity",
+          "modifiers",
+          "note",
+          "status",
+          "sentToKitchenAt",
+          "prepTimeMinutes",
+          "elapsedSeconds",
+          "delayed"
+        ]
+      },
+      "KdsTicketResponse": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "number"
+          },
+          "tableName": {
+            "type": "string",
+            "nullable": true
+          },
+          "waiterName": {
+            "type": "string",
+            "nullable": true
+          },
+          "orderNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KdsTicketItemResponse"
+            }
+          }
+        },
+        "required": [
+          "orderId",
+          "orderNumber",
+          "tableName",
+          "waiterName",
+          "orderNote",
+          "items"
         ]
       },
       "TopItemResponse": {
@@ -18661,6 +19048,10 @@
       "PublicMenuResponse": {
         "type": "object",
         "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO currency of the menu prices (from Restaurant.currency; same source as the cart/order). Display metadata only — amounts are integer minor units."
+          },
           "categories": {
             "type": "array",
             "items": {
@@ -18669,6 +19060,7 @@
           }
         },
         "required": [
+          "currency",
           "categories"
         ]
       },
@@ -23121,227 +23513,6 @@
         "required": [
           "value"
         ]
-      },
-      "GoogleSignInDto": {
-        "type": "object",
-        "properties": {
-          "idToken": {
-            "type": "string",
-            "description": "Google ID token obtained natively by the app."
-          }
-        },
-        "required": [
-          "idToken"
-        ]
-      },
-      "ConsumerSessionResponse": {
-        "type": "object",
-        "properties": {
-          "accessToken": {
-            "type": "string"
-          },
-          "refreshToken": {
-            "type": "string",
-            "description": "Opaque rotating refresh token (store securely)."
-          },
-          "tokenType": {
-            "type": "string",
-            "enum": [
-              "Bearer"
-            ],
-            "default": "Bearer"
-          },
-          "expiresIn": {
-            "type": "number",
-            "description": "Access token lifetime in seconds."
-          }
-        },
-        "required": [
-          "accessToken",
-          "refreshToken",
-          "tokenType",
-          "expiresIn"
-        ]
-      },
-      "AppleSignInDto": {
-        "type": "object",
-        "properties": {
-          "idToken": {
-            "type": "string",
-            "description": "Apple identity token obtained natively by the app."
-          },
-          "firstAuthName": {
-            "type": "string",
-            "description": "Name captured on the FIRST Apple authorization."
-          },
-          "firstAuthEmail": {
-            "type": "string",
-            "description": "Email captured on the FIRST Apple authorization."
-          }
-        },
-        "required": [
-          "idToken"
-        ]
-      },
-      "RequestOtpDto": {
-        "type": "object",
-        "properties": {
-          "phone": {
-            "type": "string",
-            "description": "Recipient phone (E.164 or light formatting)."
-          },
-          "locale": {
-            "type": "string",
-            "description": "SMS locale: hy | ru | en."
-          }
-        },
-        "required": [
-          "phone"
-        ]
-      },
-      "AcknowledgementResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "default": true
-          }
-        },
-        "required": [
-          "success"
-        ]
-      },
-      "VerifyOtpDto": {
-        "type": "object",
-        "properties": {
-          "phone": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string",
-            "description": "The OTP code from the SMS."
-          }
-        },
-        "required": [
-          "phone",
-          "code"
-        ]
-      },
-      "ConsumerRefreshDto": {
-        "type": "object",
-        "properties": {
-          "refreshToken": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "refreshToken"
-        ]
-      },
-      "SignOutDto": {
-        "type": "object",
-        "properties": {
-          "refreshToken": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "refreshToken"
-        ]
-      },
-      "ConsumerProfileResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "phone": {
-            "type": "string",
-            "nullable": true
-          },
-          "gender": {
-            "type": "string",
-            "nullable": true,
-            "enum": [
-              "MALE",
-              "FEMALE",
-              "OTHER",
-              "UNDISCLOSED"
-            ]
-          },
-          "birthday": {
-            "type": "string",
-            "nullable": true,
-            "description": "ISO date (YYYY-MM-DD)."
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "email",
-          "phone",
-          "gender",
-          "birthday"
-        ]
-      },
-      "UpdateProfileDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "gender": {
-            "type": "string",
-            "enum": [
-              "MALE",
-              "FEMALE",
-              "OTHER",
-              "UNDISCLOSED"
-            ],
-            "nullable": true
-          },
-          "birthday": {
-            "type": "string",
-            "nullable": true,
-            "description": "ISO date (YYYY-MM-DD)."
-          },
-          "email": {
-            "type": "string",
-            "description": "Provider-owned; any value is rejected (EMAIL_IMMUTABLE)."
-          }
-        }
-      },
-      "RequestPhoneChangeDto": {
-        "type": "object",
-        "properties": {
-          "newPhone": {
-            "type": "string"
-          },
-          "locale": {
-            "type": "string",
-            "description": "SMS locale: hy | ru | en."
-          }
-        }
-      },
-      "ConfirmPhoneChangeDto": {
-        "type": "object",
-        "properties": {
-          "newPhone": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          }
-        }
       },
       "PublicPlanResponse": {
         "type": "object",

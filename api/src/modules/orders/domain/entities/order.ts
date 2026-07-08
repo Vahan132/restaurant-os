@@ -56,6 +56,8 @@ export interface OrderProps {
   tableSessionId: string | null;
   /** ORDER-2: null for a QR-web (customer-placed) order; set for staff orders. */
   waiterId: string | null;
+  /** ORDER-4: the CX-2 consumer who placed this order via the app; null otherwise. */
+  consumerId: string | null;
   status: OrderStatus;
   currency: string;
   subtotalAmount: number;
@@ -102,6 +104,8 @@ export interface CreateOrderInput {
   tableSessionId?: string | null;
   /** Null for a QR-web customer order; required for staff-placed orders. */
   waiterId: string | null;
+  /** ORDER-4: the app consumer who placed this order. Null for QR-web/staff. */
+  consumerId?: string | null;
   currency: string;
   splitFromOrderId?: string | null;
 }
@@ -129,6 +133,7 @@ export class Order extends AggregateRoot<string> {
       tableId: input.tableId ?? null,
       tableSessionId: input.tableSessionId ?? null,
       waiterId: input.waiterId,
+      consumerId: input.consumerId ?? null,
       status: OrderStatus.DRAFT,
       currency: input.currency,
       subtotalAmount: 0,
@@ -189,6 +194,9 @@ export class Order extends AggregateRoot<string> {
   }
   get waiterId(): string | null {
     return this.props.waiterId;
+  }
+  get consumerId(): string | null {
+    return this.props.consumerId;
   }
   get status(): OrderStatus {
     return this.props.status;
@@ -726,6 +734,7 @@ export class Order extends AggregateRoot<string> {
       tableId: this.props.tableId,
       tableSessionId: this.props.tableSessionId,
       waiterId: this.props.waiterId,
+      consumerId: this.props.consumerId, // split inherits the placing consumer
       status: childStatus,
       currency: this.props.currency,
       subtotalAmount: 0,

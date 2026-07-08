@@ -58,6 +58,9 @@ import { PublicTableSessionsController } from './presentation/http/public-table-
     TouchTableSessionUseCase,
     TABLE_SESSION_REPOSITORY,
     SESSION_TOKEN_SERVICE,
+    // ORDER-4: the app-ordering controller (OrdersModule) resolves the scanned
+    // table via the same locator the QR-web open uses.
+    TABLE_LOCATOR,
   ],
 })
 export class TableSessionsModule {}

@@ -19,11 +19,14 @@ export class GetPublicMenuUseCase implements UseCase<GetPublicMenuInput, PublicM
   constructor(@Inject(PUBLIC_STOREFRONT_QUERY) private readonly query: PublicStorefrontQuery) {}
 
   async execute(input: GetPublicMenuInput): Promise<PublicMenuResponse> {
+    // ORDER-4: the menu carries its display currency (Restaurant.currency) so the
+    // app/QR client can render prices; present in both return branches.
+    const currency = await this.query.menuCurrency(input.restaurantId);
     const branchId = input.branchId ?? (await this.query.defaultBranchId(input.restaurantId));
     if (!branchId) {
-      return { categories: [] };
+      return { currency, categories: [] };
     }
     const categories = await this.query.menuTree(input.restaurantId, branchId);
-    return { categories };
+    return { currency, categories };
   }
 }

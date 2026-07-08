@@ -757,6 +757,10 @@ model Order {
   // ORDER-2: nullable — a QR-web (customer-placed) order has no waiter. Staff
   // (POS) orders always carry one; null carries "customer-placed" semantics.
   waiterId     String?
+  // ORDER-4: the consumer (CX-2) who placed this order via the app. Nullable +
+  // SetNull — QR-web/staff orders stay null; set only on the app prepayment path.
+  // Deleting a CustomerAccount severs the link without deleting order history.
+  consumerId   String?
   status       OrderStatus @default(DRAFT)
   currency     String
 
@@ -800,6 +804,7 @@ model Order {
   restaurant   Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   table        RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
   tableSession TableSession?    @relation(fields: [tableSessionId], references: [id], onDelete: SetNull)
+  consumer     CustomerAccount? @relation(fields: [consumerId], references: [id], onDelete: SetNull)
   items        OrderItem[]
   payments     Payment[]
 
@@ -807,6 +812,7 @@ model Order {
   @@index([restaurantId])
   @@index([tableId])
   @@index([tableSessionId])
+  @@index([consumerId])
   @@index([status])
   @@index([restaurantId, branchId])
   @@index([restaurantId, branchId, status])
@@ -1818,6 +1824,8 @@ model CustomerAccount {
   identities    CustomerIdentity[]
   refreshTokens CustomerRefreshToken[]
   reservations  Reservation[]
+  // ORDER-4: orders this consumer placed via the app (SetNull on account delete).
+  orders        Order[]
   // CX-3: branches this consumer has saved (per-branch bookmark).
   savedRestaurants SavedRestaurant[]
 

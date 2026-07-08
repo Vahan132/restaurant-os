@@ -51,6 +51,17 @@ export class PrismaPublicStorefrontQuery implements PublicStorefrontQuery {
     };
   }
 
+  async menuCurrency(restaurantId: string): Promise<string> {
+    // ORDER-4: menu prices render in the restaurant's currency — the SAME source
+    // the ORDER-2 cart/order snapshots (order-settings reader), so they always
+    // agree. Defaults to 'USD' if unset, matching PrismaOrderSettingsReader.
+    const restaurant = await this.prisma.restaurant.findFirst({
+      where: { id: restaurantId, deletedAt: null },
+      select: { currency: true },
+    });
+    return restaurant?.currency ?? 'USD';
+  }
+
   async menuTree(restaurantId: string, branchId: string): Promise<PublicMenuCategory[]> {
     // BR-9: the menu is branch-owned (BR-2). The branch is resolved upstream from
     // the URL slug or the table QR token — never defaulted here.

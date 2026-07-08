@@ -17,6 +17,16 @@ export interface CreatePrepaymentOrderInput extends CartInput {
   /** From the token-resolved session context (guard). */
   branchId: string;
   tableId: string;
+  /**
+   * ORDER-4: origin channel of the created-or-joined session. Defaults to QR_WEB
+   * so the existing QR-web controller is unchanged; the app path passes APP.
+   */
+  channel?: TableSessionChannel;
+  /**
+   * ORDER-4: the authenticated app consumer. Bound to BOTH the session participant
+   * (open-or-join) and the order (Order.consumerId). Null for anonymous QR-web.
+   */
+  consumerId?: string | null;
 }
 
 export interface CreatePrepaymentOrderResult {
@@ -54,14 +64,20 @@ export class CreatePrepaymentOrderUseCase
     const restaurantId = input.restaurantId;
     const settings = await this.settings.get(restaurantId);
 
-    // Create-or-join the PREPAYMENT session (QR_WEB is always PREPAYMENT/OPEN).
-    // The caller already holds a session token (guard), so this joins the active
-    // session; append = a new order on the same container.
+    // ORDER-4: default to QR_WEB so the existing QR-web controller is unchanged;
+    // the app path passes APP + the authenticated consumer.
+    const channel = input.channel ?? TableSessionChannel.QR_WEB;
+    const consumerId = input.consumerId ?? null;
+
+    // Create-or-join the PREPAYMENT session (both channels are PREPAYMENT/OPEN).
+    // An existing session on the table is JOINED untouched (append = a new order
+    // on the same container); the consumer is bound at the order level below.
     const joined = await this.openOrJoin.execute({
       restaurantId,
       branchId: input.branchId,
       tableId: input.tableId,
-      channel: TableSessionChannel.QR_WEB,
+      channel,
+      consumerAccountId: consumerId,
     });
     const tableSessionId = joined.session.id;
 
@@ -72,7 +88,8 @@ export class CreatePrepaymentOrderUseCase
       type: OrderType.DINE_IN,
       tableId: input.tableId,
       tableSessionId,
-      waiterId: null, // QR-web: customer-placed, no waiter.
+      waiterId: null, // customer-placed (QR-web or app), no waiter.
+      consumerId, // ORDER-4: bound on the app path; null for QR-web.
       currency: settings.currency,
     });
 

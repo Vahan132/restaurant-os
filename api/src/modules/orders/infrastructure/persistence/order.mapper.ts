@@ -91,6 +91,7 @@ export class OrderMapper {
       tableId: r.tableId,
       tableSessionId: r.tableSessionId,
       waiterId: r.waiterId,
+      consumerId: r.consumerId,
       status: r.status as OrderStatus,
       currency: r.currency,
       subtotalAmount: r.subtotalAmount,
@@ -170,9 +171,12 @@ export class OrderMapper {
     };
   }
 
-  /** Order columns for CREATE: includes the immutable branchId. */
+  /**
+   * Order columns for CREATE: includes the immutable branchId and consumerId.
+   * Both are written once at creation and never updated (omitted from toOrderRow).
+   */
   static toCreateOrderRow(o: Order) {
-    return { branchId: o.branchId, ...OrderMapper.toOrderRow(o) };
+    return { branchId: o.branchId, consumerId: o.consumerId, ...OrderMapper.toOrderRow(o) };
   }
 
   static toPaymentRow(o: Order, p: Payment) {

@@ -45,6 +45,11 @@ export class PublicMenuCategoryResponse {
   @ApiProperty({ type: [PublicMenuItemResponse] }) items!: PublicMenuItemResponse[];
 }
 export class PublicMenuResponse {
+  @ApiProperty({
+    description:
+      'ISO currency of the menu prices (from Restaurant.currency; same source as the cart/order). Display metadata only — amounts are integer minor units.',
+  })
+  currency!: string;
   @ApiProperty({ type: [PublicMenuCategoryResponse] }) categories!: PublicMenuCategoryResponse[];
 }
 
