@@ -1,26 +1,51 @@
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBranchMenu } from '@/api/useBranchMenu';
 import { MenuItemCard } from '@/components/menu/MenuItemCard';
+import { CartBar } from '@/components/order/CartBar';
 import { Chip } from '@/components/Chip';
 import { Skeleton } from '@/components/Skeleton';
+import { useCartStore } from '@/store/cart';
 import { colors } from '@/theme/theme';
 
 /**
- * Native branch menu (ORDER-3). Read-only: browse categories → items → item detail.
- * There is NO add-to-cart affordance anywhere on this surface.
+ * Native branch menu (ORDER-3 browse + ORDER-4 ordering overlay).
+ *
+ * Read-only by default. When an ORDER-4 ordering session is active for THIS branch
+ * (a table was scanned → `useCartStore().context.branchId === branchId`), it mounts the
+ * cart affordances additively: prices, a trailing add control per item, and a sticky
+ * cart bar. Without an active context it stays exactly the read-only ORDER-3 surface.
  */
 export default function BranchMenuScreen() {
   const { branchId } = useLocalSearchParams<{ branchId: string }>();
   const router = useRouter();
   const { t } = useTranslation('common');
 
-  const { detail, categories, isPending, isError, menuUnavailable, refetch } =
+  const { detail, menu, categories, isPending, isError, menuUnavailable, refetch } =
     useBranchMenu(branchId);
+
+  // ORDER-4: ordering mode iff a scanned session targets this branch.
+  const context = useCartStore((s) => s.context);
+  const lines = useCartStore((s) => s.lines);
+  const addLine = useCartStore((s) => s.addLine);
+  const ordering = context?.branchId === branchId;
+  const currency = menu?.currency;
+
+  const qtyInCart = (menuItemId: string) =>
+    lines.reduce((n, l) => (l.menuItemId === menuItemId ? n + l.quantity : n), 0);
+
+  const handleAdd = (itemId: string, name: string, priceAmount: number, hasModifiers: boolean) => {
+    // Items with modifiers must be configured on the detail screen; simple items add now.
+    if (hasModifiers) {
+      router.push({ pathname: '/menu/[branchId]/[itemId]', params: { branchId, itemId } });
+      return;
+    }
+    addLine({ menuItemId: itemId, name, unitPriceAmount: priceAmount, modifiers: [], note: null });
+  };
 
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const activeCategory = useMemo(
@@ -124,7 +149,11 @@ export default function BranchMenuScreen() {
       <FlatList
         data={activeCategory?.items ?? []}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingTop: 4,
+          paddingBottom: ordering ? 96 : 32,
+        }}
         ListHeaderComponent={
           activeCategory?.description ? (
             <Text className="pb-3 text-sm text-textMuted">{activeCategory.description}</Text>
@@ -136,15 +165,27 @@ export default function BranchMenuScreen() {
         renderItem={({ item }) => (
           <MenuItemCard
             item={item}
+            currency={currency}
             onPress={() =>
               router.push({
                 pathname: '/menu/[branchId]/[itemId]',
                 params: { branchId, itemId: item.id },
               })
             }
+            onAdd={
+              ordering
+                ? () =>
+                    handleAdd(item.id, item.name, item.priceAmount, item.modifierGroups.length > 0)
+                : undefined
+            }
+            quantityInCart={ordering ? qtyInCart(item.id) : 0}
           />
         )}
       />
+
+      {ordering ? (
+        <CartBar currency={currency} onPress={() => router.push('/cart' as Href)} />
+      ) : null}
     </SafeAreaView>
   );
 }

@@ -2,21 +2,30 @@ import { Image, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { PublicMenuItemResponse } from '@/api/generated/model';
+import { formatMoney } from '@/lib/money';
 import { colors } from '@/theme/theme';
 
 /**
- * MenuItemCard — a single read-only dish row (name, description, image, availability).
+ * MenuItemCard — a single dish row (name, description, image, availability).
  *
- * ORDER-3 is display-only: tapping opens the item detail, there is NO add control here.
- * Structured so ORDER-4 (app ordering) can mount a quantity/add affordance additively
- * (e.g. a trailing button) without reworking this layout.
+ * ORDER-3 was display-only. ORDER-4 mounts two affordances ADDITIVELY, both optional so
+ * the read-only browse is unchanged when they're absent:
+ *   - `currency` → render the price (ORDER-4 added currency to the menu response).
+ *   - `onAdd`    → show a trailing add control (ordering mode only); `quantityInCart`
+ *                  badges how many of this item are already in the cart.
  */
 export function MenuItemCard({
   item,
   onPress,
+  currency,
+  onAdd,
+  quantityInCart = 0,
 }: {
   item: PublicMenuItemResponse;
   onPress: () => void;
+  currency?: string;
+  onAdd?: () => void;
+  quantityInCart?: number;
 }) {
   const { t } = useTranslation('common');
   const unavailable = !item.available;
@@ -48,24 +57,44 @@ export function MenuItemCard({
           </Text>
         ) : null}
         {item.modifierGroups.length > 0 ? (
-          <Text className="mt-2 text-xs text-textFaint">
-            {t('menu.optionsAvailable')}
+          <Text className="mt-2 text-xs text-textFaint">{t('menu.optionsAvailable')}</Text>
+        ) : null}
+        {currency ? (
+          <Text className="mt-2 text-sm font-semibold text-text">
+            {formatMoney(item.priceAmount, currency)}
           </Text>
         ) : null}
       </View>
 
-      {item.imageUrl ? (
-        <Image
-          source={{ uri: item.imageUrl }}
-          className={`h-20 w-20 shrink-0 rounded-xl bg-surfaceAlt ${
-            unavailable ? 'opacity-70' : ''
-          }`}
-        />
-      ) : (
-        <View className="h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-surfaceAlt">
-          <Ionicons name="restaurant-outline" size={22} color={colors.textFaint} />
-        </View>
-      )}
+      <View className="shrink-0 justify-between">
+        {item.imageUrl ? (
+          <Image
+            source={{ uri: item.imageUrl }}
+            className={`h-20 w-20 rounded-xl bg-surfaceAlt ${unavailable ? 'opacity-70' : ''}`}
+          />
+        ) : (
+          <View className="h-20 w-20 items-center justify-center rounded-xl bg-surfaceAlt">
+            <Ionicons name="restaurant-outline" size={22} color={colors.textFaint} />
+          </View>
+        )}
+
+        {/* ORDER-4: trailing add control, ordering mode only, hidden when unavailable. */}
+        {onAdd && !unavailable ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('order.add')}
+            onPress={onAdd}
+            hitSlop={8}
+            className="absolute -bottom-1 -right-1 h-8 min-w-8 flex-row items-center justify-center rounded-full bg-accent px-2 active:opacity-80"
+          >
+            {quantityInCart > 0 ? (
+              <Text className="text-sm font-bold text-accentText">{quantityInCart}</Text>
+            ) : (
+              <Ionicons name="add" size={18} color={colors.accentText} />
+            )}
+          </Pressable>
+        ) : null}
+      </View>
     </Pressable>
   );
 }
