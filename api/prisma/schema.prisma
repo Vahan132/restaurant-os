@@ -2035,13 +2035,21 @@ model CatalogCategory {
   @@map("catalog_categories")
 }
 
+// Archive state for a CatalogItem (CATALOG-2). ARCHIVED items stop appearing in
+// curation lists / new adoption, but existing tenant catalogItemId references still
+// RESOLVE (getResolution ignores status) so an archive never orphans a tenant.
+enum CatalogItemStatus {
+  ACTIVE
+  ARCHIVED
+}
+
 // The curated template a tenant InventoryItem adopts by reference (ADR §2). Carries
 // the multilingual name (operational InventoryItem.name is single-locale, so the
 // translations must live here) + allergen tag set + category + a default ATG
 // classifier (adgCode). All tenant-overridable on the InventoryItem (ADR §3, §10).
 model CatalogItem {
-  id         String   @id @default(cuid())
-  slug       String   @unique
+  id         String            @id @default(cuid())
+  slug       String            @unique
   nameHy     String
   nameRu     String
   nameEn     String
@@ -2049,14 +2057,19 @@ model CatalogItem {
   // ORDER-2 ATG classifier default (mandatory for e-HDM fiscalization). Nullable;
   // tenant overrides via InventoryItem.adgCodeOverride. Wiring the effective value
   // into OrderItem.adgCode is a later prompt (dish-level source decision).
-  adgCode    String?  @map("adg_code")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  adgCode    String?           @map("adg_code")
+  // CATALOG-2 archive (soft-delete): a hard delete would strand tenant references
+  // (catalogItemId is a plain scalar with no FK). Curation archives instead.
+  status     CatalogItemStatus @default(ACTIVE)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  deletedAt  DateTime?
 
   category  CatalogCategory?      @relation(fields: [categoryId], references: [id])
   allergens CatalogItemAllergen[]
 
   @@index([categoryId])
+  @@index([status])
   @@map("catalog_items")
 }
 

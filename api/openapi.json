@@ -12312,6 +12312,262 @@
         ]
       }
     },
+    "/platform/catalog-items": {
+      "get": {
+        "operationId": "PlatformCatalogItemsController_list",
+        "summary": "List catalog items (active by default; paged + search).",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Search over slug + name (hy/ru/en).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by catalog category id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Include archived items.",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogItemResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-catalog-items"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "PlatformCatalogItemsController_create",
+        "summary": "Create a catalog item.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCatalogItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-catalog-items"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/catalog-items/{id}": {
+      "get": {
+        "operationId": "PlatformCatalogItemsController_get",
+        "summary": "Get a catalog item by id.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-catalog-items"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "PlatformCatalogItemsController_update",
+        "summary": "Update a catalog item.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCatalogItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-catalog-items"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/catalog-items/{id}/archive": {
+      "post": {
+        "operationId": "PlatformCatalogItemsController_archive",
+        "summary": "Archive (soft-delete) a catalog item.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-catalog-items"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/catalog-taxonomy": {
+      "get": {
+        "operationId": "PlatformCatalogTaxonomyController_get",
+        "summary": "List the allergen + category taxonomy for the picker.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogTaxonomyResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-catalog-taxonomy"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
     "/public/discovery/attributes": {
       "get": {
         "operationId": "PublicDiscoveryController_attributes",
@@ -22558,6 +22814,219 @@
             "minimum": 0
           }
         }
+      },
+      "CatalogItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameHy": {
+            "type": "string"
+          },
+          "nameRu": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "object",
+            "nullable": true
+          },
+          "adgCode": {
+            "type": "object",
+            "nullable": true
+          },
+          "allergenSlugs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "nameHy",
+          "nameRu",
+          "nameEn",
+          "categoryId",
+          "adgCode",
+          "allergenSlugs",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateCatalogItemDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Stable unique slug (lowercase-kebab)."
+          },
+          "nameHy": {
+            "type": "string"
+          },
+          "nameRu": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "object",
+            "nullable": true,
+            "description": "Catalog category id, or null."
+          },
+          "adgCode": {
+            "type": "object",
+            "nullable": true,
+            "description": "Default ATG classifier, or null."
+          },
+          "allergenSlugs": {
+            "description": "Allergen slugs from the taxonomy.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "slug",
+          "nameHy",
+          "nameRu",
+          "nameEn"
+        ]
+      },
+      "UpdateCatalogItemDto": {
+        "type": "object",
+        "properties": {
+          "nameHy": {
+            "type": "string"
+          },
+          "nameRu": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "object",
+            "nullable": true
+          },
+          "adgCode": {
+            "type": "object",
+            "nullable": true
+          },
+          "allergenSlugs": {
+            "description": "Replaces the full tag set.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AllergenResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "labelHy": {
+            "type": "string"
+          },
+          "labelRu": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "labelHy",
+          "labelRu",
+          "labelEn",
+          "position"
+        ]
+      },
+      "CatalogCategoryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "labelHy": {
+            "type": "string"
+          },
+          "labelRu": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "labelHy",
+          "labelRu",
+          "labelEn",
+          "position"
+        ]
+      },
+      "CatalogTaxonomyResponse": {
+        "type": "object",
+        "properties": {
+          "allergens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AllergenResponse"
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogCategoryResponse"
+            }
+          }
+        },
+        "required": [
+          "allergens",
+          "categories"
+        ]
       },
       "AttributeSummaryResponse": {
         "type": "object",

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { IdentityModule } from '../identity/identity.module';
 import { ConsumerModule } from '../consumer/consumer.module';
+import { PlatformCatalogModule } from '../platform-catalog/platform-catalog.module';
 import { PASSWORD_HASHER } from '../identity/application/ports/password-hasher';
 import { Argon2PasswordHasher } from '../identity/infrastructure/services/argon2-password-hasher';
 
@@ -48,6 +49,8 @@ import { OrganizationsController } from './presentation/http/organizations.contr
 import { SubscriptionsController } from './presentation/http/subscriptions.controller';
 import { PlatformAdminController } from './presentation/http/platform-admin.controller';
 import { PlatformConsumerListingController } from './presentation/http/platform-consumer-listing.controller';
+import { PlatformCatalogItemsController } from './presentation/http/platform-catalog-items.controller';
+import { PlatformCatalogTaxonomyController } from './presentation/http/platform-catalog-taxonomy.controller';
 import { PLATFORM_ADMIN_QUERY } from './application/ports/platform-admin-query.port';
 import { PrismaPlatformAdminQueryService } from './infrastructure/persistence/prisma-platform-admin-query.service';
 import { GetOrgRestaurantsUseCase } from './application/queries/get-org-restaurants.usecase';
@@ -61,7 +64,7 @@ import { GetPlatformDashboardUseCase } from './application/queries/get-platform-
  * live under /platform and are protected solely by PlatformAuthGuard.
  */
 @Module({
-  imports: [JwtModule.register({}), IdentityModule, ConsumerModule],
+  imports: [JwtModule.register({}), IdentityModule, ConsumerModule, PlatformCatalogModule],
   controllers: [
     PlatformAuthController,
     PlansController,
@@ -69,6 +72,8 @@ import { GetPlatformDashboardUseCase } from './application/queries/get-platform-
     SubscriptionsController,
     PlatformAdminController,
     PlatformConsumerListingController,
+    PlatformCatalogItemsController,
+    PlatformCatalogTaxonomyController,
   ],
   providers: [
     PlatformAuthGuard,
