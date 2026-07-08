@@ -29,6 +29,7 @@ import { seedReservations } from './modules/10-reservations';
 import { seedOrders } from './modules/11-orders';
 import { seedConsumer } from './modules/12-consumer';
 import { seedConsumerIdentity } from './modules/13-consumer-identity';
+import { seedPlatformCatalog } from './modules/14-platform-catalog';
 
 /* eslint-disable no-console */
 export async function main(): Promise<void> {
@@ -49,6 +50,9 @@ export async function main(): Promise<void> {
       ['07 inventory', () => seedInventory(ctx, state)],
       ['08 recipes', () => seedRecipes(ctx, state)],
       ['09 processes', () => seedProcesses(ctx, state)],
+      // CATALOG-1: platform catalog + adoption links. After inventory (07) so the
+      // adopted items exist; global reference data is idempotent by upsert.
+      ['14 platform-catalog', () => seedPlatformCatalog(ctx, state)],
       ['10 reservations', () => seedReservations(ctx, state)],
       ['11 orders', () => seedOrders(ctx, state)],
       ['12 consumer', () => seedConsumer(ctx, state)],
@@ -121,6 +125,14 @@ async function report(
     restaurantPhotos: await prisma.restaurantPhoto.count({ where: w }),
     restaurantAttributes: await prisma.restaurantAttribute.count({ where: { restaurantId: rid } }),
     listedBranches: await prisma.branch.count({ where: { ...w, listedInConsumerApp: true } }),
+    // CATALOG-1 platform catalog (global reference data) + adoption links
+    allergens: await prisma.allergen.count(),
+    catalogCategories: await prisma.catalogCategory.count(),
+    catalogItems: await prisma.catalogItem.count(),
+    catalogItemAllergens: await prisma.catalogItemAllergen.count(),
+    adoptedInventoryItems: await prisma.inventoryItem.count({
+      where: { ...w, catalogItemId: { not: null } },
+    }),
   };
 
   // Inventory valuation from the ledger (source of truth).

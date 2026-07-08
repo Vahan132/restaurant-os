@@ -22,6 +22,7 @@ import { TableSessionsModule } from './modules/table-sessions/table-sessions.mod
 import { FiscalizationModule } from './modules/fiscalization/fiscalization.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { PlatformCatalogModule } from './modules/platform-catalog/platform-catalog.module';
 import { EdgeRegistryModule } from './modules/edge-registry/edge-registry.module';
 import { EdgeSyncModule } from './modules/edge-sync/edge-sync.module';
 import { SecurityModule } from './shared/auth/security.module';
@@ -104,6 +105,7 @@ const edgeOnlyModules = IS_EDGE ? [EdgeSyncModule] : [];
     OrderRequestsModule,
     InventoryModule,
     CatalogModule,
+    PlatformCatalogModule,
     RealtimeModule,
     ...cloudOnlyModules,
     ...edgeOnlyModules,

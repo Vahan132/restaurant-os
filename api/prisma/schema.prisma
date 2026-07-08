@@ -1340,11 +1340,27 @@ model InventoryItem {
   updatedAt             DateTime            @updatedAt
   deletedAt             DateTime?
 
+  // ── CATALOG-1: platform-catalog adoption + per-branch overrides ─────────────
+  // Additive + nullable so every existing item stays valid. `catalogItemId` is a
+  // PLAIN scalar (no FK / no Prisma relation) — the same cross-aggregate style
+  // used for itemId/restaurantId across inventory, and it enforces ADR §4: the
+  // platform catalog editor has NO ORM path back to tenant inventory ("curate the
+  // template, never inspect the tenants"). null = a custom, uncatalogued item;
+  // set = adopted from the catalog (always persisted when catalog-sourced).
+  // Allergens/adgCode resolve BY REFERENCE (ADR §3): override → catalog (via
+  // catalogItemId) → null; the catalog stays the authority — NO denormalized copy
+  // is stored here. `allergenOverride`: null = defer to the catalog; a JSON array
+  // of allergen slugs = authoritative override (may be [] to assert "no allergens").
+  catalogItemId    String?
+  allergenOverride Json?    @map("allergen_override")
+  adgCodeOverride  String?  @map("adg_code_override")
+
   @@unique([restaurantId, branchId, sku])
   @@index([restaurantId])
   @@index([branchId])
   @@index([restaurantId, categoryId])
   @@index([restaurantId, branchId])
+  @@index([catalogItemId])
   @@map("inventory_items")
 }
 
@@ -1973,6 +1989,91 @@ model ModifierConsumption {
   // limit and get silently truncated, causing migrate drift.
   @@index([restaurantId, modifierOptionId], map: "inventory_mod_consumption_restaurant_option_idx")
   @@map("inventory_modifier_consumptions")
+}
+
+// ── Platform catalog / allergens (CATALOG-1, ADR §2–§4, §10) ─────────────────
+//   Platform-CURATED, multilingual stock-item templates a tenant adopts from
+//   (InventoryItem.catalogItemId), so a central allergen/adgCode correction reaches
+//   every adopter by REFERENCE. These tables are PLATFORM-OWNED: no org/restaurant/
+//   branch column, global slug @unique — mirroring the consumer AttributeCategory/
+//   Value taxonomy. There is deliberately NO relation from a CatalogItem back to
+//   InventoryItem: the catalog cannot enumerate its adopters (ADR §4 boundary).
+
+// Platform-defined allergen taxonomy — a fixed, seeded reference set (the EU-14).
+// CatalogItems tag against it many-to-many. Not tenant-editable.
+model Allergen {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  labelHy   String
+  labelRu   String
+  labelEn   String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  catalogItems CatalogItemAllergen[]
+
+  @@index([position])
+  @@map("catalog_allergens")
+}
+
+// Platform-defined catalog category (multilingual). Small taxonomy the curator
+// groups CatalogItems under (produce, dairy, meat, pantry…). Not tenant-scoped.
+model CatalogCategory {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  labelHy   String
+  labelRu   String
+  labelEn   String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items CatalogItem[]
+
+  @@index([position])
+  @@map("catalog_categories")
+}
+
+// The curated template a tenant InventoryItem adopts by reference (ADR §2). Carries
+// the multilingual name (operational InventoryItem.name is single-locale, so the
+// translations must live here) + allergen tag set + category + a default ATG
+// classifier (adgCode). All tenant-overridable on the InventoryItem (ADR §3, §10).
+model CatalogItem {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  nameHy     String
+  nameRu     String
+  nameEn     String
+  categoryId String?
+  // ORDER-2 ATG classifier default (mandatory for e-HDM fiscalization). Nullable;
+  // tenant overrides via InventoryItem.adgCodeOverride. Wiring the effective value
+  // into OrderItem.adgCode is a later prompt (dish-level source decision).
+  adgCode    String?  @map("adg_code")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category  CatalogCategory?      @relation(fields: [categoryId], references: [id])
+  allergens CatalogItemAllergen[]
+
+  @@index([categoryId])
+  @@map("catalog_items")
+}
+
+// Join: a CatalogItem's allergen tag set (many-to-many). Cascade-deletes with
+// either side. The authoritative allergen set for an adopted item resolves through
+// here (unless the tenant sets InventoryItem.allergenOverride).
+model CatalogItemAllergen {
+  catalogItemId String
+  allergenId    String
+  createdAt     DateTime @default(now())
+
+  catalogItem CatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+  allergen    Allergen    @relation(fields: [allergenId], references: [id], onDelete: Cascade)
+
+  @@id([catalogItemId, allergenId])
+  @@index([allergenId])
+  @@map("catalog_item_allergens")
 }
 
 // ── Stock write-offs (INV-4) — reason-coded losses + staff meals ─────────────
