@@ -33,4 +33,6 @@ export interface RestaurantSettingsResponse {
   allowManualTableStatus: boolean;
   enableQrMenu: boolean;
   enableCustomerOrdering: boolean;
+  /** 3A: admin login allowed from any device when true. */
+  allowUnanchoredAdminLogin: boolean;
 }

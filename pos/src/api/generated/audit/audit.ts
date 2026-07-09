@@ -18,14 +18,18 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
-import type { AuditControllerListParams, AuditLogResponse } from '.././model';
+import type {
+  AuditControllerExportParams,
+  AuditControllerListParams,
+  AuditLogResponse,
+} from '.././model';
 
 import { apiRequest } from '../../mutator';
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
- * @summary List audit logs (tenant-scoped; newest first; filters).
+ * @summary List audit logs (branch-scoped; newest first; combinable filters).
  */
 export const auditControllerList = (
   params?: AuditControllerListParams,
@@ -129,7 +133,7 @@ export function useAuditControllerList<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
 /**
- * @summary List audit logs (tenant-scoped; newest first; filters).
+ * @summary List audit logs (branch-scoped; newest first; combinable filters).
  */
 
 export function useAuditControllerList<
@@ -146,6 +150,135 @@ export function useAuditControllerList<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
   const queryOptions = getAuditControllerListQueryOptions(params, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Export audit logs as CSV (same filters as the list — what you see is what you export).
+ */
+export const auditControllerExport = (
+  params?: AuditControllerExportParams,
+  options?: SecondParameter<typeof apiRequest>,
+  signal?: AbortSignal,
+) => {
+  return apiRequest<void>({ url: `/audit-logs/export`, method: 'GET', params, signal }, options);
+};
+
+export const getAuditControllerExportQueryKey = (params?: AuditControllerExportParams) => {
+  return [`/audit-logs/export`, ...(params ? [params] : [])] as const;
+};
+
+export const getAuditControllerExportQueryOptions = <
+  TData = Awaited<ReturnType<typeof auditControllerExport>>,
+  TError = void,
+>(
+  params?: AuditControllerExportParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof auditControllerExport>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAuditControllerExportQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof auditControllerExport>>> = ({ signal }) =>
+    auditControllerExport(params, requestOptions, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof auditControllerExport>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData> };
+};
+
+export type AuditControllerExportQueryResult = NonNullable<
+  Awaited<ReturnType<typeof auditControllerExport>>
+>;
+export type AuditControllerExportQueryError = void;
+
+export function useAuditControllerExport<
+  TData = Awaited<ReturnType<typeof auditControllerExport>>,
+  TError = void,
+>(
+  params: undefined | AuditControllerExportParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof auditControllerExport>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof auditControllerExport>>,
+          TError,
+          Awaited<ReturnType<typeof auditControllerExport>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+export function useAuditControllerExport<
+  TData = Awaited<ReturnType<typeof auditControllerExport>>,
+  TError = void,
+>(
+  params?: AuditControllerExportParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof auditControllerExport>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof auditControllerExport>>,
+          TError,
+          Awaited<ReturnType<typeof auditControllerExport>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+export function useAuditControllerExport<
+  TData = Awaited<ReturnType<typeof auditControllerExport>>,
+  TError = void,
+>(
+  params?: AuditControllerExportParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof auditControllerExport>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+/**
+ * @summary Export audit logs as CSV (same filters as the list — what you see is what you export).
+ */
+
+export function useAuditControllerExport<
+  TData = Awaited<ReturnType<typeof auditControllerExport>>,
+  TError = void,
+>(
+  params?: AuditControllerExportParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof auditControllerExport>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+  const queryOptions = getAuditControllerExportQueryOptions(params, options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData>;

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BranchResponseStatus } from './branchResponseStatus';
+import type { BranchResponseIpBindingMode } from './branchResponseIpBindingMode';
 
 export interface BranchResponse {
   id: string;
@@ -16,4 +17,8 @@ export interface BranchResponse {
   /** Whether this is the restaurant default branch. */
   isDefault: boolean;
   status: BranchResponseStatus;
+  /** 3A: branch IP binding policy. */
+  ipBindingMode: BranchResponseIpBindingMode;
+  /** 3A: allowed source CIDRs (STRICT mode). */
+  ipAllowlist: string[];
 }

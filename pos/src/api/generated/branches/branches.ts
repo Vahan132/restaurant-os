@@ -502,7 +502,7 @@ export function useBranchesControllerGet<
 }
 
 /**
- * @summary Update a branch.
+ * @summary Update a branch (rename and/or 3A IP policy).
  */
 export const branchesControllerUpdate = (
   id: string,
@@ -563,7 +563,7 @@ export type BranchesControllerUpdateMutationBody = UpdateBranchDto;
 export type BranchesControllerUpdateMutationError = void;
 
 /**
- * @summary Update a branch.
+ * @summary Update a branch (rename and/or 3A IP policy).
  */
 export const useBranchesControllerUpdate = <TError = void, TContext = unknown>(
   options?: {

@@ -573,51 +573,42 @@ export function useAuthControllerMe<
 
   return query;
 }
+
 /**
  * @summary Branch staff list for the POS/KDS login grid (device-authenticated).
  */
 export const pinAuthControllerStaffPicker = (
-  xDeviceSecret: string,
   options?: SecondParameter<typeof apiRequest>,
   signal?: AbortSignal,
 ) => {
   return apiRequest<StaffPickerEntryResponse[]>(
-    {
-      url: `/auth/staff-picker`,
-      method: 'GET',
-      headers: { 'X-Device-Secret': xDeviceSecret },
-      signal,
-    },
+    { url: `/auth/staff-picker`, method: 'GET', signal },
     options,
   );
 };
 
-export const getPinAuthControllerStaffPickerQueryKey = (xDeviceSecret: string) => {
-  return [`/auth/staff-picker`, ...(xDeviceSecret ? [xDeviceSecret] : [])] as const;
+export const getPinAuthControllerStaffPickerQueryKey = () => {
+  return [`/auth/staff-picker`] as const;
 };
 
 export const getPinAuthControllerStaffPickerQueryOptions = <
   TData = Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>,
   TError = void,
->(
-  xDeviceSecret: string,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError, TData>
-    >;
-    request?: SecondParameter<typeof apiRequest>;
-  },
-) => {
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError, TData>
+  >;
+  request?: SecondParameter<typeof apiRequest>;
+}) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey =
-    queryOptions?.queryKey ?? getPinAuthControllerStaffPickerQueryKey(xDeviceSecret);
+  const queryKey = queryOptions?.queryKey ?? getPinAuthControllerStaffPickerQueryKey();
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>> = ({
     signal,
-  }) => pinAuthControllerStaffPicker(xDeviceSecret, requestOptions, signal);
+  }) => pinAuthControllerStaffPicker(requestOptions, signal);
 
-  return { queryKey, queryFn, enabled: !!xDeviceSecret, ...queryOptions } as UseQueryOptions<
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>,
     TError,
     TData
@@ -629,14 +620,66 @@ export type PinAuthControllerStaffPickerQueryResult = NonNullable<
 >;
 export type PinAuthControllerStaffPickerQueryError = void;
 
-/**
- * @summary Branch staff list for the POS/KDS login grid (device-authenticated).
- */
 export function usePinAuthControllerStaffPicker<
   TData = Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>,
   TError = void,
 >(
-  xDeviceSecret: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>,
+          TError,
+          Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+export function usePinAuthControllerStaffPicker<
+  TData = Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>,
+  TError = void,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>,
+          TError,
+          Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+export function usePinAuthControllerStaffPicker<
+  TData = Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>,
+  TError = void,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+/**
+ * @summary Branch staff list for the POS/KDS login grid (device-authenticated).
+ */
+
+export function usePinAuthControllerStaffPicker<
+  TData = Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>,
+  TError = void,
+>(
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof pinAuthControllerStaffPicker>>, TError, TData>
@@ -645,7 +688,7 @@ export function usePinAuthControllerStaffPicker<
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
-  const queryOptions = getPinAuthControllerStaffPickerQueryOptions(xDeviceSecret, options);
+  const queryOptions = getPinAuthControllerStaffPickerQueryOptions(options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData>;
@@ -655,6 +698,7 @@ export function usePinAuthControllerStaffPicker<
 
   return query;
 }
+
 /**
  * @summary PIN login (POS/KDS): device secret + chosen user + 6-digit PIN.
  */

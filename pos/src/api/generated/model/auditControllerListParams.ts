@@ -5,6 +5,8 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { AuditControllerListAction } from './auditControllerListAction';
+import type { AuditControllerListRole } from './auditControllerListRole';
 
 export type AuditControllerListParams = {
   /**
@@ -17,18 +19,29 @@ export type AuditControllerListParams = {
    */
   limit?: number;
   /**
-   * From timestamp (ISO 8601, inclusive).
+   * From timestamp (ISO 8601, inclusive). Must be <= `to`.
    */
   from?: string;
   /**
-   * To timestamp (ISO 8601, exclusive).
+   * To timestamp (ISO 8601, inclusive). Must be >= `from`.
    */
   to?: string;
   /**
-   * Action filter (e.g. ORDER_CANCELLED).
+   * Action type filter (validated against recorded actions).
    */
-  action?: string;
+  action?: AuditControllerListAction;
+  /**
+   * Actor's role code filter (system role codes).
+   */
+  role?: AuditControllerListRole;
+  /**
+   * Branch id filter (within the caller’s reachable scope).
+   */
+  branchId?: string;
+  /**
+   * Actor (employee) id filter.
+   */
+  actorId?: string;
   entityType?: string;
   entityId?: string;
-  actorId?: string;
 };
