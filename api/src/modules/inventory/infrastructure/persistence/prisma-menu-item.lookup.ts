@@ -46,6 +46,17 @@ export class PrismaMenuItemLookup implements MenuItemLookup {
     return new Map(rows.map((r) => [r.id, r.name]));
   }
 
+  async hideRecipeByMenuItemId(
+    restaurantId: string,
+    menuItemId: string,
+  ): Promise<boolean> {
+    const row = await this.prisma.menuItem.findFirst({
+      where: { id: menuItemId, restaurantId, deletedAt: null },
+      select: { hideRecipe: true },
+    });
+    return row?.hideRecipe ?? false;
+  }
+
   async existingModifierOptionIds(restaurantId: string, optionIds: string[]): Promise<Set<string>> {
     if (optionIds.length === 0) {
       return new Set();

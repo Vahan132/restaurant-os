@@ -2,6 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   CATALOG_ITEM_READER,
   CatalogItemReader,
+  CatalogLocalizedName,
+  CatalogResolution,
 } from '../../domain/repositories/catalog-item.reader';
 import {
   resolveEffectiveAdgCode,
@@ -31,6 +33,18 @@ export interface EffectiveStockItem {
    * CATALOG-3 (§8) uses this to flag a dish's allergen profile incomplete.
    */
   catalogSourced: boolean;
+  /**
+   * CATALOG-3 §Locked-3: a leaf is VERIFIED only when catalogSourced AND the catalog
+   * item's allergensReviewed flag is set. Any false here (custom/uncatalogued, stale
+   * link, or catalogued-but-not-reviewed) => the dish allergen profile is incomplete.
+   * NEVER infer verification from an empty allergenSlugs array (empty = known-none).
+   */
+  verified: boolean;
+  /**
+   * Localized catalog display names (hy/ru/en), or null for a custom/uncatalogued
+   * item. The customer projection falls back to InventoryItem.name when this is null.
+   */
+  catalogName: CatalogLocalizedName | null;
 }
 
 /**
@@ -75,7 +89,7 @@ export class CatalogResolutionService {
 
   private project(
     input: StockItemResolutionInput,
-    resolution: { allergenSlugs: string[]; adgCode: string | null } | null,
+    resolution: CatalogResolution | null,
   ): EffectiveStockItem {
     const catalogAllergens = resolution ? resolution.allergenSlugs : null;
     const catalogAdgCode = resolution ? resolution.adgCode : null;
@@ -92,6 +106,8 @@ export class CatalogResolutionService {
             : 'none',
       adgCode: resolveEffectiveAdgCode(input.adgCodeOverride, catalogAdgCode),
       catalogSourced: resolution !== null,
+      verified: resolution !== null && resolution.allergensReviewed,
+      catalogName: resolution ? resolution.name : null,
     };
   }
 }

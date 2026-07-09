@@ -5,6 +5,7 @@ import {
   ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { Paginated } from '../../../../shared/application/pagination';
@@ -25,6 +26,7 @@ import {
 } from '../../application/dto/recipe.dto';
 import { RecipeListItemResponse, RecipeResponse } from '../../application/dto/recipe-responses';
 import { GetRecipeUseCase } from '../../application/queries/get-recipe.usecase';
+import { toLocale } from '../../application/services/dish-projection.resolver';
 import { ListRecipesUseCase } from '../../application/queries/list-recipes.usecase';
 
 const READ = PERMISSIONS.INVENTORY_READ;
@@ -65,17 +67,23 @@ export class RecipesController {
 
   @Get(':id')
   @RequirePermissions(READ)
-  @ApiOperation({ summary: 'Get a recipe with lines, modifier consumptions, estimate + warnings.' })
+  @ApiOperation({
+    summary:
+      'Get a recipe with lines, modifier consumptions, estimate, warnings, projections + allergen rollup.',
+  })
+  @ApiQuery({ name: 'locale', required: false, enum: ['hy', 'ru', 'en'] })
   @ApiOkResponse({ type: RecipeResponse })
   async get(
     @CurrentTenant() tenant: TenantContext,
     @ActiveBranchId() branchId: string,
     @Param('id') id: string,
+    @Query('locale') locale?: string,
   ): Promise<RecipeResponse> {
     const detail = await this.getRecipe.execute({
       restaurantId: tenant.restaurantId,
       branchId,
       recipeId: id,
+      locale: toLocale(locale),
     });
     return RecipeResponse.from(detail);
   }

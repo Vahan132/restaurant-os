@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module';
+import { PlatformCatalogModule } from '../platform-catalog/platform-catalog.module';
 
 import { INVENTORY_STOCK_READER } from './application/ports/inventory-stock.reader';
 import { STOCK_CONSUMPTION_PORT } from './domain/ports/stock-consumption.port';
@@ -74,6 +75,9 @@ import { UpdateRecipeUseCase } from './application/commands/update-recipe.usecas
 import { DeleteRecipeUseCase } from './application/commands/delete-recipe.usecase';
 import { ListRecipesUseCase } from './application/queries/list-recipes.usecase';
 import { GetRecipeUseCase } from './application/queries/get-recipe.usecase';
+import { DishProjectionResolver } from './application/services/dish-projection.resolver';
+import { ITEM_RESOLUTION_READER } from './application/ports/item-resolution.reader';
+import { PrismaItemResolutionReader } from './infrastructure/persistence/prisma-item-resolution.reader';
 import { RecipeDefinitionAssembler } from './application/services/recipe-definition.assembler';
 import { RecipeDetailAssembler } from './application/services/recipe-detail.assembler';
 import { RecipeConsumptionService } from './application/services/recipe-consumption.service';
@@ -165,7 +169,7 @@ import { InventoryReportsController } from './presentation/http/inventory-report
  * StockConsumptionPort to later contexts (orders/recipes, processes/write-offs).
  */
 @Module({
-  imports: [IdentityModule],
+  imports: [IdentityModule, PlatformCatalogModule],
   controllers: [
     InventoryItemsController,
     InventoryCategoriesController,
@@ -236,6 +240,7 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     GetRecipeUseCase,
     RecipeDefinitionAssembler,
     RecipeDetailAssembler,
+    DishProjectionResolver,
     RecipeConsumptionService,
     OrderConsumptionListener,
     // write-offs (INV-4)
@@ -289,6 +294,7 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     { provide: RECIPE_REPOSITORY, useClass: PrismaRecipeRepository },
     { provide: MENU_ITEM_LOOKUP, useClass: PrismaMenuItemLookup },
     { provide: ITEM_UNIT_COST_READER, useClass: PrismaItemUnitCostReader },
+    { provide: ITEM_RESOLUTION_READER, useClass: PrismaItemResolutionReader },
     { provide: WRITE_OFF_REPOSITORY, useClass: PrismaWriteOffRepository },
     { provide: WRITE_OFF_SUMMARY_READER, useClass: PrismaWriteOffSummaryReader },
     { provide: INVENTORY_LOCATION_REPOSITORY, useClass: PrismaInventoryLocationRepository },

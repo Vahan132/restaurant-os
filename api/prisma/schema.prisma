@@ -558,6 +558,9 @@ model MenuItem {
   prepTimeMinutes    Int?
   status             MenuStatus         @default(ACTIVE)
   availability       ItemAvailability   @default(AVAILABLE)
+  // CATALOG-3 §9: hides the customer ingredient list (NOT the allergen summary).
+  // Additive, default false; safe on existing rows.
+  hideRecipe         Boolean            @default(false)
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   deletedAt          DateTime?
@@ -2061,6 +2064,9 @@ model CatalogItem {
   // CATALOG-2 archive (soft-delete): a hard delete would strand tenant references
   // (catalogItemId is a plain scalar with no FK). Curation archives instead.
   status     CatalogItemStatus @default(ACTIVE)
+  // CATALOG-3 §Locked-4: platform support flips this true once allergen tagging is complete.
+  // Un-reviewed items count as UNVERIFIED at resolve time (verified = catalogSourced && allergensReviewed).
+  allergensReviewed Boolean           @default(false)
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
   deletedAt  DateTime?

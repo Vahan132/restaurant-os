@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Recipe } from '../../domain/entities/recipe';
 import { RecipeDetail, RecipeWarning } from '../services/recipe-detail.assembler';
+import { DishProjection } from '../services/dish-projection.resolver';
 
 export class RecipeLineResponse {
   @ApiProperty() id!: string;
@@ -30,6 +31,34 @@ export class RecipeWarningResponse {
   }
 }
 
+/** Customer projection line (CATALOG-3): localized ingredient name, no quantity. */
+export class CustomerIngredientResponse {
+  @ApiProperty() itemId!: string;
+  @ApiProperty() name!: string;
+}
+
+/** Operational projection line (CATALOG-3, owner): component + quantity + unit. */
+export class OperationalIngredientResponse {
+  @ApiProperty() itemId!: string;
+  @ApiProperty() baseQty!: number;
+  @ApiProperty({ description: 'From InventoryItem.baseUnit (GRAM | MILLILITER | PIECE).' })
+  unit!: string;
+}
+
+/** Honest dish allergen rollup (CATALOG-3): union + completeness + unverified leaves. */
+export class DishAllergensResponse {
+  @ApiProperty({ type: [String], description: 'Union of effective allergen slugs over all leaves.' })
+  slugs!: string[];
+  @ApiProperty({
+    description:
+      'True only when every contributing leaf is verified (catalogSourced && reviewed). ' +
+      'Never inferred from an empty slugs array (empty = known-none, not unknown).',
+  })
+  complete!: boolean;
+  @ApiProperty({ type: [String], description: 'Leaf item ids that made the profile incomplete.' })
+  unverifiedItemIds!: string[];
+}
+
 /** Full recipe view: lines + modifier consumptions + estimate + warnings (§3,§6). */
 export class RecipeResponse {
   @ApiProperty() id!: string;
@@ -45,15 +74,44 @@ export class RecipeResponse {
   estimatedUnitCost_amount!: number;
   @ApiProperty({ type: [RecipeWarningResponse] }) warnings!: RecipeWarningResponse[];
 
+  // ── CATALOG-3: hideRecipe + dual projections + allergen rollup ───────────────
+  @ApiProperty({ description: 'Hides the customer ingredient list, never the allergens (ADR §9).' })
+  hideRecipe!: boolean;
+  @ApiProperty({
+    type: [CustomerIngredientResponse],
+    nullable: true,
+    description: 'Localized ingredient names, no quantities. null when hideRecipe.',
+  })
+  customerIngredients!: CustomerIngredientResponse[] | null;
+  @ApiProperty({ type: [OperationalIngredientResponse] })
+  operationalIngredients!: OperationalIngredientResponse[];
+  @ApiProperty({ type: DishAllergensResponse })
+  allergens!: DishAllergensResponse;
+
   static from(detail: RecipeDetail): RecipeResponse {
+    const p: DishProjection = detail.projection;
     return {
       ...RecipeResponse.base(detail.recipe),
       estimatedUnitCost_amount: detail.estimatedUnitCostAmount,
       warnings: detail.warnings.map(RecipeWarningResponse.from),
+      hideRecipe: p.hideRecipe,
+      customerIngredients: p.customerIngredients,
+      operationalIngredients: p.operationalIngredients,
+      allergens: p.allergens,
     };
   }
 
-  private static base(r: Recipe): Omit<RecipeResponse, 'estimatedUnitCost_amount' | 'warnings'> {
+  private static base(
+    r: Recipe,
+  ): Omit<
+    RecipeResponse,
+    | 'estimatedUnitCost_amount'
+    | 'warnings'
+    | 'hideRecipe'
+    | 'customerIngredients'
+    | 'operationalIngredients'
+    | 'allergens'
+  > {
     return {
       id: r.id,
       restaurantId: r.restaurantId,

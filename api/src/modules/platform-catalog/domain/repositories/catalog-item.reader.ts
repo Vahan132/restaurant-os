@@ -1,5 +1,12 @@
 export const CATALOG_ITEM_READER = Symbol('CatalogItemReader');
 
+/** Localized display names for a CatalogItem (CATALOG-3 customer projection). */
+export interface CatalogLocalizedName {
+  hy: string;
+  ru: string;
+  en: string;
+}
+
 /** The catalog-sourced values for a single CatalogItem (ADR §3 authority side). */
 export interface CatalogResolution {
   catalogItemId: string;
@@ -7,6 +14,13 @@ export interface CatalogResolution {
   allergenSlugs: string[];
   /** Default ATG classifier, or null. */
   adgCode: string | null;
+  /**
+   * Platform-support tagging gate (CATALOG-3 §Locked-4). A leaf is VERIFIED only
+   * when catalog-sourced AND this is true; false => unverified until support flips it.
+   */
+  allergensReviewed: boolean;
+  /** Localized display names (hy/ru/en) for the customer ingredient projection. */
+  name: CatalogLocalizedName;
 }
 
 /**

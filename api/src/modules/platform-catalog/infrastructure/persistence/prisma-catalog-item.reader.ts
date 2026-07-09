@@ -8,12 +8,20 @@ import {
 const RESOLUTION_SELECT = {
   id: true,
   adgCode: true,
+  nameHy: true,
+  nameRu: true,
+  nameEn: true,
+  allergensReviewed: true,
   allergens: { select: { allergen: { select: { slug: true } } } },
 } as const;
 
 interface ResolutionRow {
   id: string;
   adgCode: string | null;
+  nameHy: string;
+  nameRu: string;
+  nameEn: string;
+  allergensReviewed: boolean;
   allergens: { allergen: { slug: string } }[];
 }
 
@@ -22,6 +30,8 @@ function toResolution(row: ResolutionRow): CatalogResolution {
     catalogItemId: row.id,
     allergenSlugs: row.allergens.map((a) => a.allergen.slug),
     adgCode: row.adgCode,
+    allergensReviewed: row.allergensReviewed,
+    name: { hy: row.nameHy, ru: row.nameRu, en: row.nameEn },
   };
 }
 
