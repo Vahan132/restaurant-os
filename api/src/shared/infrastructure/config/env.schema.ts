@@ -246,6 +246,18 @@ export const envSchema = z
       (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
       z.coerce.number().int().min(1).default(5_242_880),
     ),
+
+    // ── FISCAL-1: electronic-HDM adapter config ─────────────────────────────
+    // Path to a JSON file mapping "<restaurantId>:<branchId>" -> per-tenant SRC
+    // e-HDM config (crn, cashierId, environment, cert/key/ca PEM file PATHS,
+    // language, departmentMap). Blank-safe: absent => no tenant is e-HDM-configured
+    // and QR/APP fiscalization fails closed (fatal-config) until provisioned. The
+    // per-tenant SECRETS live in the referenced PEM files, never in this env schema
+    // (FISCAL-4 replaces this with a DB + secret store).
+    FISCAL_CONFIG_PATH: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
   })
   // Fail-fast: in EDGE mode the four edge identity ids are mandatory. CLOUD
   // validation is unchanged (these stay optional and unused).

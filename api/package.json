@@ -13,6 +13,7 @@
     "build": "nest build",
     "start:prod": "node dist/main.js",
     "generate:openapi": "ts-node --transpile-only scripts/generate-openapi.ts",
+    "verify:ehdm": "ts-node --transpile-only scripts/verify-ehdm.ts",
     "lint": "eslint \"{src,test}/**/*.ts\" --max-warnings 0",
     "lint:fix": "eslint \"{src,test}/**/*.ts\" --fix",
     "format": "prettier --write \"src/**/*.ts\"",
