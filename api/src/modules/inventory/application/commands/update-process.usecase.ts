@@ -11,6 +11,7 @@ import {
   RawInput,
   RawOutput,
 } from '../services/process-definition.assembler';
+import { ProcessGraphCycleChecker } from '../services/process-graph-cycle.checker';
 
 export interface UpdateProcessInput {
   restaurantId: string | null;
@@ -32,6 +33,7 @@ export class UpdateProcessUseCase implements UseCase<UpdateProcessInput, Process
   constructor(
     @Inject(PROCESS_REPOSITORY) private readonly processes: ProcessRepository,
     private readonly assembler: ProcessDefinitionAssembler,
+    private readonly cycleChecker: ProcessGraphCycleChecker,
   ) {}
 
   async execute(input: UpdateProcessInput): Promise<Process> {
@@ -63,6 +65,19 @@ export class UpdateProcessUseCase implements UseCase<UpdateProcessInput, Process
               })),
           )
         : null;
+
+    // Only re-check the graph when the edges are actually being replaced; a
+    // header-only update leaves the graph unchanged.
+    if (rebuilt) {
+      await this.cycleChecker.assertAcyclic({
+        restaurantId: input.restaurantId,
+        branchId: input.branchId,
+        processId: process.id,
+        processName: input.name ?? process.name,
+        inputItemIds: rebuilt.inputs.map((i) => i.itemId),
+        outputItemIds: rebuilt.outputs.map((o) => o.itemId),
+      });
+    }
 
     process.update({
       name: input.name,

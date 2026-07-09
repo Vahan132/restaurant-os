@@ -64,6 +64,10 @@ import { ListProcessRunsUseCase } from './application/queries/list-process-runs.
 import { GetProcessRunUseCase } from './application/queries/get-process-run.usecase';
 import { GetRelatedItemsUseCase } from './application/queries/get-related-items.usecase';
 import { ProcessDefinitionAssembler } from './application/services/process-definition.assembler';
+import { ProcessGraphCycleChecker } from './application/services/process-graph-cycle.checker';
+import { ProducedItemGraphService } from './application/services/produced-item-graph.service';
+import { PROCESS_GRAPH_EDGES_READER } from './application/ports/process-graph-edges.reader';
+import { PrismaProcessGraphEdgesReader } from './infrastructure/persistence/prisma-process-graph-edges.reader';
 
 import { CreateRecipeUseCase } from './application/commands/create-recipe.usecase';
 import { UpdateRecipeUseCase } from './application/commands/update-recipe.usecase';
@@ -222,6 +226,8 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     GetProcessRunUseCase,
     GetRelatedItemsUseCase,
     ProcessDefinitionAssembler,
+    ProcessGraphCycleChecker,
+    ProducedItemGraphService,
     // recipes (INV-3)
     CreateRecipeUseCase,
     UpdateRecipeUseCase,
@@ -278,6 +284,7 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     { provide: PROCESS_REPOSITORY, useClass: PrismaProcessRepository },
     { provide: PROCESS_RUN_REPOSITORY, useClass: PrismaProcessRunRepository },
     { provide: PROCESS_GRAPH_READER, useClass: PrismaProcessGraphReader },
+    { provide: PROCESS_GRAPH_EDGES_READER, useClass: PrismaProcessGraphEdgesReader },
     { provide: PROCESS_RUN_DETAIL_READER, useClass: PrismaProcessRunDetailReader },
     { provide: RECIPE_REPOSITORY, useClass: PrismaRecipeRepository },
     { provide: MENU_ITEM_LOOKUP, useClass: PrismaMenuItemLookup },
