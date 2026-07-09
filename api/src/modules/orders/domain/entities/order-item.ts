@@ -54,6 +54,8 @@ export interface CreateOrderItemInput {
   goodCode?: string | null;
   goodName?: string | null;
   unit?: string | null;
+  /** FISCAL-0: dish-level ATG code (from MenuItem.adgCode). Null until classified. */
+  adgCode?: string | null;
 }
 
 /** Default (all-null) reserved fiscal fields for a freshly created line. */
@@ -98,6 +100,8 @@ export class OrderItem {
       goodName: input.goodName ?? input.nameSnapshot,
       unit: input.unit ?? null,
       ...EMPTY_RESERVED_FISCAL,
+      // FISCAL-0: snapshot the dish-level ATG code (overrides the reserved null).
+      adgCode: input.adgCode ?? null,
       createdAt: now,
       updatedAt: now,
     });

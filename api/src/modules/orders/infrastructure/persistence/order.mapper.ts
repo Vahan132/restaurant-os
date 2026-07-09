@@ -120,6 +120,7 @@ export class OrderMapper {
       fiscalNumber: r.fiscalNumber,
       fiscalQr: r.fiscalQr,
       fiscalizedAt: r.fiscalizedAt,
+      fiscalError: r.fiscalError,
       items,
       payments,
       createdAt: r.createdAt,
@@ -167,6 +168,7 @@ export class OrderMapper {
       fiscalNumber: o.fiscalNumber,
       fiscalQr: o.fiscalQr,
       fiscalizedAt: o.fiscalizedAt,
+      fiscalError: o.fiscalError,
       updatedAt: o.updatedAt,
     };
   }

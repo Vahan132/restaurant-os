@@ -567,6 +567,12 @@ model MenuItem {
   // CATALOG-3 §9: hides the customer ingredient list (NOT the allergen summary).
   // Additive, default false; safe on existing rows.
   hideRecipe         Boolean            @default(false)
+  // FISCAL-0: the dish-level SRC ATG classifier code for fiscalization. The ATG
+  // code belongs to the SOLD product (the dish), not its ingredients (whose
+  // catalog adgCodes are commodity/HS codes), so it lives here and is snapshotted
+  // onto OrderItem.adgCode at order-build time. Nullable/additive: null = not yet
+  // classified (FISCAL-1 fail-closes the fiscal print on a null line, error 192).
+  adgCode            String?            @map("adg_code")
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   deletedAt          DateTime?
@@ -801,6 +807,11 @@ model Order {
   fiscalNumber     String?   @map("fiscal_number")
   fiscalQr         String?   @map("fiscal_qr")
   fiscalizedAt     DateTime? @map("fiscalized_at")
+  // FISCAL-0: fatal-config fiscal error marker (SRC code, e.g. "192"/"403");
+  // null = no fatal error. Set when fiscalization returns a fatal-config
+  // classification so a retried ConfirmPayment stops the retry loop and the
+  // operator can see why; cleared on fiscal success (applyFiscalResult).
+  fiscalError      String?   @map("fiscal_error")
 
   note                  String?
   cancelledReason       String?

@@ -88,6 +88,8 @@ export interface OrderProps {
   fiscalNumber: string | null;
   fiscalQr: string | null;
   fiscalizedAt: Date | null;
+  // FISCAL-0: fatal-config fiscal error marker (SRC code), or null = none.
+  fiscalError: string | null;
   items: OrderItem[];
   payments: Payment[];
   createdAt: Date;
@@ -162,6 +164,7 @@ export class Order extends AggregateRoot<string> {
       fiscalNumber: null,
       fiscalQr: null,
       fiscalizedAt: null,
+      fiscalError: null,
       items: [],
       payments: [],
       createdAt: now,
@@ -282,8 +285,15 @@ export class Order extends AggregateRoot<string> {
   get fiscalizedAt(): Date | null {
     return this.props.fiscalizedAt;
   }
+  get fiscalError(): string | null {
+    return this.props.fiscalError;
+  }
   isFiscalized(): boolean {
     return this.props.fiscalizedAt !== null;
+  }
+  /** FISCAL-0: a fatal-config fiscal error is recorded — do NOT re-attempt fiscalization. */
+  hasFatalFiscalError(): boolean {
+    return this.props.fiscalError !== null;
   }
   get items(): OrderItem[] {
     return [...this.props.items];
@@ -659,8 +669,23 @@ export class Order extends AggregateRoot<string> {
     this.props.fiscalNumber = result.fiscalNumber;
     this.props.fiscalQr = result.qr;
     this.props.fiscalizedAt = result.issuedAt;
+    // FISCAL-0: a successful fiscalisation supersedes any prior fatal marker.
+    this.props.fiscalError = null;
     this.touch();
     return true;
+  }
+
+  /**
+   * FISCAL-0: record a FATAL-config fiscalization failure (e.g. SRC 192/403) so a
+   * retried ConfirmPayment stops re-attempting and an operator can see the code.
+   * No-op once fiscalised (a fatal marker never overwrites a real receipt).
+   */
+  markFiscalFatal(code: string): void {
+    if (this.isFiscalized()) {
+      return;
+    }
+    this.props.fiscalError = code;
+    this.touch();
   }
 
   /**
@@ -763,6 +788,7 @@ export class Order extends AggregateRoot<string> {
       fiscalNumber: null,
       fiscalQr: null,
       fiscalizedAt: null,
+      fiscalError: null,
       items: moved,
       payments: [],
       createdAt: now,

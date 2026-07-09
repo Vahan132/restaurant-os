@@ -164,6 +164,13 @@ export interface DishSeed {
   recipe: RecipeLineSeed[];
   /** Modifier-option-triggered inventory draws (default none). */
   modifierConsumptions?: ModifierConsumptionSeed[];
+  /**
+   * FISCAL-0: the dish-level SRC ATG classifier code (fiscal `adgCode`), snapshotted
+   * onto order lines at build time. ILLUSTRATIVE placeholders on a few dishes here;
+   * most dishes leave it undefined (=> null line adgCode, which FISCAL-1 fail-closes).
+   * Real codes come from the SRC classifier during catalog curation.
+   */
+  adgCode?: string | null;
 }
 
 export const DISHES: DishSeed[] = [
@@ -174,6 +181,7 @@ export const DISHES: DishSeed[] = [
     descHy: 'Կաղնու ածխի վրա խորոված խոզի մսի կտորներ՝ սոխով։',
     price: 3500, station: 'KITCHEN',
     attachments: [{ group: 'doneness' }, { group: 'spice' }, { group: 'side', requiredOverride: true }],
+    adgCode: '2130000000', // FISCAL-0: illustrative prepared-food ATG code.
     recipe: [{ item: 'pork-loin', baseQty: 300 }, { item: 'onion', baseQty: 50 }, { item: 'salt', baseQty: 5 }],
   },
   {
@@ -182,6 +190,7 @@ export const DISHES: DishSeed[] = [
     descHy: 'Մարինադած հավի խորоված՝ թարմ խոտաբույսերով։',
     price: 3000, station: 'KITCHEN',
     attachments: [{ group: 'doneness' }, { group: 'spice' }, { group: 'side' }],
+    adgCode: '2130000000', // FISCAL-0: illustrative prepared-food ATG code.
     recipe: [{ item: 'chicken', baseQty: 350 }, { item: 'onion', baseQty: 50 }],
   },
   {

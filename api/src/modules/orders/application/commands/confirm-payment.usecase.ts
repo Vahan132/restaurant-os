@@ -8,6 +8,8 @@ import { Order } from '../../domain/entities/order';
 import { PaymentStatus } from '../../domain/enums';
 import { ORDER_REPOSITORY, OrderRepository } from '../../domain/repositories/order.repository';
 import { NoRestaurantInScope, OrderNotFound, PaymentDeclined } from '../application.errors';
+import { FatalFiscalError } from '../../../fiscalization/application/ports/fiscal-errors';
+import { FiscalizationResult } from '../../../fiscalization/application/ports/fiscalization.port';
 import { FiscalizeOrderService } from '../services/fiscalize-order.service';
 
 export interface ConfirmPaymentInput {
@@ -107,10 +109,35 @@ export class ConfirmPaymentUseCase implements UseCase<ConfirmPaymentInput, Confi
     if (!paid) {
       throw OrderNotFound();
     }
-    if (!paid.isFiscalized()) {
-      // External fiscal call OUTSIDE the tx; if it throws, the order stays PAID +
-      // unfiscalised (recoverable) — never dispatched.
-      const result = await this.fiscalize.fiscalizeProducts(paid);
+    if (!paid.isFiscalized() && !paid.hasFatalFiscalError()) {
+      // External fiscal call OUTSIDE the tx. A RETRYABLE failure (network / 500 /
+      // transient) throws an ordinary Error and leaves the order PAID +
+      // unfiscalised (recoverable) — never dispatched — so a later confirm
+      // retries. A FATAL-config failure (FISCAL-1 throws FatalFiscalError) is
+      // recorded on the order (Order.fiscalError) to STOP the retry loop and
+      // surface to the operator; the order is never dispatched.
+      let result: FiscalizationResult;
+      try {
+        result = await this.fiscalize.fiscalizeProducts(paid);
+      } catch (err) {
+        if (err instanceof FatalFiscalError) {
+          const marked = await this.orders.withOrderLock(
+            restaurantId,
+            branchId,
+            orderId,
+            (order) => order.markFiscalFatal(err.code),
+          );
+          if (marked) {
+            await this.events.publishFromAggregate(marked.order);
+          }
+          const surfaced = await this.orders.findById(restaurantId, branchId, orderId);
+          if (!surfaced) {
+            throw OrderNotFound();
+          }
+          return { order: surfaced };
+        }
+        throw err; // retryable: leave PAID + unfiscalised for the next confirm
+      }
       const done = await this.orders.withOrderLock(restaurantId, branchId, orderId, (order) => {
         order.applyFiscalResult({
           receiptId: result.receiptId,
@@ -125,7 +152,7 @@ export class ConfirmPaymentUseCase implements UseCase<ConfirmPaymentInput, Confi
       if (done) {
         await this.events.publishFromAggregate(done.order);
       }
-    } else if (!paid.hasBeenDispatched()) {
+    } else if (paid.isFiscalized() && !paid.hasBeenDispatched()) {
       // Fiscalised but not yet dispatched (crash between): dispatch only.
       const done = await this.orders.withOrderLock(restaurantId, branchId, orderId, (order) => {
         if (!order.hasBeenDispatched()) {
