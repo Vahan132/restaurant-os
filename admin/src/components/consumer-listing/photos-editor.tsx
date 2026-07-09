@@ -8,8 +8,10 @@ import {
   useAdminConsumerListingControllerDeletePhoto,
   useAdminConsumerListingControllerOrderPhotos,
 } from '@/api/generated/admin-consumer-listing/admin-consumer-listing';
+import { useMediaControllerPresignRestaurantPhoto } from '@/api/generated/media/media';
 import type { PhotoResponse } from '@/api/generated/model';
 import { Button } from '@/components/ui/button';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { Field, inputClass } from '@/components/ui/form';
 import { useConfirm } from '@/components/ui/use-confirm';
 import {
@@ -50,6 +52,7 @@ export function PhotosEditor({
   const { ask, dialog } = useConfirm();
 
   const createPhoto = useAdminConsumerListingControllerCreatePhoto();
+  const presignPhoto = useMediaControllerPresignRestaurantPhoto();
   const deletePhoto = useAdminConsumerListingControllerDeletePhoto();
   const orderPhotos = useAdminConsumerListingControllerOrderPhotos();
 
@@ -80,6 +83,16 @@ export function PhotosEditor({
       setUrl('');
       setAlt(EMPTY_I18N);
       setShowAlt(false);
+      toast.success(t('photos.added'));
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
+
+  const uploadPhoto = async (key: string) => {
+    try {
+      await createPhoto.mutateAsync({ data: { objectKey: key } });
+      await invalidateRestaurant();
       toast.success(t('photos.added'));
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -184,6 +197,15 @@ export function PhotosEditor({
 
       {!disabled && (
         <div className="space-y-2 rounded-md border border-gray-200 p-3">
+          <ImageUpload
+            disabled={busy}
+            keepPreview={false}
+            presign={async (contentType) => {
+              const r = await presignPhoto.mutateAsync({ data: { contentType } });
+              return { url: r.url, key: r.key };
+            }}
+            onUploaded={uploadPhoto}
+          />
           <Field label={t('photos.addLabel')} error={error}>
             <input
               className={inputClass}

@@ -345,6 +345,8 @@ export * from './platformUserResponse';
 export * from './platformUserResponseRole';
 export * from './platformUserResponseStatus';
 export * from './platformUserRowResponse';
+export * from './presignUploadDto';
+export * from './presignUploadResponse';
 export * from './processesControllerListParams';
 export * from './processInputDto';
 export * from './processInputResponse';

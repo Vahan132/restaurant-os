@@ -22,6 +22,11 @@ export interface MenuItemDetailResponse {
   priceAmount: number;
   /** @nullable */
   imageUrl: string | null;
+  /**
+     * MEDIA-1: object-storage key when the image was uploaded (null for URL-paste).
+     * @nullable
+     */
+  imageKey: string | null;
   preparationStation: MenuItemDetailResponsePreparationStation;
   /** @nullable */
   prepTimeMinutes: number | null;

@@ -11,6 +11,7 @@ import {
   useItemsControllerStatus,
   useItemsControllerUpdate,
 } from '@/api/generated/menu-items/menu-items';
+import { useMediaControllerPresignMenuItemImage } from '@/api/generated/media/media';
 import {
   CreateMenuItemDtoPreparationStation,
   MenuItemResponseAvailability,
@@ -26,6 +27,7 @@ import { RecipeCostPanel } from '@/components/inventory/recipe-cost-panel';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { Field, inputClass } from '@/components/ui/form';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { getErrorMessage } from '@/lib/api-error';
 import { usePermission } from '@/lib/auth/use-permission';
 import { useRecipeForMenuItem } from '@/lib/inventory/use-recipe-data';
@@ -80,6 +82,7 @@ export function ItemEditorDrawer({
   const [formCategoryId, setFormCategoryId] = useState(categoryId ?? categories[0]?.id ?? '');
   const [priceInput, setPriceInput] = useState('0');
   const [imageUrl, setImageUrl] = useState('');
+  const [imageKey, setImageKey] = useState<string | undefined>(undefined);
   const [station, setStation] = useState<string>(CreateMenuItemDtoPreparationStation.KITCHEN);
   const [prepTime, setPrepTime] = useState('');
   const [status, setStatus] = useState<string>(MenuItemResponseStatus.ACTIVE);
@@ -96,6 +99,7 @@ export function ItemEditorDrawer({
     setFormCategoryId(detail.categoryId);
     setPriceInput(minorToInput(detail.priceAmount, currency));
     setImageUrl(detail.imageUrl ?? '');
+    setImageKey(detail.imageKey ?? undefined);
     setStation(detail.preparationStation);
     setPrepTime(detail.prepTimeMinutes != null ? String(detail.prepTimeMinutes) : '');
     setStatus(detail.status);
@@ -104,6 +108,7 @@ export function ItemEditorDrawer({
 
   const create = useItemsControllerCreate();
   const update = useItemsControllerUpdate();
+  const presignImage = useMediaControllerPresignMenuItemImage();
   const priceMut = useItemsControllerPrice();
   const statusMut = useItemsControllerStatus();
   const availabilityMut = useItemsControllerAvailability();
@@ -137,7 +142,8 @@ export function ItemEditorDrawer({
             name: name.trim(),
             categoryId: formCategoryId,
             description: description.trim() || undefined,
-            imageUrl: imageUrl.trim() || undefined,
+            imageUrl: imageKey ? undefined : imageUrl.trim() || undefined,
+            imageKey: imageKey || undefined,
             preparationStation: station as CreateMenuItemDtoPreparationStation,
             prepTimeMinutes,
           },
@@ -175,7 +181,8 @@ export function ItemEditorDrawer({
           data: {
             name: name.trim(),
             description: description.trim() || undefined,
-            imageUrl: imageUrl.trim() || undefined,
+            imageUrl: imageKey ? undefined : imageUrl.trim() || undefined,
+            imageKey: imageKey || undefined,
             categoryId: formCategoryId,
             preparationStation: station as CreateMenuItemDtoPreparationStation,
             prepTimeMinutes,
@@ -351,9 +358,21 @@ export function ItemEditorDrawer({
                 className={inputClass}
                 value={imageUrl}
                 disabled={!canManage}
-                onChange={(e) => setImageUrl(e.target.value)}
+                onChange={(e) => {
+                  setImageUrl(e.target.value);
+                  setImageKey(undefined);
+                }}
               />
             </Field>
+            <ImageUpload
+              previewUrl={imageUrl || null}
+              disabled={!canManage}
+              presign={async (contentType) => {
+                const r = await presignImage.mutateAsync({ data: { contentType } });
+                return { url: r.url, key: r.key };
+              }}
+              onUploaded={(key) => setImageKey(key)}
+            />
             <div className="grid grid-cols-2 gap-3">
               <Field label={t('status')}>
                 <select

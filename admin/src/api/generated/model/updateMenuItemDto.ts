@@ -11,6 +11,8 @@ export interface UpdateMenuItemDto {
   name?: string;
   description?: string;
   imageUrl?: string;
+  /** MEDIA-1: object key from a presigned upload (finalize). Overrides imageUrl. Send null/empty with imageUrl to switch back to URL-paste. */
+  imageKey?: string;
   /** Reassign to another category in your restaurant. */
   categoryId?: string;
   preparationStation?: UpdateMenuItemDtoPreparationStation;

@@ -7,6 +7,7 @@ import {
   useRestaurantControllerSetSettings,
   useRestaurantControllerSettings,
 } from '@/api/generated/restaurant/restaurant';
+import { useMediaControllerPresignLogo } from '@/api/generated/media/media';
 import type { RestaurantSettingsResponse, UpdateRestaurantSettingsDto } from '@/api/generated/model';
 import {
   OpeningHoursEditor,
@@ -16,6 +17,7 @@ import {
 } from '@/components/settings/opening-hours-editor';
 import { Button } from '@/components/ui/button';
 import { Field, inputClass } from '@/components/ui/form';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { Toggle } from '@/components/ui/toggle';
 import { getErrorMessage } from '@/lib/api-error';
 import { usePermission } from '@/lib/auth/use-permission';
@@ -52,9 +54,11 @@ export function OperationsTab() {
   const { data, isLoading } = useRestaurantControllerSettings();
   const settings = data as RestaurantSettingsResponse | undefined;
   const setSettings = useRestaurantControllerSetSettings();
+  const presignLogo = useMediaControllerPresignLogo();
 
   const [serviceFee, setServiceFee] = useState('0');
   const [logoUrl, setLogoUrl] = useState('');
+  const [logoKey, setLogoKey] = useState<string | undefined>(undefined);
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [receiptFooter, setReceiptFooter] = useState('');
@@ -76,6 +80,7 @@ export function OperationsTab() {
     if (!settings) return;
     setServiceFee(bpsToPercent(settings.serviceFeeRateBps));
     setLogoUrl(settings.logoUrl ?? '');
+    setLogoKey(settings.logoKey ?? undefined);
     setPhone(settings.phone ?? '');
     setAddress(settings.address ?? '');
     setReceiptFooter(settings.receiptFooter ?? '');
@@ -119,7 +124,8 @@ export function OperationsTab() {
     // handle tax, so we leave it untouched server-side.
     const payload: UpdateRestaurantSettingsDto = {
       serviceFeeRateBps: bps,
-      logoUrl: logoUrl.trim() || undefined,
+      logoUrl: logoKey ? undefined : logoUrl.trim() || undefined,
+      logoKey: logoKey || undefined,
       phone: phone.trim() || undefined,
       address: address.trim() || undefined,
       receiptFooter: receiptFooter.trim() || undefined,
@@ -160,9 +166,27 @@ export function OperationsTab() {
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-gray-900">{t('contact')}</h2>
         <Field label={t('logoUrl')}>
-          <input className={inputClass} value={logoUrl} disabled={disabled} onChange={(e) => setLogoUrl(e.target.value)} />
+          <input
+            className={inputClass}
+            value={logoUrl}
+            disabled={disabled}
+            onChange={(e) => {
+              setLogoUrl(e.target.value);
+              setLogoKey(undefined);
+            }}
+          />
           <span className="mt-1 block text-xs text-gray-500">{t('logoHint')}</span>
         </Field>
+        <ImageUpload
+          previewUrl={logoUrl || null}
+          disabled={disabled}
+          shape="square"
+          presign={async (contentType) => {
+            const r = await presignLogo.mutateAsync({ data: { contentType } });
+            return { url: r.url, key: r.key };
+          }}
+          onUploaded={(key) => setLogoKey(key)}
+        />
         <div className="grid grid-cols-2 gap-3">
           <Field label={t('phone')}>
             <input className={inputClass} value={phone} disabled={disabled} onChange={(e) => setPhone(e.target.value)} />
