@@ -12376,6 +12376,21 @@
               "default": false,
               "type": "boolean"
             }
+          },
+          {
+            "name": "reviewed",
+            "required": false,
+            "in": "query",
+            "description": "Allergen-review queue filter. unreviewed = the support work list.",
+            "schema": {
+              "default": "all",
+              "enum": [
+                "all",
+                "reviewed",
+                "unreviewed"
+              ],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -22962,6 +22977,10 @@
               "type": "string"
             }
           },
+          "allergensReviewed": {
+            "type": "boolean",
+            "description": "Support-set gate; dishes show verified allergens only when true."
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -22985,6 +23004,7 @@
           "categoryId",
           "adgCode",
           "allergenSlugs",
+          "allergensReviewed",
           "status",
           "createdAt",
           "updatedAt"
@@ -23022,6 +23042,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "allergensReviewed": {
+            "type": "boolean",
+            "description": "Support tagging gate — dishes show verified allergens only when true. Defaults false."
           }
         },
         "required": [
@@ -23057,6 +23081,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "allergensReviewed": {
+            "type": "boolean",
+            "description": "Support tagging gate — flip true once allergen tagging is complete (omitted = unchanged)."
           }
         }
       },

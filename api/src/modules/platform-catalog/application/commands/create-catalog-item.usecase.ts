@@ -21,6 +21,7 @@ export interface CreateCatalogItemInput {
   categoryId: string | null;
   adgCode: string | null;
   allergenSlugs: string[];
+  allergensReviewed?: boolean;
 }
 
 /** Create a platform CatalogItem (runtime id via cuid2 IdGenerator). */
@@ -49,6 +50,7 @@ export class CreateCatalogItemUseCase implements UseCase<CreateCatalogItemInput,
       categoryId: input.categoryId,
       adgCode: input.adgCode,
       allergenSlugs: input.allergenSlugs,
+      allergensReviewed: input.allergensReviewed ?? false,
     });
     await this.repo.create(item);
     return item;

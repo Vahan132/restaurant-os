@@ -1731,6 +1731,12 @@
     "invalidCredentials": "Неверная почта или пароль"
   },
   "platformCatalog": {
+    "reviewed": "Аллергены проверены",
+    "reviewedDesc": "Теги аллергенов проверены — блюда с этим ингредиентом могут показывать подтверждённые аллергены.",
+    "filterReviewed": "Проверка",
+    "reviewedAll": "Все",
+    "reviewedPending": "Ожидают проверки",
+    "reviewedDone": "Проверенные",
     "title": "Каталог",
     "newItem": "Новый элемент",
     "searchPlaceholder": "Поиск по названию или slug…",

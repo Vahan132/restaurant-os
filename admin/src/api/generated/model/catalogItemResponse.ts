@@ -20,6 +20,8 @@ export interface CatalogItemResponse {
   /** @nullable */
   adgCode: CatalogItemResponseAdgCode;
   allergenSlugs: string[];
+  /** Support-set gate; dishes show verified allergens only when true. */
+  allergensReviewed: boolean;
   status: CatalogItemResponseStatus;
   createdAt: string;
   updatedAt: string;

@@ -3,6 +3,7 @@ import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -39,6 +40,13 @@ export class CreateCatalogItemDto {
   @IsArray()
   @IsString({ each: true })
   allergenSlugs?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Support tagging gate — dishes show verified allergens only when true. Defaults false.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  allergensReviewed?: boolean;
 }
 
 export class UpdateCatalogItemDto {
@@ -63,6 +71,13 @@ export class UpdateCatalogItemDto {
   @IsArray()
   @IsString({ each: true })
   allergenSlugs?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Support tagging gate — flip true once allergen tagging is complete (omitted = unchanged).',
+  })
+  @IsOptional()
+  @IsBoolean()
+  allergensReviewed?: boolean;
 }
 
 export class ListCatalogItemsQuery {
@@ -96,4 +111,13 @@ export class ListCatalogItemsQuery {
   @Transform(({ value }) => value === true || value === 'true' || value === '1')
   @IsBoolean()
   includeArchived?: boolean;
+
+  @ApiPropertyOptional({
+    enum: ['all', 'reviewed', 'unreviewed'],
+    default: 'all',
+    description: 'Allergen-review queue filter. unreviewed = the support work list.',
+  })
+  @IsOptional()
+  @IsIn(['all', 'reviewed', 'unreviewed'])
+  reviewed?: 'all' | 'reviewed' | 'unreviewed';
 }

@@ -18,6 +18,7 @@ export interface ListCatalogItemsInput {
   q?: string;
   categoryId?: string;
   includeArchived?: boolean;
+  reviewed?: 'all' | 'reviewed' | 'unreviewed';
 }
 
 /**
@@ -41,6 +42,12 @@ export class ListCatalogItemsUseCase
       search: input.q,
       categoryId: input.categoryId,
       status: input.includeArchived ? undefined : CatalogItemStatus.ACTIVE,
+      reviewed:
+        input.reviewed === 'reviewed'
+          ? true
+          : input.reviewed === 'unreviewed'
+            ? false
+            : undefined,
     });
     return paginate(items, total, query);
   }

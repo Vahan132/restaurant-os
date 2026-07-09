@@ -333,6 +333,7 @@ export * from './platformAdminControllerSubscriptionHistoryParams';
 export * from './platformAdminControllerUsersParams';
 export * from './platformAdminControllerUsersStatus';
 export * from './platformCatalogItemsControllerListParams';
+export * from './platformCatalogItemsControllerListReviewed';
 export * from './platformDashboardResponse';
 export * from './platformDashboardResponseOrganizationsByStatus';
 export * from './platformDashboardResponseSubscriptionsByStatus';

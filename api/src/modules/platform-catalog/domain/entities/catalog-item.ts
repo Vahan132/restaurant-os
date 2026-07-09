@@ -18,6 +18,7 @@ export interface CatalogItemProps {
   categoryId: string | null;
   adgCode: string | null;
   allergenSlugs: string[];
+  allergensReviewed: boolean;
   status: CatalogItemStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -33,6 +34,8 @@ export interface CreateCatalogItemProps {
   categoryId: string | null;
   adgCode: string | null;
   allergenSlugs: string[];
+  /** Support tagging gate; defaults to false on create. */
+  allergensReviewed?: boolean;
 }
 
 /**
@@ -59,6 +62,7 @@ export class CatalogItem extends AggregateRoot<string> {
       categoryId: input.categoryId,
       adgCode: input.adgCode,
       allergenSlugs: normalizeSlugs(input.allergenSlugs),
+      allergensReviewed: input.allergensReviewed ?? false,
       status: CatalogItemStatus.ACTIVE,
       createdAt: now,
       updatedAt: now,
@@ -91,6 +95,9 @@ export class CatalogItem extends AggregateRoot<string> {
   get allergenSlugs(): string[] {
     return [...this.props.allergenSlugs];
   }
+  get allergensReviewed(): boolean {
+    return this.props.allergensReviewed;
+  }
   get status(): CatalogItemStatus {
     return this.props.status;
   }
@@ -122,6 +129,7 @@ export class CatalogItem extends AggregateRoot<string> {
     categoryId?: string | null;
     adgCode?: string | null;
     allergenSlugs?: string[];
+    allergensReviewed?: boolean;
   }): void {
     if (input.nameHy !== undefined) this.props.nameHy = input.nameHy;
     if (input.nameRu !== undefined) this.props.nameRu = input.nameRu;
@@ -130,6 +138,9 @@ export class CatalogItem extends AggregateRoot<string> {
     if (input.adgCode !== undefined) this.props.adgCode = input.adgCode;
     if (input.allergenSlugs !== undefined) {
       this.props.allergenSlugs = normalizeSlugs(input.allergenSlugs);
+    }
+    if (input.allergensReviewed !== undefined) {
+      this.props.allergensReviewed = input.allergensReviewed;
     }
     this.touch();
   }

@@ -11,6 +11,7 @@ import type {
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { Field, inputClass } from '@/components/ui/form';
+import { Toggle } from '@/components/ui/toggle';
 import { getErrorMessage } from '@/lib/api-error';
 import {
   taxonomyLabel,
@@ -44,6 +45,9 @@ export function CatalogItemForm({
   const [adgCode, setAdgCode] = useState(item?.adgCode ?? '');
   const [allergens, setAllergens] = useState<Set<string>>(
     new Set(item?.allergenSlugs ?? []),
+  );
+  const [allergensReviewed, setAllergensReviewed] = useState(
+    item?.allergensReviewed ?? false,
   );
   const [error, setError] = useState<string | undefined>();
 
@@ -90,6 +94,7 @@ export function CatalogItemForm({
           categoryId: categoryValue as UpdateCatalogItemDto['categoryId'],
           adgCode: adgValue as UpdateCatalogItemDto['adgCode'],
           allergenSlugs: [...allergens],
+          allergensReviewed,
         };
         await updateMut.mutateAsync({ id: item.id, data });
         toast.success(t('updated'));
@@ -102,6 +107,7 @@ export function CatalogItemForm({
           categoryId: categoryValue as CreateCatalogItemDto['categoryId'],
           adgCode: adgValue as CreateCatalogItemDto['adgCode'],
           allergenSlugs: [...allergens],
+          allergensReviewed,
         };
         await createMut.mutateAsync({ data });
         toast.success(t('created'));
@@ -204,6 +210,14 @@ export function CatalogItemForm({
             </div>
           )}
         </div>
+
+        {/* CATALOG-3-SUPPORT: the tagging gate. Flipping true lets dishes show verified allergens. */}
+        <Toggle
+          label={t('reviewed')}
+          description={t('reviewedDesc')}
+          checked={allergensReviewed}
+          onChange={setAllergensReviewed}
+        />
 
         {error && <p className="text-xs text-red-600">{error}</p>}
       </div>

@@ -44,6 +44,7 @@ export class PlatformCatalogItemsController {
       q: query.q,
       categoryId: query.categoryId,
       includeArchived: query.includeArchived,
+      reviewed: query.reviewed,
     });
     return { data: result.data.map(CatalogItemResponse.from), pagination: result.pagination };
   }
@@ -67,6 +68,7 @@ export class PlatformCatalogItemsController {
       categoryId: dto.categoryId ?? null,
       adgCode: dto.adgCode ?? null,
       allergenSlugs: dto.allergenSlugs ?? [],
+      allergensReviewed: dto.allergensReviewed ?? false,
     });
     return CatalogItemResponse.from(item);
   }
@@ -86,6 +88,7 @@ export class PlatformCatalogItemsController {
       categoryId: dto.categoryId,
       adgCode: dto.adgCode,
       allergenSlugs: dto.allergenSlugs,
+      allergensReviewed: dto.allergensReviewed,
     });
     return CatalogItemResponse.from(item);
   }

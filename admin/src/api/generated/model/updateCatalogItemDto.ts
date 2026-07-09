@@ -18,4 +18,6 @@ export interface UpdateCatalogItemDto {
   adgCode?: UpdateCatalogItemDtoAdgCode;
   /** Replaces the full tag set. */
   allergenSlugs?: string[];
+  /** Support tagging gate — flip true once allergen tagging is complete (omitted = unchanged). */
+  allergensReviewed?: boolean;
 }

@@ -10,6 +10,8 @@ export interface CatalogItemListFilter {
   categoryId?: string;
   /** Restrict to a status (the use-case passes ACTIVE unless includeArchived). */
   status?: CatalogItemStatus;
+  /** Allergen-review queue: true = reviewed, false = pending, undefined = all. */
+  reviewed?: boolean;
 }
 
 export interface CatalogItemListResult {

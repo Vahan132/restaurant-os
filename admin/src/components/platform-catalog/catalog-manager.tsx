@@ -32,6 +32,7 @@ export function CatalogManager() {
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
   const [status, setStatus] = useState<'active' | 'archived'>('active');
+  const [reviewed, setReviewed] = useState<'all' | 'reviewed' | 'unreviewed'>('all');
   const [categoryId, setCategoryId] = useState('');
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<CatalogItemVM | null>(null);
@@ -43,7 +44,7 @@ export function CatalogManager() {
   }, [search]);
   useEffect(() => {
     setPage(1);
-  }, [debounced, status, categoryId]);
+  }, [debounced, status, reviewed, categoryId]);
 
   const params = useMemo(
     () => ({
@@ -52,8 +53,9 @@ export function CatalogManager() {
       q: debounced || undefined,
       categoryId: categoryId || undefined,
       includeArchived: status === 'archived' ? true : undefined,
+      reviewed: reviewed === 'all' ? undefined : reviewed,
     }),
-    [page, debounced, categoryId, status],
+    [page, debounced, categoryId, status, reviewed],
   );
 
   const { items, pagination, isLoading, isError, isFetching } = useCatalogList(params);
@@ -134,6 +136,16 @@ export function CatalogManager() {
         >
           <option value="active">{t('active')}</option>
           <option value="archived">{t('archived')}</option>
+        </select>
+        <select
+          className={`${inputClass} w-auto`}
+          value={reviewed}
+          onChange={(e) => setReviewed(e.target.value as 'all' | 'reviewed' | 'unreviewed')}
+          aria-label={t('filterReviewed')}
+        >
+          <option value="all">{t('reviewedAll')}</option>
+          <option value="unreviewed">{t('reviewedPending')}</option>
+          <option value="reviewed">{t('reviewedDone')}</option>
         </select>
       </div>
 

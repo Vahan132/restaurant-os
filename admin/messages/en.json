@@ -1731,6 +1731,12 @@
     "invalidCredentials": "Invalid email or password"
   },
   "platformCatalog": {
+    "reviewed": "Allergen tags reviewed",
+    "reviewedDesc": "Allergen tags reviewed — dishes using this item can show verified allergens.",
+    "filterReviewed": "Review",
+    "reviewedAll": "All",
+    "reviewedPending": "Pending review",
+    "reviewedDone": "Reviewed",
     "title": "Catalog",
     "newItem": "New item",
     "searchPlaceholder": "Search name or slug…",

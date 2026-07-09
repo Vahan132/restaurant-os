@@ -1731,6 +1731,12 @@
     "invalidCredentials": "Սխալ էլ. փոստ կամ գաղտնաբառ"
   },
   "platformCatalog": {
+    "reviewed": "Ալերգենները ստուգված են",
+    "reviewedDesc": "Ալերգենների պիտակները ստուգված են — այս բաղադրիչն օգտագործող ուտեստները կարող են ցուցադրել հաստատված ալերգեններ։",
+    "filterReviewed": "Ստուգում",
+    "reviewedAll": "Բոլորը",
+    "reviewedPending": "Սպասում են ստուգման",
+    "reviewedDone": "Ստուգված",
     "title": "Կատալոգ",
     "newItem": "Նոր տարր",
     "searchPlaceholder": "Որոնել անունով կամ slug-ով…",

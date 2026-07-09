@@ -30,6 +30,7 @@ export interface CatalogItemVM {
   categoryId: string | null;
   adgCode: string | null;
   allergenSlugs: string[];
+  allergensReviewed: boolean;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -45,6 +46,7 @@ export function toCatalogVM(r: CatalogItemResponse): CatalogItemVM {
     categoryId: (r.categoryId as unknown as string | null) ?? null,
     adgCode: (r.adgCode as unknown as string | null) ?? null,
     allergenSlugs: r.allergenSlugs,
+    allergensReviewed: r.allergensReviewed,
     status: r.status,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,

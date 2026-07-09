@@ -29,6 +29,7 @@ function toDomain(r: ItemRecord): CatalogItem {
     categoryId: r.categoryId,
     adgCode: r.adgCode,
     allergenSlugs: r.allergens.map((a) => a.allergen.slug).sort(),
+    allergensReviewed: r.allergensReviewed,
     status:
       r.status === PrismaCatalogItemStatus.ARCHIVED
         ? CatalogItemStatus.ARCHIVED
@@ -60,6 +61,7 @@ export class PrismaCatalogItemRepository implements CatalogItemRepository {
           nameEn: item.nameEn,
           categoryId: item.categoryId,
           adgCode: item.adgCode,
+          allergensReviewed: item.allergensReviewed,
           status: toPrismaStatus(item.status),
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
@@ -86,6 +88,7 @@ export class PrismaCatalogItemRepository implements CatalogItemRepository {
           nameEn: item.nameEn,
           categoryId: item.categoryId,
           adgCode: item.adgCode,
+          allergensReviewed: item.allergensReviewed,
           status: toPrismaStatus(item.status),
           updatedAt: item.updatedAt,
           deletedAt: item.deletedAt,
@@ -116,6 +119,9 @@ export class PrismaCatalogItemRepository implements CatalogItemRepository {
     }
     if (filter.categoryId) {
       where.categoryId = filter.categoryId;
+    }
+    if (filter.reviewed !== undefined) {
+      where.allergensReviewed = filter.reviewed;
     }
     if (filter.search && filter.search.trim().length > 0) {
       const q = filter.search.trim();

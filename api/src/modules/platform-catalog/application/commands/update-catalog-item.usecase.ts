@@ -22,6 +22,8 @@ export interface UpdateCatalogItemInput {
   adgCode?: string | null;
   /** Replaces the full tag set when provided. */
   allergenSlugs?: string[];
+  /** undefined = unchanged. Support flips this true once tagging is complete. */
+  allergensReviewed?: boolean;
 }
 
 /** Update a platform CatalogItem's fields / tags / category. */
@@ -47,6 +49,7 @@ export class UpdateCatalogItemUseCase implements UseCase<UpdateCatalogItemInput,
       categoryId: input.categoryId,
       adgCode: input.adgCode,
       allergenSlugs: input.allergenSlugs,
+      allergensReviewed: input.allergensReviewed,
     });
     await this.repo.update(item);
     return item;
