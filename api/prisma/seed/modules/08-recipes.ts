@@ -51,6 +51,26 @@ export async function seedRecipes(ctx: SeedContext, state: SeedState): Promise<v
           create: { id: lid, recipeId, branchId, itemId, baseQty: line.baseQty },
         });
       }
+
+      // CATALOG-3/4: modifier-option-triggered inventory draws (allergen walk roots).
+      for (const mc of dish.modifierConsumptions ?? []) {
+        const cid = seedId(`rmc:${bk}:${dish.slug}:${mc.group}:${mc.option}:${mc.item}`);
+        const modifierOptionId = state.modifierOptionIds[bk][`${mc.group}:${mc.option}`];
+        const itemId = state.itemIds[bk][mc.item];
+        await prisma.modifierConsumption.upsert({
+          where: { id: cid },
+          update: { baseQty: mc.baseQty, itemId, modifierOptionId },
+          create: {
+            id: cid,
+            restaurantId: rid,
+            branchId,
+            recipeId,
+            modifierOptionId,
+            itemId,
+            baseQty: mc.baseQty,
+          },
+        });
+      }
     }
   }
 }

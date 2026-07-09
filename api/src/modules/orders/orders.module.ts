@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { IdentityModule } from '../identity/identity.module';
+import { InventoryModule } from '../inventory/inventory.module';
 import { TablesModule } from '../tables/tables.module';
 import { TableSessionsModule } from '../table-sessions/table-sessions.module';
 import { FiscalizationModule } from '../fiscalization/fiscalization.module';
@@ -78,6 +79,7 @@ import { ConsumerThrottlerGuard } from './presentation/http/consumer-throttler.g
 @Module({
   imports: [
     IdentityModule,
+    InventoryModule,
     TablesModule,
     TableSessionsModule,
     FiscalizationModule,

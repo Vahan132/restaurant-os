@@ -135,7 +135,25 @@ export class DishProjectionResolver {
       }),
     );
 
-    // Allergen rollup: union leaf effective allergens; any unverified leaf => incomplete.
+    return {
+      hideRecipe,
+      customerIngredients,
+      operationalIngredients,
+      // Shared rollup core (also used by CATALOG-4's per-order-item batch).
+      allergens: this.rollupFromLeaves(leafIds, effective),
+    };
+  }
+
+  /**
+   * The invariant-critical rollup: union each contributing leaf's effective
+   * allergens; the dish/line is `complete` ONLY when every leaf is verified
+   * (catalogSourced && allergensReviewed). Never inferred from empty slugs.
+   * Single source of truth for CATALOG-3 (dish) and CATALOG-4 (order item).
+   */
+  rollupFromLeaves(
+    leafIds: Iterable<string>,
+    effective: Map<string, EffectiveStockItem>,
+  ): DishAllergens {
     const slugs = new Set<string>();
     const unverified = new Set<string>();
     for (const leafId of leafIds) {
@@ -151,17 +169,47 @@ export class DishProjectionResolver {
         unverified.add(leafId);
       }
     }
-
     return {
-      hideRecipe,
-      customerIngredients,
-      operationalIngredients,
-      allergens: {
-        slugs: [...slugs].sort(),
-        complete: unverified.size === 0,
-        unverifiedItemIds: [...unverified],
-      },
+      slugs: [...slugs].sort(),
+      complete: unverified.size === 0,
+      unverifiedItemIds: [...unverified],
     };
+  }
+
+  /**
+   * Batch allergen rollup (CATALOG-4): given labeled groups of ROOT item ids,
+   * return a DishAllergens per group. One edges load (walkMany), one item read,
+   * one catalog resolveMany across every group's leaves — no N+1 over a board.
+   * Reuses the CATALOG-1b walk and CATALOG-1 resolution; forks nothing.
+   */
+  async rollupAllergensByGroups(
+    restaurantId: string,
+    branchId: string,
+    groups: readonly { key: string; rootItemIds: string[] }[],
+  ): Promise<Map<string, DishAllergens>> {
+    const out = new Map<string, DishAllergens>();
+    if (groups.length === 0) {
+      return out;
+    }
+    const allRoots = unique(groups.flatMap((g) => g.rootItemIds));
+    const walks = await this.graph.walkMany(restaurantId, branchId, allRoots);
+    const leavesByRoot = new Map<string, string[]>();
+    for (const [root, visits] of walks) {
+      leavesByRoot.set(
+        root,
+        visits.filter((v) => v.isLeaf).map((v) => v.itemId),
+      );
+    }
+    const allLeaves = unique([...leavesByRoot.values()].flat());
+    const rows = await this.items.byIds(restaurantId, branchId, allLeaves);
+    const effective = await this.catalog.resolveMany(
+      allLeaves.map((id) => resolutionInput(id, rows.get(id))),
+    );
+    for (const g of groups) {
+      const leaves = unique(g.rootItemIds.flatMap((r) => leavesByRoot.get(r) ?? []));
+      out.set(g.key, this.rollupFromLeaves(leaves, effective));
+    }
+    return out;
   }
 
   /** Localized catalog name when catalog-sourced; else the item's own name; else the id. */

@@ -72,6 +72,7 @@ export async function seedPlatformCatalog(ctx: SeedContext, _state: SeedState): 
       nameEn: it.nameEn,
       categoryId: catalogCategorySeedId(it.categorySlug),
       adgCode: it.adgCode,
+      allergensReviewed: it.reviewed,
     };
     await prisma.catalogItem.upsert({
       where: { id: it.id },

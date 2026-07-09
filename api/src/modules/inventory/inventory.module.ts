@@ -76,6 +76,7 @@ import { DeleteRecipeUseCase } from './application/commands/delete-recipe.usecas
 import { ListRecipesUseCase } from './application/queries/list-recipes.usecase';
 import { GetRecipeUseCase } from './application/queries/get-recipe.usecase';
 import { DishProjectionResolver } from './application/services/dish-projection.resolver';
+import { OrderItemAllergenResolver } from './application/services/order-item-allergen.resolver';
 import { ITEM_RESOLUTION_READER } from './application/ports/item-resolution.reader';
 import { PrismaItemResolutionReader } from './infrastructure/persistence/prisma-item-resolution.reader';
 import { RecipeDefinitionAssembler } from './application/services/recipe-definition.assembler';
@@ -241,6 +242,7 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     RecipeDefinitionAssembler,
     RecipeDetailAssembler,
     DishProjectionResolver,
+    OrderItemAllergenResolver,
     RecipeConsumptionService,
     OrderConsumptionListener,
     // write-offs (INV-4)
@@ -305,6 +307,7 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     { provide: INVENTORY_REPORT_READER, useClass: PrismaInventoryReportReader },
   ],
   // Later contexts depend on the consumption PORT, not the concrete service.
-  exports: [STOCK_CONSUMPTION_PORT],
+  // CATALOG-4: KDS + POS read models consume the per-order-item allergen rollup.
+  exports: [STOCK_CONSUMPTION_PORT, OrderItemAllergenResolver],
 })
 export class InventoryModule {}

@@ -44,6 +44,8 @@ export interface CatalogItemSeed {
   categorySlug: string;
   adgCode: string | null;
   allergenSlugs: string[];
+  /** CATALOG-3-SUPPORT: platform-support tagging gate. Seeded true for a few items. */
+  reviewed: boolean;
 }
 
 export function allergenSeedId(slug: string): string {
@@ -106,6 +108,7 @@ function item(
   categorySlug: string,
   allergenSlugs: string[],
   adgCode: string | null = null,
+  reviewed = false,
 ): CatalogItemSeed {
   return {
     id: catalogItemSeedId(slug),
@@ -116,18 +119,19 @@ function item(
     categorySlug,
     adgCode,
     allergenSlugs,
+    reviewed,
   };
 }
 
 /** Starter curated templates (platform-admin curates the full set in CATALOG-2). */
 export const CATALOG_ITEMS: CatalogItemSeed[] = [
   item('wheat-flour', 'Ցորենի ալյուր', 'Пшеничная мука', 'Wheat flour', 'pantry', ['cereals-gluten'], '1101000000'),
-  item('rice', 'Բրինձ', 'Рис', 'Rice', 'pantry', []),
+  item('rice', 'Բրինձ', 'Рис', 'Rice', 'pantry', [], null, true),
   item('vermicelli', 'Արիշտա', 'Вермишель', 'Vermicelli', 'pantry', ['cereals-gluten']),
   item('tomato-paste', 'Տոմատի մածուկ', 'Томатная паста', 'Tomato paste', 'pantry', []),
   item('sunflower-oil', 'Արևածաղկի յուղ', 'Подсолнечное масло', 'Sunflower oil', 'pantry', []),
   item('chickpeas', 'Սիսեռ', 'Нут', 'Chickpeas', 'pantry', []),
-  item('butter', 'Կարագ', 'Сливочное масло', 'Butter', 'dairy', ['milk']),
+  item('butter', 'Կարագ', 'Сливочное масло', 'Butter', 'dairy', ['milk'], null, true),
   item('matsun', 'Մածուն', 'Мацун', 'Matsun (yogurt)', 'dairy', ['milk']),
   item('lori-cheese', 'Լոռի պանիր', 'Сыр Лори', 'Lori cheese', 'dairy', ['milk']),
   item('string-cheese', 'Չեչիլ պանիր', 'Сыр чечил', 'String cheese', 'dairy', ['milk']),
@@ -135,6 +139,8 @@ export const CATALOG_ITEMS: CatalogItemSeed[] = [
   item('walnuts', 'Ընկույզ', 'Грецкие орехи', 'Walnuts', 'nuts-seeds', ['nuts'], '0802310000'),
   item('coffee-beans', 'Սուրճի հատիկ', 'Кофейные зёрна', 'Coffee beans', 'beverage', []),
   item('areni-red-wine', 'Արենի կարմիր գինի', 'Красное вино Арени', 'Areni red wine', 'beverage', ['sulphites']),
+  // CATALOG-3 verification: a reviewed, no-allergen leaf reached via a produced item.
+  item('pork-leg', 'Խոզի բուդ', 'Свиная нога', 'Pork leg', 'meat', [], null, true),
 ];
 
 /**
@@ -158,4 +164,7 @@ export const CATALOG_ADOPTIONS: CatalogAdoptionSeed[] = [
   // Precedence demo: the tenant asserts BOTH gluten and eggs on their vermicelli,
   // overriding the catalog (which tags gluten only). Override wins (ADR §3).
   { inventorySlug: 'vermicelli', catalogSlug: 'vermicelli', allergenOverride: ['cereals-gluten', 'eggs'] },
+  // CATALOG-3 verification fixtures (reviewed, no-override): drive verified rollups.
+  { inventorySlug: 'pork-leg', catalogSlug: 'pork-leg' },
+  { inventorySlug: 'rice', catalogSlug: 'rice' },
 ];

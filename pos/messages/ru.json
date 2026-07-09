@@ -378,5 +378,25 @@
     "noPermissionView": "У вас нет прав просматривать запросы.",
     "mute": "Выключить звук",
     "unmute": "Включить звук"
+  },
+  "allergens": {
+    "unverified": "+ не проверено",
+    "none": "Аллергенов нет",
+    "label": {
+      "cereals-gluten": "Злаки (глютен)",
+      "crustaceans": "Ракообразные",
+      "eggs": "Яйца",
+      "fish": "Рыба",
+      "peanuts": "Арахис",
+      "soybeans": "Соя",
+      "milk": "Молоко",
+      "nuts": "Орехи",
+      "celery": "Сельдерей",
+      "mustard": "Горчица",
+      "sesame": "Кунжут",
+      "sulphites": "Сульфиты",
+      "lupin": "Люпин",
+      "molluscs": "Моллюски"
+    }
   }
 }

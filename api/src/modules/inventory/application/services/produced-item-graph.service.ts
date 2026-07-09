@@ -31,4 +31,22 @@ export class ProducedItemGraphService {
     const edges = await this.edges.loadEdges(restaurantId, branchId);
     return walkProducedItemDependencies(itemId, edges);
   }
+
+  /**
+   * Batch walk (CATALOG-4): load the branch edges ONCE and walk many start items
+   * over the shared edge set — so resolving a whole KDS board / order is a single
+   * edge load, not one per item. Same terminating primitive, no new recursion.
+   */
+  async walkMany(
+    restaurantId: string,
+    branchId: string,
+    itemIds: readonly string[],
+  ): Promise<Map<string, ProducedItemVisit[]>> {
+    const edges = await this.edges.loadEdges(restaurantId, branchId);
+    const out = new Map<string, ProducedItemVisit[]>();
+    for (const id of new Set(itemIds)) {
+      out.set(id, walkProducedItemDependencies(id, edges));
+    }
+    return out;
+  }
 }
