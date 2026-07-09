@@ -15378,6 +15378,10 @@
               "AVAILABLE",
               "UNAVAILABLE"
             ]
+          },
+          "hideRecipe": {
+            "type": "boolean",
+            "description": "Hides the customer ingredient list, not the allergen summary."
           }
         },
         "required": [
@@ -15393,7 +15397,8 @@
           "preparationStation",
           "prepTimeMinutes",
           "status",
-          "availability"
+          "availability",
+          "hideRecipe"
         ]
       },
       "DishModifierGroupResponse": {
@@ -15629,6 +15634,10 @@
               "UNAVAILABLE"
             ]
           },
+          "hideRecipe": {
+            "type": "boolean",
+            "description": "Hides the customer ingredient list, not the allergen summary."
+          },
           "modifierGroups": {
             "type": "array",
             "items": {
@@ -15650,6 +15659,7 @@
           "prepTimeMinutes",
           "status",
           "availability",
+          "hideRecipe",
           "modifierGroups"
         ]
       },
@@ -15717,6 +15727,10 @@
           "prepTimeMinutes": {
             "type": "number",
             "minimum": 0
+          },
+          "hideRecipe": {
+            "type": "boolean",
+            "description": "CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible)."
           }
         }
       },

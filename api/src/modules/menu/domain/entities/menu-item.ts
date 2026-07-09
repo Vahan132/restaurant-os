@@ -21,6 +21,8 @@ export interface MenuItemProps {
   prepTimeMinutes: number | null;
   status: MenuStatus;
   availability: ItemAvailability;
+  /** CATALOG-3 §9: hides the customer ingredient list, not the allergen summary. */
+  hideRecipe: boolean;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -72,6 +74,7 @@ export class MenuItem extends AggregateRoot<string> {
       prepTimeMinutes: input.prepTimeMinutes ?? null,
       status: MenuStatus.ACTIVE,
       availability: ItemAvailability.AVAILABLE,
+      hideRecipe: false,
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
@@ -127,6 +130,9 @@ export class MenuItem extends AggregateRoot<string> {
   get availability(): ItemAvailability {
     return this.props.availability;
   }
+  get hideRecipe(): boolean {
+    return this.props.hideRecipe;
+  }
   get createdAt(): Date {
     return this.props.createdAt;
   }
@@ -147,6 +153,7 @@ export class MenuItem extends AggregateRoot<string> {
     imageUrl?: string | null;
     preparationStation?: PreparationStation;
     prepTimeMinutes?: number | null;
+    hideRecipe?: boolean;
   }): void {
     if (input.name !== undefined) this.props.name = input.name;
     if (input.description !== undefined) this.props.description = input.description;
@@ -154,6 +161,7 @@ export class MenuItem extends AggregateRoot<string> {
     if (input.preparationStation !== undefined)
       this.props.preparationStation = input.preparationStation;
     if (input.prepTimeMinutes !== undefined) this.props.prepTimeMinutes = input.prepTimeMinutes;
+    if (input.hideRecipe !== undefined) this.props.hideRecipe = input.hideRecipe;
     this.touch();
   }
 

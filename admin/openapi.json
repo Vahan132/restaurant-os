@@ -9729,13 +9729,26 @@
     "/inventory/recipes/{id}": {
       "get": {
         "operationId": "RecipesController_get",
-        "summary": "Get a recipe with lines, modifier consumptions, estimate + warnings.",
+        "summary": "Get a recipe with lines, modifier consumptions, estimate, warnings, projections + allergen rollup.",
         "parameters": [
           {
             "name": "id",
             "required": true,
             "in": "path",
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "hy",
+                "ru",
+                "en"
+              ],
               "type": "string"
             }
           }
@@ -15365,6 +15378,10 @@
               "AVAILABLE",
               "UNAVAILABLE"
             ]
+          },
+          "hideRecipe": {
+            "type": "boolean",
+            "description": "Hides the customer ingredient list, not the allergen summary."
           }
         },
         "required": [
@@ -15380,7 +15397,8 @@
           "preparationStation",
           "prepTimeMinutes",
           "status",
-          "availability"
+          "availability",
+          "hideRecipe"
         ]
       },
       "DishModifierGroupResponse": {
@@ -15616,6 +15634,10 @@
               "UNAVAILABLE"
             ]
           },
+          "hideRecipe": {
+            "type": "boolean",
+            "description": "Hides the customer ingredient list, not the allergen summary."
+          },
           "modifierGroups": {
             "type": "array",
             "items": {
@@ -15637,6 +15659,7 @@
           "prepTimeMinutes",
           "status",
           "availability",
+          "hideRecipe",
           "modifierGroups"
         ]
       },
@@ -15704,6 +15727,10 @@
           "prepTimeMinutes": {
             "type": "number",
             "minimum": 0
+          },
+          "hideRecipe": {
+            "type": "boolean",
+            "description": "CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible)."
           }
         }
       },
@@ -20913,6 +20940,69 @@
           "counterparts"
         ]
       },
+      "CustomerIngredientResponse": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "itemId",
+          "name"
+        ]
+      },
+      "OperationalIngredientResponse": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string"
+          },
+          "baseQty": {
+            "type": "number"
+          },
+          "unit": {
+            "type": "string",
+            "description": "From InventoryItem.baseUnit (GRAM | MILLILITER | PIECE)."
+          }
+        },
+        "required": [
+          "itemId",
+          "baseQty",
+          "unit"
+        ]
+      },
+      "DishAllergensResponse": {
+        "type": "object",
+        "properties": {
+          "slugs": {
+            "description": "Union of effective allergen slugs over all leaves.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "complete": {
+            "type": "boolean",
+            "description": "True only when every contributing leaf is verified (catalogSourced && reviewed). Never inferred from an empty slugs array (empty = known-none, not unknown)."
+          },
+          "unverifiedItemIds": {
+            "description": "Leaf item ids that made the profile incomplete.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "slugs",
+          "complete",
+          "unverifiedItemIds"
+        ]
+      },
       "RecipeResponse": {
         "type": "object",
         "properties": {
@@ -20953,6 +21043,27 @@
             "items": {
               "$ref": "#/components/schemas/RecipeWarningResponse"
             }
+          },
+          "hideRecipe": {
+            "type": "boolean",
+            "description": "Hides the customer ingredient list, never the allergens (ADR §9)."
+          },
+          "customerIngredients": {
+            "nullable": true,
+            "description": "Localized ingredient names, no quantities. null when hideRecipe.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerIngredientResponse"
+            }
+          },
+          "operationalIngredients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperationalIngredientResponse"
+            }
+          },
+          "allergens": {
+            "$ref": "#/components/schemas/DishAllergensResponse"
           }
         },
         "required": [
@@ -20964,7 +21075,11 @@
           "lines",
           "modifierConsumptions",
           "estimatedUnitCost_amount",
-          "warnings"
+          "warnings",
+          "hideRecipe",
+          "customerIngredients",
+          "operationalIngredients",
+          "allergens"
         ]
       },
       "RecipeLineDto": {

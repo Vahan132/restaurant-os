@@ -27,6 +27,7 @@ export interface UpdateMenuItemInput {
   preparationStation?: PreparationStation;
   prepTimeMinutes?: number | null;
   categoryId?: string;
+  hideRecipe?: boolean;
 }
 
 /** Update item details and/or reassign category (verified same-restaurant). */
@@ -61,6 +62,7 @@ export class UpdateMenuItemUseCase implements UseCase<UpdateMenuItemInput, MenuI
       imageUrl: input.imageUrl,
       preparationStation: input.preparationStation,
       prepTimeMinutes: input.prepTimeMinutes,
+      hideRecipe: input.hideRecipe,
     });
     await this.items.update(item);
     return item;

@@ -76,6 +76,7 @@ export class ItemMapper {
       prepTimeMinutes: r.prepTimeMinutes,
       status: r.status as MenuStatus,
       availability: r.availability as ItemAvailability,
+      hideRecipe: r.hideRecipe,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       deletedAt: r.deletedAt,
@@ -97,6 +98,7 @@ export class ItemMapper {
       prepTimeMinutes: i.prepTimeMinutes,
       status: i.status as MenuStatus,
       availability: i.availability as ItemAvailability,
+      hideRecipe: i.hideRecipe,
       createdAt: i.createdAt,
       updatedAt: i.updatedAt,
       deletedAt: i.deletedAt,
@@ -114,6 +116,7 @@ export class ItemMapper {
       prepTimeMinutes: i.prepTimeMinutes,
       status: i.status as MenuStatus,
       availability: i.availability as ItemAvailability,
+      hideRecipe: i.hideRecipe,
       updatedAt: i.updatedAt,
       deletedAt: i.deletedAt,
     };

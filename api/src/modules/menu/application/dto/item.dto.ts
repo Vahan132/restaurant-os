@@ -1,6 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  MinLength,
+} from 'class-validator';
 import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '../../../../shared/application/pagination';
 import { ItemAvailability, MenuStatus, PreparationStation } from '../../domain/enums';
 
@@ -72,6 +81,14 @@ export class UpdateMenuItemDto {
   @IsInt()
   @Min(0)
   prepTimeMinutes?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible).',
+  })
+  @IsOptional()
+  @IsBoolean()
+  hideRecipe?: boolean;
 }
 
 export class ChangeItemPriceDto {

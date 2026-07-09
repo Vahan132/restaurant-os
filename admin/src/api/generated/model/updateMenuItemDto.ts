@@ -16,4 +16,6 @@ export interface UpdateMenuItemDto {
   preparationStation?: UpdateMenuItemDtoPreparationStation;
   /** @minimum 0 */
   prepTimeMinutes?: number;
+  /** CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible). */
+  hideRecipe?: boolean;
 }

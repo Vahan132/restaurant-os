@@ -46,6 +46,8 @@ export class MenuItemResponse {
   @ApiProperty({ nullable: true, type: Number }) prepTimeMinutes!: number | null;
   @ApiProperty({ enum: ['ACTIVE', 'INACTIVE'] }) status!: string;
   @ApiProperty({ enum: ['AVAILABLE', 'UNAVAILABLE'] }) availability!: string;
+  @ApiProperty({ description: 'Hides the customer ingredient list, not the allergen summary.' })
+  hideRecipe!: boolean;
 
   static from(i: MenuItem): MenuItemResponse {
     return {
@@ -62,6 +64,7 @@ export class MenuItemResponse {
       prepTimeMinutes: i.prepTimeMinutes,
       status: i.status,
       availability: i.availability,
+      hideRecipe: i.hideRecipe,
     };
   }
 }

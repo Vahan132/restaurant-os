@@ -26,4 +26,6 @@ export interface MenuItemResponse {
   prepTimeMinutes: number | null;
   status: MenuItemResponseStatus;
   availability: MenuItemResponseAvailability;
+  /** Hides the customer ingredient list, not the allergen summary. */
+  hideRecipe: boolean;
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { keepPreviousData, useQueryClient } from '@tanstack/react-query';
+import { useLocale } from 'next-intl';
 import { useCallback, useMemo } from 'react';
 
 import {
@@ -12,6 +13,7 @@ import {
 import { useRelatedItemsControllerRelated } from '@/api/generated/inventory-items/inventory-items';
 import type {
   RecipeListItemResponse,
+  RecipesControllerGetLocale,
   RecipesControllerListParams,
 } from '@/api/generated/model';
 import { normalizeList } from '@/lib/normalize-list';
@@ -43,9 +45,13 @@ export function useRecipeForMenuItem(menuItemId: string | null) {
     return items[0]?.id ?? null;
   }, [listQuery.data]);
 
-  const detailQuery = useRecipesControllerGet(recipeId ?? '', {
-    query: { enabled: !!recipeId },
-  });
+  // App locale ('en'|'ru'|'hy') drives the backend customer-projection localization.
+  const locale = useLocale() as RecipesControllerGetLocale;
+  const detailQuery = useRecipesControllerGet(
+    recipeId ?? '',
+    { locale },
+    { query: { enabled: !!recipeId } },
+  );
 
   return {
     recipeId,
