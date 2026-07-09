@@ -5,25 +5,22 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { AttachModifierGroupDtoMaxOverride } from './attachModifierGroupDtoMaxOverride';
-import type { AttachModifierGroupDtoMinOverride } from './attachModifierGroupDtoMinOverride';
-import type { AttachModifierGroupDtoRequiredOverride } from './attachModifierGroupDtoRequiredOverride';
 
 export interface AttachModifierGroupDto {
   /** Id of a library modifier group in this branch. */
   groupId: string;
   /** @nullable */
-  requiredOverride?: AttachModifierGroupDtoRequiredOverride;
+  requiredOverride?: boolean | null;
   /**
      * @minimum 0
      * @nullable
      */
-  minOverride?: AttachModifierGroupDtoMinOverride;
+  minOverride?: number | null;
   /**
      * @minimum 1
      * @nullable
      */
-  maxOverride?: AttachModifierGroupDtoMaxOverride;
+  maxOverride?: number | null;
   /** @minimum 0 */
   sortOrder?: number;
 }

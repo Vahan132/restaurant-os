@@ -1689,5 +1689,48 @@
       "notLive": "Not live",
       "suppressedHint": "Suspended by platform admin."
     }
+  },
+  "platform": {
+    "title": "Platform Admin",
+    "catalog": "Catalog",
+    "logout": "Log out"
+  },
+  "platformAuth": {
+    "title": "Platform Admin",
+    "loginTitle": "Sign in",
+    "loginSubtitle": "Platform operator access",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "invalidCredentials": "Invalid email or password"
+  },
+  "platformCatalog": {
+    "title": "Catalog",
+    "newItem": "New item",
+    "searchPlaceholder": "Search name or slug…",
+    "category": "Category",
+    "allCategories": "All categories",
+    "filterStatus": "Status",
+    "active": "Active",
+    "archived": "Item archived",
+    "name": "Name",
+    "allergens": "Allergens",
+    "adgCode": "ADG code",
+    "adgCodePlaceholder": "e.g. 1101000000",
+    "status": "Status",
+    "empty": "No catalog items.",
+    "slug": "Slug",
+    "validSlug": "Slug is required.",
+    "validNames": "All three names are required.",
+    "noCategory": "No category",
+    "noAllergens": "No allergens defined.",
+    "createTitle": "New catalog item",
+    "editTitle": "Edit catalog item",
+    "created": "Item created",
+    "updated": "Item updated",
+    "archive": "Archive",
+    "archiveTitle": "Archive item",
+    "archiveMessage": "Archive “{name}”? It leaves the active list, but existing references keep resolving."
   }
 }

@@ -1689,5 +1689,48 @@
       "notLive": "Не опубликован",
       "suppressedHint": "Приостановлено администратором платформы."
     }
+  },
+  "platform": {
+    "title": "Админ платформы",
+    "catalog": "Каталог",
+    "logout": "Выйти"
+  },
+  "platformAuth": {
+    "title": "Админ платформы",
+    "loginTitle": "Вход",
+    "loginSubtitle": "Доступ оператора платформы",
+    "email": "Эл. почта",
+    "password": "Пароль",
+    "signIn": "Войти",
+    "signingIn": "Вход…",
+    "invalidCredentials": "Неверная почта или пароль"
+  },
+  "platformCatalog": {
+    "title": "Каталог",
+    "newItem": "Новый элемент",
+    "searchPlaceholder": "Поиск по названию или slug…",
+    "category": "Категория",
+    "allCategories": "Все категории",
+    "filterStatus": "Статус",
+    "active": "Активные",
+    "archived": "Элемент архивирован",
+    "name": "Название",
+    "allergens": "Аллергены",
+    "adgCode": "Код ADG",
+    "adgCodePlaceholder": "напр. 1101000000",
+    "status": "Статус",
+    "empty": "Нет элементов каталога.",
+    "slug": "Slug",
+    "validSlug": "Укажите slug.",
+    "validNames": "Требуются все три названия.",
+    "noCategory": "Без категории",
+    "noAllergens": "Аллергены не заданы.",
+    "createTitle": "Новый элемент каталога",
+    "editTitle": "Изменить элемент каталога",
+    "created": "Элемент создан",
+    "updated": "Элемент обновлён",
+    "archive": "В архив",
+    "archiveTitle": "Архивировать элемент",
+    "archiveMessage": "Архивировать «{name}»? Он покинет активный список, но существующие ссылки продолжат работать."
   }
 }

@@ -7,7 +7,6 @@
  */
 
 /**
- * @minimum 1
  * @nullable
  */
-export type SetDishModifierOverridesDtoMaxOverride = { [key: string]: unknown } | null;
+export type CatalogItemResponseAdgCode = { [key: string]: unknown } | null;

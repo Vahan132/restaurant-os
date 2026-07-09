@@ -7,6 +7,7 @@
  */
 
 /**
+ * Default ATG classifier, or null.
  * @nullable
  */
-export type AttachModifierGroupDtoRequiredOverride = { [key: string]: unknown } | null;
+export type CreateCatalogItemDtoAdgCode = { [key: string]: unknown } | null;

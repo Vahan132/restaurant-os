@@ -5,12 +5,11 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { SetItemConsumptionLocationDtoLocationId } from './setItemConsumptionLocationDtoLocationId';
 
 export interface SetItemConsumptionLocationDto {
   /**
      * Target location id; omit or null to reset to the branch default (Main Storage).
      * @nullable
      */
-  locationId?: SetItemConsumptionLocationDtoLocationId;
+  locationId?: string | null;
 }

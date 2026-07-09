@@ -6,8 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @minimum 1
- * @nullable
- */
-export type AttachModifierGroupDtoMaxOverride = { [key: string]: unknown } | null;
+export interface AllergenResponse {
+  id: string;
+  slug: string;
+  labelHy: string;
+  labelRu: string;
+  labelEn: string;
+  position: number;
+}

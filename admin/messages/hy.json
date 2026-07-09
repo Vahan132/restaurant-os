@@ -1689,5 +1689,48 @@
       "notLive": "Չհրապարակված",
       "suppressedHint": "Կասեցված է հարթակի ադմինիստրատորի կողմից։"
     }
+  },
+  "platform": {
+    "title": "Հարթակի ադմին",
+    "catalog": "Կատալոգ",
+    "logout": "Դուրս գալ"
+  },
+  "platformAuth": {
+    "title": "Հարթակի ադմին",
+    "loginTitle": "Մուտք",
+    "loginSubtitle": "Հարթակի օպերատորի մուտք",
+    "email": "Էլ. փոստ",
+    "password": "Գաղտնաբառ",
+    "signIn": "Մուտք",
+    "signingIn": "Մուտք…",
+    "invalidCredentials": "Սխալ էլ. փոստ կամ գաղտնաբառ"
+  },
+  "platformCatalog": {
+    "title": "Կատալոգ",
+    "newItem": "Նոր տարր",
+    "searchPlaceholder": "Որոնել անունով կամ slug-ով…",
+    "category": "Կատեգորիա",
+    "allCategories": "Բոլոր կատեգորիաները",
+    "filterStatus": "Կարգավիճակ",
+    "active": "Ակտիվ",
+    "archived": "Տարրն արխիվացվեց",
+    "name": "Անուն",
+    "allergens": "Ալերգեններ",
+    "adgCode": "ADG կոդ",
+    "adgCodePlaceholder": "օր. 1101000000",
+    "status": "Կարգավիճակ",
+    "empty": "Կատալոգի տարրեր չկան։",
+    "slug": "Slug",
+    "validSlug": "Slug-ը պարտադիր է։",
+    "validNames": "Բոլոր երեք անունները պարտադիր են։",
+    "noCategory": "Առանց կատեգորիայի",
+    "noAllergens": "Ալերգեններ սահմանված չեն։",
+    "createTitle": "Նոր կատալոգի տարր",
+    "editTitle": "Խմբագրել կատալոգի տարրը",
+    "created": "Տարրը ստեղծվեց",
+    "updated": "Տարրը թարմացվեց",
+    "archive": "Արխիվացնել",
+    "archiveTitle": "Արխիվացնել տարրը",
+    "archiveMessage": "Արխիվացնե՞լ «{name}»-ը։ Այն դուրս կգա ակտիվ ցանկից, բայց առկա հղումները կշարունակեն աշխատել։"
   }
 }

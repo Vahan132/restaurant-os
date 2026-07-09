@@ -4735,136 +4735,74 @@
         ]
       }
     },
-    "/kds/stations/{station}/tickets": {
-      "get": {
-        "operationId": "KdsController_tickets",
-        "summary": "Active tickets for a station (oldest-sent first; elapsed/delayed).",
-        "parameters": [
-          {
-            "name": "station",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "enum": [
-                "KITCHEN",
-                "BAR",
-                "DESSERT",
-                "OTHER"
-              ],
-              "type": "string"
+    "/public/qr/orders/validate-cart": {
+      "post": {
+        "operationId": "PublicQrOrdersController_validate",
+        "summary": "Recompute cart pricing server-side (QR-web).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QrCartDto"
+              }
             }
           }
-        ],
+        },
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/KdsTicketResponse"
-                  }
+                  "$ref": "#/components/schemas/ValidatedCartResponse"
                 }
               }
             }
-          },
-          "403": {
-            "description": "Missing KDS_ACCESS permission."
           }
         },
         "tags": [
-          "kds"
-        ],
-        "security": [
-          {
-            "access-token": []
-          }
+          "public"
         ]
       }
     },
-    "/kds/order-items/{itemId}/preparing": {
+    "/public/qr/orders": {
       "post": {
-        "operationId": "KdsController_preparing",
-        "summary": "Mark a SENT item as PREPARING.",
-        "parameters": [
-          {
-            "name": "itemId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
+        "operationId": "PublicQrOrdersController_create",
+        "summary": "Create a prepayment order from the validated cart (QR-web).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QrCartDto"
+              }
             }
           }
-        ],
+        },
         "responses": {
-          "200": {
+          "201": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OrderResponse"
+                  "$ref": "#/components/schemas/CreatedQrOrderResponse"
                 }
               }
             }
-          },
-          "403": {
-            "description": "Missing KDS_ACCESS permission."
           }
         },
         "tags": [
-          "kds"
-        ],
-        "security": [
-          {
-            "access-token": []
-          }
+          "public"
         ]
       }
     },
-    "/kds/order-items/{itemId}/ready": {
+    "/public/qr/orders/{orderId}/confirm-payment": {
       "post": {
-        "operationId": "KdsController_itemReady",
-        "summary": "Mark a SENT/PREPARING item as READY.",
-        "parameters": [
-          {
-            "name": "itemId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OrderResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Missing KDS_ACCESS permission."
-          }
-        },
-        "tags": [
-          "kds"
-        ],
-        "security": [
-          {
-            "access-token": []
-          }
-        ]
-      }
-    },
-    "/kds/orders/{orderId}/ready": {
-      "post": {
-        "operationId": "KdsController_orderReady",
-        "summary": "Mark the whole order READY (all live station items).",
+        "operationId": "PublicQrOrdersController_confirm",
+        "summary": "Pay, fiscalise and dispatch the order (idempotent).",
         "parameters": [
           {
             "name": "orderId",
@@ -4881,21 +4819,532 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OrderResponse"
+                  "$ref": "#/components/schemas/OrderReceiptResponse"
                 }
               }
             }
-          },
-          "403": {
-            "description": "Missing KDS_ACCESS permission."
           }
         },
         "tags": [
-          "kds"
+          "public"
+        ]
+      }
+    },
+    "/public/qr/orders/{orderId}/receipt": {
+      "get": {
+        "operationId": "PublicQrOrdersController_receipt",
+        "summary": "Fetch the fiscal receipt (incl. QR) for customer display.",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderReceiptResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "public"
+        ]
+      }
+    },
+    "/consumer/orders/validate-cart": {
+      "post": {
+        "operationId": "AppOrdersController_validate",
+        "summary": "Recompute cart pricing server-side for the scanned table (app).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppCartDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidatedCartResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Ordering"
         ],
         "security": [
           {
-            "access-token": []
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/orders": {
+      "post": {
+        "operationId": "AppOrdersController_create",
+        "summary": "Open/join the APP session and create a prepayment order (app).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppCartDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedQrOrderResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Ordering"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/orders/{orderId}/confirm-payment": {
+      "post": {
+        "operationId": "AppOrdersController_confirm",
+        "summary": "Pay, fiscalise and dispatch your order (idempotent, app).",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderReceiptResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Ordering"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/orders/{orderId}/receipt": {
+      "get": {
+        "operationId": "AppOrdersController_receipt",
+        "summary": "Fetch the fiscal receipt (incl. QR) for your order (app).",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderReceiptResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Ordering"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/auth/google": {
+      "post": {
+        "operationId": "ConsumerAuthController_signInWithGoogle",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleSignInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/apple": {
+      "post": {
+        "operationId": "ConsumerAuthController_signInWithApple",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppleSignInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/otp/request": {
+      "post": {
+        "operationId": "ConsumerAuthController_requestOtpCode",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcknowledgementResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/otp/verify": {
+      "post": {
+        "operationId": "ConsumerAuthController_verifyOtpCode",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/refresh": {
+      "post": {
+        "operationId": "ConsumerAuthController_refreshToken",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsumerRefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerSessionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/auth/signout": {
+      "post": {
+        "operationId": "ConsumerAuthController_signOutConsumer",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignOutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcknowledgementResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Auth"
+        ]
+      }
+    },
+    "/consumer/me": {
+      "get": {
+        "operationId": "ConsumerProfileController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerProfileResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "ConsumerProfileController_updateMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerProfileResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "ConsumerProfileController_deleteMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcknowledgementResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/me/phone/request": {
+      "post": {
+        "operationId": "ConsumerProfileController_requestPhone",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPhoneChangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcknowledgementResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/consumer/me/phone/confirm": {
+      "post": {
+        "operationId": "ConsumerProfileController_confirmPhone",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPhoneChangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsumerProfileResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Consumer Profile"
+        ],
+        "security": [
+          {
+            "bearer": []
           }
         ]
       }
@@ -5927,6 +6376,171 @@
         "security": [
           {
             "device-token": []
+          }
+        ]
+      }
+    },
+    "/kds/stations/{station}/tickets": {
+      "get": {
+        "operationId": "KdsController_tickets",
+        "summary": "Active tickets for a station (oldest-sent first; elapsed/delayed).",
+        "parameters": [
+          {
+            "name": "station",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "KITCHEN",
+                "BAR",
+                "DESSERT",
+                "OTHER"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KdsTicketResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing KDS_ACCESS permission."
+          }
+        },
+        "tags": [
+          "kds"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/kds/order-items/{itemId}/preparing": {
+      "post": {
+        "operationId": "KdsController_preparing",
+        "summary": "Mark a SENT item as PREPARING.",
+        "parameters": [
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing KDS_ACCESS permission."
+          }
+        },
+        "tags": [
+          "kds"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/kds/order-items/{itemId}/ready": {
+      "post": {
+        "operationId": "KdsController_itemReady",
+        "summary": "Mark a SENT/PREPARING item as READY.",
+        "parameters": [
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing KDS_ACCESS permission."
+          }
+        },
+        "tags": [
+          "kds"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/kds/orders/{orderId}/ready": {
+      "post": {
+        "operationId": "KdsController_orderReady",
+        "summary": "Mark the whole order READY (all live station items).",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing KDS_ACCESS permission."
+          }
+        },
+        "tags": [
+          "kds"
+        ],
+        "security": [
+          {
+            "access-token": []
           }
         ]
       }
@@ -11698,6 +12312,262 @@
         ]
       }
     },
+    "/platform/catalog-items": {
+      "get": {
+        "operationId": "PlatformCatalogItemsController_list",
+        "summary": "List catalog items (active by default; paged + search).",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Search over slug + name (hy/ru/en).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by catalog category id.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "includeArchived",
+            "required": false,
+            "in": "query",
+            "description": "Include archived items.",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogItemResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-catalog-items"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "PlatformCatalogItemsController_create",
+        "summary": "Create a catalog item.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCatalogItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-catalog-items"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/catalog-items/{id}": {
+      "get": {
+        "operationId": "PlatformCatalogItemsController_get",
+        "summary": "Get a catalog item by id.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-catalog-items"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "PlatformCatalogItemsController_update",
+        "summary": "Update a catalog item.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCatalogItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-catalog-items"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/catalog-items/{id}/archive": {
+      "post": {
+        "operationId": "PlatformCatalogItemsController_archive",
+        "summary": "Archive (soft-delete) a catalog item.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-catalog-items"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/catalog-taxonomy": {
+      "get": {
+        "operationId": "PlatformCatalogTaxonomyController_get",
+        "summary": "List the allergen + category taxonomy for the picker.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogTaxonomyResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-catalog-taxonomy"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
     "/public/discovery/attributes": {
       "get": {
         "operationId": "PublicDiscoveryController_attributes",
@@ -12681,348 +13551,6 @@
         ]
       }
     },
-    "/consumer/auth/google": {
-      "post": {
-        "operationId": "ConsumerAuthController_signInWithGoogle",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GoogleSignInDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerSessionResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Auth"
-        ]
-      }
-    },
-    "/consumer/auth/apple": {
-      "post": {
-        "operationId": "ConsumerAuthController_signInWithApple",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AppleSignInDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerSessionResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Auth"
-        ]
-      }
-    },
-    "/consumer/auth/otp/request": {
-      "post": {
-        "operationId": "ConsumerAuthController_requestOtpCode",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RequestOtpDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AcknowledgementResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Auth"
-        ]
-      }
-    },
-    "/consumer/auth/otp/verify": {
-      "post": {
-        "operationId": "ConsumerAuthController_verifyOtpCode",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerifyOtpDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerSessionResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Auth"
-        ]
-      }
-    },
-    "/consumer/auth/refresh": {
-      "post": {
-        "operationId": "ConsumerAuthController_refreshToken",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RefreshDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerSessionResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Auth"
-        ]
-      }
-    },
-    "/consumer/auth/signout": {
-      "post": {
-        "operationId": "ConsumerAuthController_signOutConsumer",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SignOutDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AcknowledgementResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Auth"
-        ]
-      }
-    },
-    "/consumer/me": {
-      "get": {
-        "operationId": "ConsumerProfileController_getMe",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerProfileResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Profile"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "patch": {
-        "operationId": "ConsumerProfileController_updateMe",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProfileDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerProfileResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Profile"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "delete": {
-        "operationId": "ConsumerProfileController_deleteMe",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AcknowledgementResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Profile"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/consumer/me/phone/request": {
-      "post": {
-        "operationId": "ConsumerProfileController_requestPhone",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RequestPhoneChangeDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AcknowledgementResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Profile"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/consumer/me/phone/confirm": {
-      "post": {
-        "operationId": "ConsumerProfileController_confirmPhone",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ConfirmPhoneChangeDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsumerProfileResponse"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Consumer Profile"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/public/plans": {
       "get": {
         "operationId": "PublicAccountController_plans",
@@ -13175,7 +13703,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateProfileDto"
+                "$ref": "#/components/schemas/UpdateAccountProfileDto"
               }
             }
           }
@@ -13692,7 +14220,8 @@
         "type": "object",
         "properties": {
           "refreshToken": {
-            "type": "string"
+            "type": "string",
+            "description": "A valid, non-revoked refresh token."
           }
         },
         "required": [
@@ -15228,16 +15757,16 @@
             "description": "Id of a library modifier group in this branch."
           },
           "requiredOverride": {
-            "type": "object",
+            "type": "boolean",
             "nullable": true
           },
           "minOverride": {
-            "type": "object",
+            "type": "number",
             "nullable": true,
             "minimum": 0
           },
           "maxOverride": {
-            "type": "object",
+            "type": "number",
             "nullable": true,
             "minimum": 1
           },
@@ -15269,16 +15798,16 @@
         "type": "object",
         "properties": {
           "requiredOverride": {
-            "type": "object",
+            "type": "boolean",
             "nullable": true
           },
           "minOverride": {
-            "type": "object",
+            "type": "number",
             "nullable": true,
             "minimum": 0
           },
           "maxOverride": {
-            "type": "object",
+            "type": "number",
             "nullable": true,
             "minimum": 1
           },
@@ -15831,22 +16360,34 @@
           "orderNumber": {
             "type": "number"
           },
-          "status": {
+          "orderStatus": {
             "type": "string",
             "enum": [
-              "PENDING_CONFIRM",
-              "OPEN",
-              "LOCKED",
+              "DRAFT",
+              "SENT_TO_KITCHEN",
+              "PREPARING",
+              "READY",
+              "SERVED",
               "CLOSED",
-              "EXPIRED"
+              "CANCELLED"
             ],
-            "description": "Order status (order enum, not session)."
+            "description": "Order's kitchen lifecycle status."
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "UNPAID",
+              "PARTIALLY_PAID",
+              "PAID"
+            ],
+            "description": "Order's payment status."
           }
         },
         "required": [
           "orderId",
           "orderNumber",
-          "status"
+          "orderStatus",
+          "paymentStatus"
         ]
       },
       "PublicTableSessionViewResponse": {
@@ -16202,7 +16743,9 @@
             "nullable": true
           },
           "waiterId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Null for QR-web customer orders."
           },
           "status": {
             "type": "string",
@@ -16287,7 +16830,7 @@
         "type": "object",
         "properties": {
           "note": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           }
         }
@@ -16713,29 +17256,75 @@
           "footer"
         ]
       },
-      "KdsTicketModifierResponse": {
+      "QrCartLineDto": {
+        "type": "object",
+        "properties": {
+          "menuItemId": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 1
+          },
+          "modifierOptionIds": {
+            "description": "Selected modifier option ids.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "menuItemId",
+          "quantity",
+          "modifierOptionIds"
+        ]
+      },
+      "QrCartDto": {
+        "type": "object",
+        "properties": {
+          "lines": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QrCartLineDto"
+            }
+          }
+        },
+        "required": [
+          "lines"
+        ]
+      },
+      "ValidatedCartLineModifierResponse": {
         "type": "object",
         "properties": {
           "name": {
             "type": "string"
           },
-          "priceDelta": {
+          "priceDeltaAmount": {
             "type": "number"
           }
         },
         "required": [
           "name",
-          "priceDelta"
+          "priceDeltaAmount"
         ]
       },
-      "KdsTicketItemResponse": {
+      "ValidatedCartLineResponse": {
         "type": "object",
         "properties": {
-          "orderItemId": {
+          "menuItemId": {
             "type": "string"
           },
           "name": {
             "type": "string"
+          },
+          "unitPriceAmount": {
+            "type": "number"
           },
           "quantity": {
             "type": "number"
@@ -16743,51 +17332,53 @@
           "modifiers": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/KdsTicketModifierResponse"
+              "$ref": "#/components/schemas/ValidatedCartLineModifierResponse"
             }
           },
-          "note": {
-            "type": "string",
-            "nullable": true
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "SENT",
-              "PREPARING",
-              "READY"
-            ]
-          },
-          "sentToKitchenAt": {
-            "type": "string"
-          },
-          "prepTimeMinutes": {
-            "type": "number",
-            "nullable": true
-          },
-          "elapsedSeconds": {
-            "type": "number",
-            "description": "Seconds since the item was sent to the kitchen."
-          },
-          "delayed": {
-            "type": "boolean",
-            "description": "elapsed > prepTime*60 (or > 900s when no estimate)."
+          "lineTotalAmount": {
+            "type": "number"
           }
         },
         "required": [
-          "orderItemId",
+          "menuItemId",
           "name",
+          "unitPriceAmount",
           "quantity",
           "modifiers",
-          "note",
-          "status",
-          "sentToKitchenAt",
-          "prepTimeMinutes",
-          "elapsedSeconds",
-          "delayed"
+          "lineTotalAmount"
         ]
       },
-      "KdsTicketResponse": {
+      "ValidatedCartResponse": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidatedCartLineResponse"
+            }
+          },
+          "subtotalAmount": {
+            "type": "number"
+          },
+          "serviceFeeAmount": {
+            "type": "number"
+          },
+          "totalAmount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "currency",
+          "lines",
+          "subtotalAmount",
+          "serviceFeeAmount",
+          "totalAmount"
+        ]
+      },
+      "CreatedQrOrderResponse": {
         "type": "object",
         "properties": {
           "orderId": {
@@ -16796,33 +17387,342 @@
           "orderNumber": {
             "type": "number"
           },
-          "tableName": {
-            "type": "string",
-            "nullable": true
+          "tableSessionId": {
+            "type": "string"
           },
-          "waiterName": {
-            "type": "string",
-            "nullable": true
+          "currency": {
+            "type": "string"
           },
-          "orderNote": {
-            "type": "string",
-            "nullable": true
+          "totalAmount": {
+            "type": "number"
           },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/KdsTicketItemResponse"
-            }
+          "status": {
+            "type": "string",
+            "description": "Order status (DRAFT until paid)."
+          },
+          "paymentStatus": {
+            "type": "string"
           }
         },
         "required": [
           "orderId",
           "orderNumber",
-          "tableName",
-          "waiterName",
-          "orderNote",
-          "items"
+          "tableSessionId",
+          "currency",
+          "totalAmount",
+          "status",
+          "paymentStatus"
         ]
+      },
+      "OrderReceiptFiscalResponse": {
+        "type": "object",
+        "properties": {
+          "receiptId": {
+            "type": "string"
+          },
+          "fiscalNumber": {
+            "type": "string"
+          },
+          "qr": {
+            "type": "string",
+            "description": "Fixed-format string the client renders as a QR code."
+          },
+          "fiscalizedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "receiptId",
+          "fiscalNumber",
+          "qr",
+          "fiscalizedAt"
+        ]
+      },
+      "OrderReceiptResponse": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "paymentStatus": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "fiscalized": {
+            "type": "boolean",
+            "description": "False = paid but fiscalisation still pending (poll)."
+          },
+          "fiscal": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderReceiptFiscalResponse"
+              }
+            ]
+          }
+        },
+        "required": [
+          "orderId",
+          "orderNumber",
+          "status",
+          "paymentStatus",
+          "currency",
+          "totalAmount",
+          "fiscalized",
+          "fiscal"
+        ]
+      },
+      "AppCartDto": {
+        "type": "object",
+        "properties": {
+          "qr": {
+            "type": "string",
+            "description": "The scanned table QR identifier (required)."
+          },
+          "lines": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QrCartLineDto"
+            }
+          }
+        },
+        "required": [
+          "qr",
+          "lines"
+        ]
+      },
+      "GoogleSignInDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "description": "Google ID token obtained natively by the app."
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "ConsumerSessionResponse": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "Opaque rotating refresh token (store securely)."
+          },
+          "tokenType": {
+            "type": "string",
+            "enum": [
+              "Bearer"
+            ],
+            "default": "Bearer"
+          },
+          "expiresIn": {
+            "type": "number",
+            "description": "Access token lifetime in seconds."
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "tokenType",
+          "expiresIn"
+        ]
+      },
+      "AppleSignInDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "description": "Apple identity token obtained natively by the app."
+          },
+          "firstAuthName": {
+            "type": "string",
+            "description": "Name captured on the FIRST Apple authorization."
+          },
+          "firstAuthEmail": {
+            "type": "string",
+            "description": "Email captured on the FIRST Apple authorization."
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "RequestOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Recipient phone (E.164 or light formatting)."
+          },
+          "locale": {
+            "type": "string",
+            "description": "SMS locale: hy | ru | en."
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "AcknowledgementResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "success"
+        ]
+      },
+      "VerifyOtpDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "description": "The OTP code from the SMS."
+          }
+        },
+        "required": [
+          "phone",
+          "code"
+        ]
+      },
+      "ConsumerRefreshDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "SignOutDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "ConsumerProfileResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "OTHER",
+              "UNDISCLOSED"
+            ]
+          },
+          "birthday": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO date (YYYY-MM-DD)."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "gender",
+          "birthday"
+        ]
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "OTHER",
+              "UNDISCLOSED"
+            ],
+            "nullable": true
+          },
+          "birthday": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO date (YYYY-MM-DD)."
+          },
+          "email": {
+            "type": "string",
+            "description": "Provider-owned; any value is rejected (EMAIL_IMMUTABLE)."
+          }
+        }
+      },
+      "RequestPhoneChangeDto": {
+        "type": "object",
+        "properties": {
+          "newPhone": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string",
+            "description": "SMS locale: hy | ru | en."
+          }
+        }
+      },
+      "ConfirmPhoneChangeDto": {
+        "type": "object",
+        "properties": {
+          "newPhone": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        }
       },
       "ReservationResponse": {
         "type": "object",
@@ -17134,8 +18034,9 @@
           },
           "businessHours": {
             "type": "object",
-            "description": "Business hours, if configured. Opaque JSON for the client to render.",
-            "nullable": true
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "Business hours, if configured. Opaque JSON for the client to render."
           }
         },
         "required": [
@@ -17424,6 +18325,117 @@
         },
         "required": [
           "calls"
+        ]
+      },
+      "KdsTicketModifierResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "priceDelta": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "priceDelta"
+        ]
+      },
+      "KdsTicketItemResponse": {
+        "type": "object",
+        "properties": {
+          "orderItemId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "modifiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KdsTicketModifierResponse"
+            }
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SENT",
+              "PREPARING",
+              "READY"
+            ]
+          },
+          "sentToKitchenAt": {
+            "type": "string"
+          },
+          "prepTimeMinutes": {
+            "type": "number",
+            "nullable": true
+          },
+          "elapsedSeconds": {
+            "type": "number",
+            "description": "Seconds since the item was sent to the kitchen."
+          },
+          "delayed": {
+            "type": "boolean",
+            "description": "elapsed > prepTime*60 (or > 900s when no estimate)."
+          }
+        },
+        "required": [
+          "orderItemId",
+          "name",
+          "quantity",
+          "modifiers",
+          "note",
+          "status",
+          "sentToKitchenAt",
+          "prepTimeMinutes",
+          "elapsedSeconds",
+          "delayed"
+        ]
+      },
+      "KdsTicketResponse": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "number"
+          },
+          "tableName": {
+            "type": "string",
+            "nullable": true
+          },
+          "waiterName": {
+            "type": "string",
+            "nullable": true
+          },
+          "orderNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KdsTicketItemResponse"
+            }
+          }
+        },
+        "required": [
+          "orderId",
+          "orderNumber",
+          "tableName",
+          "waiterName",
+          "orderNote",
+          "items"
         ]
       },
       "TopItemResponse": {
@@ -18292,6 +19304,10 @@
       "PublicMenuResponse": {
         "type": "object",
         "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO currency of the menu prices (from Restaurant.currency; same source as the cart/order). Display metadata only — amounts are integer minor units."
+          },
           "categories": {
             "type": "array",
             "items": {
@@ -18300,6 +19316,7 @@
           }
         },
         "required": [
+          "currency",
           "categories"
         ]
       },
@@ -18774,7 +19791,7 @@
         "type": "object",
         "properties": {
           "locationId": {
-            "type": "object",
+            "type": "string",
             "description": "Target location id; omit or null to reset to the branch default (Main Storage).",
             "nullable": true
           }
@@ -21798,6 +22815,219 @@
           }
         }
       },
+      "CatalogItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "nameHy": {
+            "type": "string"
+          },
+          "nameRu": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "object",
+            "nullable": true
+          },
+          "adgCode": {
+            "type": "object",
+            "nullable": true
+          },
+          "allergenSlugs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "nameHy",
+          "nameRu",
+          "nameEn",
+          "categoryId",
+          "adgCode",
+          "allergenSlugs",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateCatalogItemDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Stable unique slug (lowercase-kebab)."
+          },
+          "nameHy": {
+            "type": "string"
+          },
+          "nameRu": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "object",
+            "nullable": true,
+            "description": "Catalog category id, or null."
+          },
+          "adgCode": {
+            "type": "object",
+            "nullable": true,
+            "description": "Default ATG classifier, or null."
+          },
+          "allergenSlugs": {
+            "description": "Allergen slugs from the taxonomy.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "slug",
+          "nameHy",
+          "nameRu",
+          "nameEn"
+        ]
+      },
+      "UpdateCatalogItemDto": {
+        "type": "object",
+        "properties": {
+          "nameHy": {
+            "type": "string"
+          },
+          "nameRu": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "object",
+            "nullable": true
+          },
+          "adgCode": {
+            "type": "object",
+            "nullable": true
+          },
+          "allergenSlugs": {
+            "description": "Replaces the full tag set.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AllergenResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "labelHy": {
+            "type": "string"
+          },
+          "labelRu": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "labelHy",
+          "labelRu",
+          "labelEn",
+          "position"
+        ]
+      },
+      "CatalogCategoryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "labelHy": {
+            "type": "string"
+          },
+          "labelRu": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "labelHy",
+          "labelRu",
+          "labelEn",
+          "position"
+        ]
+      },
+      "CatalogTaxonomyResponse": {
+        "type": "object",
+        "properties": {
+          "allergens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AllergenResponse"
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogCategoryResponse"
+            }
+          }
+        },
+        "required": [
+          "allergens",
+          "categories"
+        ]
+      },
       "AttributeSummaryResponse": {
         "type": "object",
         "properties": {
@@ -22753,196 +23983,6 @@
           "value"
         ]
       },
-      "GoogleSignInDto": {
-        "type": "object",
-        "properties": {
-          "idToken": {
-            "type": "string",
-            "description": "Google ID token obtained natively by the app."
-          }
-        },
-        "required": [
-          "idToken"
-        ]
-      },
-      "ConsumerSessionResponse": {
-        "type": "object",
-        "properties": {
-          "accessToken": {
-            "type": "string"
-          },
-          "refreshToken": {
-            "type": "string",
-            "description": "Opaque rotating refresh token (store securely)."
-          },
-          "tokenType": {
-            "type": "string",
-            "enum": [
-              "Bearer"
-            ],
-            "default": "Bearer"
-          },
-          "expiresIn": {
-            "type": "number",
-            "description": "Access token lifetime in seconds."
-          }
-        },
-        "required": [
-          "accessToken",
-          "refreshToken",
-          "tokenType",
-          "expiresIn"
-        ]
-      },
-      "AppleSignInDto": {
-        "type": "object",
-        "properties": {
-          "idToken": {
-            "type": "string",
-            "description": "Apple identity token obtained natively by the app."
-          },
-          "firstAuthName": {
-            "type": "string",
-            "description": "Name captured on the FIRST Apple authorization."
-          },
-          "firstAuthEmail": {
-            "type": "string",
-            "description": "Email captured on the FIRST Apple authorization."
-          }
-        },
-        "required": [
-          "idToken"
-        ]
-      },
-      "RequestOtpDto": {
-        "type": "object",
-        "properties": {
-          "phone": {
-            "type": "string",
-            "description": "Recipient phone (E.164 or light formatting)."
-          },
-          "locale": {
-            "type": "string",
-            "description": "SMS locale: hy | ru | en."
-          }
-        },
-        "required": [
-          "phone"
-        ]
-      },
-      "AcknowledgementResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "default": true
-          }
-        },
-        "required": [
-          "success"
-        ]
-      },
-      "VerifyOtpDto": {
-        "type": "object",
-        "properties": {
-          "phone": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string",
-            "description": "The OTP code from the SMS."
-          }
-        },
-        "required": [
-          "phone",
-          "code"
-        ]
-      },
-      "SignOutDto": {
-        "type": "object",
-        "properties": {
-          "refreshToken": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "refreshToken"
-        ]
-      },
-      "ConsumerProfileResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "phone": {
-            "type": "string",
-            "nullable": true
-          },
-          "gender": {
-            "type": "string",
-            "nullable": true,
-            "enum": [
-              "MALE",
-              "FEMALE",
-              "OTHER",
-              "UNDISCLOSED"
-            ]
-          },
-          "birthday": {
-            "type": "string",
-            "nullable": true,
-            "description": "ISO date (YYYY-MM-DD)."
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "email",
-          "phone",
-          "gender",
-          "birthday"
-        ]
-      },
-      "UpdateProfileDto": {
-        "type": "object",
-        "properties": {
-          "fullName": {
-            "type": "string"
-          }
-        }
-      },
-      "RequestPhoneChangeDto": {
-        "type": "object",
-        "properties": {
-          "newPhone": {
-            "type": "string"
-          },
-          "locale": {
-            "type": "string",
-            "description": "SMS locale: hy | ru | en."
-          }
-        }
-      },
-      "ConfirmPhoneChangeDto": {
-        "type": "object",
-        "properties": {
-          "newPhone": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          }
-        }
-      },
       "PublicPlanResponse": {
         "type": "object",
         "properties": {
@@ -23071,6 +24111,14 @@
           "refreshToken",
           "user"
         ]
+      },
+      "UpdateAccountProfileDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string"
+          }
+        }
       },
       "ChangePlanDto": {
         "type": "object",

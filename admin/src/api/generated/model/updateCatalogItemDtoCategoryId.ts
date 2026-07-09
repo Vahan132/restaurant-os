@@ -7,7 +7,6 @@
  */
 
 /**
- * @minimum 0
  * @nullable
  */
-export type SetDishModifierOverridesDtoMinOverride = { [key: string]: unknown } | null;
+export type UpdateCatalogItemDtoCategoryId = { [key: string]: unknown } | null;

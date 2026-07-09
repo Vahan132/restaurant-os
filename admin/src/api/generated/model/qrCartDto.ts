@@ -5,8 +5,9 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { QrCartLineDto } from './qrCartLineDto';
 
-/**
- * @nullable
- */
-export type SetDishModifierOverridesDtoRequiredOverride = { [key: string]: unknown } | null;
+export interface QrCartDto {
+  /** @minItems 1 */
+  lines: QrCartLineDto[];
+}

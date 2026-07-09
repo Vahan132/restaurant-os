@@ -5,11 +5,14 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { AttachedOrderStatusResponseStatus } from './attachedOrderStatusResponseStatus';
+import type { AttachedOrderStatusResponseOrderStatus } from './attachedOrderStatusResponseOrderStatus';
+import type { AttachedOrderStatusResponsePaymentStatus } from './attachedOrderStatusResponsePaymentStatus';
 
 export interface AttachedOrderStatusResponse {
   orderId: string;
   orderNumber: number;
-  /** Order status (order enum, not session). */
-  status: AttachedOrderStatusResponseStatus;
+  /** Order's kitchen lifecycle status. */
+  orderStatus: AttachedOrderStatusResponseOrderStatus;
+  /** Order's payment status. */
+  paymentStatus: AttachedOrderStatusResponsePaymentStatus;
 }

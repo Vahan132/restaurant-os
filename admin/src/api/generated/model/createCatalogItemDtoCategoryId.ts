@@ -7,6 +7,7 @@
  */
 
 /**
+ * Catalog category id, or null.
  * @nullable
  */
-export type UpdateOrderDtoNote = { [key: string]: unknown } | null;
+export type CreateCatalogItemDtoCategoryId = { [key: string]: unknown } | null;

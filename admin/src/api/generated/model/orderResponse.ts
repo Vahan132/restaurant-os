@@ -21,7 +21,11 @@ export interface OrderResponse {
   type: OrderResponseType;
   /** @nullable */
   tableId: string | null;
-  waiterId: string;
+  /**
+     * Null for QR-web customer orders.
+     * @nullable
+     */
+  waiterId: string | null;
   status: OrderResponseStatus;
   /** @nullable */
   note: string | null;

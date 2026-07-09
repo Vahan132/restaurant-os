@@ -6,8 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @minimum 0
- * @nullable
- */
-export type AttachModifierGroupDtoMinOverride = { [key: string]: unknown } | null;
+export interface CatalogCategoryResponse {
+  id: string;
+  slug: string;
+  labelHy: string;
+  labelRu: string;
+  labelEn: string;
+  position: number;
+}

@@ -7,7 +7,6 @@
  */
 
 /**
- * Target location id; omit or null to reset to the branch default (Main Storage).
  * @nullable
  */
-export type SetItemConsumptionLocationDtoLocationId = { [key: string]: unknown } | null;
+export type CatalogItemResponseCategoryId = { [key: string]: unknown } | null;

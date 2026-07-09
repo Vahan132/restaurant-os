@@ -5,7 +5,18 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateProfileDtoGender } from './updateProfileDtoGender';
 
 export interface UpdateProfileDto {
-  fullName?: string;
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  gender?: UpdateProfileDtoGender;
+  /**
+     * ISO date (YYYY-MM-DD).
+     * @nullable
+     */
+  birthday?: string | null;
+  /** Provider-owned; any value is rejected (EMAIL_IMMUTABLE). */
+  email?: string;
 }
