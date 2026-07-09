@@ -108,6 +108,7 @@ export class PrismaRestaurantMarketingRepository implements RestaurantMarketingR
         restaurantId,
         position: nextPosition,
         url: input.url,
+        objectKey: input.objectKey ?? null,
         altHy: input.alt.hy ?? null,
         altRu: input.alt.ru ?? null,
         altEn: input.alt.en ?? null,
@@ -140,6 +141,7 @@ function toPhotoRecord(p: {
   id: string;
   position: number;
   url: string;
+  objectKey: string | null;
   altHy: string | null;
   altRu: string | null;
   altEn: string | null;
@@ -150,6 +152,7 @@ function toPhotoRecord(p: {
     id: p.id,
     position: p.position,
     url: p.url,
+    objectKey: p.objectKey,
     alt: { hy: p.altHy, ru: p.altRu, en: p.altEn },
     width: p.width,
     height: p.height,

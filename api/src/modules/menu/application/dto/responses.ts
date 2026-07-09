@@ -42,6 +42,12 @@ export class MenuItemResponse {
   @ApiProperty({ nullable: true, type: String }) description!: string | null;
   @ApiProperty() priceAmount!: number;
   @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'MEDIA-1: object-storage key when the image was uploaded (null for URL-paste).',
+  })
+  imageKey!: string | null;
   @ApiProperty({ enum: ['KITCHEN', 'BAR', 'DESSERT', 'OTHER'] }) preparationStation!: string;
   @ApiProperty({ nullable: true, type: Number }) prepTimeMinutes!: number | null;
   @ApiProperty({ enum: ['ACTIVE', 'INACTIVE'] }) status!: string;
@@ -60,6 +66,7 @@ export class MenuItemResponse {
       description: i.description,
       priceAmount: i.priceAmount,
       imageUrl: i.imageUrl,
+      imageKey: i.imageKey,
       preparationStation: i.preparationStation,
       prepTimeMinutes: i.prepTimeMinutes,
       status: i.status,

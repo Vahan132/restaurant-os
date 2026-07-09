@@ -290,6 +290,9 @@ model RestaurantSettings {
   id           String  @id @default(cuid())
   restaurantId String  @unique
   logoUrl      String?
+  // MEDIA-1: object-storage key for an uploaded logo. Additive + nullable; null ⇒
+  // URL-paste (logoUrl) is the source. logoUrl holds the resolved public URL.
+  logoKey      String? @map("logo_key")
   phone        String?
   address      String?
 
@@ -554,6 +557,9 @@ model MenuItem {
   description        String?
   priceAmount        Int                @map("price_amount")
   imageUrl           String?
+  // MEDIA-1: object-storage key for an uploaded image (R2/dev). Additive + nullable;
+  // null ⇒ URL-paste (imageUrl) is the source. imageUrl holds the resolved public URL.
+  imageKey           String?            @map("image_key")
   preparationStation PreparationStation @default(KITCHEN)
   prepTimeMinutes    Int?
   status             MenuStatus         @default(ACTIVE)
@@ -1776,6 +1782,9 @@ model RestaurantPhoto {
   restaurantId String
   position     Int      @default(0)
   url          String
+  // MEDIA-1: object-storage key for an uploaded photo. Additive + nullable; null ⇒
+  // URL-paste (url) is the source. url holds the resolved public URL either way.
+  objectKey    String?  @map("object_key")
   altHy        String?
   altRu        String?
   altEn        String?

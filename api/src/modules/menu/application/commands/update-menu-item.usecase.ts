@@ -1,5 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
+import {
+  OBJECT_STORAGE_PORT,
+  ObjectStoragePort,
+} from '../../../media/application/ports/object-storage.port';
+import { resolveImageRefPatch } from '../image-ref.util';
 import { MenuItem } from '../../domain/entities/menu-item';
 import { PreparationStation } from '../../domain/enums';
 import {
@@ -24,6 +29,8 @@ export interface UpdateMenuItemInput {
   name?: string;
   description?: string | null;
   imageUrl?: string | null;
+  /** MEDIA-1: uploaded object key (finalize). Non-empty overrides imageUrl. */
+  imageKey?: string | null;
   preparationStation?: PreparationStation;
   prepTimeMinutes?: number | null;
   categoryId?: string;
@@ -36,6 +43,7 @@ export class UpdateMenuItemUseCase implements UseCase<UpdateMenuItemInput, MenuI
   constructor(
     @Inject(MENU_ITEM_REPOSITORY) private readonly items: MenuItemRepository,
     @Inject(MENU_CATEGORY_REPOSITORY) private readonly categories: MenuCategoryRepository,
+    @Inject(OBJECT_STORAGE_PORT) private readonly storage: ObjectStoragePort,
   ) {}
 
   async execute(input: UpdateMenuItemInput): Promise<MenuItem> {
@@ -56,10 +64,17 @@ export class UpdateMenuItemUseCase implements UseCase<UpdateMenuItemInput, MenuI
       }
       item.assignToCategory(input.categoryId);
     }
+    const image = resolveImageRefPatch(
+      this.storage,
+      input.restaurantId,
+      input.imageUrl,
+      input.imageKey,
+    );
     item.updateDetails({
       name: input.name,
       description: input.description,
-      imageUrl: input.imageUrl,
+      imageUrl: image.imageUrl,
+      imageKey: image.imageKey,
       preparationStation: input.preparationStation,
       prepTimeMinutes: input.prepTimeMinutes,
       hideRecipe: input.hideRecipe,

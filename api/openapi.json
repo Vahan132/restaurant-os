@@ -1668,6 +1668,126 @@
         ]
       }
     },
+    "/media/menu-items/uploads": {
+      "post": {
+        "operationId": "MediaController_presignMenuItemImage",
+        "summary": "Presign a direct upload for a menu-item image.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresignUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresignUploadResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing MENU_MANAGE permission."
+          }
+        },
+        "tags": [
+          "media"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/media/restaurant-photos/uploads": {
+      "post": {
+        "operationId": "MediaController_presignRestaurantPhoto",
+        "summary": "Presign a direct upload for a brand gallery photo.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresignUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresignUploadResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SETTINGS_MANAGE permission."
+          }
+        },
+        "tags": [
+          "media"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/media/logo/uploads": {
+      "post": {
+        "operationId": "MediaController_presignLogo",
+        "summary": "Presign a direct upload for the restaurant logo.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresignUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresignUploadResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing SETTINGS_MANAGE permission."
+          }
+        },
+        "tags": [
+          "media"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
     "/menu": {
       "get": {
         "operationId": "MenuController_tree",
@@ -14874,6 +14994,11 @@
             "type": "string",
             "nullable": true
           },
+          "logoKey": {
+            "type": "string",
+            "nullable": true,
+            "description": "MEDIA-1: object-storage key when the logo was uploaded (null for URL-paste)."
+          },
           "phone": {
             "type": "string",
             "nullable": true
@@ -14934,6 +15059,7 @@
           "id",
           "restaurantId",
           "logoUrl",
+          "logoKey",
           "phone",
           "address",
           "taxRateBps",
@@ -14978,6 +15104,10 @@
         "properties": {
           "logoUrl": {
             "type": "string"
+          },
+          "logoKey": {
+            "type": "string",
+            "description": "MEDIA-1: object key from a presigned logo upload (finalize). Overrides logoUrl."
           },
           "phone": {
             "type": "string"
@@ -15211,6 +15341,46 @@
           }
         }
       },
+      "PresignUploadDto": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "description": "Image MIME type. Allowed: image/jpeg, image/png, image/webp.",
+            "example": "image/jpeg"
+          }
+        },
+        "required": [
+          "contentType"
+        ]
+      },
+      "PresignUploadResponse": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Presigned PUT URL — upload the bytes here directly."
+          },
+          "key": {
+            "type": "string",
+            "description": "Server-generated object key to send back at finalize."
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "ISO timestamp after which the URL is invalid."
+          },
+          "maxBytes": {
+            "type": "number",
+            "description": "Advisory max upload size in bytes."
+          }
+        },
+        "required": [
+          "url",
+          "key",
+          "expiresAt",
+          "maxBytes"
+        ]
+      },
       "CategoryResponse": {
         "type": "object",
         "properties": {
@@ -15367,6 +15537,11 @@
             "type": "string",
             "nullable": true
           },
+          "imageKey": {
+            "type": "string",
+            "nullable": true,
+            "description": "MEDIA-1: object-storage key when the image was uploaded (null for URL-paste)."
+          },
           "preparationStation": {
             "type": "string",
             "enum": [
@@ -15409,6 +15584,7 @@
           "description",
           "priceAmount",
           "imageUrl",
+          "imageKey",
           "preparationStation",
           "prepTimeMinutes",
           "status",
@@ -15622,6 +15798,11 @@
             "type": "string",
             "nullable": true
           },
+          "imageKey": {
+            "type": "string",
+            "nullable": true,
+            "description": "MEDIA-1: object-storage key when the image was uploaded (null for URL-paste)."
+          },
           "preparationStation": {
             "type": "string",
             "enum": [
@@ -15670,6 +15851,7 @@
           "description",
           "priceAmount",
           "imageUrl",
+          "imageKey",
           "preparationStation",
           "prepTimeMinutes",
           "status",
@@ -15693,6 +15875,10 @@
           },
           "imageUrl": {
             "type": "string"
+          },
+          "imageKey": {
+            "type": "string",
+            "description": "MEDIA-1: object key from a presigned upload (finalize). Overrides imageUrl."
           },
           "preparationStation": {
             "type": "string",
@@ -15725,6 +15911,10 @@
           },
           "imageUrl": {
             "type": "string"
+          },
+          "imageKey": {
+            "type": "string",
+            "description": "MEDIA-1: object key from a presigned upload (finalize). Overrides imageUrl. Send null/empty with imageUrl to switch back to URL-paste."
           },
           "categoryId": {
             "type": "string",
@@ -23949,7 +24139,11 @@
         "properties": {
           "url": {
             "type": "string",
-            "description": "Photo URL (https only; URL-paste, no upload in v1)."
+            "description": "Photo URL (https). URL-paste source; omit when supplying objectKey."
+          },
+          "objectKey": {
+            "type": "string",
+            "description": "MEDIA-1: object key from a presigned photo upload (finalize). Overrides url."
           },
           "alt": {
             "description": "Alt text (hy/ru/en).",
@@ -23964,10 +24158,7 @@
             "minimum": 0,
             "description": "Reserved for forward-compat; v1 appends at the end (use reorder to move)."
           }
-        },
-        "required": [
-          "url"
-        ]
+        }
       },
       "ReorderPhotosDto": {
         "type": "object",

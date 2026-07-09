@@ -199,6 +199,53 @@ export const envSchema = z
       (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
       z.coerce.number().int().min(1000).default(10_000),
     ),
+
+    // ── MEDIA-1: object storage for images ──────────────────────────────────
+    // Which storage adapter binds to ObjectStoragePort. `dev` = local filesystem
+    // (no cloud creds); `r2` = Cloudflare R2. In production, `r2` + the R2_* vars
+    // below are required (enforced by superRefine).
+    STORAGE_DRIVER: z.enum(['dev', 'r2']).default('dev'),
+
+    // Public base for resolving a stored key → URL (R2 public bucket or CDN
+    // domain; the dev server base in dev). No trailing slash needed.
+    STORAGE_PUBLIC_BASE_URL: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().url().default('http://localhost:3001'),
+    ),
+
+    // R2 credentials — required only when STORAGE_DRIVER=r2 (superRefine).
+    R2_ACCOUNT_ID: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
+    R2_ACCESS_KEY_ID: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
+    R2_SECRET_ACCESS_KEY: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
+    R2_BUCKET: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
+
+    // Local dir the dev adapter writes/serves objects from. Blank-safe.
+    MEDIA_DEV_DIR: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).default('.media-dev'),
+    ),
+
+    // Presign TTL (seconds) and the advisory max upload size (bytes, default 5MB).
+    MEDIA_PRESIGN_TTL_SECONDS: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(30).max(3600).default(300),
+    ),
+    MEDIA_MAX_UPLOAD_BYTES: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.coerce.number().int().min(1).default(5_242_880),
+    ),
   })
   // Fail-fast: in EDGE mode the four edge identity ids are mandatory. CLOUD
   // validation is unchanged (these stay optional and unused).
@@ -219,6 +266,35 @@ export const envSchema = z
           path: [key],
           message: `${key} is required when APP_MODE=EDGE`,
         });
+      }
+    }
+  })
+  // Fail-fast (MEDIA-1): the R2 driver needs full credentials. Enforced whenever
+  // STORAGE_DRIVER=r2, and additionally the dev driver is refused in production
+  // so a prod deploy can never silently fall back to the local filesystem store.
+  .superRefine((env, ctx) => {
+    if (env.NODE_ENV === 'production' && env.STORAGE_DRIVER === 'dev') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['STORAGE_DRIVER'],
+        message: 'STORAGE_DRIVER=dev is not allowed in production; use r2.',
+      });
+    }
+    if (env.STORAGE_DRIVER === 'r2') {
+      const required: Array<keyof typeof env> = [
+        'R2_ACCOUNT_ID',
+        'R2_ACCESS_KEY_ID',
+        'R2_SECRET_ACCESS_KEY',
+        'R2_BUCKET',
+      ];
+      for (const key of required) {
+        if (!env[key]) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${key} is required when STORAGE_DRIVER=r2`,
+          });
+        }
       }
     }
   });

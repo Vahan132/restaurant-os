@@ -17,6 +17,8 @@ export interface MenuItemProps {
   description: string | null;
   priceAmount: number;
   imageUrl: string | null;
+  /** MEDIA-1: object-storage key when the image was uploaded (null for URL-paste). */
+  imageKey: string | null;
   preparationStation: PreparationStation;
   prepTimeMinutes: number | null;
   status: MenuStatus;
@@ -38,6 +40,7 @@ export interface CreateMenuItemInput {
   description?: string | null;
   priceAmount: number;
   imageUrl?: string | null;
+  imageKey?: string | null;
   preparationStation?: PreparationStation;
   prepTimeMinutes?: number | null;
   actorUserId?: string | null;
@@ -70,6 +73,7 @@ export class MenuItem extends AggregateRoot<string> {
       description: input.description ?? null,
       priceAmount: input.priceAmount,
       imageUrl: input.imageUrl ?? null,
+      imageKey: input.imageKey ?? null,
       preparationStation: input.preparationStation ?? PreparationStation.KITCHEN,
       prepTimeMinutes: input.prepTimeMinutes ?? null,
       status: MenuStatus.ACTIVE,
@@ -118,6 +122,9 @@ export class MenuItem extends AggregateRoot<string> {
   get imageUrl(): string | null {
     return this.props.imageUrl;
   }
+  get imageKey(): string | null {
+    return this.props.imageKey;
+  }
   get preparationStation(): PreparationStation {
     return this.props.preparationStation;
   }
@@ -151,6 +158,7 @@ export class MenuItem extends AggregateRoot<string> {
     name?: string;
     description?: string | null;
     imageUrl?: string | null;
+    imageKey?: string | null;
     preparationStation?: PreparationStation;
     prepTimeMinutes?: number | null;
     hideRecipe?: boolean;
@@ -158,6 +166,7 @@ export class MenuItem extends AggregateRoot<string> {
     if (input.name !== undefined) this.props.name = input.name;
     if (input.description !== undefined) this.props.description = input.description;
     if (input.imageUrl !== undefined) this.props.imageUrl = input.imageUrl;
+    if (input.imageKey !== undefined) this.props.imageKey = input.imageKey;
     if (input.preparationStation !== undefined)
       this.props.preparationStation = input.preparationStation;
     if (input.prepTimeMinutes !== undefined) this.props.prepTimeMinutes = input.prepTimeMinutes;

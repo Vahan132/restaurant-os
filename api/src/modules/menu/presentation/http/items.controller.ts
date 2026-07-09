@@ -127,6 +127,7 @@ export class ItemsController {
       // set via PATCH :id/price under menu:item:set_price.
       priceAmount: 0,
       imageUrl: dto.imageUrl ?? null,
+      imageKey: dto.imageKey ?? null,
       preparationStation: dto.preparationStation,
       prepTimeMinutes: dto.prepTimeMinutes ?? null,
       actorUserId: actor.sub,
@@ -152,6 +153,7 @@ export class ItemsController {
       name: dto.name,
       description: dto.description,
       imageUrl: dto.imageUrl,
+      imageKey: dto.imageKey,
       categoryId: dto.categoryId,
       preparationStation: dto.preparationStation,
       prepTimeMinutes: dto.prepTimeMinutes,

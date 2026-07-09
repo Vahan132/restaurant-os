@@ -37,6 +37,13 @@ export class CreateMenuItemDto {
   @IsString()
   imageUrl?: string;
 
+  @ApiPropertyOptional({
+    description: 'MEDIA-1: object key from a presigned upload (finalize). Overrides imageUrl.',
+  })
+  @IsOptional()
+  @IsString()
+  imageKey?: string;
+
   @ApiPropertyOptional({ enum: PreparationStation, default: PreparationStation.KITCHEN })
   @IsOptional()
   @IsEnum(PreparationStation)
@@ -65,6 +72,14 @@ export class UpdateMenuItemDto {
   @IsOptional()
   @IsString()
   imageUrl?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'MEDIA-1: object key from a presigned upload (finalize). Overrides imageUrl. Send null/empty with imageUrl to switch back to URL-paste.',
+  })
+  @IsOptional()
+  @IsString()
+  imageKey?: string;
 
   @ApiPropertyOptional({ description: 'Reassign to another category in your restaurant.' })
   @IsOptional()

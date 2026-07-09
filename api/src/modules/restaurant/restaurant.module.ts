@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module';
+import { MediaModule } from '../media/media.module';
 
 import { RESTAURANT_REPOSITORY } from './domain/repositories/restaurant.repository';
 import { RESTAURANT_SETTINGS_REPOSITORY } from './domain/repositories/restaurant-settings.repository';
@@ -32,7 +33,7 @@ import { BranchesController } from './presentation/http/branches.controller';
  * require SETTINGS_MANAGE. Imports IdentityModule to reuse ID_GENERATOR.
  */
 @Module({
-  imports: [IdentityModule],
+  imports: [IdentityModule, MediaModule],
   controllers: [RestaurantController, BranchesController],
   providers: [
     GetRestaurantProfileUseCase,

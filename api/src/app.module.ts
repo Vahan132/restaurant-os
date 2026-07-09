@@ -3,6 +3,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { MenuModule } from './modules/menu/menu.module';
+import { MediaModule } from './modules/media/media.module';
 import { KdsModule } from './modules/kds/kds.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PlatformModule } from './modules/platform/platform.module';
@@ -92,6 +93,7 @@ const edgeOnlyModules = IS_EDGE ? [EdgeSyncModule] : [];
     IdentityModule,
     RestaurantModule,
     MenuModule,
+    MediaModule,
     TablesModule,
     TableSessionsModule,
     FiscalizationModule,

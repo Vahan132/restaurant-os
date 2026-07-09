@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ReservationsModule } from '../reservations/reservations.module';
+import { MediaModule } from '../media/media.module';
 import { ConsumerIdentityModule } from '../consumer-identity/consumer-identity.module';
 import { ConsumerAuthGuard } from '../consumer-identity/presentation/http/consumer-auth.guard';
 import { IdentityModule } from '../identity/identity.module';
@@ -74,6 +75,7 @@ import { ConsumerSavedController } from './presentation/http/consumer-saved.cont
 @Module({
   imports: [
     ReservationsModule,
+    MediaModule,
     ConsumerIdentityModule,
     IdentityModule, // CX-ADMIN: BRANCH_ACCESS_RESOLVER for owner branch-route validation.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),

@@ -2,6 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
 import { DomainEventPublisher } from '../../../../shared/infrastructure/events/domain-event-publisher';
 import { ID_GENERATOR, IdGenerator } from '../../../identity/application/ports/id-generator';
+import {
+  OBJECT_STORAGE_PORT,
+  ObjectStoragePort,
+} from '../../../media/application/ports/object-storage.port';
+import { resolveImageRef } from '../image-ref.util';
 import { MenuItem } from '../../domain/entities/menu-item';
 import { PreparationStation } from '../../domain/enums';
 import {
@@ -23,6 +28,8 @@ export interface CreateMenuItemInput {
   description?: string | null;
   priceAmount: number;
   imageUrl?: string | null;
+  /** MEDIA-1: an uploaded object key (finalize). When present, overrides imageUrl. */
+  imageKey?: string | null;
   preparationStation?: PreparationStation;
   prepTimeMinutes?: number | null;
   actorUserId?: string | null;
@@ -35,6 +42,7 @@ export class CreateMenuItemUseCase implements UseCase<CreateMenuItemInput, MenuI
     @Inject(MENU_ITEM_REPOSITORY) private readonly items: MenuItemRepository,
     @Inject(MENU_CATEGORY_REPOSITORY) private readonly categories: MenuCategoryRepository,
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
+    @Inject(OBJECT_STORAGE_PORT) private readonly storage: ObjectStoragePort,
     private readonly events: DomainEventPublisher,
   ) {}
 
@@ -42,6 +50,9 @@ export class CreateMenuItemUseCase implements UseCase<CreateMenuItemInput, MenuI
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
+    // MEDIA-1: an uploaded key wins over URL-paste. Verify it sits under this
+    // tenant's prefix (defence-in-depth) and record the resolved public URL.
+    const image = resolveImageRef(this.storage, input.restaurantId, input.imageUrl, input.imageKey);
     const category = await this.categories.findInRestaurant(input.restaurantId, input.categoryId);
     if (!category) {
       throw CategoryNotFound();
@@ -63,7 +74,8 @@ export class CreateMenuItemUseCase implements UseCase<CreateMenuItemInput, MenuI
       name: input.name,
       description: input.description ?? null,
       priceAmount: input.priceAmount, // aggregate rejects negatives
-      imageUrl: input.imageUrl ?? null,
+      imageUrl: image.imageUrl,
+      imageKey: image.imageKey,
       preparationStation: input.preparationStation,
       prepTimeMinutes: input.prepTimeMinutes ?? null,
       actorUserId: input.actorUserId ?? null,

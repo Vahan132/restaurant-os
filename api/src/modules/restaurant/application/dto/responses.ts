@@ -31,6 +31,12 @@ export class RestaurantSettingsResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
   @ApiProperty({ nullable: true, type: String }) logoUrl!: string | null;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'MEDIA-1: object-storage key when the logo was uploaded (null for URL-paste).',
+  })
+  logoKey!: string | null;
   @ApiProperty({ nullable: true, type: String }) phone!: string | null;
   @ApiProperty({ nullable: true, type: String }) address!: string | null;
   @ApiProperty({ description: 'Tax rate, basis points.' }) taxRateBps!: number;
@@ -55,6 +61,7 @@ export class RestaurantSettingsResponse {
       id: s.id,
       restaurantId: p.restaurantId,
       logoUrl: p.logoUrl,
+      logoKey: p.logoKey,
       phone: p.phone,
       address: p.address,
       taxRateBps: p.taxRateBps,

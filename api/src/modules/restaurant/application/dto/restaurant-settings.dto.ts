@@ -38,6 +38,13 @@ export class UpdateRestaurantSettingsDto {
   @IsString()
   logoUrl?: string;
 
+  @ApiPropertyOptional({
+    description: 'MEDIA-1: object key from a presigned logo upload (finalize). Overrides logoUrl.',
+  })
+  @IsOptional()
+  @IsString()
+  logoKey?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
