@@ -156,6 +156,12 @@ async function run(): Promise<void> {
     await assert.rejects(a2.getConfig('r', 'b'));
   });
 
+  await checkAsync('db adapter: active but cert not uploaded -> throws (fail closed)', async () => {
+    const noCert = { fiscalConfig: { findUnique: async () => ({ ...row, certCipher: null }) } } as never;
+    const a3 = new DbFiscalConfigAdapter(noCert, cipher, cfg);
+    await assert.rejects(a3.getConfig('r', 'b'));
+  });
+
   fs.unlinkSync(caPath);
   console.log(`\n${passed} checks passed.`);
   console.log(process.exitCode === 1 ? 'VERIFY FAILED' : 'VERIFY OK');

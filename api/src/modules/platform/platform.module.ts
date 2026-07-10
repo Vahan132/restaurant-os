@@ -10,6 +10,8 @@ import { PlatformFiscalConfigController } from './presentation/http/platform-fis
 import { UpsertFiscalConfigUseCase } from './application/commands/upsert-fiscal-config.usecase';
 import { SetFiscalDepartmentsUseCase } from './application/commands/set-fiscal-departments.usecase';
 import { CheckFiscalConnectionUseCase } from './application/commands/check-fiscal-connection.usecase';
+import { SetFiscalCertUseCase } from './application/commands/set-fiscal-cert.usecase';
+import { ListRestaurantBranchesUseCase } from './application/queries/list-restaurant-branches.usecase';
 import { GetFiscalConfigStatusUseCase } from './application/queries/get-fiscal-config-status.usecase';
 import { PASSWORD_HASHER } from '../identity/application/ports/password-hasher';
 import { Argon2PasswordHasher } from '../identity/infrastructure/services/argon2-password-hasher';
@@ -125,6 +127,8 @@ import { GetPlatformDashboardUseCase } from './application/queries/get-platform-
     SetFiscalDepartmentsUseCase,
     CheckFiscalConnectionUseCase,
     GetFiscalConfigStatusUseCase,
+    SetFiscalCertUseCase,
+    ListRestaurantBranchesUseCase,
 
     // port -> implementation bindings
     { provide: PLATFORM_USER_REPOSITORY, useClass: PrismaPlatformUserRepository },

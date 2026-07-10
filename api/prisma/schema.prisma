@@ -2384,18 +2384,22 @@ model FiscalConfig {
   // DEK; the DEK is wrapped by the master KEK (FISCAL_MASTER_KEK / KMS — NEVER in
   // the DB). All AES-256-GCM (cipher + iv + auth tag). KEK rotation re-wraps the
   // DEK only (no cert re-encryption); one compromised cert never implies others.
-  certCipher  Bytes @map("cert_cipher")
-  certIv      Bytes @map("cert_iv")
-  certAuthTag Bytes @map("cert_auth_tag")
-  keyCipher   Bytes @map("key_cipher")
-  keyIv       Bytes @map("key_iv")
-  keyAuthTag  Bytes @map("key_auth_tag")
+  // Nullable: a config row can exist BEFORE the cert is uploaded (support saves
+  // config first, uploads the cert as a separate action). certConfigured on the
+  // status reflects whether these are set; the adapter fails closed if a config is
+  // active but has no cert.
+  certCipher  Bytes? @map("cert_cipher")
+  certIv      Bytes? @map("cert_iv")
+  certAuthTag Bytes? @map("cert_auth_tag")
+  keyCipher   Bytes? @map("key_cipher")
+  keyIv       Bytes? @map("key_iv")
+  keyAuthTag  Bytes? @map("key_auth_tag")
   // The per-tenant DEK, wrapped by the master KEK.
-  dekCipher   Bytes @map("dek_cipher")
-  dekIv       Bytes @map("dek_iv")
-  dekAuthTag  Bytes @map("dek_auth_tag")
+  dekCipher   Bytes? @map("dek_cipher")
+  dekIv       Bytes? @map("dek_iv")
+  dekAuthTag  Bytes? @map("dek_auth_tag")
   // Which master-KEK version wrapped the DEK (for rotation / re-wrap).
-  kekVersion  Int   @default(1) @map("kek_version")
+  kekVersion  Int?   @map("kek_version")
 
   lastCheckConnectionAt DateTime? @map("last_check_connection_at")
   lastCheckConnectionOk Boolean?  @map("last_check_connection_ok")

@@ -12,12 +12,12 @@ import {
 import { FiscalCryptoService } from '../crypto/fiscal-crypto.service';
 
 /**
- * DB-backed FiscalConfigPort (FISCAL-4). Drop-in for FISCAL-1's env/file backing:
- * reads the per-tenant row, unwraps the envelope-encrypted cert/key, builds the
- * `departmentMap` (dep -> tax regime) the adapter's line mapping reads, and
- * resolves the shared SRC CA (public, from FISCAL_SRC_CA_PATH). An absent/inactive
- * config ⇒ FatalFiscalError (fail closed). Decrypted buffers are returned ONLY on
- * this adapter-facing type — never on any HTTP read model.
+ * DB-backed FiscalConfigPort (FISCAL-4). Drop-in for the env/file backing. Reads
+ * the per-tenant row, unwraps the envelope-encrypted cert/key, builds the
+ * `departmentMap` (dep -> tax regime), and resolves the shared SRC CA. Fails
+ * closed when the config is absent, inactive, OR active-but-cert-not-yet-uploaded.
+ * Decrypted buffers are returned ONLY on this adapter-facing type — never on any
+ * HTTP read model.
  */
 @Injectable()
 export class DbFiscalConfigAdapter implements FiscalConfigPort {
@@ -40,11 +40,26 @@ export class DbFiscalConfigAdapter implements FiscalConfigPort {
         `No active e-HDM config for ${restaurantId}:${branchId}.`,
       );
     }
+    const {
+      certCipher, certIv, certAuthTag,
+      keyCipher, keyIv, keyAuthTag,
+      dekCipher, dekIv, dekAuthTag,
+    } = cfg;
+    if (
+      !certCipher || !certIv || !certAuthTag ||
+      !keyCipher || !keyIv || !keyAuthTag ||
+      !dekCipher || !dekIv || !dekAuthTag
+    ) {
+      throw new FatalFiscalError(
+        'FISCAL_CERT_MISSING',
+        `e-HDM config for ${restaurantId}:${branchId} has no cert uploaded.`,
+      );
+    }
     const { cert, key } = this.crypto.unwrap({
-      cert: { cipher: cfg.certCipher, iv: cfg.certIv, authTag: cfg.certAuthTag },
-      key: { cipher: cfg.keyCipher, iv: cfg.keyIv, authTag: cfg.keyAuthTag },
-      dek: { cipher: cfg.dekCipher, iv: cfg.dekIv, authTag: cfg.dekAuthTag },
-      kekVersion: cfg.kekVersion,
+      cert: { cipher: certCipher, iv: certIv, authTag: certAuthTag },
+      key: { cipher: keyCipher, iv: keyIv, authTag: keyAuthTag },
+      dek: { cipher: dekCipher, iv: dekIv, authTag: dekAuthTag },
+      kekVersion: cfg.kekVersion ?? 1,
     });
     const departmentMap: Record<string, string> = {};
     for (const d of cfg.departments) {

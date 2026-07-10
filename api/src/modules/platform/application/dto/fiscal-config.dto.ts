@@ -18,6 +18,10 @@ export class UpsertFiscalConfigDto {
   @ApiProperty({ enum: ['PROD', 'TEST'] }) @IsIn(['PROD', 'TEST']) environment!: 'PROD' | 'TEST';
   @ApiProperty({ enum: ['hy', 'en', 'ru'] }) @IsIn(['hy', 'en', 'ru']) language!: 'hy' | 'en' | 'ru';
   @ApiProperty() @IsBoolean() active!: boolean;
+}
+
+/** Cert upload — its own write (replace-only). PEM in the body; encrypted at rest. */
+export class SetFiscalCertDto {
   @ApiProperty({ description: 'Client certificate PEM (converted from .jks by ops before upload).' })
   @IsString()
   @MinLength(1)
@@ -26,6 +30,14 @@ export class UpsertFiscalConfigDto {
   @IsString()
   @MinLength(1)
   clientKeyPem!: string;
+}
+
+/** A branch of a restaurant, for the tenant picker. */
+export class PlatformBranchResponse {
+  @ApiProperty() id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty() isDefault!: boolean;
+  @ApiProperty() status!: string;
 }
 
 export class FiscalDepartmentDto {
@@ -64,6 +76,8 @@ export class FiscalConfigStatusResponse {
   @ApiProperty({ enum: ['PROD', 'TEST'] }) environment!: 'PROD' | 'TEST';
   @ApiProperty() language!: string;
   @ApiProperty() active!: boolean;
+  @ApiProperty({ description: 'True once a cert/key has been uploaded (never exposes the material).' })
+  certConfigured!: boolean;
   @ApiProperty({ type: [FiscalDepartmentResponse] }) departments!: FiscalDepartmentResponse[];
   @ApiProperty({ nullable: true, type: String }) lastCheckConnectionAt!: string | null;
   @ApiProperty({ nullable: true, type: Boolean }) lastCheckConnectionOk!: boolean | null;
@@ -78,6 +92,7 @@ export class FiscalConfigStatusResponse {
       environment: s.environment,
       language: s.language,
       active: s.active,
+      certConfigured: s.certConfigured,
       departments: s.departments.map((d) => ({
         dep: d.dep,
         taxRegime: d.taxRegime,
