@@ -23,6 +23,7 @@ export const NAV_ITEMS: NavItem[] = [
     children: [
       { key: 'menuItems', href: '/menu' },
       { key: 'menuModifierGroups', href: '/menu/modifier-groups' },
+      { key: 'menuFiscalCodes', href: '/menu/fiscal-codes' },
     ],
   },
   {

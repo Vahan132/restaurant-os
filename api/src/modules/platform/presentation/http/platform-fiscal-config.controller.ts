@@ -13,15 +13,19 @@ import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@
 import { Request } from 'express';
 import { Public } from '../../../../shared/auth/public.decorator';
 import { CheckFiscalConnectionUseCase } from '../../application/commands/check-fiscal-connection.usecase';
+import { SetFiscalCertUseCase } from '../../application/commands/set-fiscal-cert.usecase';
 import { SetFiscalDepartmentsUseCase } from '../../application/commands/set-fiscal-departments.usecase';
 import { UpsertFiscalConfigUseCase } from '../../application/commands/upsert-fiscal-config.usecase';
 import {
   CheckFiscalConnectionResponse,
   FiscalConfigStatusResponse,
+  PlatformBranchResponse,
+  SetFiscalCertDto,
   SetFiscalDepartmentsDto,
   UpsertFiscalConfigDto,
 } from '../../application/dto/fiscal-config.dto';
 import { GetFiscalConfigStatusUseCase } from '../../application/queries/get-fiscal-config-status.usecase';
+import { ListRestaurantBranchesUseCase } from '../../application/queries/list-restaurant-branches.usecase';
 import { PlatformAuthGuard } from '../platform-auth.guard';
 
 /** The platform actor + request metadata for audit (platform token subject). */
@@ -51,7 +55,31 @@ export class PlatformFiscalConfigController {
     private readonly setDepartments: SetFiscalDepartmentsUseCase,
     private readonly getStatus: GetFiscalConfigStatusUseCase,
     private readonly check: CheckFiscalConnectionUseCase,
+    private readonly setCert: SetFiscalCertUseCase,
+    private readonly listBranches: ListRestaurantBranchesUseCase,
   ) {}
+
+  @Get('branches/:restaurantId')
+  @ApiOperation({ summary: 'List a restaurant\'s branches (tenant picker).' })
+  @ApiParam({ name: 'restaurantId' })
+  @ApiOkResponse({ type: [PlatformBranchResponse] })
+  async branches(@Param('restaurantId') restaurantId: string): Promise<PlatformBranchResponse[]> {
+    return this.listBranches.execute(restaurantId);
+  }
+
+  @Put(':restaurantId/:branchId/cert')
+  @ApiOperation({ summary: 'Upload/replace the cert (write-only; never returned).' })
+  @ApiParam({ name: 'restaurantId' })
+  @ApiParam({ name: 'branchId' })
+  async uploadCert(
+    @Param('restaurantId') restaurantId: string,
+    @Param('branchId') branchId: string,
+    @Body() dto: SetFiscalCertDto,
+    @Req() req: Request,
+  ): Promise<{ ok: true }> {
+    await this.setCert.execute({ restaurantId, branchId, ...dto, ...actorOf(req) });
+    return { ok: true };
+  }
 
   @Put(':restaurantId/:branchId')
   @ApiOperation({ summary: 'Create/replace a branch e-HDM config (cert/key PEM; encrypted at rest).' })

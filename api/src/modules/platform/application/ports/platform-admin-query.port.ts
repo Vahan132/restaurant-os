@@ -5,6 +5,12 @@ export interface HallView {
   name: string;
   tableCount: number;
 }
+export interface BranchView {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  status: string;
+}
 export interface RestaurantWithHallsView {
   id: string;
   name: string;
@@ -69,6 +75,8 @@ export interface PlatformDashboard {
  */
 export interface PlatformAdminQuery {
   orgRestaurants(organizationId: string): Promise<RestaurantWithHallsView[]>;
+  /** Branches for a restaurant (FISCAL-4-FE tenant picker). */
+  restaurantBranches(restaurantId: string): Promise<BranchView[]>;
   orgBilling(organizationId: string): Promise<BillingInfoView | null>;
   subscriptionHistory(
     organizationId: string,

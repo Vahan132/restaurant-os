@@ -12716,6 +12716,92 @@
         ]
       }
     },
+    "/platform/fiscal-config/branches/{restaurantId}": {
+      "get": {
+        "operationId": "PlatformFiscalConfigController_branches",
+        "summary": "List a restaurant's branches (tenant picker).",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlatformBranchResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Platform Fiscal Config"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/fiscal-config/{restaurantId}/{branchId}/cert": {
+      "put": {
+        "operationId": "PlatformFiscalConfigController_uploadCert",
+        "summary": "Upload/replace the cert (write-only; never returned).",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFiscalCertDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Fiscal Config"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
     "/platform/fiscal-config/{restaurantId}/{branchId}": {
       "put": {
         "operationId": "PlatformFiscalConfigController_upsertConfig",
@@ -15752,6 +15838,11 @@
           "hideRecipe": {
             "type": "boolean",
             "description": "Hides the customer ingredient list, not the allergen summary."
+          },
+          "adgCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified)."
           }
         },
         "required": [
@@ -15769,7 +15860,8 @@
           "prepTimeMinutes",
           "status",
           "availability",
-          "hideRecipe"
+          "hideRecipe",
+          "adgCode"
         ]
       },
       "DishModifierGroupResponse": {
@@ -16014,6 +16106,11 @@
             "type": "boolean",
             "description": "Hides the customer ingredient list, not the allergen summary."
           },
+          "adgCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified)."
+          },
           "modifierGroups": {
             "type": "array",
             "items": {
@@ -16037,6 +16134,7 @@
           "status",
           "availability",
           "hideRecipe",
+          "adgCode",
           "modifierGroups"
         ]
       },
@@ -16116,6 +16214,11 @@
           "hideRecipe": {
             "type": "boolean",
             "description": "CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible)."
+          },
+          "adgCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "ADGCODE-UI: SRC ATG classification code (from the SRC N 1406-Ն / N 875-Ն lists) for e-HDM fiscalization. Free-text: SRC validates (error 183); no server format constraint, the UI only soft-warns. Send an empty string or null to clear it; omit to leave it unchanged (partial update)."
           }
         }
       },
@@ -23590,6 +23693,46 @@
           "categories"
         ]
       },
+      "PlatformBranchResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "isDefault",
+          "status"
+        ]
+      },
+      "SetFiscalCertDto": {
+        "type": "object",
+        "properties": {
+          "clientCertPem": {
+            "type": "string",
+            "description": "Client certificate PEM (converted from .jks by ops before upload)."
+          },
+          "clientKeyPem": {
+            "type": "string",
+            "description": "Client private key PEM. Encrypted at rest; never returned by any read."
+          }
+        },
+        "required": [
+          "clientCertPem",
+          "clientKeyPem"
+        ]
+      },
       "UpsertFiscalConfigDto": {
         "type": "object",
         "properties": {
@@ -23616,14 +23759,6 @@
           },
           "active": {
             "type": "boolean"
-          },
-          "clientCertPem": {
-            "type": "string",
-            "description": "Client certificate PEM (converted from .jks by ops before upload)."
-          },
-          "clientKeyPem": {
-            "type": "string",
-            "description": "Client private key PEM. Encrypted at rest; never returned by any read."
           }
         },
         "required": [
@@ -23631,9 +23766,7 @@
           "cashierId",
           "environment",
           "language",
-          "active",
-          "clientCertPem",
-          "clientKeyPem"
+          "active"
         ]
       },
       "FiscalDepartmentDto": {
@@ -23717,6 +23850,10 @@
           "active": {
             "type": "boolean"
           },
+          "certConfigured": {
+            "type": "boolean",
+            "description": "True once a cert/key has been uploaded (never exposes the material)."
+          },
           "departments": {
             "type": "array",
             "items": {
@@ -23743,6 +23880,7 @@
           "environment",
           "language",
           "active",
+          "certConfigured",
           "departments",
           "lastCheckConnectionAt",
           "lastCheckConnectionOk",

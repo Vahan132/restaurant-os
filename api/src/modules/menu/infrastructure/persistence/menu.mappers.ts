@@ -78,6 +78,7 @@ export class ItemMapper {
       status: r.status as MenuStatus,
       availability: r.availability as ItemAvailability,
       hideRecipe: r.hideRecipe,
+      adgCode: r.adgCode,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       deletedAt: r.deletedAt,
@@ -101,6 +102,7 @@ export class ItemMapper {
       status: i.status as MenuStatus,
       availability: i.availability as ItemAvailability,
       hideRecipe: i.hideRecipe,
+      adgCode: i.adgCode,
       createdAt: i.createdAt,
       updatedAt: i.updatedAt,
       deletedAt: i.deletedAt,
@@ -120,6 +122,7 @@ export class ItemMapper {
       status: i.status as MenuStatus,
       availability: i.availability as ItemAvailability,
       hideRecipe: i.hideRecipe,
+      adgCode: i.adgCode,
       updatedAt: i.updatedAt,
       deletedAt: i.deletedAt,
     };

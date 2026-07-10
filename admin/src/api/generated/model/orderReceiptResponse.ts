@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { OrderReceiptFiscalResponse } from './orderReceiptFiscalResponse';
+import type { OrderReceiptResponseFiscalStatus } from './orderReceiptResponseFiscalStatus';
 
 export interface OrderReceiptResponse {
   orderId: string;
@@ -16,5 +17,7 @@ export interface OrderReceiptResponse {
   totalAmount: number;
   /** False = paid but fiscalisation still pending (poll). */
   fiscalized: boolean;
+  /** Derived fiscal state (no error code). FAILED = fatal stop: stop polling and show a delayed message. */
+  fiscalStatus: OrderReceiptResponseFiscalStatus;
   fiscal: OrderReceiptFiscalResponse | null;
 }

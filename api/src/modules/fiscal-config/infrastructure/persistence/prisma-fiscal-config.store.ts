@@ -4,11 +4,12 @@ import {
   FiscalConfigStatus,
   FiscalConfigStore,
   FiscalDepartmentInput,
+  SetFiscalCertInput,
   UpsertFiscalConfigInput,
 } from '../../application/ports/fiscal-config-store.port';
 import { FiscalCryptoService } from '../crypto/fiscal-crypto.service';
 
-/** Config not found for the given branch (a write to departments before upsert). */
+/** Config not found for the given branch (a cert/department write before upsert). */
 export class FiscalConfigNotFoundError extends Error {
   constructor(restaurantId: string, branchId: string) {
     super(`No fiscal config for ${restaurantId}:${branchId}.`);
@@ -17,10 +18,11 @@ export class FiscalConfigNotFoundError extends Error {
 }
 
 /**
- * Prisma-backed fiscal-config store (FISCAL-4). Encrypts cert/key via envelope
- * encryption on write; `getStatus` returns ONLY non-secret fields (the secret
- * columns are never selected into a status shape). Tenant scoping is by the
- * (restaurantId, branchId) unique key on every call.
+ * Prisma-backed fiscal-config store (FISCAL-4). Config scalars and the cert are
+ * SEPARATE writes: `upsertConfig` never touches secrets; `setCert` encrypts +
+ * stores them (envelope). `getStatus` returns only non-secret fields plus a
+ * `certConfigured` boolean. Tenant scoping is the (restaurantId, branchId) unique
+ * key on every call.
  */
 @Injectable()
 export class PrismaFiscalConfigStore implements FiscalConfigStore {
@@ -30,22 +32,6 @@ export class PrismaFiscalConfigStore implements FiscalConfigStore {
   ) {}
 
   async upsertConfig(input: UpsertFiscalConfigInput): Promise<void> {
-    const w = this.crypto.wrap(
-      Buffer.from(input.clientCertPem, 'utf8'),
-      Buffer.from(input.clientKeyPem, 'utf8'),
-    );
-    const secretData = {
-      certCipher: w.cert.cipher,
-      certIv: w.cert.iv,
-      certAuthTag: w.cert.authTag,
-      keyCipher: w.key.cipher,
-      keyIv: w.key.iv,
-      keyAuthTag: w.key.authTag,
-      dekCipher: w.dek.cipher,
-      dekIv: w.dek.iv,
-      dekAuthTag: w.dek.authTag,
-      kekVersion: w.kekVersion,
-    };
     const scalar = {
       crn: input.crn,
       cashierId: input.cashierId,
@@ -57,13 +43,41 @@ export class PrismaFiscalConfigStore implements FiscalConfigStore {
       where: {
         restaurantId_branchId: { restaurantId: input.restaurantId, branchId: input.branchId },
       },
-      create: {
-        restaurantId: input.restaurantId,
-        branchId: input.branchId,
-        ...scalar,
-        ...secretData,
+      create: { restaurantId: input.restaurantId, branchId: input.branchId, ...scalar },
+      update: scalar,
+    });
+  }
+
+  async setCert(input: SetFiscalCertInput): Promise<void> {
+    const exists = await this.prisma.fiscalConfig.findUnique({
+      where: {
+        restaurantId_branchId: { restaurantId: input.restaurantId, branchId: input.branchId },
       },
-      update: { ...scalar, ...secretData },
+      select: { id: true },
+    });
+    if (!exists) {
+      throw new FiscalConfigNotFoundError(input.restaurantId, input.branchId);
+    }
+    const w = this.crypto.wrap(
+      Buffer.from(input.clientCertPem, 'utf8'),
+      Buffer.from(input.clientKeyPem, 'utf8'),
+    );
+    await this.prisma.fiscalConfig.update({
+      where: {
+        restaurantId_branchId: { restaurantId: input.restaurantId, branchId: input.branchId },
+      },
+      data: {
+        certCipher: w.cert.cipher,
+        certIv: w.cert.iv,
+        certAuthTag: w.cert.authTag,
+        keyCipher: w.key.cipher,
+        keyIv: w.key.iv,
+        keyAuthTag: w.key.authTag,
+        dekCipher: w.dek.cipher,
+        dekIv: w.dek.iv,
+        dekAuthTag: w.dek.authTag,
+        kekVersion: w.kekVersion,
+      },
     });
   }
 
@@ -108,6 +122,7 @@ export class PrismaFiscalConfigStore implements FiscalConfigStore {
       environment: cfg.environment as 'PROD' | 'TEST',
       language: cfg.language,
       active: cfg.active,
+      certConfigured: cfg.certCipher !== null,
       departments: cfg.departments.map((d) => ({
         dep: d.dep,
         taxRegime: d.taxRegime,

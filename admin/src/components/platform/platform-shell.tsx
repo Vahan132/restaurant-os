@@ -10,7 +10,10 @@ import { LanguageSwitcher } from '@/components/i18n/language-switcher';
 import { Button } from '@/components/ui/button';
 import { usePlatformAuthStore } from '@/stores/platform-auth';
 
-const NAV = [{ key: 'catalog', href: '/platform/catalog' }];
+const NAV = [
+  { key: 'catalog', href: '/platform/catalog' },
+  { key: 'fiscalConfig', href: '/platform/fiscal-config' },
+];
 
 /** Minimal platform-admin chrome: header + nav + language + logout. */
 export function PlatformShell({ children }: { children: ReactNode }) {

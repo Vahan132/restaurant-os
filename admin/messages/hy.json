@@ -63,7 +63,8 @@
     "invTransfers": "Տեղափոխումներ",
     "invCorrections": "Ուղղումներ",
     "invReports": "Հաշվետվություններ",
-    "consumerListing": "Սպառողական էջ"
+    "consumerListing": "Սպառողական էջ",
+    "menuFiscalCodes": "Հարկային կոդեր"
   },
   "topbar": {
     "userMenu": "Հաշիվ",
@@ -216,7 +217,21 @@
     "maxOverride": "Առավ.",
     "inherit": "Ժառանգել",
     "optionalLabel": "Ոչ պարտադիր",
-    "overridesHint": "Թողեք դաշտը դատարկ՝ խմբի արժեքը ժառանգելու համար։"
+    "overridesHint": "Թողեք դաշտը դատարկ՝ խմբի արժեքը ժառանգելու համար։",
+    "adgCode": "ԱՏԳ կոդ",
+    "adgCodePlaceholder": "օր. 2130000000",
+    "adgCodeHelper": "ԱՏԳ դասակարգման կոդը ՊԵԿ-ի N 1406-Ն / N 875-Ն ցանկերից։",
+    "fiscalCodesTitle": "Հարկային կոդեր (ԱՏԳ)",
+    "fiscalCodesSubtitle": "Նշանակեք յուրաքանչյուր ուտեստի ԱՏԳ դասակարգման կոդը՝ պատվերները ֆիսկալիզացնելու համար։",
+    "coverageCount": "{total}-ից {coded} ուտեստ ունեն ԱՏԳ կոդ",
+    "missingOnly": "Միայն բացակայողները",
+    "statusSet": "Սահմանված է",
+    "adgCodeSaved": "ԱՏԳ կոդը պահպանվեց",
+    "allCoded": "Բոլոր ուտեստներն ունեն ԱՏԳ կոդ։",
+    "adgCodeWarning": "Սա ԱՏԳ կոդի տեսք չունի (սովորաբար 4–15 թվանշան)։ Կարող եք պահպանել — ՊԵԿ-ը ստուգում է այն։",
+    "statusNeedsCode": "Կոդ է պետք",
+    "statusNa": "Կիրառելի չէ",
+    "needsCount": "{count}-ին դեռ կոդ է պետք"
   },
   "tables": {
     "title": "Սեղաններ",
@@ -1718,7 +1733,8 @@
   "platform": {
     "title": "Հարթակի ադմին",
     "catalog": "Կատալոգ",
-    "logout": "Դուրս գալ"
+    "logout": "Դուրս գալ",
+    "fiscalConfig": "Fiscal config"
   },
   "platformAuth": {
     "title": "Հարթակի ադմին",
@@ -1772,5 +1788,51 @@
     "errorType": "Ֆայլի չաջակցվող տեսակ։ Օգտագործեք JPG, PNG կամ WebP։",
     "errorSize": "Ֆայլը չափազանց մեծ է։ Առավելագույնը 5 ՄԲ։",
     "errorUpload": "Վերբեռնումը ձախողվեց։ Խնդրում ենք կրկին փորձել։"
+  },
+  "platformFiscal": {
+    "title": "Fiscal config",
+    "subtitle": "Configure a branch's e-HDM connection (support only).",
+    "org": "Organization",
+    "selectOrg": "Select organization…",
+    "restaurant": "Restaurant",
+    "selectRestaurant": "Select restaurant…",
+    "branch": "Branch",
+    "selectBranch": "Select branch…",
+    "defaultBranch": "default",
+    "pickBranchPrompt": "Select an organization, restaurant, and branch to configure.",
+    "configSection": "Configuration",
+    "crn": "CRN",
+    "cashierId": "Cashier ID",
+    "environment": "Environment",
+    "envTest": "Test (SRC test endpoint)",
+    "envProd": "Production",
+    "language": "Language",
+    "active": "Active",
+    "saveConfig": "Save config",
+    "savedConfig": "Config saved.",
+    "deptSection": "Department map (dep → tax regime)",
+    "saveConfigFirst": "Save the config first.",
+    "noDepts": "No departments yet.",
+    "dep": "Dep code",
+    "taxRegime": "Tax regime",
+    "label": "Label (optional)",
+    "remove": "Remove",
+    "addRow": "Add row",
+    "saveDepts": "Save departments",
+    "savedDepts": "Departments saved.",
+    "certSection": "Certificate",
+    "certConfigured": "Configured ✓",
+    "certNotConfigured": "Not configured",
+    "certHint": "Upload the PEM cert + key (converted from .jks by ops). Write-only — never shown or downloadable.",
+    "certFile": "Certificate (PEM)",
+    "keyFile": "Private key (PEM)",
+    "uploadCert": "Upload / replace",
+    "savedCert": "Certificate uploaded.",
+    "testSection": "Test connection",
+    "testHint": "Validates against SRC. Until network access is granted this reports a connection error — that's expected, not a config bug.",
+    "testConnection": "Test connection",
+    "testOk": "OK",
+    "testFail": "Couldn't reach SRC",
+    "lastChecked": "Last checked"
   }
 }
