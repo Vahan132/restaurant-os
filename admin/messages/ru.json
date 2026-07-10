@@ -63,7 +63,8 @@
     "invTransfers": "Перемещения",
     "invCorrections": "Корректировки",
     "invReports": "Отчёты",
-    "consumerListing": "Витрина"
+    "consumerListing": "Витрина",
+    "menuFiscalCodes": "Фискальные коды"
   },
   "topbar": {
     "userMenu": "Аккаунт",
@@ -216,7 +217,21 @@
     "maxOverride": "Макс",
     "inherit": "Наследовать",
     "optionalLabel": "Необязательно",
-    "overridesHint": "Оставьте поле пустым, чтобы наследовать значение группы."
+    "overridesHint": "Оставьте поле пустым, чтобы наследовать значение группы.",
+    "adgCode": "Код АТГ",
+    "adgCodePlaceholder": "напр. 2130000000",
+    "adgCodeHelper": "Код классификации АТГ из списков КГД N 1406-Ն / N 875-Ն.",
+    "fiscalCodesTitle": "Фискальные коды (АТГ)",
+    "fiscalCodesSubtitle": "Назначьте каждому блюду код классификации АТГ для фискализации заказов.",
+    "coverageCount": "{coded} из {total} блюд имеют код АТГ",
+    "missingOnly": "Только без кода",
+    "statusSet": "Задан",
+    "adgCodeSaved": "Код АТГ сохранён",
+    "allCoded": "У всех блюд есть код АТГ.",
+    "adgCodeWarning": "Не похоже на код АТГ (обычно 4–15 цифр). Можно сохранить — проверит КГД.",
+    "statusNeedsCode": "Нужен код",
+    "statusNa": "Не применимо",
+    "needsCount": "{count} ещё нужен код"
   },
   "tables": {
     "title": "Столы",

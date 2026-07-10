@@ -63,7 +63,8 @@
     "invTransfers": "Transfers",
     "invCorrections": "Corrections",
     "invReports": "Reports",
-    "consumerListing": "Consumer Listing"
+    "consumerListing": "Consumer Listing",
+    "menuFiscalCodes": "Fiscal codes"
   },
   "topbar": {
     "userMenu": "Account",
@@ -355,7 +356,21 @@
     "maxOverride": "Max",
     "inherit": "Inherit",
     "optionalLabel": "Optional",
-    "overridesHint": "Leave a field blank to inherit the group's value."
+    "overridesHint": "Leave a field blank to inherit the group's value.",
+    "adgCode": "ATG code",
+    "adgCodePlaceholder": "e.g. 2130000000",
+    "adgCodeHelper": "ATG classification code from the SRC N 1406-Ն / N 875-Ն lists.",
+    "fiscalCodesTitle": "Fiscal codes (ATG)",
+    "fiscalCodesSubtitle": "Assign each dish its SRC ATG classification code so orders can be fiscalized.",
+    "coverageCount": "{coded} of {total} dishes have an ATG code",
+    "missingOnly": "Missing only",
+    "statusSet": "Set",
+    "adgCodeSaved": "ATG code saved",
+    "allCoded": "Every dish has an ATG code.",
+    "adgCodeWarning": "This doesn't look like an ATG code (usually 4–15 digits). You can still save — SRC validates it.",
+    "statusNeedsCode": "Needs code",
+    "statusNa": "N/A",
+    "needsCount": "{count} still need a code"
   },
   "tables": {
     "title": "Tables",

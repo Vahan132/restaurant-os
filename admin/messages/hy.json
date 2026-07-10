@@ -63,7 +63,8 @@
     "invTransfers": "Տեղափոխումներ",
     "invCorrections": "Ուղղումներ",
     "invReports": "Հաշվետվություններ",
-    "consumerListing": "Սպառողական էջ"
+    "consumerListing": "Սպառողական էջ",
+    "menuFiscalCodes": "Հարկային կոդեր"
   },
   "topbar": {
     "userMenu": "Հաշիվ",
@@ -216,7 +217,21 @@
     "maxOverride": "Առավ.",
     "inherit": "Ժառանգել",
     "optionalLabel": "Ոչ պարտադիր",
-    "overridesHint": "Թողեք դաշտը դատարկ՝ խմբի արժեքը ժառանգելու համար։"
+    "overridesHint": "Թողեք դաշտը դատարկ՝ խմբի արժեքը ժառանգելու համար։",
+    "adgCode": "ԱՏԳ կոդ",
+    "adgCodePlaceholder": "օր. 2130000000",
+    "adgCodeHelper": "ԱՏԳ դասակարգման կոդը ՊԵԿ-ի N 1406-Ն / N 875-Ն ցանկերից։",
+    "fiscalCodesTitle": "Հարկային կոդեր (ԱՏԳ)",
+    "fiscalCodesSubtitle": "Նշանակեք յուրաքանչյուր ուտեստի ԱՏԳ դասակարգման կոդը՝ պատվերները ֆիսկալիզացնելու համար։",
+    "coverageCount": "{total}-ից {coded} ուտեստ ունեն ԱՏԳ կոդ",
+    "missingOnly": "Միայն բացակայողները",
+    "statusSet": "Սահմանված է",
+    "adgCodeSaved": "ԱՏԳ կոդը պահպանվեց",
+    "allCoded": "Բոլոր ուտեստներն ունեն ԱՏԳ կոդ։",
+    "adgCodeWarning": "Սա ԱՏԳ կոդի տեսք չունի (սովորաբար 4–15 թվանշան)։ Կարող եք պահպանել — ՊԵԿ-ը ստուգում է այն։",
+    "statusNeedsCode": "Կոդ է պետք",
+    "statusNa": "Կիրառելի չէ",
+    "needsCount": "{count}-ին դեռ կոդ է պետք"
   },
   "tables": {
     "title": "Սեղաններ",

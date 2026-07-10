@@ -35,6 +35,12 @@ export interface UpdateMenuItemInput {
   prepTimeMinutes?: number | null;
   categoryId?: string;
   hideRecipe?: boolean;
+  /**
+   * ADGCODE-UI: SRC ATG classifier. undefined = leave unchanged (partial update);
+   * '' or null = clear to null; a value sets it. No format constraint here or at the
+   * DTO boundary — SRC validates (error 183); the UI only soft-warns.
+   */
+  adgCode?: string | null;
 }
 
 /** Update item details and/or reassign category (verified same-restaurant). */
@@ -70,6 +76,15 @@ export class UpdateMenuItemUseCase implements UseCase<UpdateMenuItemInput, MenuI
       input.imageUrl,
       input.imageKey,
     );
+    // Normalize adgCode: undefined stays undefined (unchanged); null or an empty/blank
+    // string clears to null; otherwise trim and set. updateDetails applies partial
+    // semantics, so editing other fields never wipes an existing code.
+    const adgCode =
+      input.adgCode === undefined
+        ? undefined
+        : input.adgCode === null || input.adgCode.trim() === ''
+          ? null
+          : input.adgCode.trim();
     item.updateDetails({
       name: input.name,
       description: input.description,
@@ -78,6 +93,7 @@ export class UpdateMenuItemUseCase implements UseCase<UpdateMenuItemInput, MenuI
       preparationStation: input.preparationStation,
       prepTimeMinutes: input.prepTimeMinutes,
       hideRecipe: input.hideRecipe,
+      adgCode,
     });
     await this.items.update(item);
     return item;

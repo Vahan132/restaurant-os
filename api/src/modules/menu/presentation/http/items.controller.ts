@@ -157,6 +157,7 @@ export class ItemsController {
       categoryId: dto.categoryId,
       preparationStation: dto.preparationStation,
       prepTimeMinutes: dto.prepTimeMinutes,
+      adgCode: dto.adgCode,
     });
     return MenuItemResponse.from(item);
   }

@@ -34,5 +34,10 @@ export interface MenuItemDetailResponse {
   availability: MenuItemDetailResponseAvailability;
   /** Hides the customer ingredient list, not the allergen summary. */
   hideRecipe: boolean;
+  /**
+     * ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified).
+     * @nullable
+     */
+  adgCode: string | null;
   modifierGroups: AttachedModifierGroupResponse[];
 }

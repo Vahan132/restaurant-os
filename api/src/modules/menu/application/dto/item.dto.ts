@@ -9,6 +9,7 @@ import {
   Max,
   Min,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '../../../../shared/application/pagination';
 import { ItemAvailability, MenuStatus, PreparationStation } from '../../domain/enums';
@@ -104,6 +105,24 @@ export class UpdateMenuItemDto {
   @IsOptional()
   @IsBoolean()
   hideRecipe?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'ADGCODE-UI: SRC ATG classification code (from the SRC N 1406-Ն / N 875-Ն lists) for ' +
+      'e-HDM fiscalization. Free-text: SRC is the authority (rejects a bad code with error 183 ' +
+      'at fiscalization), so there is NO server format constraint — the UI only soft-warns on ' +
+      'obvious typos. Send an empty string or null to clear it; omit to leave it unchanged ' +
+      '(partial update).',
+    example: '2130000000',
+    nullable: true,
+  })
+  @IsOptional()
+  // Accept null (explicit clear) as well as a string; type-check only when not null.
+  // Deliberately NO @Matches: a hard reject would block valid codes that aren't in
+  // the (unimported) SRC lists. Validation is a soft UI warning only.
+  @ValidateIf((o) => o.adgCode !== null)
+  @IsString()
+  adgCode?: string | null;
 }
 
 export class ChangeItemPriceDto {

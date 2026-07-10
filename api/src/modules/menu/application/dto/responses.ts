@@ -54,6 +54,13 @@ export class MenuItemResponse {
   @ApiProperty({ enum: ['AVAILABLE', 'UNAVAILABLE'] }) availability!: string;
   @ApiProperty({ description: 'Hides the customer ingredient list, not the allergen summary.' })
   hideRecipe!: boolean;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description:
+      'ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified).',
+  })
+  adgCode!: string | null;
 
   static from(i: MenuItem): MenuItemResponse {
     return {
@@ -72,6 +79,7 @@ export class MenuItemResponse {
       status: i.status,
       availability: i.availability,
       hideRecipe: i.hideRecipe,
+      adgCode: i.adgCode,
     };
   }
 }

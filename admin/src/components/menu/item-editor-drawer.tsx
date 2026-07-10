@@ -89,7 +89,14 @@ export function ItemEditorDrawer({
   const [availability, setAvailability] = useState<string>(
     MenuItemResponseAvailability.AVAILABLE,
   );
-  const [errors, setErrors] = useState<{ name?: string; category?: string; price?: string }>({});
+  // ADGCODE-UI: the dish-level SRC ATG classifier code (free-text; soft-warned only,
+  // never blocks save — SRC is the real validator at fiscalization).
+  const [adgCode, setAdgCode] = useState('');
+  const [errors, setErrors] = useState<{
+    name?: string;
+    category?: string;
+    price?: string;
+  }>({});
 
   // Populate the form from the fetched item (edit mode / after create).
   useEffect(() => {
@@ -104,7 +111,12 @@ export function ItemEditorDrawer({
     setPrepTime(detail.prepTimeMinutes != null ? String(detail.prepTimeMinutes) : '');
     setStatus(detail.status);
     setAvailability(detail.availability);
+    setAdgCode(detail.adgCode ?? '');
   }, [detail, currency]);
+
+  // ADGCODE-UI: accept 4–15 digits (SRC ATG codes are numeric). Empty is allowed
+  // (not yet classified); we do NOT check the value against the SRC lists (v1).
+  const ADG_CODE_RE = /^\d{4,15}$/;
 
   const create = useItemsControllerCreate();
   const update = useItemsControllerUpdate();
@@ -170,6 +182,10 @@ export function ItemEditorDrawer({
             data: { availability: availability as SetItemAvailabilityDtoAvailability },
           });
         }
+        // ADGCODE-UI: create DTO can't carry adgCode; set it via PATCH after create.
+        if (adgCode.trim()) {
+          await update.mutateAsync({ id: created.id, data: { adgCode: adgCode.trim() } });
+        }
         await Promise.all([invalidateItems(), invalidateMenuTree(), invalidateCategories()]);
         toast.success(t('toast.itemCreated'));
         setWorkingId(created.id);
@@ -186,6 +202,9 @@ export function ItemEditorDrawer({
             categoryId: formCategoryId,
             preparationStation: station as CreateMenuItemDtoPreparationStation,
             prepTimeMinutes,
+            // Send the current field value (populated from the dish on load, so an
+            // untouched code is preserved); an empty string clears it.
+            adgCode: adgCode.trim(),
           },
         });
         if (canSetPrice && (priceMinor ?? 0) !== detail.priceAmount) {
@@ -353,6 +372,21 @@ export function ItemEditorDrawer({
                 />
               </Field>
             </div>
+            <Field label={t('adgCode')}>
+              <input
+                className={inputClass}
+                value={adgCode}
+                disabled={!canManage}
+                inputMode="numeric"
+                placeholder={t('adgCodePlaceholder')}
+                onChange={(e) => setAdgCode(e.target.value)}
+              />
+              {adgCode.trim() && !ADG_CODE_RE.test(adgCode.trim()) ? (
+                <span className="mt-1 block text-xs text-amber-600">{t('adgCodeWarning')}</span>
+              ) : (
+                <span className="mt-1 block text-xs text-gray-500">{t('adgCodeHelper')}</span>
+              )}
+            </Field>
             <Field label={t('imageUrl')}>
               <input
                 className={inputClass}
