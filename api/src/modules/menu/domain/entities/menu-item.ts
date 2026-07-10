@@ -17,10 +17,19 @@ export interface MenuItemProps {
   description: string | null;
   priceAmount: number;
   imageUrl: string | null;
+  /** MEDIA-1: object-storage key when the image was uploaded (null for URL-paste). */
+  imageKey: string | null;
   preparationStation: PreparationStation;
   prepTimeMinutes: number | null;
   status: MenuStatus;
   availability: ItemAvailability;
+  /** CATALOG-3 §9: hides the customer ingredient list, not the allergen summary. */
+  hideRecipe: boolean;
+  /**
+   * FISCAL-0/ADGCODE-UI: the dish-level SRC ATG classifier code for fiscalization.
+   * null = not yet classified (fiscal print fail-closes on a null line, error 192).
+   */
+  adgCode: string | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -36,8 +45,10 @@ export interface CreateMenuItemInput {
   description?: string | null;
   priceAmount: number;
   imageUrl?: string | null;
+  imageKey?: string | null;
   preparationStation?: PreparationStation;
   prepTimeMinutes?: number | null;
+  adgCode?: string | null;
   actorUserId?: string | null;
 }
 
@@ -68,10 +79,13 @@ export class MenuItem extends AggregateRoot<string> {
       description: input.description ?? null,
       priceAmount: input.priceAmount,
       imageUrl: input.imageUrl ?? null,
+      imageKey: input.imageKey ?? null,
       preparationStation: input.preparationStation ?? PreparationStation.KITCHEN,
       prepTimeMinutes: input.prepTimeMinutes ?? null,
       status: MenuStatus.ACTIVE,
       availability: ItemAvailability.AVAILABLE,
+      hideRecipe: false,
+      adgCode: input.adgCode ?? null,
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
@@ -115,6 +129,9 @@ export class MenuItem extends AggregateRoot<string> {
   get imageUrl(): string | null {
     return this.props.imageUrl;
   }
+  get imageKey(): string | null {
+    return this.props.imageKey;
+  }
   get preparationStation(): PreparationStation {
     return this.props.preparationStation;
   }
@@ -126,6 +143,12 @@ export class MenuItem extends AggregateRoot<string> {
   }
   get availability(): ItemAvailability {
     return this.props.availability;
+  }
+  get hideRecipe(): boolean {
+    return this.props.hideRecipe;
+  }
+  get adgCode(): string | null {
+    return this.props.adgCode;
   }
   get createdAt(): Date {
     return this.props.createdAt;
@@ -145,15 +168,22 @@ export class MenuItem extends AggregateRoot<string> {
     name?: string;
     description?: string | null;
     imageUrl?: string | null;
+    imageKey?: string | null;
     preparationStation?: PreparationStation;
     prepTimeMinutes?: number | null;
+    hideRecipe?: boolean;
+    adgCode?: string | null;
   }): void {
     if (input.name !== undefined) this.props.name = input.name;
     if (input.description !== undefined) this.props.description = input.description;
     if (input.imageUrl !== undefined) this.props.imageUrl = input.imageUrl;
+    if (input.imageKey !== undefined) this.props.imageKey = input.imageKey;
     if (input.preparationStation !== undefined)
       this.props.preparationStation = input.preparationStation;
     if (input.prepTimeMinutes !== undefined) this.props.prepTimeMinutes = input.prepTimeMinutes;
+    if (input.hideRecipe !== undefined) this.props.hideRecipe = input.hideRecipe;
+    // Partial-update: omitted (undefined) leaves the code untouched; null clears it.
+    if (input.adgCode !== undefined) this.props.adgCode = input.adgCode;
     this.touch();
   }
 

@@ -5,23 +5,20 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { SetDishModifierOverridesDtoMaxOverride } from './setDishModifierOverridesDtoMaxOverride';
-import type { SetDishModifierOverridesDtoMinOverride } from './setDishModifierOverridesDtoMinOverride';
-import type { SetDishModifierOverridesDtoRequiredOverride } from './setDishModifierOverridesDtoRequiredOverride';
 
 export interface SetDishModifierOverridesDto {
   /** @nullable */
-  requiredOverride?: SetDishModifierOverridesDtoRequiredOverride;
+  requiredOverride?: boolean | null;
   /**
      * @minimum 0
      * @nullable
      */
-  minOverride?: SetDishModifierOverridesDtoMinOverride;
+  minOverride?: number | null;
   /**
      * @minimum 1
      * @nullable
      */
-  maxOverride?: SetDishModifierOverridesDtoMaxOverride;
+  maxOverride?: number | null;
   /** @minimum 0 */
   sortOrder?: number;
 }

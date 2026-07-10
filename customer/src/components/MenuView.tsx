@@ -19,12 +19,15 @@ import type {
   PublicTableResponse,
 } from '@/api/generated/model';
 import { resolveBranchSlug, resolveSlug, resolveTableQr, withBranchParam } from '@/lib/tenant';
+import { hasSessionToken } from '@/lib/session';
 
 import BrandingHeader from './BrandingHeader';
 import CartBar from './cart/CartBar';
 import CartView from './cart/CartView';
+import CheckoutView from './cart/CheckoutView';
+import ReceiptView from './cart/ReceiptView';
+import SessionOrders from './cart/SessionOrders';
 import { useCart } from './cart/CartProvider';
-import OrderStatusScreen from './cart/OrderStatusScreen';
 import CategoryNav from './CategoryNav';
 import ItemCard from './ItemCard';
 import ItemDetailSheet from './ItemDetailSheet';
@@ -40,6 +43,7 @@ export default function MenuView() {
   const tSearch = useTranslations('search');
   const tGate = useTranslations('gating');
   const tLoc = useTranslations('location');
+  const tStatus = useTranslations('liveStatus');
   const { addLine } = useCart();
   const restaurantSlug = resolveSlug();
 
@@ -48,9 +52,13 @@ export default function MenuView() {
   const [qr, setQr] = useState<string | null>(null);
   const [qrReady, setQrReady] = useState(false);
   const [pickedBranch, setPickedBranch] = useState<string | null>(null);
+  // Whether this table already has a persisted session token (a prior order on
+  // this device) — drives the "view my orders" reattach affordance.
+  const [hasSession, setHasSession] = useState(false);
   useEffect(() => {
     setQr(resolveTableQr());
     setPickedBranch(resolveBranchSlug());
+    setHasSession(hasSessionToken());
     setQrReady(true);
   }, []);
 
@@ -98,8 +106,15 @@ export default function MenuView() {
   const [query, setQuery] = useState('');
   const [openItemId, setOpenItemId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [cartOpen, setCartOpen] = useState(false);
-  const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+  // Prepayment flow stage. `menu` is the browse surface; the others are
+  // full-screen takeovers. `receipt` carries the just-paid order id.
+  const [stage, setStage] = useState<
+    | { name: 'menu' }
+    | { name: 'cart' }
+    | { name: 'checkout' }
+    | { name: 'receipt'; orderId: string }
+    | { name: 'status' }
+  >({ name: 'menu' });
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const categories = useMemo(() => menuQ.data?.categories ?? [], [menuQ.data]);
@@ -203,11 +218,64 @@ export default function MenuView() {
   // Inline note only when ordering is enabled but no table is scanned.
   const showScanNote = restaurant.orderingEnabled && noTable;
 
-  // The order status screen takes over the whole view while active.
-  if (activeOrderId) {
-    return (
-      <OrderStatusScreen orderId={activeOrderId} onBackToMenu={() => setActiveOrderId(null)} />
-    );
+  // Prepayment full-screen takeovers (only reachable when ordering is available
+  // and a table is scanned, so `qr` is guaranteed non-null here).
+  if (orderingAvailable && qr) {
+    if (stage.name === 'checkout') {
+      return (
+        <CheckoutView
+          qr={qr}
+          currency={currency}
+          locale={locale}
+          onBack={() => setStage({ name: 'cart' })}
+          onPaid={(orderId) => {
+            setHasSession(true);
+            setStage({ name: 'receipt', orderId });
+          }}
+        />
+      );
+    }
+    if (stage.name === 'receipt') {
+      return (
+        <ReceiptView
+          orderId={stage.orderId}
+          qr={qr}
+          currency={currency}
+          locale={locale}
+          onOrderMore={() => setStage({ name: 'menu' })}
+        />
+      );
+    }
+    if (stage.name === 'status') {
+      return (
+        <div
+          className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-white"
+          data-testid="status-view"
+        >
+          <header className="sticky top-0 flex items-center gap-3 border-b border-gray-100 bg-white px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setStage({ name: 'menu' })}
+              aria-label={tStatus('backToMenu')}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-600"
+            >
+              ←
+            </button>
+            <h1 className="flex-1 text-base font-semibold text-gray-900">{tStatus('title')}</h1>
+          </header>
+          <div className="mx-auto w-full max-w-md flex-1 px-4 py-4">
+            <SessionOrders qr={qr} />
+            <button
+              type="button"
+              onClick={() => setStage({ name: 'menu' })}
+              className="mt-8 w-full rounded-xl bg-brand px-4 py-3.5 text-sm font-semibold text-white"
+            >
+              {tStatus('orderMore')}
+            </button>
+          </div>
+        </div>
+      );
+    }
   }
 
   return (
@@ -291,20 +359,28 @@ export default function MenuView() {
         onClose={() => setOpenItemId(null)}
       />
 
-      {orderingAvailable ? (
-        <CartBar currency={currency} locale={locale} onOpen={() => setCartOpen(true)} />
+      {/* Reattach affordance: a prior order on this table on this device. */}
+      {orderingAvailable && hasSession ? (
+        <button
+          type="button"
+          data-testid="view-my-orders"
+          onClick={() => setStage({ name: 'status' })}
+          className="mx-auto mt-4 block text-sm font-medium text-brand-accent underline-offset-2 hover:underline"
+        >
+          {tStatus('viewMyOrders')}
+        </button>
       ) : null}
 
-      {orderingAvailable && cartOpen ? (
+      {orderingAvailable ? (
+        <CartBar currency={currency} locale={locale} onOpen={() => setStage({ name: 'cart' })} />
+      ) : null}
+
+      {orderingAvailable && stage.name === 'cart' ? (
         <CartView
-          qr={qr as string}
           currency={currency}
           locale={locale}
-          onClose={() => setCartOpen(false)}
-          onPlaced={(orderId) => {
-            setCartOpen(false);
-            setActiveOrderId(orderId);
-          }}
+          onClose={() => setStage({ name: 'menu' })}
+          onCheckout={() => setStage({ name: 'checkout' })}
         />
       ) : null}
     </div>

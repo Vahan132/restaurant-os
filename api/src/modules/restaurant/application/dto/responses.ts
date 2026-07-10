@@ -31,6 +31,12 @@ export class RestaurantSettingsResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
   @ApiProperty({ nullable: true, type: String }) logoUrl!: string | null;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'MEDIA-1: object-storage key when the logo was uploaded (null for URL-paste).',
+  })
+  logoKey!: string | null;
   @ApiProperty({ nullable: true, type: String }) phone!: string | null;
   @ApiProperty({ nullable: true, type: String }) address!: string | null;
   @ApiProperty({ description: 'Tax rate, basis points.' }) taxRateBps!: number;
@@ -55,6 +61,7 @@ export class RestaurantSettingsResponse {
       id: s.id,
       restaurantId: p.restaurantId,
       logoUrl: p.logoUrl,
+      logoKey: p.logoKey,
       phone: p.phone,
       address: p.address,
       taxRateBps: p.taxRateBps,
@@ -75,6 +82,16 @@ export class RestaurantSettingsResponse {
   }
 }
 
+/** ORDER-1: a branch's ordering flow config (nested in BranchResponse). */
+export class BranchOrderingConfigResponse {
+  @ApiProperty() prepaymentEnabled!: boolean;
+  @ApiProperty() payAtEndEnabled!: boolean;
+  @ApiProperty({ description: 'QR-web channel may open sessions (always prepayment).' })
+  qrOrderingEnabled!: boolean;
+  @ApiProperty({ description: 'Idle auto-expiry threshold, minutes.' })
+  idleExpiryMinutes!: number;
+}
+
 export class BranchResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
@@ -88,6 +105,8 @@ export class BranchResponse {
   ipBindingMode!: string;
   @ApiProperty({ type: [String], description: '3A: allowed source CIDRs (STRICT mode).' })
   ipAllowlist!: string[];
+  @ApiProperty({ type: BranchOrderingConfigResponse, description: 'ORDER-1: ordering flow config.' })
+  orderingConfig!: BranchOrderingConfigResponse;
 
   static from(b: Branch): BranchResponse {
     return {
@@ -99,6 +118,12 @@ export class BranchResponse {
       status: b.status,
       ipBindingMode: b.ipBindingMode,
       ipAllowlist: b.ipAllowlist,
+      orderingConfig: {
+        prepaymentEnabled: b.orderingConfig.prepaymentEnabled,
+        payAtEndEnabled: b.orderingConfig.payAtEndEnabled,
+        qrOrderingEnabled: b.orderingConfig.qrOrderingEnabled,
+        idleExpiryMinutes: b.orderingConfig.idleExpiryMinutes,
+      },
     };
   }
 }

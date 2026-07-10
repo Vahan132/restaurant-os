@@ -6,8 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type DeviceResponseStatus =
-  (typeof DeviceResponseStatus)[keyof typeof DeviceResponseStatus];
+export type DeviceResponseStatus = (typeof DeviceResponseStatus)[keyof typeof DeviceResponseStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const DeviceResponseStatus = {

@@ -1,6 +1,15 @@
 import { Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { IdentityModule } from '../identity/identity.module';
+import { InventoryModule } from '../inventory/inventory.module';
 import { TablesModule } from '../tables/tables.module';
+import { TableSessionsModule } from '../table-sessions/table-sessions.module';
+import { FiscalizationModule } from '../fiscalization/fiscalization.module';
+import { PaymentModule } from '../payment/payment.module';
+import { ConsumerIdentityModule } from '../consumer-identity/consumer-identity.module';
+import { PublicRestaurantResolverGuard } from '../../shared/storefront/public-restaurant.resolver';
+import { SessionTokenGuard } from '../table-sessions/presentation/http/session-token.guard';
+import { ConsumerAuthGuard } from '../consumer-identity/presentation/http/consumer-auth.guard';
 
 import { ORDER_REPOSITORY } from './domain/repositories/order.repository';
 import { MENU_READER } from './application/ports/menu-reader.port';
@@ -31,6 +40,13 @@ import { CloseOrderUseCase } from './application/commands/close-order.usecase';
 import { SplitEvenUseCase } from './application/commands/split-even.usecase';
 import { SplitItemsToNewCheckUseCase } from './application/commands/split-items-to-new-check.usecase';
 import { GetReceiptUseCase } from './application/queries/get-receipt.usecase';
+import { ValidateCartUseCase } from './application/commands/validate-cart.usecase';
+import { CreatePrepaymentOrderUseCase } from './application/commands/create-prepayment-order.usecase';
+import { ConfirmPaymentUseCase } from './application/commands/confirm-payment.usecase';
+import { GetOrderReceiptUseCase } from './application/queries/get-order-receipt.usecase';
+import { AssertOrderOwnedByConsumerUseCase } from './application/queries/assert-order-owned-by-consumer.usecase';
+import { CartPricingService } from './application/services/cart-pricing.service';
+import { FiscalizeOrderService } from './application/services/fiscalize-order.service';
 import { MarkOrderItemPreparingUseCase } from './application/commands/mark-order-item-preparing.usecase';
 import { MarkOrderItemReadyUseCase } from './application/commands/mark-order-item-ready.usecase';
 import { MarkOrderReadyUseCase } from './application/commands/mark-order-ready.usecase';
@@ -49,19 +65,55 @@ import { PrismaReceiptReader } from './infrastructure/readers/prisma-receipt.rea
 import { TablesTableStatusGateway } from './infrastructure/gateways/tables-table-status.gateway';
 
 import { OrdersController } from './presentation/http/orders.controller';
+import { PublicQrOrdersController } from './presentation/http/public-qr-orders.controller';
+import { AppOrdersController } from './presentation/http/app-orders.controller';
+import { ConsumerThrottlerGuard } from './presentation/http/consumer-throttler.guard';
 
 /**
  * Orders module (core; tenant-scoped). Imports IdentityModule (ID_GENERATOR) and
- * TablesModule (TableStatusService, for auto-mode table-status wiring).
+ * TablesModule (TableStatusService). ORDER-2 adds the QR-web prepayment surface:
+ * imports TableSessionsModule (create-or-join + SessionTokenGuard), Fiscalization
+ * + Payment modules (stubbed seams), and a per-module Throttler for the public
+ * QR endpoints.
  */
 @Module({
-  imports: [IdentityModule, TablesModule],
-  controllers: [OrdersController],
+  imports: [
+    IdentityModule,
+    InventoryModule,
+    TablesModule,
+    TableSessionsModule,
+    FiscalizationModule,
+    PaymentModule,
+    // ORDER-4: ConsumerIdentityModule exports CONSUMER_TOKEN_SERVICE so this
+    // module can provide its own ConsumerAuthGuard instance for the app surface.
+    ConsumerIdentityModule,
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
+  ],
+  controllers: [OrdersController, PublicQrOrdersController, AppOrdersController],
   providers: [
     // application services
     OrderItemBuilder,
     OrderTableSync,
     ApprovalChecker,
+    CartPricingService,
+    FiscalizeOrderService,
+    // ORDER-2 QR-web prepayment use-cases
+    ValidateCartUseCase,
+    CreatePrepaymentOrderUseCase,
+    ConfirmPaymentUseCase,
+    GetOrderReceiptUseCase,
+    // ORDER-4: app-path ownership check (consumer owns the order).
+    AssertOrderOwnedByConsumerUseCase,
+    // guards for the public QR surface (host/slug resolution + session token).
+    // SessionTokenGuard's deps (TABLE_SESSION_REPOSITORY, SESSION_TOKEN_SERVICE)
+    // resolve via the TableSessionsModule import above.
+    PublicRestaurantResolverGuard,
+    SessionTokenGuard,
+    // ORDER-4: app surface guards. ConsumerAuthGuard resolves CONSUMER_TOKEN_SERVICE
+    // from the imported ConsumerIdentityModule; ConsumerThrottlerGuard keys the
+    // rate limit by consumer.
+    ConsumerAuthGuard,
+    ConsumerThrottlerGuard,
     // use cases
     CreateOrderUseCase,
     AddOrderItemUseCase,

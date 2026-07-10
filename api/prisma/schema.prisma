@@ -227,6 +227,14 @@ model Branch {
   // a PIN/anchored login is allowed only from a source IP inside the allowlist.
   ipBindingMode BranchIpBindingMode @default(SOFT)
   ipAllowlist   String[]            @default([])
+  // ORDER-1: per-branch ordering flow policy (OrderingConfig VO). Flat columns
+  // (matches the branch-config convention). NARROWS the restaurant ceiling
+  // (RestaurantSettings.enableCustomerOrdering / enableQrMenu) — never widens it;
+  // the effective capability is computed at session start.
+  orderingPrepaymentEnabled Boolean @default(false)
+  orderingPayAtEndEnabled   Boolean @default(false)
+  orderingQrEnabled         Boolean @default(false)
+  orderingIdleExpiryMinutes Int     @default(150)
   // CX-1 (consumer discovery): the Branch is the consumer "listing unit". Location
   // data is branch-owned here (operational address/phone on RestaurantSettings is
   // restaurant-scoped/single-location, so the consumer context carries its own
@@ -282,6 +290,9 @@ model RestaurantSettings {
   id           String  @id @default(cuid())
   restaurantId String  @unique
   logoUrl      String?
+  // MEDIA-1: object-storage key for an uploaded logo. Additive + nullable; null ⇒
+  // URL-paste (logoUrl) is the source. logoUrl holds the resolved public URL.
+  logoKey      String? @map("logo_key")
   phone        String?
   address      String?
 
@@ -546,10 +557,22 @@ model MenuItem {
   description        String?
   priceAmount        Int                @map("price_amount")
   imageUrl           String?
+  // MEDIA-1: object-storage key for an uploaded image (R2/dev). Additive + nullable;
+  // null ⇒ URL-paste (imageUrl) is the source. imageUrl holds the resolved public URL.
+  imageKey           String?            @map("image_key")
   preparationStation PreparationStation @default(KITCHEN)
   prepTimeMinutes    Int?
   status             MenuStatus         @default(ACTIVE)
   availability       ItemAvailability   @default(AVAILABLE)
+  // CATALOG-3 §9: hides the customer ingredient list (NOT the allergen summary).
+  // Additive, default false; safe on existing rows.
+  hideRecipe         Boolean            @default(false)
+  // FISCAL-0: the dish-level SRC ATG classifier code for fiscalization. The ATG
+  // code belongs to the SOLD product (the dish), not its ingredients (whose
+  // catalog adgCodes are commodity/HS codes), so it lives here and is snapshotted
+  // onto OrderItem.adgCode at order-build time. Nullable/additive: null = not yet
+  // classified (FISCAL-1 fail-closes the fiscal print on a null line, error 192).
+  adgCode            String?            @map("adg_code")
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   deletedAt          DateTime?
@@ -743,7 +766,16 @@ model Order {
   orderNumber  Int
   type         OrderType   @default(DINE_IN)
   tableId      String?
-  waiterId     String
+  // ORDER-1: nullable ordering-container link. ORDER-2 lifts this into the Order
+  // aggregate so a QR-web prepayment order can be attached to a PREPAYMENT session.
+  tableSessionId String?
+  // ORDER-2: nullable — a QR-web (customer-placed) order has no waiter. Staff
+  // (POS) orders always carry one; null carries "customer-placed" semantics.
+  waiterId     String?
+  // ORDER-4: the consumer (CX-2) who placed this order via the app. Nullable +
+  // SetNull — QR-web/staff orders stay null; set only on the app prepayment path.
+  // Deleting a CustomerAccount severs the link without deleting order history.
+  consumerId   String?
   status       OrderStatus @default(DRAFT)
   currency     String
 
@@ -759,6 +791,28 @@ model Order {
   paidAmount       Int           @default(0) @map("paid_amount")
   splitFromOrderId String?       @map("split_from_order_id")
 
+  // ORDER-2: fiscal-aware tender split (integer minor units; QR v1: card only).
+  cardAmount       Int     @default(0) @map("card_amount")
+  cashAmount       Int     @default(0) @map("cash_amount")
+  partialAmount    Int     @default(0) @map("partial_amount")
+  prePaymentAmount Int     @default(0) @map("prepayment_amount")
+  changeAmount     Int     @default(0) @map("change_amount")
+  // Buyer TIN for a partner receipt (out of scope v1 — reserved nullable).
+  partnerTin       String? @map("partner_tin")
+  // PaymentPort charge reference (traceability; supports idempotent re-confirm).
+  paymentReference String? @map("payment_reference")
+  // ORDER-2: fiscal result, null until fiscalised (recoverable paid-but-
+  // unfiscalized state = paymentStatus PAID with these null, pending retry).
+  fiscalReceiptId  String?   @map("fiscal_receipt_id")
+  fiscalNumber     String?   @map("fiscal_number")
+  fiscalQr         String?   @map("fiscal_qr")
+  fiscalizedAt     DateTime? @map("fiscalized_at")
+  // FISCAL-0: fatal-config fiscal error marker (SRC code, e.g. "192"/"403");
+  // null = no fatal error. Set when fiscalization returns a fatal-config
+  // classification so a retried ConfirmPayment stops the retry loop and the
+  // operator can see why; cleared on fiscal success (applyFiscalResult).
+  fiscalError      String?   @map("fiscal_error")
+
   note                  String?
   cancelledReason       String?
   cancelledByUserId     String?
@@ -767,18 +821,76 @@ model Order {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  restaurant Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  table      RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
-  items      OrderItem[]
-  payments   Payment[]
+  restaurant   Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  table        RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  tableSession TableSession?    @relation(fields: [tableSessionId], references: [id], onDelete: SetNull)
+  consumer     CustomerAccount? @relation(fields: [consumerId], references: [id], onDelete: SetNull)
+  items        OrderItem[]
+  payments     Payment[]
 
   @@unique([restaurantId, orderNumber])
   @@index([restaurantId])
   @@index([tableId])
+  @@index([tableSessionId])
+  @@index([consumerId])
   @@index([status])
   @@index([restaurantId, branchId])
   @@index([restaurantId, branchId, status])
   @@map("orders")
+}
+
+// ── Table sessions (ORDER-1; ordering container, tenant-scoped) ───────────────
+enum TableSessionState {
+  PENDING_CONFIRM
+  OPEN
+  LOCKED
+  CLOSED
+  EXPIRED
+}
+
+enum TableSessionFlow {
+  PREPAYMENT
+  PAY_AT_END
+}
+
+enum TableSessionChannel {
+  QR_WEB
+  APP
+}
+
+/// The ordering CONTAINER for a (branch, table). branchId/tableId are
+/// denormalised scalars (BR-4, no FK back-relation), matching orders/inventory.
+model TableSession {
+  id                String              @id @default(cuid())
+  restaurantId      String
+  branchId          String
+  tableId           String
+  state             TableSessionState
+  flow              TableSessionFlow
+  channel           TableSessionChannel
+  // Opaque reattach token — SHA-256 only; plaintext returned once at creation.
+  tokenHash         String
+  // App participant who opened the session (null for anonymous QR-web).
+  consumerAccountId String?
+  openedAt          DateTime            @default(now())
+  lastActivityAt    DateTime            @default(now())
+  closedAt          DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  orders Order[]
+
+  // NOTE: "at most one NON-TERMINAL session per (branch, table)" is enforced by a
+  // PARTIAL UNIQUE INDEX created in raw SQL in the migration — Prisma cannot
+  // express filtered indexes: UNIQUE ("branchId","tableId") WHERE "state" IN
+  // ('PENDING_CONFIRM','OPEN','LOCKED'). Preserve it on future migrations.
+  @@index([branchId, tableId])
+  @@index([restaurantId])
+  @@index([restaurantId, branchId])
+  @@index([tableId])
+  @@index([state])
+  @@index([lastActivityAt])
+  @@map("table_sessions")
 }
 
 model OrderItem {
@@ -798,6 +910,20 @@ model OrderItem {
   preparingAt        DateTime?
   readyAt            DateTime?
   cancelledReason    String?
+  // ORDER-2 fiscal-ready line fields. Populated for QR-web lines (goodCode/
+  // goodName/unit); null for POS lines until the catalog carries them.
+  goodCode           String?            @map("good_code")
+  goodName           String?            @map("good_name")
+  unit               String?
+  // RESERVED (fiscal-ready, no logic in v1): ATG/department + SRC discount codes +
+  // marked-goods emarks. Sourced in catalog / roadmap #6.
+  adgCode                String?        @map("adg_code")
+  dep                    String?
+  discount               Int?
+  discountType           Int?           @map("line_discount_type")
+  additionalDiscount     Int?           @map("additional_discount")
+  additionalDiscountType Int?           @map("additional_discount_type")
+  emarks                 String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
@@ -851,7 +977,8 @@ model Payment {
   amount       Int
   tenderedAmount Int?        @map("tendered_amount")
   state        PaymentState  @default(ACTIVE)
-  processedByUserId String
+  // ORDER-2: nullable — a gateway-processed QR prepayment has no staff user.
+  processedByUserId String?
   voidedByUserId    String?
   voidedReason      String?
   createdAt    DateTime      @default(now())
@@ -1233,11 +1360,27 @@ model InventoryItem {
   updatedAt             DateTime            @updatedAt
   deletedAt             DateTime?
 
+  // ── CATALOG-1: platform-catalog adoption + per-branch overrides ─────────────
+  // Additive + nullable so every existing item stays valid. `catalogItemId` is a
+  // PLAIN scalar (no FK / no Prisma relation) — the same cross-aggregate style
+  // used for itemId/restaurantId across inventory, and it enforces ADR §4: the
+  // platform catalog editor has NO ORM path back to tenant inventory ("curate the
+  // template, never inspect the tenants"). null = a custom, uncatalogued item;
+  // set = adopted from the catalog (always persisted when catalog-sourced).
+  // Allergens/adgCode resolve BY REFERENCE (ADR §3): override → catalog (via
+  // catalogItemId) → null; the catalog stays the authority — NO denormalized copy
+  // is stored here. `allergenOverride`: null = defer to the catalog; a JSON array
+  // of allergen slugs = authoritative override (may be [] to assert "no allergens").
+  catalogItemId    String?
+  allergenOverride Json?    @map("allergen_override")
+  adgCodeOverride  String?  @map("adg_code_override")
+
   @@unique([restaurantId, branchId, sku])
   @@index([restaurantId])
   @@index([branchId])
   @@index([restaurantId, categoryId])
   @@index([restaurantId, branchId])
+  @@index([catalogItemId])
   @@map("inventory_items")
 }
 
@@ -1650,6 +1793,9 @@ model RestaurantPhoto {
   restaurantId String
   position     Int      @default(0)
   url          String
+  // MEDIA-1: object-storage key for an uploaded photo. Additive + nullable; null ⇒
+  // URL-paste (url) is the source. url holds the resolved public URL either way.
+  objectKey    String?  @map("object_key")
   altHy        String?
   altRu        String?
   altEn        String?
@@ -1717,6 +1863,8 @@ model CustomerAccount {
   identities    CustomerIdentity[]
   refreshTokens CustomerRefreshToken[]
   reservations  Reservation[]
+  // ORDER-4: orders this consumer placed via the app (SetNull on account delete).
+  orders        Order[]
   // CX-3: branches this consumer has saved (per-branch bookmark).
   savedRestaurants SavedRestaurant[]
 
@@ -1864,6 +2012,107 @@ model ModifierConsumption {
   // limit and get silently truncated, causing migrate drift.
   @@index([restaurantId, modifierOptionId], map: "inventory_mod_consumption_restaurant_option_idx")
   @@map("inventory_modifier_consumptions")
+}
+
+// ── Platform catalog / allergens (CATALOG-1, ADR §2–§4, §10) ─────────────────
+//   Platform-CURATED, multilingual stock-item templates a tenant adopts from
+//   (InventoryItem.catalogItemId), so a central allergen/adgCode correction reaches
+//   every adopter by REFERENCE. These tables are PLATFORM-OWNED: no org/restaurant/
+//   branch column, global slug @unique — mirroring the consumer AttributeCategory/
+//   Value taxonomy. There is deliberately NO relation from a CatalogItem back to
+//   InventoryItem: the catalog cannot enumerate its adopters (ADR §4 boundary).
+
+// Platform-defined allergen taxonomy — a fixed, seeded reference set (the EU-14).
+// CatalogItems tag against it many-to-many. Not tenant-editable.
+model Allergen {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  labelHy   String
+  labelRu   String
+  labelEn   String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  catalogItems CatalogItemAllergen[]
+
+  @@index([position])
+  @@map("catalog_allergens")
+}
+
+// Platform-defined catalog category (multilingual). Small taxonomy the curator
+// groups CatalogItems under (produce, dairy, meat, pantry…). Not tenant-scoped.
+model CatalogCategory {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  labelHy   String
+  labelRu   String
+  labelEn   String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items CatalogItem[]
+
+  @@index([position])
+  @@map("catalog_categories")
+}
+
+// Archive state for a CatalogItem (CATALOG-2). ARCHIVED items stop appearing in
+// curation lists / new adoption, but existing tenant catalogItemId references still
+// RESOLVE (getResolution ignores status) so an archive never orphans a tenant.
+enum CatalogItemStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+// The curated template a tenant InventoryItem adopts by reference (ADR §2). Carries
+// the multilingual name (operational InventoryItem.name is single-locale, so the
+// translations must live here) + allergen tag set + category + a default ATG
+// classifier (adgCode). All tenant-overridable on the InventoryItem (ADR §3, §10).
+model CatalogItem {
+  id         String            @id @default(cuid())
+  slug       String            @unique
+  nameHy     String
+  nameRu     String
+  nameEn     String
+  categoryId String?
+  // ORDER-2 ATG classifier default (mandatory for e-HDM fiscalization). Nullable;
+  // tenant overrides via InventoryItem.adgCodeOverride. Wiring the effective value
+  // into OrderItem.adgCode is a later prompt (dish-level source decision).
+  adgCode    String?           @map("adg_code")
+  // CATALOG-2 archive (soft-delete): a hard delete would strand tenant references
+  // (catalogItemId is a plain scalar with no FK). Curation archives instead.
+  status     CatalogItemStatus @default(ACTIVE)
+  // CATALOG-3 §Locked-4: platform support flips this true once allergen tagging is complete.
+  // Un-reviewed items count as UNVERIFIED at resolve time (verified = catalogSourced && allergensReviewed).
+  allergensReviewed Boolean           @default(false)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  deletedAt  DateTime?
+
+  category  CatalogCategory?      @relation(fields: [categoryId], references: [id])
+  allergens CatalogItemAllergen[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@map("catalog_items")
+}
+
+// Join: a CatalogItem's allergen tag set (many-to-many). Cascade-deletes with
+// either side. The authoritative allergen set for an adopted item resolves through
+// here (unless the tenant sets InventoryItem.allergenOverride).
+model CatalogItemAllergen {
+  catalogItemId String
+  allergenId    String
+  createdAt     DateTime @default(now())
+
+  catalogItem CatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+  allergen    Allergen    @relation(fields: [allergenId], references: [id], onDelete: Cascade)
+
+  @@id([catalogItemId, allergenId])
+  @@index([allergenId])
+  @@map("catalog_item_allergens")
 }
 
 // ── Stock write-offs (INV-4) — reason-coded losses + staff meals ─────────────
@@ -2106,4 +2355,78 @@ model EdgeOutboxCounter {
   seq Int    @default(0)
 
   @@map("edge_outbox_counter")
+}
+
+
+// ── FISCAL-4: per-tenant e-HDM fiscal config + encrypted secrets ────────────
+enum FiscalEnvironment {
+  PROD
+  TEST
+}
+
+/// Per-(restaurant, branch) SRC e-HDM configuration; feeds FiscalConfigPort.
+/// clientCert/clientKey are AES-256-GCM CIPHERTEXT — the KEK lives OUTSIDE the DB
+/// (FISCAL_SECRET_KEK / KMS, never a column). caRoot is the SRC public CA (shared,
+/// from FISCAL_SRC_CA_PATH, not stored here). `.jks` is converted to PEM by ops
+/// before upload; the runtime never parses `.jks`. Secrets are never returned by
+/// any read model.
+model FiscalConfig {
+  id           String            @id @default(cuid())
+  restaurantId String            @map("restaurant_id")
+  branchId     String            @map("branch_id")
+  crn          String
+  cashierId    String            @map("cashier_id")
+  environment  FiscalEnvironment @default(TEST)
+  language     String            @default("hy")
+  active       Boolean           @default(false)
+
+  // ENVELOPE encryption. cert/key (PEM) are encrypted with a per-tenant random
+  // DEK; the DEK is wrapped by the master KEK (FISCAL_MASTER_KEK / KMS — NEVER in
+  // the DB). All AES-256-GCM (cipher + iv + auth tag). KEK rotation re-wraps the
+  // DEK only (no cert re-encryption); one compromised cert never implies others.
+  // Nullable: a config row can exist BEFORE the cert is uploaded (support saves
+  // config first, uploads the cert as a separate action). certConfigured on the
+  // status reflects whether these are set; the adapter fails closed if a config is
+  // active but has no cert.
+  certCipher  Bytes? @map("cert_cipher")
+  certIv      Bytes? @map("cert_iv")
+  certAuthTag Bytes? @map("cert_auth_tag")
+  keyCipher   Bytes? @map("key_cipher")
+  keyIv       Bytes? @map("key_iv")
+  keyAuthTag  Bytes? @map("key_auth_tag")
+  // The per-tenant DEK, wrapped by the master KEK.
+  dekCipher   Bytes? @map("dek_cipher")
+  dekIv       Bytes? @map("dek_iv")
+  dekAuthTag  Bytes? @map("dek_auth_tag")
+  // Which master-KEK version wrapped the DEK (for rotation / re-wrap).
+  kekVersion  Int?   @map("kek_version")
+
+  lastCheckConnectionAt DateTime? @map("last_check_connection_at")
+  lastCheckConnectionOk Boolean?  @map("last_check_connection_ok")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  departments FiscalDepartment[]
+
+  @@unique([restaurantId, branchId])
+  @@index([restaurantId])
+  @@map("fiscal_configs")
+}
+
+/// Per-tenant department map: SRC `dep` code -> tax regime. Homes the deferred
+/// `dep`; the adapter builds departmentMap from these rows. Values come from the
+/// tenant's SRC registration.
+model FiscalDepartment {
+  id             String  @id @default(cuid())
+  fiscalConfigId String  @map("fiscal_config_id")
+  dep            String
+  taxRegime      String  @map("tax_regime")
+  label          String?
+
+  config FiscalConfig @relation(fields: [fiscalConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([fiscalConfigId, dep])
+  @@index([fiscalConfigId])
+  @@map("fiscal_departments")
 }

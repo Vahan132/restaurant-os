@@ -20,13 +20,17 @@ export interface PhotoRecord {
   id: string;
   position: number;
   url: string;
+  /** MEDIA-1: object-storage key when uploaded (null for URL-paste). */
+  objectKey: string | null;
   alt: I18nText;
   width: number | null;
   height: number | null;
 }
 
 export interface AddPhotoInput {
-  url: string; // already validated as https by the use-case
+  url: string; // resolved public URL (from an upload) or a validated https paste
+  /** MEDIA-1: object-storage key when uploaded; null for URL-paste. */
+  objectKey?: string | null;
   alt: I18nText;
   width?: number | null;
   height?: number | null;

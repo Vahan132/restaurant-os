@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { OrdersModule } from '../orders/orders.module';
+import { InventoryModule } from '../inventory/inventory.module';
 import { STATION_TICKETS_READER } from './application/ports/station-tickets.reader';
 import { GetStationTicketsUseCase } from './application/queries/get-station-tickets.usecase';
 import { PrismaStationTicketsReader } from './infrastructure/persistence/prisma-station-tickets.reader';
@@ -11,7 +12,7 @@ import { KdsController } from './presentation/http/kds.controller';
  * handled by the realtime module's relay reacting to the orders domain events.
  */
 @Module({
-  imports: [OrdersModule],
+  imports: [OrdersModule, InventoryModule],
   controllers: [KdsController],
   providers: [
     GetStationTicketsUseCase,

@@ -40,6 +40,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-secure-store',
     'expo-apple-authentication',
     'expo-web-browser',
+    // ORDER-4: table-QR scanner. The camera permission string is shown on first scan.
+    [
+      'expo-camera',
+      {
+        cameraPermission: 'Allow $(PRODUCT_NAME) to use the camera to scan table QR codes.',
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,

@@ -14,9 +14,6 @@ import {
   ModifierOptionResponseStatus,
   type AttachedModifierGroupResponse,
   type ModifierGroupResponse,
-  type SetDishModifierOverridesDtoMaxOverride,
-  type SetDishModifierOverridesDtoMinOverride,
-  type SetDishModifierOverridesDtoRequiredOverride,
 } from '@/api/generated/model';
 import { Can } from '@/components/auth/can';
 import { ModifierGroupFormModal } from '@/components/menu/modifier-group-form-modal';
@@ -30,9 +27,6 @@ import { useModifierGroupList } from '@/lib/menu/use-modifier-groups';
 import { formatMoney } from '@/lib/money';
 import { PERMISSIONS } from '@/lib/permissions';
 import { toast } from '@/stores/toast';
-
-/** Override the loose generated `object | null` alias with a real value. */
-const asOverride = <T,>(value: boolean | number | null): T => value as unknown as T;
 
 type RequiredChoice = 'inherit' | 'required' | 'optional';
 
@@ -382,13 +376,9 @@ function OverrideEditor({
         itemId,
         groupId: group.id,
         data: {
-          requiredOverride: asOverride<SetDishModifierOverridesDtoRequiredOverride>(requiredVal),
-          minOverride: asOverride<SetDishModifierOverridesDtoMinOverride>(
-            isMultiple ? minVal : null,
-          ),
-          maxOverride: asOverride<SetDishModifierOverridesDtoMaxOverride>(
-            isMultiple ? maxVal : null,
-          ),
+          requiredOverride: requiredVal,
+          minOverride: isMultiple ? minVal : null,
+          maxOverride: isMultiple ? maxVal : null,
           sortOrder: group.sortOrder,
         },
       });

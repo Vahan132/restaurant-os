@@ -29,6 +29,53 @@ interface OrderLineItemProps {
 
 const CANCELLABLE_STATUSES = ['SENT', 'PREPARING', 'READY'];
 
+// CATALOG-4-FE: allergen rollup on the POS order line. Amber caution chips match
+// the app's warning badges. The unverified indicator is MANDATORY whenever
+// complete === false (including empty allergens) — never rendered as clean.
+// `complete` is optional on order reads; undefined = field not present → no claim.
+function AllergenLine({
+  allergens,
+  complete,
+  tAllergen,
+}: {
+  allergens: string[];
+  complete: boolean | undefined;
+  tAllergen: ReturnType<typeof useTranslations>;
+}) {
+  const incomplete = complete === false;
+  // Nothing to show only when there are no allergens AND nothing is unverified.
+  if (allergens.length === 0 && !incomplete) return null;
+
+  return (
+    <div
+      data-testid="order-item-allergens"
+      data-complete={complete === false ? 'false' : 'true'}
+      className="mt-1 flex flex-wrap items-center gap-1"
+    >
+      <span aria-hidden className="text-sm leading-none text-amber-600">
+        ⚠
+      </span>
+      {allergens.map((slug) => (
+        <span
+          key={slug}
+          data-allergen={slug}
+          className="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-800"
+        >
+          {tAllergen(`label.${slug}`)}
+        </span>
+      ))}
+      {incomplete && (
+        <span
+          data-testid="order-item-allergens-unverified"
+          className="rounded border border-amber-300 px-1.5 py-0.5 text-xs font-semibold text-amber-800"
+        >
+          {tAllergen('unverified')}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function OrderLineItem({
   item,
   busy,
@@ -42,6 +89,7 @@ export function OrderLineItem({
   const t = useTranslations('builder');
   const tActions = useTranslations('actions');
   const tStatus = useTranslations('itemStatus');
+  const tAllergen = useTranslations('allergens');
   const { format } = useMoney();
 
   const editable = isItemEditable(item) && canEdit;
@@ -65,6 +113,11 @@ export function OrderLineItem({
               {item.modifiers.map((m) => m.nameSnapshot).join(', ')}
             </p>
           ) : null}
+          <AllergenLine
+            allergens={item.allergens ?? []}
+            complete={item.allergensComplete}
+            tAllergen={tAllergen}
+          />
         </div>
         <div className="flex flex-col items-end gap-1">
           <span className="text-base font-bold text-gray-900">{format(item.lineTotalAmount)}</span>

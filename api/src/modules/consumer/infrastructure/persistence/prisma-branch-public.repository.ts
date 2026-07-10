@@ -248,6 +248,7 @@ export class PrismaBranchPublicRepository implements BranchPublicRepository {
         id: p.id,
         position: p.position,
         url: p.url,
+        objectKey: p.objectKey,
         alt: { hy: p.altHy, ru: p.altRu, en: p.altEn },
         width: p.width,
         height: p.height,

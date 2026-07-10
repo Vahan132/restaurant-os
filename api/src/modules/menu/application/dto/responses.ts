@@ -42,10 +42,25 @@ export class MenuItemResponse {
   @ApiProperty({ nullable: true, type: String }) description!: string | null;
   @ApiProperty() priceAmount!: number;
   @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'MEDIA-1: object-storage key when the image was uploaded (null for URL-paste).',
+  })
+  imageKey!: string | null;
   @ApiProperty({ enum: ['KITCHEN', 'BAR', 'DESSERT', 'OTHER'] }) preparationStation!: string;
   @ApiProperty({ nullable: true, type: Number }) prepTimeMinutes!: number | null;
   @ApiProperty({ enum: ['ACTIVE', 'INACTIVE'] }) status!: string;
   @ApiProperty({ enum: ['AVAILABLE', 'UNAVAILABLE'] }) availability!: string;
+  @ApiProperty({ description: 'Hides the customer ingredient list, not the allergen summary.' })
+  hideRecipe!: boolean;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description:
+      'ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified).',
+  })
+  adgCode!: string | null;
 
   static from(i: MenuItem): MenuItemResponse {
     return {
@@ -58,10 +73,13 @@ export class MenuItemResponse {
       description: i.description,
       priceAmount: i.priceAmount,
       imageUrl: i.imageUrl,
+      imageKey: i.imageKey,
       preparationStation: i.preparationStation,
       prepTimeMinutes: i.prepTimeMinutes,
       status: i.status,
       availability: i.availability,
+      hideRecipe: i.hideRecipe,
+      adgCode: i.adgCode,
     };
   }
 }

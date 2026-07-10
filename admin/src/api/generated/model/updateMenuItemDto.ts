@@ -11,9 +11,15 @@ export interface UpdateMenuItemDto {
   name?: string;
   description?: string;
   imageUrl?: string;
+  /** MEDIA-1: object key from a presigned upload (finalize). Overrides imageUrl. Send null/empty with imageUrl to switch back to URL-paste. */
+  imageKey?: string;
   /** Reassign to another category in your restaurant. */
   categoryId?: string;
   preparationStation?: UpdateMenuItemDtoPreparationStation;
   /** @minimum 0 */
   prepTimeMinutes?: number;
+  /** CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible). */
+  hideRecipe?: boolean;
+  /** ADGCODE-UI: SRC ATG classification code (from the SRC N 1406-Ն / N 875-Ն lists) for e-HDM fiscalization. Free-text: SRC validates (error 183); the UI only soft-warns. Send an empty string or null to clear it; omit to leave it unchanged (partial update). */
+  adgCode?: string | null;
 }

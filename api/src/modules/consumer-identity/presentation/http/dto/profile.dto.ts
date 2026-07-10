@@ -10,7 +10,7 @@ const GENDERS = ['MALE', 'FEMALE', 'OTHER', 'UNDISCLOSED'] as const;
  * sending null clears the field.
  */
 export class UpdateProfileDto {
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ nullable: true, type: String })
   @IsOptional()
   @IsString()
   @MaxLength(120)
@@ -21,12 +21,15 @@ export class UpdateProfileDto {
   @IsIn(GENDERS as unknown as string[])
   gender?: string | null;
 
-  @ApiPropertyOptional({ nullable: true, description: 'ISO date (YYYY-MM-DD).' })
+  @ApiPropertyOptional({ nullable: true, type: String, description: 'ISO date (YYYY-MM-DD).' })
   @IsOptional()
   @IsISO8601()
   birthday?: string | null;
 
-  @ApiPropertyOptional({ description: 'Provider-owned; any value is rejected (EMAIL_IMMUTABLE).' })
+  @ApiPropertyOptional({
+    type: String,
+    description: 'Provider-owned; any value is rejected (EMAIL_IMMUTABLE).',
+  })
   @IsOptional()
   @IsEmail()
   email?: string;

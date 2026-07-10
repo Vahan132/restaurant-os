@@ -3,6 +3,10 @@ export const MENU_READER = Symbol('OrdersMenuReader');
 export interface MenuItemForOrder {
   id: string;
   branchId: string;
+  /** Internal item code — snapshotted as the fiscal `goodCode` (ORDER-2). */
+  code: string;
+  /** FISCAL-0: dish-level SRC ATG classifier code, snapshotted as the fiscal line adgCode. Null until classified. */
+  adgCode: string | null;
   name: string;
   priceAmount: number;
   preparationStation: string;

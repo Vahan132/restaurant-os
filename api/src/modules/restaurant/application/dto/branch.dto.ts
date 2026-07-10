@@ -2,14 +2,19 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsEnum,
+  IsInt,
   IsOptional,
   IsString,
   Matches,
+  Max,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
 import { BranchIpBindingMode } from '../../domain/entities/branch';
+import { OrderingConfig } from '../../domain/value-objects/ordering-config';
 
 /**
  * Accepts an IPv4/IPv6 address with an OPTIONAL CIDR suffix (e.g. "10.0.0.0/24",
@@ -54,4 +59,40 @@ export class UpdateBranchDto {
   @ArrayMaxSize(100)
   @Matches(CIDR_REGEX, { each: true, message: 'Each entry must be a valid IP or CIDR.' })
   ipAllowlist?: string[];
+}
+
+/**
+ * ORDER-1: partial update of a branch's ordering flow config. Only provided
+ * fields change; the OrderingConfig VO validates the resulting combination
+ * (≥1 flow when ordering on, qrOrdering ⇒ prepayment, idle bounds).
+ */
+export class UpdateBranchOrderingConfigDto {
+  @ApiPropertyOptional({ description: 'Enable pay-before (prepayment) ordering at this branch.' })
+  @IsOptional()
+  @IsBoolean()
+  prepaymentEnabled?: boolean;
+
+  @ApiPropertyOptional({ description: 'Enable pay-at-end (open tab) ordering at this branch.' })
+  @IsOptional()
+  @IsBoolean()
+  payAtEndEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Allow the QR-web channel to open sessions (always prepayment). Requires prepayment.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  qrOrderingEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    minimum: OrderingConfig.MIN_IDLE_MINUTES,
+    maximum: OrderingConfig.MAX_IDLE_MINUTES,
+    default: OrderingConfig.DEFAULT_IDLE_MINUTES,
+    description: 'Idle auto-expiry threshold in minutes.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(OrderingConfig.MIN_IDLE_MINUTES)
+  @Max(OrderingConfig.MAX_IDLE_MINUTES)
+  idleExpiryMinutes?: number;
 }

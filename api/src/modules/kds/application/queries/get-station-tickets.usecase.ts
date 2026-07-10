@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
 import { NoRestaurantInScope } from '../../../orders/application/application.errors';
+import { DishAllergens } from '../../../inventory/application/services/dish-projection.resolver';
+import { OrderItemAllergenResolver } from '../../../inventory/application/services/order-item-allergen.resolver';
 import { KdsTicketResponse } from '../dto/responses';
 import {
   STATION_TICKETS_READER,
@@ -26,7 +28,10 @@ export class GetStationTicketsUseCase implements UseCase<
   GetStationTicketsInput,
   KdsTicketResponse[]
 > {
-  constructor(@Inject(STATION_TICKETS_READER) private readonly reader: StationTicketsReader) {}
+  constructor(
+    @Inject(STATION_TICKETS_READER) private readonly reader: StationTicketsReader,
+    private readonly allergens: OrderItemAllergenResolver,
+  ) {}
 
   async execute(input: GetStationTicketsInput): Promise<KdsTicketResponse[]> {
     if (!input.restaurantId) {
@@ -39,8 +44,23 @@ export class GetStationTicketsUseCase implements UseCase<
       input.station,
     );
 
+    // CATALOG-4: one batched allergen resolve for every line on the board (no N+1).
+    const allergensByItem = await this.allergens.resolveForOrderItems(
+      input.restaurantId,
+      input.branchId,
+      tickets.flatMap((t) =>
+        t.items.map((i) => ({
+          key: i.orderItemId,
+          menuItemId: i.menuItemId,
+          selectedModifierOptionIds: i.selectedModifierOptionIds,
+        })),
+      ),
+    );
+
     const mapped = tickets.map((t) => {
-      const items = t.items.map((i) => this.toItem(i, now)).sort((a, b) => a.sentMs - b.sentMs);
+      const items = t.items
+        .map((i) => this.toItem(i, now, allergensByItem))
+        .sort((a, b) => a.sentMs - b.sentMs);
       return {
         ticket: {
           orderId: t.orderId,
@@ -61,7 +81,9 @@ export class GetStationTicketsUseCase implements UseCase<
   private toItem(
     i: StationTicketItemData,
     now: number,
+    allergensByItem: Map<string, DishAllergens>,
   ): { dto: KdsTicketResponse['items'][number]; sentMs: number } {
+    const roll = allergensByItem.get(i.orderItemId);
     const sentMs = i.sentToKitchenAt.getTime();
     const elapsedSeconds = Math.max(0, Math.floor((now - sentMs) / 1000));
     const threshold =
@@ -79,6 +101,8 @@ export class GetStationTicketsUseCase implements UseCase<
         prepTimeMinutes: i.prepTimeMinutes,
         elapsedSeconds,
         delayed: elapsedSeconds > threshold,
+        allergens: roll?.slugs ?? [],
+        allergensComplete: roll?.complete ?? false,
       },
     };
   }

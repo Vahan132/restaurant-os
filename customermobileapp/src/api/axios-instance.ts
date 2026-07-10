@@ -5,6 +5,7 @@ import axios, {
 } from 'axios';
 import { API_BASE_URL } from '@/config';
 import { getAccessToken } from '@/store/auth';
+import { getOrderingRestaurantSlug } from '@/store/cart';
 import { performRefresh } from '@/auth/session';
 
 /**
@@ -60,6 +61,16 @@ instance.interceptors.request.use((config) => {
   if (token) {
     config.headers = config.headers ?? {};
     (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
+  }
+  // ORDER-4: the app-ordering endpoints (`/consumer/orders/*`) carry NO path slug, so
+  // PublicRestaurantResolverGuard needs the tenant from a header. While an ordering
+  // session is active, attach the scanned restaurant slug. Harmless elsewhere: routes
+  // that carry a path slug (e.g. the ORDER-3 branch menu) take precedence server-side,
+  // and other routes ignore it.
+  const orderingSlug = getOrderingRestaurantSlug();
+  if (orderingSlug) {
+    config.headers = config.headers ?? {};
+    (config.headers as Record<string, string>)['X-Restaurant-Slug'] = orderingSlug;
   }
   return config;
 });

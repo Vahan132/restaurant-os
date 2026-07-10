@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePublicDiscoveryControllerDetail } from '@/api/generated/discovery/discovery';
@@ -193,22 +193,30 @@ export default function RestaurantDetailScreen() {
               </View>
             ) : null}
 
-            {/* View Menu — only when menu is public */}
-            {data.menuPublic && data.menuUrl ? (
-              <View className="px-5 pb-2">
+            {/* View Menu — native in-app menu (ORDER-3), only when menu is public */}
+            {data.menuPublic ? (
+              <View className="gap-2 px-5 pb-2">
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => openWeb(data.menuUrl)}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/menu/[branchId]',
+                      params: { branchId: data.branchId },
+                    })
+                  }
                   className="flex-row items-center justify-center rounded-xl bg-surface py-3 active:opacity-80"
                 >
                   <Ionicons name="restaurant-outline" size={18} color={colors.text} />
                   <Text className="ml-2 font-semibold text-text">{t('detail.viewMenu')}</Text>
                 </Pressable>
+                {/* ORDER-4: scan a table QR to order with prepayment (auth-gated in /scan). */}
                 <Pressable
-                  onPress={() => openWeb(data.menuUrl)}
-                  className="mt-2 items-center active:opacity-70"
+                  accessibilityRole="button"
+                  onPress={() => router.push('/scan' as Href)}
+                  className="flex-row items-center justify-center rounded-xl bg-surface py-3 active:opacity-80"
                 >
-                  <Text className="text-sm text-accent">{t('detail.openMenuLink')}</Text>
+                  <Ionicons name="qr-code-outline" size={18} color={colors.text} />
+                  <Text className="ml-2 font-semibold text-text">{t('order.scanToOrder')}</Text>
                 </Pressable>
               </View>
             ) : null}

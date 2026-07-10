@@ -11,6 +11,8 @@ export interface OpeningHour {
 export interface RestaurantSettingsProps {
   restaurantId: string;
   logoUrl: string | null;
+  /** MEDIA-1: object-storage key when the logo was uploaded (null for URL-paste). */
+  logoKey: string | null;
   phone: string | null;
   address: string | null;
   taxRateBps: number;
@@ -34,6 +36,8 @@ export interface RestaurantSettingsProps {
 
 export interface UpdateRestaurantSettingsInput {
   logoUrl?: string | null;
+  /** MEDIA-1: uploaded object key (finalize). Non-empty overrides logoUrl. */
+  logoKey?: string | null;
   phone?: string | null;
   address?: string | null;
   taxRateBps?: number;
@@ -88,6 +92,7 @@ export class RestaurantSettings extends AggregateRoot<string> {
       this.props.serviceFeeRateBps = input.serviceFeeRateBps;
     }
     if (input.logoUrl !== undefined) this.props.logoUrl = input.logoUrl;
+    if (input.logoKey !== undefined) this.props.logoKey = input.logoKey;
     if (input.phone !== undefined) this.props.phone = input.phone;
     if (input.address !== undefined) this.props.address = input.address;
     if (input.receiptFooter !== undefined) this.props.receiptFooter = input.receiptFooter;

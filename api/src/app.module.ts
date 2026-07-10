@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { MenuModule } from './modules/menu/menu.module';
+import { MediaModule } from './modules/media/media.module';
 import { KdsModule } from './modules/kds/kds.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PlatformModule } from './modules/platform/platform.module';
@@ -17,8 +19,11 @@ import { ConsumerIdentityModule } from './modules/consumer-identity/consumer-ide
 import { OrderRequestsModule } from './modules/order-requests/order-requests.module';
 import { AccountModule } from './modules/account/account.module';
 import { TablesModule } from './modules/tables/tables.module';
+import { TableSessionsModule } from './modules/table-sessions/table-sessions.module';
+import { FiscalizationModule } from './modules/fiscalization/fiscalization.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { PlatformCatalogModule } from './modules/platform-catalog/platform-catalog.module';
 import { EdgeRegistryModule } from './modules/edge-registry/edge-registry.module';
 import { EdgeSyncModule } from './modules/edge-sync/edge-sync.module';
 import { SecurityModule } from './shared/auth/security.module';
@@ -78,6 +83,9 @@ const edgeOnlyModules = IS_EDGE ? [EdgeSyncModule] : [];
     AppConfigModule,
     PrismaModule,
     EventsModule,
+    // ORDER-1: enables @Cron for the table-session idle sweep. Registered once at
+    // the root; harmless in every mode (the scheduler + use-case are idempotent).
+    ScheduleModule.forRoot(),
     TenancyModule,
     SecurityModule,
     EdgeModule,
@@ -85,7 +93,10 @@ const edgeOnlyModules = IS_EDGE ? [EdgeSyncModule] : [];
     IdentityModule,
     RestaurantModule,
     MenuModule,
+    MediaModule,
     TablesModule,
+    TableSessionsModule,
+    FiscalizationModule,
     OrdersModule,
     KdsModule,
     ReservationsModule,
@@ -96,6 +107,7 @@ const edgeOnlyModules = IS_EDGE ? [EdgeSyncModule] : [];
     OrderRequestsModule,
     InventoryModule,
     CatalogModule,
+    PlatformCatalogModule,
     RealtimeModule,
     ...cloudOnlyModules,
     ...edgeOnlyModules,

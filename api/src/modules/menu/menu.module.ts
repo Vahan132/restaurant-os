@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module';
+import { MediaModule } from '../media/media.module';
 
 import { DISH_MODIFIER_GROUP_REPOSITORY } from './domain/repositories/dish-modifier-group.repository';
 import { MENU_CATEGORY_REPOSITORY } from './domain/repositories/menu-category.repository';
@@ -55,7 +56,7 @@ import { ModifierGroupsController } from './presentation/http/modifier-groups.co
  * Imports IdentityModule to reuse ID_GENERATOR.
  */
 @Module({
-  imports: [IdentityModule],
+  imports: [IdentityModule, MediaModule],
   controllers: [MenuController, CategoriesController, ItemsController, ModifierGroupsController],
   providers: [
     // categories

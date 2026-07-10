@@ -40,6 +40,17 @@ export const TableReservedForReservation = () =>
 export const MenuItemNotFound = () =>
   new NotFoundException({ code: 'MENU_ITEM_NOT_FOUND', message: 'Menu item not found.' });
 
+/** ORDER-2 QR-web: an empty cart cannot be validated or ordered. */
+export const CartEmpty = () =>
+  new BadRequestException({ code: 'CART_EMPTY', message: 'The cart has no items.' });
+
+/** ORDER-2 QR-web: the payment gateway declined the prepayment charge. */
+export const PaymentDeclined = () =>
+  new ConflictException({
+    code: 'PAYMENT_DECLINED',
+    message: 'The payment could not be completed. Please try again.',
+  });
+
 export const MenuItemNotOrderable = () =>
   new ConflictException({
     code: 'MENU_ITEM_NOT_ORDERABLE',

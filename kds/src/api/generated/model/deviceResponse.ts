@@ -5,8 +5,8 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { DeviceResponseStatus } from './deviceResponseStatus';
 import type { DeviceResponseSurface } from './deviceResponseSurface';
+import type { DeviceResponseStatus } from './deviceResponseStatus';
 
 export interface DeviceResponse {
   id: string;

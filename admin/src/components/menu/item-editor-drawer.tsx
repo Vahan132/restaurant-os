@@ -11,6 +11,7 @@ import {
   useItemsControllerStatus,
   useItemsControllerUpdate,
 } from '@/api/generated/menu-items/menu-items';
+import { useMediaControllerPresignMenuItemImage } from '@/api/generated/media/media';
 import {
   CreateMenuItemDtoPreparationStation,
   MenuItemResponseAvailability,
@@ -26,6 +27,7 @@ import { RecipeCostPanel } from '@/components/inventory/recipe-cost-panel';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { Field, inputClass } from '@/components/ui/form';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { getErrorMessage } from '@/lib/api-error';
 import { usePermission } from '@/lib/auth/use-permission';
 import { useRecipeForMenuItem } from '@/lib/inventory/use-recipe-data';
@@ -80,13 +82,21 @@ export function ItemEditorDrawer({
   const [formCategoryId, setFormCategoryId] = useState(categoryId ?? categories[0]?.id ?? '');
   const [priceInput, setPriceInput] = useState('0');
   const [imageUrl, setImageUrl] = useState('');
+  const [imageKey, setImageKey] = useState<string | undefined>(undefined);
   const [station, setStation] = useState<string>(CreateMenuItemDtoPreparationStation.KITCHEN);
   const [prepTime, setPrepTime] = useState('');
   const [status, setStatus] = useState<string>(MenuItemResponseStatus.ACTIVE);
   const [availability, setAvailability] = useState<string>(
     MenuItemResponseAvailability.AVAILABLE,
   );
-  const [errors, setErrors] = useState<{ name?: string; category?: string; price?: string }>({});
+  // ADGCODE-UI: the dish-level SRC ATG classifier code (free-text; soft-warned only,
+  // never blocks save — SRC is the real validator at fiscalization).
+  const [adgCode, setAdgCode] = useState('');
+  const [errors, setErrors] = useState<{
+    name?: string;
+    category?: string;
+    price?: string;
+  }>({});
 
   // Populate the form from the fetched item (edit mode / after create).
   useEffect(() => {
@@ -96,14 +106,21 @@ export function ItemEditorDrawer({
     setFormCategoryId(detail.categoryId);
     setPriceInput(minorToInput(detail.priceAmount, currency));
     setImageUrl(detail.imageUrl ?? '');
+    setImageKey(detail.imageKey ?? undefined);
     setStation(detail.preparationStation);
     setPrepTime(detail.prepTimeMinutes != null ? String(detail.prepTimeMinutes) : '');
     setStatus(detail.status);
     setAvailability(detail.availability);
+    setAdgCode(detail.adgCode ?? '');
   }, [detail, currency]);
+
+  // ADGCODE-UI: accept 4–15 digits (SRC ATG codes are numeric). Empty is allowed
+  // (not yet classified); we do NOT check the value against the SRC lists (v1).
+  const ADG_CODE_RE = /^\d{4,15}$/;
 
   const create = useItemsControllerCreate();
   const update = useItemsControllerUpdate();
+  const presignImage = useMediaControllerPresignMenuItemImage();
   const priceMut = useItemsControllerPrice();
   const statusMut = useItemsControllerStatus();
   const availabilityMut = useItemsControllerAvailability();
@@ -137,7 +154,8 @@ export function ItemEditorDrawer({
             name: name.trim(),
             categoryId: formCategoryId,
             description: description.trim() || undefined,
-            imageUrl: imageUrl.trim() || undefined,
+            imageUrl: imageKey ? undefined : imageUrl.trim() || undefined,
+            imageKey: imageKey || undefined,
             preparationStation: station as CreateMenuItemDtoPreparationStation,
             prepTimeMinutes,
           },
@@ -164,6 +182,10 @@ export function ItemEditorDrawer({
             data: { availability: availability as SetItemAvailabilityDtoAvailability },
           });
         }
+        // ADGCODE-UI: create DTO can't carry adgCode; set it via PATCH after create.
+        if (adgCode.trim()) {
+          await update.mutateAsync({ id: created.id, data: { adgCode: adgCode.trim() } });
+        }
         await Promise.all([invalidateItems(), invalidateMenuTree(), invalidateCategories()]);
         toast.success(t('toast.itemCreated'));
         setWorkingId(created.id);
@@ -175,10 +197,14 @@ export function ItemEditorDrawer({
           data: {
             name: name.trim(),
             description: description.trim() || undefined,
-            imageUrl: imageUrl.trim() || undefined,
+            imageUrl: imageKey ? undefined : imageUrl.trim() || undefined,
+            imageKey: imageKey || undefined,
             categoryId: formCategoryId,
             preparationStation: station as CreateMenuItemDtoPreparationStation,
             prepTimeMinutes,
+            // Send the current field value (populated from the dish on load, so an
+            // untouched code is preserved); an empty string clears it.
+            adgCode: adgCode.trim(),
           },
         });
         if (canSetPrice && (priceMinor ?? 0) !== detail.priceAmount) {
@@ -346,14 +372,41 @@ export function ItemEditorDrawer({
                 />
               </Field>
             </div>
+            <Field label={t('adgCode')}>
+              <input
+                className={inputClass}
+                value={adgCode}
+                disabled={!canManage}
+                inputMode="numeric"
+                placeholder={t('adgCodePlaceholder')}
+                onChange={(e) => setAdgCode(e.target.value)}
+              />
+              {adgCode.trim() && !ADG_CODE_RE.test(adgCode.trim()) ? (
+                <span className="mt-1 block text-xs text-amber-600">{t('adgCodeWarning')}</span>
+              ) : (
+                <span className="mt-1 block text-xs text-gray-500">{t('adgCodeHelper')}</span>
+              )}
+            </Field>
             <Field label={t('imageUrl')}>
               <input
                 className={inputClass}
                 value={imageUrl}
                 disabled={!canManage}
-                onChange={(e) => setImageUrl(e.target.value)}
+                onChange={(e) => {
+                  setImageUrl(e.target.value);
+                  setImageKey(undefined);
+                }}
               />
             </Field>
+            <ImageUpload
+              previewUrl={imageUrl || null}
+              disabled={!canManage}
+              presign={async (contentType) => {
+                const r = await presignImage.mutateAsync({ data: { contentType } });
+                return { url: r.url, key: r.key };
+              }}
+              onUploaded={(key) => setImageKey(key)}
+            />
             <div className="grid grid-cols-2 gap-3">
               <Field label={t('status')}>
                 <select

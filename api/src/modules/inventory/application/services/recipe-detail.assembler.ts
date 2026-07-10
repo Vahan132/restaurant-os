@@ -3,6 +3,11 @@ import { Recipe } from '../../domain/entities/recipe';
 import { roundedDiv } from '../../domain/value-objects/money';
 import { ITEM_UNIT_COST_READER, ItemUnitCostReader } from '../ports/item-unit-cost.reader';
 import { PROCESS_GRAPH_READER, ProcessGraphReader } from '../ports/process-graph.reader';
+import {
+  DishProjection,
+  DishProjectionResolver,
+  Locale,
+} from './dish-projection.resolver';
 
 const MICRO = 1_000_000;
 
@@ -18,6 +23,8 @@ export interface RecipeDetail {
   recipe: Recipe;
   estimatedUnitCostAmount: number;
   warnings: RecipeWarning[];
+  /** CATALOG-3: two projections + honest allergen rollup (one resolver). */
+  projection: DishProjection;
 }
 
 /**
@@ -30,9 +37,10 @@ export class RecipeDetailAssembler {
   constructor(
     @Inject(ITEM_UNIT_COST_READER) private readonly costs: ItemUnitCostReader,
     @Inject(PROCESS_GRAPH_READER) private readonly graph: ProcessGraphReader,
+    private readonly dish: DishProjectionResolver,
   ) {}
 
-  async assemble(recipe: Recipe): Promise<RecipeDetail> {
+  async assemble(recipe: Recipe, locale: Locale = 'en'): Promise<RecipeDetail> {
     const lineItemIds = [...new Set(recipe.lines.map((l) => l.itemId))];
 
     const micros = await this.costs.unitCostMicroByItem(
@@ -64,6 +72,7 @@ export class RecipeDetailAssembler {
       }
     }
 
-    return { recipe, estimatedUnitCostAmount, warnings };
+    const projection = await this.dish.resolve(recipe, locale);
+    return { recipe, estimatedUnitCostAmount, warnings, projection };
   }
 }

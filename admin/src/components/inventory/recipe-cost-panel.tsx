@@ -28,6 +28,9 @@ import {
 } from '@/lib/inventory/use-recipe-data';
 import { formatMoney } from '@/lib/money';
 import { toast } from '@/stores/toast';
+import { Badge } from '@/components/ui/badge';
+import { Toggle } from '@/components/ui/toggle';
+import { useItemsControllerUpdate } from '@/api/generated/menu-items/menu-items';
 
 interface MappingState {
   modifierOptionId: string;
@@ -58,9 +61,11 @@ export function RecipeCostPanel({
   const [lines, setLines] = useState<RecipeLineState[]>([{ itemId: '', baseQty: '' }]);
   const [mappings, setMappings] = useState<MappingState[]>([]);
   const [warnings, setWarnings] = useState<RecipeWarningResponse[]>([]);
+  const [hideRecipe, setHideRecipe] = useState(false);
 
   const create = useRecipesControllerCreate();
   const update = useRecipesControllerUpdate();
+  const updateItem = useItemsControllerUpdate();
   const submitting = create.isPending || update.isPending;
 
   // Hydrate from the loaded recipe once.
@@ -79,6 +84,7 @@ export function RecipeCostPanel({
       })),
     );
     setWarnings(recipe.warnings ?? []);
+    setHideRecipe(recipe.hideRecipe ?? false);
     setStarted(true);
     setHydrated(true);
   }, [hydrated, recipe]);
@@ -103,6 +109,21 @@ export function RecipeCostPanel({
     setLines((rows) => rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   const setMapping = (i: number, patch: Partial<MappingState>) =>
     setMappings((rows) => rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+
+  // CATALOG-3: EU-14 allergen slugs are localized via the inventory.allergen.<slug> messages.
+  const allergenLabel = (slug: string) => t(`allergen.${slug}`);
+
+  const onToggleHideRecipe = async (next: boolean) => {
+    setHideRecipe(next); // optimistic
+    try {
+      await updateItem.mutateAsync({ id: menuItemId, data: { hideRecipe: next } });
+      await invalidate(recipeId ?? undefined);
+      toast.success(t('hideRecipeSaved'));
+    } catch (err) {
+      setHideRecipe(!next); // revert
+      toast.error(getErrorMessage(err));
+    }
+  };
 
   const save = async () => {
     const linesDto: RecipeLineDto[] = [];
@@ -197,6 +218,30 @@ export function RecipeCostPanel({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* CATALOG-3: computed allergen rollup (read-only for owners; tagging is support-side). */}
+      {recipe && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold text-gray-700">{t('allergensTitle')}</h4>
+          {recipe.allergens.slugs.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {recipe.allergens.slugs.map((slug) => (
+                <Badge key={slug} tone="amber">
+                  {allergenLabel(slug)}
+                </Badge>
+              ))}
+            </div>
+          ) : recipe.allergens.complete ? (
+            <p className="text-xs text-gray-500">{t('allergensNone')}</p>
+          ) : null}
+          {/* Honest unverified state — never suppressed, never implies completeness. */}
+          {!recipe.allergens.complete && (
+            <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800">
+              <span>{t('allergensUnverified')}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -325,6 +370,36 @@ export function RecipeCostPanel({
           </div>
         )}
       </div>
+
+
+      {/* CATALOG-3: hideRecipe toggle + what-customers-see preview. */}
+      {recipe && (
+        <div className="space-y-3 rounded-md border border-gray-200 p-3">
+          <Toggle
+            label={t('hideRecipeLabel')}
+            description={t('hideRecipeDesc')}
+            checked={hideRecipe}
+            disabled={!canManage || updateItem.isPending}
+            onChange={onToggleHideRecipe}
+          />
+          <div>
+            <p className="text-xs font-medium text-gray-500">{t('customerPreviewTitle')}</p>
+            {hideRecipe ? (
+              <p className="mt-1 text-xs text-gray-400">{t('customerPreviewHidden')}</p>
+            ) : (recipe.customerIngredients ?? []).length > 0 ? (
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {(recipe.customerIngredients ?? []).map((ci) => (
+                  <Badge key={ci.itemId} tone="gray">
+                    {ci.name}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-1 text-xs text-gray-400">{t('customerPreviewEmpty')}</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {canManage && (
         <div className="flex justify-end">

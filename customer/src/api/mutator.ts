@@ -5,6 +5,7 @@ import Axios, {
 } from 'axios';
 
 import { resolveSlug } from '@/lib/tenant';
+import { resolveSessionToken } from '@/lib/session';
 
 /**
  * Normalized API error surfaced to the UI. Errors are flattened to a small,
@@ -31,6 +32,14 @@ export function isNotFound(e: unknown): boolean {
   return isApiError(e) && (e.status === 404 || e.code === 'NOT_FOUND');
 }
 
+/**
+ * True for an expired / missing session token (ORDER-2). The ordering flow
+ * reacts by clearing the stored token and opening a fresh table session.
+ */
+export function isUnauthorized(e: unknown): boolean {
+  return isApiError(e) && (e.status === 401 || e.code === 'UNAUTHORIZED');
+}
+
 const baseURL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || 'http://localhost:3001';
 
@@ -45,6 +54,25 @@ AXIOS_INSTANCE.interceptors.request.use((config) => {
   const slug = resolveSlug();
   if (slug) {
     config.headers.set('X-Restaurant-Slug', slug);
+  }
+  return config;
+});
+
+/**
+ * Attach the QR-web table-session token (ORDER-2) when one exists. The
+ * QR-orders controller is session-gated, so validate-cart / create /
+ * confirm-payment / receipt and the table-session view all need this header.
+ *
+ * We attach it whenever a token is present rather than per-endpoint: browsing
+ * never mints a token (so browse calls stay session-free), and the backend
+ * ignores a stray token on public browse endpoints. A 401 from a session call
+ * means the token expired — the ordering flow clears it and opens a fresh
+ * session (see `useTableSession`).
+ */
+AXIOS_INSTANCE.interceptors.request.use((config) => {
+  const token = resolveSessionToken();
+  if (token) {
+    config.headers.set('X-Session-Token', token);
   }
   return config;
 });

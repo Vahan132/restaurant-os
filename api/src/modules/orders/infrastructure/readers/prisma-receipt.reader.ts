@@ -7,11 +7,17 @@ import { ReceiptMeta, ReceiptReader } from '../../application/ports/receipt-read
 export class PrismaReceiptReader implements ReceiptReader {
   constructor(private readonly prisma: PrismaService) {}
 
-  async get(restaurantId: string, waiterId: string, tableId: string | null): Promise<ReceiptMeta> {
+  async get(
+    restaurantId: string,
+    waiterId: string | null,
+    tableId: string | null,
+  ): Promise<ReceiptMeta> {
     const [restaurant, settings, waiter, table] = await Promise.all([
       this.prisma.restaurant.findFirst({ where: { id: restaurantId } }),
       this.prisma.restaurantSettings.findUnique({ where: { restaurantId } }),
-      this.prisma.user.findFirst({ where: { id: waiterId, restaurantId } }),
+      waiterId
+        ? this.prisma.user.findFirst({ where: { id: waiterId, restaurantId } })
+        : Promise.resolve(null),
       tableId
         ? this.prisma.restaurantTable.findFirst({ where: { id: tableId, restaurantId } })
         : Promise.resolve(null),

@@ -19,6 +19,7 @@ export class PrismaRestaurantSettingsRepository implements RestaurantSettingsRep
       where: { restaurantId: p.restaurantId },
       data: {
         logoUrl: p.logoUrl,
+        logoKey: p.logoKey,
         phone: p.phone,
         address: p.address,
         taxRateBps: p.taxRateBps,
@@ -44,6 +45,7 @@ export class PrismaRestaurantSettingsRepository implements RestaurantSettingsRep
     return RestaurantSettings.reconstitute(r.id, {
       restaurantId: r.restaurantId,
       logoUrl: r.logoUrl,
+      logoKey: r.logoKey,
       phone: r.phone,
       address: r.address,
       taxRateBps: r.taxRateBps,

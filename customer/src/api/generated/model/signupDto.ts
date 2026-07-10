@@ -9,6 +9,7 @@
 export interface SignupDto {
   ownerName: string;
   email: string;
+  /** @minLength 8 */
   password: string;
   businessName: string;
   planCode: string;

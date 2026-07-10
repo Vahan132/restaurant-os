@@ -52,7 +52,10 @@ export function StaffPickerLogin() {
   const setSession = useAuthStore((s) => s.setSession);
   const setActiveBranch = useBranchStore((s) => s.setActiveBranch);
 
-  const staffQuery = usePinAuthControllerStaffPicker(deviceSecret, {
+  // X-Device-Secret is attached automatically by the axios mutator (apiRequest)
+  // from the device store; the hook takes no positional secret. deviceSecret is
+  // still used to gate the query until the terminal is enrolled.
+  const staffQuery = usePinAuthControllerStaffPicker({
     query: { enabled: deviceSecret.length > 0 },
   });
   const pinLogin = usePinAuthControllerLogin();

@@ -7,6 +7,9 @@ export interface StationTicketModifierData {
 
 export interface StationTicketItemData {
   orderItemId: string;
+  /** CATALOG-4 rollup inputs (used by the use-case, not surfaced verbatim). */
+  menuItemId: string;
+  selectedModifierOptionIds: string[];
   name: string;
   quantity: number;
   modifiers: StationTicketModifierData[];

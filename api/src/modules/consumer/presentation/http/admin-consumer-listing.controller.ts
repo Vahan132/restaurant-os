@@ -152,6 +152,7 @@ export class AdminConsumerListingController {
     await this.addPhoto.execute({
       restaurantId,
       url: dto.url,
+      objectKey: dto.objectKey,
       alt: dto.alt
         ? { hy: dto.alt.hy ?? null, ru: dto.alt.ru ?? null, en: dto.alt.en ?? null }
         : undefined,

@@ -35,4 +35,6 @@ export interface UpdateRestaurantSettingsDto {
   enableQrMenu?: boolean;
   /** Allow customers to submit dine-in order requests (needs enableQrMenu). */
   enableCustomerOrdering?: boolean;
+  /** 3A: when false (default), admin/manager email login must come from an enrolled ADMIN-surface device. Owner is always exempt (break-glass). */
+  allowUnanchoredAdminLogin?: boolean;
 }

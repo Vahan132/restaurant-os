@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IdentityModule } from '../identity/identity.module';
+import { PlatformCatalogModule } from '../platform-catalog/platform-catalog.module';
 
 import { INVENTORY_STOCK_READER } from './application/ports/inventory-stock.reader';
 import { STOCK_CONSUMPTION_PORT } from './domain/ports/stock-consumption.port';
@@ -64,12 +65,20 @@ import { ListProcessRunsUseCase } from './application/queries/list-process-runs.
 import { GetProcessRunUseCase } from './application/queries/get-process-run.usecase';
 import { GetRelatedItemsUseCase } from './application/queries/get-related-items.usecase';
 import { ProcessDefinitionAssembler } from './application/services/process-definition.assembler';
+import { ProcessGraphCycleChecker } from './application/services/process-graph-cycle.checker';
+import { ProducedItemGraphService } from './application/services/produced-item-graph.service';
+import { PROCESS_GRAPH_EDGES_READER } from './application/ports/process-graph-edges.reader';
+import { PrismaProcessGraphEdgesReader } from './infrastructure/persistence/prisma-process-graph-edges.reader';
 
 import { CreateRecipeUseCase } from './application/commands/create-recipe.usecase';
 import { UpdateRecipeUseCase } from './application/commands/update-recipe.usecase';
 import { DeleteRecipeUseCase } from './application/commands/delete-recipe.usecase';
 import { ListRecipesUseCase } from './application/queries/list-recipes.usecase';
 import { GetRecipeUseCase } from './application/queries/get-recipe.usecase';
+import { DishProjectionResolver } from './application/services/dish-projection.resolver';
+import { OrderItemAllergenResolver } from './application/services/order-item-allergen.resolver';
+import { ITEM_RESOLUTION_READER } from './application/ports/item-resolution.reader';
+import { PrismaItemResolutionReader } from './infrastructure/persistence/prisma-item-resolution.reader';
 import { RecipeDefinitionAssembler } from './application/services/recipe-definition.assembler';
 import { RecipeDetailAssembler } from './application/services/recipe-detail.assembler';
 import { RecipeConsumptionService } from './application/services/recipe-consumption.service';
@@ -161,7 +170,7 @@ import { InventoryReportsController } from './presentation/http/inventory-report
  * StockConsumptionPort to later contexts (orders/recipes, processes/write-offs).
  */
 @Module({
-  imports: [IdentityModule],
+  imports: [IdentityModule, PlatformCatalogModule],
   controllers: [
     InventoryItemsController,
     InventoryCategoriesController,
@@ -222,6 +231,8 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     GetProcessRunUseCase,
     GetRelatedItemsUseCase,
     ProcessDefinitionAssembler,
+    ProcessGraphCycleChecker,
+    ProducedItemGraphService,
     // recipes (INV-3)
     CreateRecipeUseCase,
     UpdateRecipeUseCase,
@@ -230,6 +241,8 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     GetRecipeUseCase,
     RecipeDefinitionAssembler,
     RecipeDetailAssembler,
+    DishProjectionResolver,
+    OrderItemAllergenResolver,
     RecipeConsumptionService,
     OrderConsumptionListener,
     // write-offs (INV-4)
@@ -278,10 +291,12 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     { provide: PROCESS_REPOSITORY, useClass: PrismaProcessRepository },
     { provide: PROCESS_RUN_REPOSITORY, useClass: PrismaProcessRunRepository },
     { provide: PROCESS_GRAPH_READER, useClass: PrismaProcessGraphReader },
+    { provide: PROCESS_GRAPH_EDGES_READER, useClass: PrismaProcessGraphEdgesReader },
     { provide: PROCESS_RUN_DETAIL_READER, useClass: PrismaProcessRunDetailReader },
     { provide: RECIPE_REPOSITORY, useClass: PrismaRecipeRepository },
     { provide: MENU_ITEM_LOOKUP, useClass: PrismaMenuItemLookup },
     { provide: ITEM_UNIT_COST_READER, useClass: PrismaItemUnitCostReader },
+    { provide: ITEM_RESOLUTION_READER, useClass: PrismaItemResolutionReader },
     { provide: WRITE_OFF_REPOSITORY, useClass: PrismaWriteOffRepository },
     { provide: WRITE_OFF_SUMMARY_READER, useClass: PrismaWriteOffSummaryReader },
     { provide: INVENTORY_LOCATION_REPOSITORY, useClass: PrismaInventoryLocationRepository },
@@ -292,6 +307,7 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     { provide: INVENTORY_REPORT_READER, useClass: PrismaInventoryReportReader },
   ],
   // Later contexts depend on the consumption PORT, not the concrete service.
-  exports: [STOCK_CONSUMPTION_PORT],
+  // CATALOG-4: KDS + POS read models consume the per-order-item allergen rollup.
+  exports: [STOCK_CONSUMPTION_PORT, OrderItemAllergenResolver],
 })
 export class InventoryModule {}

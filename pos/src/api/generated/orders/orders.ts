@@ -808,6 +808,7 @@ export const useOrdersControllerSend = <TError = void, TContext = unknown>(
   return useMutation(mutationOptions, queryClient);
 };
 /**
+ * Discount authority is DISCOUNT_APPLY. A caller holding it applies directly. A caller without it must include an `authorization` block (enrolled POS device secret + a capable manager’s 6-digit PIN); the manager is then recorded as the approver. The requesting user is never logged out.
  * @summary Apply a discount.
  */
 export const ordersControllerDiscount = (

@@ -22,6 +22,16 @@ export const stationRoom = (restaurantId: string, branchId: string, station: str
   `restaurant:${restaurantId}:branch:${branchId}:station:${station}`;
 
 /**
+ * ORDER-1: table room (reserved future seam for a per-table QR-web subscription).
+ * Follows the same colon hierarchy under the branch. Table-session lifecycle +
+ * attached order status currently fan out on the BRANCH room (no parallel
+ * channel); this helper exists so a future per-table subscription stays
+ * consistent with the naming convention.
+ */
+export const tableRoom = (restaurantId: string, branchId: string, tableId: string): string =>
+  `restaurant:${restaurantId}:branch:${branchId}:table:${tableId}`;
+
+/**
  * Org room = org:<o>. Cross-branch, tenant-scoped fan-out for events that affect
  * a user regardless of their active branch — e.g. a role's permissions changing.
  * Every authenticated socket joins its org room in addition to its branch room.

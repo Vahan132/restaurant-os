@@ -1,4 +1,5 @@
 import { AggregateRoot } from '../../../../shared/domain/aggregate-root';
+import { OrderingConfig } from '../value-objects/ordering-config';
 
 export enum BranchStatus {
   ACTIVE = 'ACTIVE',
@@ -22,6 +23,8 @@ export interface BranchProps {
   ipBindingMode: BranchIpBindingMode;
   /** 3A: manager-editable CIDRs evaluated under STRICT. */
   ipAllowlist: string[];
+  /** ORDER-1: per-branch ordering flow policy (narrows the restaurant ceiling). */
+  orderingConfig: OrderingConfig;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -54,6 +57,7 @@ export class Branch extends AggregateRoot<string> {
       status: BranchStatus.ACTIVE,
       ipBindingMode: BranchIpBindingMode.SOFT,
       ipAllowlist: [],
+      orderingConfig: OrderingConfig.default(),
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
@@ -85,6 +89,10 @@ export class Branch extends AggregateRoot<string> {
   }
   get ipAllowlist(): string[] {
     return this.props.ipAllowlist;
+  }
+  /** ORDER-1: per-branch ordering flow policy. */
+  get orderingConfig(): OrderingConfig {
+    return this.props.orderingConfig;
   }
 
   isActive(): boolean {
@@ -129,6 +137,21 @@ export class Branch extends AggregateRoot<string> {
       this.touch();
     }
     return changed;
+  }
+
+  /**
+   * ORDER-1: replace the branch ordering config. The VO validates its own
+   * invariants (≥1 flow when ordering on, qrOrdering ⇒ prepayment, idle bounds).
+   * Returns true if anything actually changed (so the use case can audit real
+   * changes only). The restaurant ceiling is applied separately at session start.
+   */
+  updateOrderingConfig(config: OrderingConfig): boolean {
+    if (this.props.orderingConfig.equals(config)) {
+      return false;
+    }
+    this.props.orderingConfig = config;
+    this.touch();
+    return true;
   }
 
   activate(): void {

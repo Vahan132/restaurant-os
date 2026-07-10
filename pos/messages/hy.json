@@ -175,6 +175,7 @@
     "orderLoadError": "Չհաջողվեց բեռնել պատվերը։",
     "takeaway": "Տարովի",
     "tableFallback": "Սեղան",
+    "fiscalError": "Հարկային սխալ",
     "total": "Ընդամենը",
     "subtotal": "Միջանկյալ գումար",
     "discount": "Զեղչ",
@@ -378,5 +379,25 @@
     "noPermissionView": "Դուք իրավունք չունեք դիտելու հարցումները։",
     "mute": "Անջատել ձայնը",
     "unmute": "Միացնել ձայնը"
+  },
+  "allergens": {
+    "unverified": "+ չստուգված",
+    "none": "Ալերգեններ չկան",
+    "label": {
+      "cereals-gluten": "Հացահատիկներ (գլյուտեն)",
+      "crustaceans": "Խեցգետնանմաններ",
+      "eggs": "Ձու",
+      "fish": "Ձուկ",
+      "peanuts": "Գետնանուշ",
+      "soybeans": "Սոյա",
+      "milk": "Կաթ",
+      "nuts": "Ընկուզեղեն",
+      "celery": "Նեխուր",
+      "mustard": "Մանանեխ",
+      "sesame": "Քունջութ",
+      "sulphites": "Սուլֆիտներ",
+      "lupin": "Լյուպին",
+      "molluscs": "Փափկամարմիններ"
+    }
   }
 }

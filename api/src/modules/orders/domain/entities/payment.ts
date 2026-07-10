@@ -9,7 +9,8 @@ export interface PaymentProps {
   amount: number;
   tenderedAmount: number | null;
   state: PaymentState;
-  processedByUserId: string;
+  /** Null for a gateway-processed QR prepayment (no staff user). */
+  processedByUserId: string | null;
   voidedByUserId: string | null;
   voidedReason: string | null;
   createdAt: Date;
@@ -24,7 +25,8 @@ export interface CreatePaymentInput {
   method: PaymentMethod;
   amount: number;
   tenderedAmount?: number | null;
-  processedByUserId: string;
+  /** Null for a gateway-processed QR prepayment (no staff user). */
+  processedByUserId: string | null;
 }
 
 /**
@@ -97,7 +99,7 @@ export class Payment {
   get state(): PaymentState {
     return this.props.state;
   }
-  get processedByUserId(): string {
+  get processedByUserId(): string | null {
     return this.props.processedByUserId;
   }
   get voidedByUserId(): string | null {

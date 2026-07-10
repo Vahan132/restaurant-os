@@ -42,6 +42,20 @@ export class PrismaRecipeRepository implements RecipeRepository {
 
   // Recipe uniqueness is restaurant-wide (@@unique([restaurantId, menuItemId])):
   // this lookup stays branch-AGNOSTIC (backs create uniqueness + order consumption).
+  async findByMenuItemIds(
+    restaurantId: string,
+    menuItemIds: readonly string[],
+  ): Promise<Recipe[]> {
+    if (menuItemIds.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.recipe.findMany({
+      where: { restaurantId, menuItemId: { in: [...new Set(menuItemIds)] }, deletedAt: null },
+      include: CHILDREN,
+    });
+    return rows.map(RecipeMapper.toDomain);
+  }
+
   async findByMenuItemId(restaurantId: string, menuItemId: string): Promise<Recipe | null> {
     const r = await this.prisma.recipe.findFirst({
       where: { restaurantId, menuItemId, deletedAt: null },

@@ -117,6 +117,8 @@ export class SubmitRequestedItemsUseCase implements UseCase<SubmitRequestedItems
         quantity: it.quantity,
         note: it.note ?? null,
         modifiers,
+        // FISCAL-0: snapshot the dish-level ATG code onto the line (null until classified).
+        adgCode: data?.item.adgCode ?? null,
       });
       order.addItem(item, settings.serviceFeeRateBps);
     }

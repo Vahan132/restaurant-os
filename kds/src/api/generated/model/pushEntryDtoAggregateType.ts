@@ -18,4 +18,6 @@ export const PushEntryDtoAggregateType = {
   GOODS_RECEIPT: 'GOODS_RECEIPT',
   WRITE_OFF: 'WRITE_OFF',
   PROCESS_RUN: 'PROCESS_RUN',
+  STAFF_PIN_AUTH: 'STAFF_PIN_AUTH',
+  AUDIT_LOG: 'AUDIT_LOG',
 } as const;

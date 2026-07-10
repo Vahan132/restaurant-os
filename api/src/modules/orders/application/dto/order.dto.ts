@@ -137,7 +137,7 @@ export class MoveTableDto {
 }
 
 export class UpdateOrderDto {
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ nullable: true, type: String })
   @IsOptional()
   @IsString()
   note?: string | null;

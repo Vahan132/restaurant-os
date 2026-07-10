@@ -26,6 +26,7 @@ import type {
   CreateBranchDto,
   MyBranchAccessResponse,
   UpdateBranchDto,
+  UpdateBranchOrderingConfigDto,
 } from '.././model';
 
 import { apiRequest } from '../../mutator';
@@ -502,7 +503,7 @@ export function useBranchesControllerGet<
 }
 
 /**
- * @summary Update a branch.
+ * @summary Update a branch (rename and/or 3A IP policy).
  */
 export const branchesControllerUpdate = (
   id: string,
@@ -563,7 +564,7 @@ export type BranchesControllerUpdateMutationBody = UpdateBranchDto;
 export type BranchesControllerUpdateMutationError = void;
 
 /**
- * @summary Update a branch.
+ * @summary Update a branch (rename and/or 3A IP policy).
  */
 export const useBranchesControllerUpdate = <TError = void, TContext = unknown>(
   options?: {
@@ -583,6 +584,91 @@ export const useBranchesControllerUpdate = <TError = void, TContext = unknown>(
   TContext
 > => {
   const mutationOptions = getBranchesControllerUpdateMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary ORDER-1: set the branch ordering flow config (prepayment / pay-at-end / QR / idle).
+ */
+export const branchesControllerUpdateOrderingConfig = (
+  id: string,
+  updateBranchOrderingConfigDto: UpdateBranchOrderingConfigDto,
+  options?: SecondParameter<typeof apiRequest>,
+) => {
+  return apiRequest<BranchResponse>(
+    {
+      url: `/branches/${id}/ordering-config`,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      data: updateBranchOrderingConfigDto,
+    },
+    options,
+  );
+};
+
+export const getBranchesControllerUpdateOrderingConfigMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof branchesControllerUpdateOrderingConfig>>,
+    TError,
+    { id: string; data: UpdateBranchOrderingConfigDto },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiRequest>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof branchesControllerUpdateOrderingConfig>>,
+  TError,
+  { id: string; data: UpdateBranchOrderingConfigDto },
+  TContext
+> => {
+  const mutationKey = ['branchesControllerUpdateOrderingConfig'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof branchesControllerUpdateOrderingConfig>>,
+    { id: string; data: UpdateBranchOrderingConfigDto }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return branchesControllerUpdateOrderingConfig(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type BranchesControllerUpdateOrderingConfigMutationResult = NonNullable<
+  Awaited<ReturnType<typeof branchesControllerUpdateOrderingConfig>>
+>;
+export type BranchesControllerUpdateOrderingConfigMutationBody = UpdateBranchOrderingConfigDto;
+export type BranchesControllerUpdateOrderingConfigMutationError = void;
+
+/**
+ * @summary ORDER-1: set the branch ordering flow config (prepayment / pay-at-end / QR / idle).
+ */
+export const useBranchesControllerUpdateOrderingConfig = <TError = void, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof branchesControllerUpdateOrderingConfig>>,
+      TError,
+      { id: string; data: UpdateBranchOrderingConfigDto },
+      TContext
+    >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof branchesControllerUpdateOrderingConfig>>,
+  TError,
+  { id: string; data: UpdateBranchOrderingConfigDto },
+  TContext
+> => {
+  const mutationOptions = getBranchesControllerUpdateOrderingConfigMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

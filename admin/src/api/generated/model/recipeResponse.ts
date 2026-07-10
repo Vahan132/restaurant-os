@@ -5,7 +5,10 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { CustomerIngredientResponse } from './customerIngredientResponse';
+import type { DishAllergensResponse } from './dishAllergensResponse';
 import type { ModifierConsumptionResponse } from './modifierConsumptionResponse';
+import type { OperationalIngredientResponse } from './operationalIngredientResponse';
 import type { RecipeLineResponse } from './recipeLineResponse';
 import type { RecipeWarningResponse } from './recipeWarningResponse';
 
@@ -21,4 +24,13 @@ export interface RecipeResponse {
   /** Forward-looking estimate (§3); NOT actual COGS. */
   estimatedUnitCost_amount: number;
   warnings: RecipeWarningResponse[];
+  /** Hides the customer ingredient list, never the allergens (ADR §9). */
+  hideRecipe: boolean;
+  /**
+     * Localized ingredient names, no quantities. null when hideRecipe.
+     * @nullable
+     */
+  customerIngredients: CustomerIngredientResponse[] | null;
+  operationalIngredients: OperationalIngredientResponse[];
+  allergens: DishAllergensResponse;
 }

@@ -20,18 +20,18 @@ export class AttachModifierGroupDto {
   @MinLength(1)
   groupId!: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ nullable: true, type: Boolean })
   @IsOptional()
   @IsBoolean()
   requiredOverride?: boolean | null;
 
-  @ApiPropertyOptional({ nullable: true, minimum: 0 })
+  @ApiPropertyOptional({ nullable: true, minimum: 0, type: Number })
   @IsOptional()
   @IsInt()
   @Min(0)
   minOverride?: number | null;
 
-  @ApiPropertyOptional({ nullable: true, minimum: 1 })
+  @ApiPropertyOptional({ nullable: true, minimum: 1, type: Number })
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -49,18 +49,18 @@ export class AttachModifierGroupDto {
  * override (revert to the group value); omit a field to leave it unchanged.
  */
 export class SetDishModifierOverridesDto {
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ nullable: true, type: Boolean })
   @IsOptional()
   @IsBoolean()
   requiredOverride?: boolean | null;
 
-  @ApiPropertyOptional({ nullable: true, minimum: 0 })
+  @ApiPropertyOptional({ nullable: true, minimum: 0, type: Number })
   @IsOptional()
   @IsInt()
   @Min(0)
   minOverride?: number | null;
 
-  @ApiPropertyOptional({ nullable: true, minimum: 1 })
+  @ApiPropertyOptional({ nullable: true, minimum: 1, type: Number })
   @IsOptional()
   @IsInt()
   @Min(1)

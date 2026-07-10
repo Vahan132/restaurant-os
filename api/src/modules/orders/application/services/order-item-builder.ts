@@ -121,6 +121,11 @@ export class OrderItemBuilder {
       quantity: input.quantity,
       note: input.note ?? null,
       modifiers,
+      // ORDER-2 fiscal snapshot (harmless for POS lines; fiscal-ready for QR).
+      goodCode: data.item.code,
+      goodName: data.item.name,
+      // FISCAL-0: dish-level ATG code for fiscalization (null until classified).
+      adgCode: data.item.adgCode,
     });
   }
 }

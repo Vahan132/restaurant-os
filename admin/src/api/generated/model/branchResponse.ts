@@ -5,6 +5,7 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { BranchOrderingConfigResponse } from './branchOrderingConfigResponse';
 import type { BranchResponseIpBindingMode } from './branchResponseIpBindingMode';
 import type { BranchResponseStatus } from './branchResponseStatus';
 
@@ -21,4 +22,6 @@ export interface BranchResponse {
   ipBindingMode: BranchResponseIpBindingMode;
   /** 3A: allowed source CIDRs (STRICT mode). */
   ipAllowlist: string[];
+  /** ORDER-1: ordering flow config. */
+  orderingConfig: BranchOrderingConfigResponse;
 }

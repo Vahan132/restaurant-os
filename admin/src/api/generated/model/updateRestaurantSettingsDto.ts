@@ -9,6 +9,8 @@ import type { OpeningHourDto } from './openingHourDto';
 
 export interface UpdateRestaurantSettingsDto {
   logoUrl?: string;
+  /** MEDIA-1: object key from a presigned logo upload (finalize). Overrides logoUrl. */
+  logoKey?: string;
   phone?: string;
   address?: string;
   /**

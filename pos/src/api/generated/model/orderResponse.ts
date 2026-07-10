@@ -12,6 +12,7 @@ import type { OrderTotalsResponse } from './orderTotalsResponse';
 import type { OrderItemResponse } from './orderItemResponse';
 import type { OrderResponsePaymentStatus } from './orderResponsePaymentStatus';
 import type { PaymentResponse } from './paymentResponse';
+import type { OrderResponseFiscalStatus } from './orderResponseFiscalStatus';
 
 export interface OrderResponse {
   id: string;
@@ -21,7 +22,11 @@ export interface OrderResponse {
   type: OrderResponseType;
   /** @nullable */
   tableId: string | null;
-  waiterId: string;
+  /**
+   * Null for QR-web customer orders.
+   * @nullable
+   */
+  waiterId: string | null;
   status: OrderResponseStatus;
   /** @nullable */
   note: string | null;
@@ -36,4 +41,14 @@ export interface OrderResponse {
   /** @nullable */
   splitFromOrderId: string | null;
   payments: PaymentResponse[];
+  /**
+   * FISCAL-1b: derived fiscal state; null until the order is PAID.
+   * @nullable
+   */
+  fiscalStatus?: OrderResponseFiscalStatus;
+  /**
+   * FISCAL-1b: fatal fiscal error code (staff-only); null when none.
+   * @nullable
+   */
+  fiscalError?: string | null;
 }

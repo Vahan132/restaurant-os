@@ -2,7 +2,22 @@ import { OrderItemStatus } from '../enums';
 import { InvalidQuantityError } from '../orders.errors';
 import { OrderItemModifier } from './order-item-modifier';
 
-export interface OrderItemProps {
+/** Fiscal-ready line fields (ORDER-2). goodCode/goodName/unit populated for QR
+ *  lines; the rest are RESERVED nullable (no logic in v1). */
+export interface OrderItemFiscalProps {
+  goodCode: string | null;
+  goodName: string | null;
+  unit: string | null;
+  adgCode: string | null;
+  dep: string | null;
+  discount: number | null;
+  discountType: number | null;
+  additionalDiscount: number | null;
+  additionalDiscountType: number | null;
+  emarks: string | null;
+}
+
+export interface OrderItemProps extends OrderItemFiscalProps {
   restaurantId: string;
   branchId: string;
   orderId: string;
@@ -35,7 +50,24 @@ export interface CreateOrderItemInput {
   quantity: number;
   note?: string | null;
   modifiers: OrderItemModifier[];
+  /** Fiscal snapshot (QR-web populates goodName/goodCode/unit). */
+  goodCode?: string | null;
+  goodName?: string | null;
+  unit?: string | null;
+  /** FISCAL-0: dish-level ATG code (from MenuItem.adgCode). Null until classified. */
+  adgCode?: string | null;
 }
+
+/** Default (all-null) reserved fiscal fields for a freshly created line. */
+const EMPTY_RESERVED_FISCAL = {
+  adgCode: null,
+  dep: null,
+  discount: null,
+  discountType: null,
+  additionalDiscount: null,
+  additionalDiscountType: null,
+  emarks: null,
+} as const;
 
 /** Order line item (entity inside the Order aggregate). Prices are snapshotted. */
 export class OrderItem {
@@ -64,6 +96,12 @@ export class OrderItem {
       readyAt: null,
       cancelledReason: null,
       modifiers: input.modifiers,
+      goodCode: input.goodCode ?? null,
+      goodName: input.goodName ?? input.nameSnapshot,
+      unit: input.unit ?? null,
+      ...EMPTY_RESERVED_FISCAL,
+      // FISCAL-0: snapshot the dish-level ATG code (overrides the reserved null).
+      adgCode: input.adgCode ?? null,
       createdAt: now,
       updatedAt: now,
     });
@@ -137,6 +175,38 @@ export class OrderItem {
   }
   get updatedAt(): Date {
     return this.props.updatedAt;
+  }
+
+  // ── fiscal-ready line fields (ORDER-2) ───────────────────────────────────
+  get goodCode(): string | null {
+    return this.props.goodCode;
+  }
+  get goodName(): string | null {
+    return this.props.goodName;
+  }
+  get unit(): string | null {
+    return this.props.unit;
+  }
+  get adgCode(): string | null {
+    return this.props.adgCode;
+  }
+  get dep(): string | null {
+    return this.props.dep;
+  }
+  get discount(): number | null {
+    return this.props.discount;
+  }
+  get discountType(): number | null {
+    return this.props.discountType;
+  }
+  get additionalDiscount(): number | null {
+    return this.props.additionalDiscount;
+  }
+  get additionalDiscountType(): number | null {
+    return this.props.additionalDiscountType;
+  }
+  get emarks(): string | null {
+    return this.props.emarks;
   }
 
   isNew(): boolean {

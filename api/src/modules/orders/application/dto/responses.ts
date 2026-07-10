@@ -1,4 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { DishAllergens } from '../../../inventory/application/services/dish-projection.resolver';
 import { Order } from '../../domain/entities/order';
 import { OrderItem } from '../../domain/entities/order-item';
 import { Payment } from '../../domain/entities/payment';
@@ -24,8 +25,12 @@ export class OrderItemResponse {
   status!: string;
   @ApiProperty() lineTotalAmount!: number;
   @ApiProperty({ type: [OrderItemModifierResponse] }) modifiers!: OrderItemModifierResponse[];
+  @ApiPropertyOptional({ type: [String], description: 'CATALOG-4: allergen slugs as ordered (dish + selected modifiers). Present on order reads.' })
+  allergens?: string[];
+  @ApiPropertyOptional({ description: 'False when any contributing ingredient is unverified — never a clean claim.' })
+  allergensComplete?: boolean;
 
-  static from(i: OrderItem): OrderItemResponse {
+  static from(i: OrderItem, allergens?: DishAllergens): OrderItemResponse {
     return {
       id: i.id,
       menuItemId: i.menuItemId,
@@ -36,6 +41,8 @@ export class OrderItemResponse {
       note: i.note,
       status: i.status,
       lineTotalAmount: i.lineTotalAmount,
+      allergens: allergens?.slugs,
+      allergensComplete: allergens?.complete,
       modifiers: i.modifiers.map((m) => ({
         id: m.id,
         modifierGroupId: m.modifierGroupId,
@@ -85,7 +92,8 @@ export class OrderResponse {
   @ApiProperty() orderNumber!: number;
   @ApiProperty({ enum: ['DINE_IN', 'TAKEAWAY'] }) type!: string;
   @ApiProperty({ nullable: true, type: String }) tableId!: string | null;
-  @ApiProperty() waiterId!: string;
+  @ApiProperty({ nullable: true, type: String, description: 'Null for QR-web customer orders.' })
+  waiterId!: string | null;
   @ApiProperty({
     enum: ['DRAFT', 'SENT_TO_KITCHEN', 'PREPARING', 'READY', 'SERVED', 'CLOSED', 'CANCELLED'],
   })
@@ -99,8 +107,23 @@ export class OrderResponse {
   @ApiProperty() paidAmount!: number;
   @ApiProperty({ nullable: true, type: String }) splitFromOrderId!: string | null;
   @ApiProperty({ type: [PaymentResponse] }) payments!: PaymentResponse[];
+  @ApiPropertyOptional({
+    enum: ['OK', 'PENDING', 'FAILED'],
+    nullable: true,
+    description: 'FISCAL-1b: derived fiscal state; null until the order is PAID.',
+  })
+  fiscalStatus!: 'OK' | 'PENDING' | 'FAILED' | null;
+  @ApiPropertyOptional({
+    nullable: true,
+    type: String,
+    description: 'FISCAL-1b: fatal fiscal error code (staff-only); null when none.',
+  })
+  fiscalError!: string | null;
 
-  static from(o: Order): OrderResponse {
+  static from(
+    o: Order,
+    allergensByItemId?: Map<string, DishAllergens>,
+  ): OrderResponse {
     return {
       id: o.id,
       restaurantId: o.restaurantId,
@@ -120,11 +143,13 @@ export class OrderResponse {
         totalAmount: o.totalAmount,
         currency: o.currency,
       },
-      items: o.items.map(OrderItemResponse.from),
+      items: o.items.map((i) => OrderItemResponse.from(i, allergensByItemId?.get(i.id))),
       paymentStatus: o.paymentStatus,
       paidAmount: o.paidAmount,
       splitFromOrderId: o.splitFromOrderId,
       payments: o.payments.map(PaymentResponse.from),
+      fiscalStatus: o.fiscalStatus(),
+      fiscalError: o.fiscalError,
     };
   }
 }

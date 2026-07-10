@@ -16,6 +16,11 @@ export interface MenuItemLookup {
   searchMenuItemIds(restaurantId: string, search: string): Promise<string[]>;
   /** Map of menu item id -> display name, for response hydration. */
   namesByIds(restaurantId: string, menuItemIds: string[]): Promise<Map<string, string>>;
+  /**
+   * The dish hideRecipe flag (CATALOG-3 §9). Defaults to false when the menu item
+   * is absent — hides the customer ingredient list, never the allergen summary.
+   */
+  hideRecipeByMenuItemId(restaurantId: string, menuItemId: string): Promise<boolean>;
   /** Subset of the given modifier-option ids that exist within the tenant. */
   existingModifierOptionIds(restaurantId: string, optionIds: string[]): Promise<Set<string>>;
   /** Subset of the given modifier-option ids that exist within the given branch. */

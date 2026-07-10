@@ -31,5 +31,8 @@ import { AuditController } from './presentation/http/audit.controller';
     { provide: ACTOR_NAME_READER, useClass: PrismaActorNameReader },
     { provide: ACTOR_ROLE_READER, useClass: PrismaActorRoleReader },
   ],
+  // FISCAL-4: expose the append use-case so platform-admin fiscal-config mutations
+  // can be audit-logged directly (the rest of audit is event-driven).
+  exports: [AppendAuditLogUseCase],
 })
 export class AuditModule {}

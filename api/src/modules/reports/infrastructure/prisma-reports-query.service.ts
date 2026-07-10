@@ -187,6 +187,10 @@ export class PrismaReportsQueryService implements ReportsQuery {
     const closed = await this.closedOrders(restaurantId, from, to);
     const agg = new Map<string, { revenueAmount: number; orderCount: number }>();
     for (const o of closed) {
+      // Customer-placed (QR-web) orders have no waiter — excluded from by-waiter sales.
+      if (o.waiterId === null) {
+        continue;
+      }
       const cur = agg.get(o.waiterId) ?? { revenueAmount: 0, orderCount: 0 };
       cur.revenueAmount += o.totalAmount;
       cur.orderCount += 1;

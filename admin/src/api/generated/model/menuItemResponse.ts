@@ -21,9 +21,21 @@ export interface MenuItemResponse {
   priceAmount: number;
   /** @nullable */
   imageUrl: string | null;
+  /**
+     * MEDIA-1: object-storage key when the image was uploaded (null for URL-paste).
+     * @nullable
+     */
+  imageKey: string | null;
   preparationStation: MenuItemResponsePreparationStation;
   /** @nullable */
   prepTimeMinutes: number | null;
   status: MenuItemResponseStatus;
   availability: MenuItemResponseAvailability;
+  /** Hides the customer ingredient list, not the allergen summary. */
+  hideRecipe: boolean;
+  /**
+     * ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified).
+     * @nullable
+     */
+  adgCode: string | null;
 }

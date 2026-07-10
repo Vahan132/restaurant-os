@@ -69,6 +69,8 @@ import {
 } from '../../application/dto/responses';
 import { GetOrderUseCase } from '../../application/queries/get-order.usecase';
 import { ListOrdersUseCase } from '../../application/queries/list-orders.usecase';
+import { OrderItemAllergenResolver } from '../../../inventory/application/services/order-item-allergen.resolver';
+import { Order } from '../../domain/entities/order';
 
 const P = PERMISSIONS;
 
@@ -98,7 +100,19 @@ export class OrdersController {
     private readonly splitEven: SplitEvenUseCase,
     private readonly splitItems: SplitItemsToNewCheckUseCase,
     private readonly getReceipt: GetReceiptUseCase,
+    private readonly allergens: OrderItemAllergenResolver,
   ) {}
+
+  /** CATALOG-4: build per-order-item allergen-resolve requests from a domain order. */
+  private allergenRequests(order: Order) {
+    return order.items.map((i) => ({
+      key: i.id,
+      menuItemId: i.menuItemId,
+      selectedModifierOptionIds: i.modifiers
+        .map((m) => m.modifierOptionId)
+        .filter((x): x is string => x !== null),
+    }));
+  }
 
   @Post()
   @RequirePermissions(P.ORDER_CREATE)
@@ -140,7 +154,15 @@ export class OrdersController {
       page: query.page,
       limit: query.limit,
     });
-    return { data: page.data.map(OrderResponse.from), pagination: page.pagination };
+    const allergens = await this.allergens.resolveForOrderItems(
+      tenant.restaurantId ?? '',
+      branchId,
+      page.data.flatMap((o) => this.allergenRequests(o)),
+    );
+    return {
+      data: page.data.map((o) => OrderResponse.from(o, allergens)),
+      pagination: page.pagination,
+    };
   }
 
   @Get(':id')
@@ -156,7 +178,12 @@ export class OrdersController {
       branchId,
       orderId: id,
     });
-    return OrderResponse.from(order);
+    const allergens = await this.allergens.resolveForOrderItems(
+      order.restaurantId,
+      order.branchId,
+      this.allergenRequests(order),
+    );
+    return OrderResponse.from(order, allergens);
   }
 
   @Patch(':id')

@@ -21,11 +21,7 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
-import type {
-  DeviceEnrolledResponse,
-  DeviceResponse,
-  EnrollDeviceDto,
-} from '.././model';
+import type { DeviceEnrolledResponse, DeviceResponse, EnrollDeviceDto } from '.././model';
 
 import { apiRequest } from '../../mutator';
 
@@ -133,9 +129,11 @@ export const getDevicesControllerListQueryKey = () => {
 
 export const getDevicesControllerListQueryOptions = <
   TData = Awaited<ReturnType<typeof devicesControllerList>>,
-  TError = unknown,
+  TError = void,
 >(options?: {
-  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof devicesControllerList>>, TError, TData>>;
+  query?: Partial<
+    UseQueryOptions<Awaited<ReturnType<typeof devicesControllerList>>, TError, TData>
+  >;
   request?: SecondParameter<typeof apiRequest>;
 }) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
@@ -155,11 +153,11 @@ export const getDevicesControllerListQueryOptions = <
 export type DevicesControllerListQueryResult = NonNullable<
   Awaited<ReturnType<typeof devicesControllerList>>
 >;
-export type DevicesControllerListQueryError = unknown;
+export type DevicesControllerListQueryError = void;
 
 export function useDevicesControllerList<
   TData = Awaited<ReturnType<typeof devicesControllerList>>,
-  TError = unknown,
+  TError = void,
 >(
   options: {
     query: Partial<
@@ -179,7 +177,7 @@ export function useDevicesControllerList<
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
 export function useDevicesControllerList<
   TData = Awaited<ReturnType<typeof devicesControllerList>>,
-  TError = unknown,
+  TError = void,
 >(
   options?: {
     query?: Partial<
@@ -199,7 +197,7 @@ export function useDevicesControllerList<
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
 export function useDevicesControllerList<
   TData = Awaited<ReturnType<typeof devicesControllerList>>,
-  TError = unknown,
+  TError = void,
 >(
   options?: {
     query?: Partial<
@@ -215,7 +213,7 @@ export function useDevicesControllerList<
 
 export function useDevicesControllerList<
   TData = Awaited<ReturnType<typeof devicesControllerList>>,
-  TError = unknown,
+  TError = void,
 >(
   options?: {
     query?: Partial<
@@ -235,6 +233,7 @@ export function useDevicesControllerList<
 
   return query;
 }
+
 /**
  * @summary Revoke a device (immediately invalidates PIN + anchored use).
  */
@@ -243,14 +242,14 @@ export const devicesControllerRevoke = (
   options?: SecondParameter<typeof apiRequest>,
   signal?: AbortSignal,
 ) => {
-  return apiRequest<void>(
+  return apiRequest<DeviceResponse>(
     { url: `/devices/${id}/revoke`, method: 'POST', signal },
     options,
   );
 };
 
 export const getDevicesControllerRevokeMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -289,12 +288,12 @@ export type DevicesControllerRevokeMutationResult = NonNullable<
   Awaited<ReturnType<typeof devicesControllerRevoke>>
 >;
 
-export type DevicesControllerRevokeMutationError = unknown;
+export type DevicesControllerRevokeMutationError = void;
 
 /**
  * @summary Revoke a device (immediately invalidates PIN + anchored use).
  */
-export const useDevicesControllerRevoke = <TError = unknown, TContext = unknown>(
+export const useDevicesControllerRevoke = <TError = void, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof devicesControllerRevoke>>,

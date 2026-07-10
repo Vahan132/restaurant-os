@@ -31,7 +31,7 @@ export const CATEGORIES: CategorySeed[] = [
   { slug: 'desserts', name: 'Աղանդեր', nameRu: 'Десерты', nameEn: 'Desserts', order: 5 },
 ];
 
-export type ModifierGroupKey = 'doneness' | 'spice' | 'side' | 'size';
+export type ModifierGroupKey = 'doneness' | 'spice' | 'side' | 'size' | 'addons';
 
 export interface ModifierOptionSeed {
   slug: string;
@@ -114,6 +114,20 @@ export const MODIFIER_GROUPS: ModifierGroupSeed[] = [
       { slug: 'large', name: 'Մեծ', nameRu: 'Большой', nameEn: 'Large', priceDelta: 300 },
     ],
   },
+  // CATALOG-3/4 verification: an add-on that introduces an allergen (nuts).
+  {
+    key: 'addons',
+    name: 'Հավելումներ',
+    nameRu: 'Добавки',
+    nameEn: 'Add-ons',
+    selectionType: 'MULTIPLE',
+    required: false,
+    minSelect: 0,
+    maxSelect: null,
+    options: [
+      { slug: 'add-walnuts', name: 'Ընկույզ', nameRu: 'Грецкие орехи', nameEn: 'Add walnuts', priceDelta: 500 },
+    ],
+  },
 ];
 
 export interface AttachmentSeed {
@@ -129,6 +143,14 @@ export interface RecipeLineSeed {
   baseQty: number; // base units consumed per dish sold
 }
 
+/** Extra inventory drawn when a specific modifier option is chosen (CATALOG-3/4). */
+export interface ModifierConsumptionSeed {
+  group: ModifierGroupKey;
+  option: string; // option slug within the group
+  item: string; // inventory item slug
+  baseQty: number;
+}
+
 export interface DishSeed {
   slug: string;
   category: string;
@@ -140,6 +162,15 @@ export interface DishSeed {
   station: Station;
   attachments: AttachmentSeed[];
   recipe: RecipeLineSeed[];
+  /** Modifier-option-triggered inventory draws (default none). */
+  modifierConsumptions?: ModifierConsumptionSeed[];
+  /**
+   * FISCAL-0: the dish-level SRC ATG classifier code (fiscal `adgCode`), snapshotted
+   * onto order lines at build time. ILLUSTRATIVE placeholders on a few dishes here;
+   * most dishes leave it undefined (=> null line adgCode, which FISCAL-1 fail-closes).
+   * Real codes come from the SRC classifier during catalog curation.
+   */
+  adgCode?: string | null;
 }
 
 export const DISHES: DishSeed[] = [
@@ -150,6 +181,7 @@ export const DISHES: DishSeed[] = [
     descHy: 'Կաղնու ածխի վրա խորոված խոզի մսի կտորներ՝ սոխով։',
     price: 3500, station: 'KITCHEN',
     attachments: [{ group: 'doneness' }, { group: 'spice' }, { group: 'side', requiredOverride: true }],
+    adgCode: '2130000000', // FISCAL-0: illustrative prepared-food ATG code.
     recipe: [{ item: 'pork-loin', baseQty: 300 }, { item: 'onion', baseQty: 50 }, { item: 'salt', baseQty: 5 }],
   },
   {
@@ -158,6 +190,7 @@ export const DISHES: DishSeed[] = [
     descHy: 'Մարինադած հավի խորоված՝ թարմ խոտաբույսերով։',
     price: 3000, station: 'KITCHEN',
     attachments: [{ group: 'doneness' }, { group: 'spice' }, { group: 'side' }],
+    adgCode: '2130000000', // FISCAL-0: illustrative prepared-food ATG code.
     recipe: [{ item: 'chicken', baseQty: 350 }, { item: 'onion', baseQty: 50 }],
   },
   {
@@ -388,5 +421,39 @@ export const DISHES: DishSeed[] = [
     price: 2000, station: 'DESSERT',
     attachments: [],
     recipe: [{ item: 'dried-apricot', baseQty: 60 }, { item: 'raisins', baseQty: 40 }, { item: 'walnuts', baseQty: 40 }],
+  },
+  // ── CATALOG-3/4 verification fixtures (verify on the FLAGSHIP branch; the
+  //    produced-item process graph is seeded there). ─────────────────────────────
+  {
+    // Deep walk + VERIFIED allergen: marinated-pork-cubes (produced) -> pork-leg
+    // (reviewed, no allergen); butter (reviewed, milk). Rollup => {milk}, complete=true.
+    slug: 'verify-pork-skewer', category: 'grill',
+    name: 'Ստուգում՝ խոզի շիշ', nameRu: 'Проверка: свиной шашлык', nameEn: 'Verify: pork skewer',
+    descHy: 'CATALOG ստուգման ուտեստ՝ արտադրված բաղադրիչով (խորը քայլք)։',
+    price: 3600, station: 'KITCHEN',
+    attachments: [],
+    recipe: [{ item: 'marinated-pork-cubes', baseQty: 200 }, { item: 'butter', baseQty: 10 }],
+  },
+  {
+    // UNVERIFIED leaf: walnuts (adopted but NOT reviewed) + butter (reviewed, milk).
+    // Rollup => {milk, nuts}, complete=FALSE. Flip walnuts reviewed => complete=TRUE.
+    slug: 'verify-walnut-plate', category: 'salads',
+    name: 'Ստուգում՝ ընկույզով ափսե', nameRu: 'Проверка: тарелка с орехами', nameEn: 'Verify: walnut plate',
+    descHy: 'CATALOG ստուգման ուտեստ՝ չստուգված ալերգենով բաղադրիչ։',
+    price: 2400, station: 'OTHER',
+    attachments: [],
+    recipe: [{ item: 'walnuts', baseQty: 30 }, { item: 'butter', baseQty: 10 }],
+  },
+  {
+    // MODIFIER adds an allergen: base rice (reviewed, no allergen) => complete=true, no
+    // allergens; selecting "add walnuts" draws walnuts => order rollup gains nuts AND
+    // complete=FALSE (walnuts unreviewed). Exercises the CATALOG-4 per-order-item path.
+    slug: 'verify-rice-bowl', category: 'mains',
+    name: 'Ստուգում՝ բրնձով ափսե', nameRu: 'Проверка: рисовая тарелка', nameEn: 'Verify: rice bowl',
+    descHy: 'CATALOG ստուգման ուտեստ՝ ալերգեն ավելացնող հավելումով։',
+    price: 2600, station: 'KITCHEN',
+    attachments: [{ group: 'addons' }],
+    recipe: [{ item: 'rice', baseQty: 120 }],
+    modifierConsumptions: [{ group: 'addons', option: 'add-walnuts', item: 'walnuts', baseQty: 20 }],
   },
 ];

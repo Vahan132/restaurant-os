@@ -28,6 +28,19 @@ export interface OrderRepository {
   create(order: Order): Promise<void>;
   /** Persist changes to an existing order (replaces its items/modifiers/payments). */
   save(order: Order): Promise<void>;
+  /**
+   * Load the order, mutate it, and persist — all inside ONE transaction that holds
+   * a row-level lock on the order. Concurrent callers for the same order serialize
+   * on the lock, so check-then-write invariants (e.g. no overpayment) hold under
+   * duplicate/racing requests. Resolves null when the order does not exist. Domain
+   * events raised by `mutate` are the caller's to publish AFTER this resolves.
+   */
+  withOrderLock<T>(
+    restaurantId: string,
+    branchId: string,
+    orderId: string,
+    mutate: (order: Order) => Promise<T> | T,
+  ): Promise<{ order: Order; result: T } | null>;
   /** Scope by branch only when branchId is non-null (cross-module callers pass null). */
   findById(restaurantId: string, branchId: string | null, id: string): Promise<Order | null>;
   /** Find the order that owns a given order-item; scopes by branch when non-null. */

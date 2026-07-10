@@ -3,11 +3,14 @@ import { UseCase } from '../../../../shared/application/use-case';
 import { RECIPE_REPOSITORY, RecipeRepository } from '../../domain/repositories/recipe.repository';
 import { NoRestaurantInScope, RecipeNotFound } from '../application.errors';
 import { RecipeDetail, RecipeDetailAssembler } from '../services/recipe-detail.assembler';
+import { Locale } from '../services/dish-projection.resolver';
 
 export interface GetRecipeInput {
   restaurantId: string | null;
   branchId: string;
   recipeId: string;
+  /** Customer-projection locale (hy/ru/en); defaults to 'en'. */
+  locale?: Locale;
 }
 
 /** Fetch a recipe with lines + modifier consumptions + estimate + warnings. */
@@ -26,6 +29,6 @@ export class GetRecipeUseCase implements UseCase<GetRecipeInput, RecipeDetail> {
     if (!recipe) {
       throw RecipeNotFound();
     }
-    return this.detail.assemble(recipe);
+    return this.detail.assemble(recipe, input.locale ?? 'en');
   }
 }

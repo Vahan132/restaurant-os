@@ -109,6 +109,7 @@ export async function seedCatalog(ctx: SeedContext, state: SeedState): Promise<v
           categoryId: state.categoryIds[bk][dish.category],
           status: 'ACTIVE',
           availability: 'AVAILABLE',
+          adgCode: dish.adgCode ?? null,
         },
         create: {
           id: did,
@@ -122,6 +123,7 @@ export async function seedCatalog(ctx: SeedContext, state: SeedState): Promise<v
           preparationStation: dish.station,
           status: 'ACTIVE',
           availability: 'AVAILABLE',
+          adgCode: dish.adgCode ?? null,
         },
       });
       state.dishIds[bk][dish.slug] = did;

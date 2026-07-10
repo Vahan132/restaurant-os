@@ -66,6 +66,11 @@ export interface PublicBranchInfo {
  */
 export interface PublicStorefrontQuery {
   restaurantInfo(restaurantId: string): Promise<PublicRestaurantInfo | null>;
+  /**
+   * ORDER-4: the restaurant's display currency (Restaurant.currency) for the menu
+   * response. Same source the ORDER-2 cart/order uses, so menu == cart currency.
+   */
+  menuCurrency(restaurantId: string): Promise<string>;
   /** BR-9: menu for a SPECIFIC branch (branch-owned catalog per BR-2). */
   menuTree(restaurantId: string, branchId: string): Promise<PublicMenuCategory[]>;
   /** BR-9: the table's info INCLUDING its branch (tables are branch-scoped). */

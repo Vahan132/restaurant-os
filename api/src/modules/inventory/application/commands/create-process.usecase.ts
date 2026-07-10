@@ -13,6 +13,7 @@ import {
   RawInput,
   RawOutput,
 } from '../services/process-definition.assembler';
+import { ProcessGraphCycleChecker } from '../services/process-graph-cycle.checker';
 
 export interface CreateProcessInput {
   restaurantId: string | null;
@@ -31,6 +32,7 @@ export class CreateProcessUseCase implements UseCase<CreateProcessInput, Process
   constructor(
     @Inject(PROCESS_REPOSITORY) private readonly processes: ProcessRepository,
     private readonly assembler: ProcessDefinitionAssembler,
+    private readonly cycleChecker: ProcessGraphCycleChecker,
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
     private readonly events: DomainEventPublisher,
   ) {}
@@ -45,6 +47,14 @@ export class CreateProcessUseCase implements UseCase<CreateProcessInput, Process
       input.inputs,
       input.outputs,
     );
+    await this.cycleChecker.assertAcyclic({
+      restaurantId: input.restaurantId,
+      branchId: input.branchId,
+      processId: null,
+      processName: input.name,
+      inputItemIds: inputs.map((i) => i.itemId),
+      outputItemIds: outputs.map((o) => o.itemId),
+    });
     const process = Process.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,

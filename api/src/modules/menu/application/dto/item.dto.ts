@@ -1,6 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
 import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '../../../../shared/application/pagination';
 import { ItemAvailability, MenuStatus, PreparationStation } from '../../domain/enums';
 
@@ -27,6 +37,13 @@ export class CreateMenuItemDto {
   @IsOptional()
   @IsString()
   imageUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'MEDIA-1: object key from a presigned upload (finalize). Overrides imageUrl.',
+  })
+  @IsOptional()
+  @IsString()
+  imageKey?: string;
 
   @ApiPropertyOptional({ enum: PreparationStation, default: PreparationStation.KITCHEN })
   @IsOptional()
@@ -57,6 +74,14 @@ export class UpdateMenuItemDto {
   @IsString()
   imageUrl?: string;
 
+  @ApiPropertyOptional({
+    description:
+      'MEDIA-1: object key from a presigned upload (finalize). Overrides imageUrl. Send null/empty with imageUrl to switch back to URL-paste.',
+  })
+  @IsOptional()
+  @IsString()
+  imageKey?: string;
+
   @ApiPropertyOptional({ description: 'Reassign to another category in your restaurant.' })
   @IsOptional()
   @IsString()
@@ -72,6 +97,32 @@ export class UpdateMenuItemDto {
   @IsInt()
   @Min(0)
   prepTimeMinutes?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible).',
+  })
+  @IsOptional()
+  @IsBoolean()
+  hideRecipe?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'ADGCODE-UI: SRC ATG classification code (from the SRC N 1406-Ն / N 875-Ն lists) for ' +
+      'e-HDM fiscalization. Free-text: SRC is the authority (rejects a bad code with error 183 ' +
+      'at fiscalization), so there is NO server format constraint — the UI only soft-warns on ' +
+      'obvious typos. Send an empty string or null to clear it; omit to leave it unchanged ' +
+      '(partial update).',
+    example: '2130000000',
+    nullable: true,
+  })
+  @IsOptional()
+  // Accept null (explicit clear) as well as a string; type-check only when not null.
+  // Deliberately NO @Matches: a hard reject would block valid codes that aren't in
+  // the (unimported) SRC lists. Validation is a soft UI warning only.
+  @ValidateIf((o) => o.adgCode !== null)
+  @IsString()
+  adgCode?: string | null;
 }
 
 export class ChangeItemPriceDto {

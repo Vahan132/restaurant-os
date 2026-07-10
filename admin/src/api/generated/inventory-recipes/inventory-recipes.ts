@@ -28,6 +28,7 @@ import type {
   CreateRecipeDto,
   RecipeListItemResponse,
   RecipeResponse,
+  RecipesControllerGetParams,
   RecipesControllerListParams,
   UpdateRecipeDto
 } from '../model';
@@ -196,16 +197,18 @@ export const useRecipesControllerCreate = <TError = void,
       return useMutation(getRecipesControllerCreateMutationOptions(options), queryClient);
     }
     /**
- * @summary Get a recipe with lines, modifier consumptions, estimate + warnings.
+ * @summary Get a recipe with lines, modifier consumptions, estimate, warnings, projections + allergen rollup.
  */
 export const recipesControllerGet = (
     id: string,
+    params?: RecipesControllerGetParams,
  options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
 ) => {
 
 
       return customInstance<RecipeResponse>(
-      {url: `/inventory/recipes/${id}`, method: 'GET', signal
+      {url: `/inventory/recipes/${id}`, method: 'GET',
+        params, signal
     },
       options);
     }
@@ -213,23 +216,25 @@ export const recipesControllerGet = (
 
 
 
-export const getRecipesControllerGetQueryKey = (id: string,) => {
+export const getRecipesControllerGetQueryKey = (id: string,
+    params?: RecipesControllerGetParams,) => {
     return [
-    `/inventory/recipes/${id}`
+    `/inventory/recipes/${id}`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getRecipesControllerGetQueryOptions = <TData = Awaited<ReturnType<typeof recipesControllerGet>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export const getRecipesControllerGetQueryOptions = <TData = Awaited<ReturnType<typeof recipesControllerGet>>, TError = unknown>(id: string,
+    params?: RecipesControllerGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getRecipesControllerGetQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getRecipesControllerGetQueryKey(id,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof recipesControllerGet>>> = ({ signal }) => recipesControllerGet(id, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof recipesControllerGet>>> = ({ signal }) => recipesControllerGet(id,params, requestOptions, signal);
 
 
 
@@ -243,7 +248,8 @@ export type RecipesControllerGetQueryError = unknown
 
 
 export function useRecipesControllerGet<TData = Awaited<ReturnType<typeof recipesControllerGet>>, TError = unknown>(
- id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>> & Pick<
+ id: string,
+    params: undefined |  RecipesControllerGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof recipesControllerGet>>,
           TError,
@@ -253,7 +259,8 @@ export function useRecipesControllerGet<TData = Awaited<ReturnType<typeof recipe
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useRecipesControllerGet<TData = Awaited<ReturnType<typeof recipesControllerGet>>, TError = unknown>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>> & Pick<
+ id: string,
+    params?: RecipesControllerGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof recipesControllerGet>>,
           TError,
@@ -263,19 +270,21 @@ export function useRecipesControllerGet<TData = Awaited<ReturnType<typeof recipe
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useRecipesControllerGet<TData = Awaited<ReturnType<typeof recipesControllerGet>>, TError = unknown>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ id: string,
+    params?: RecipesControllerGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get a recipe with lines, modifier consumptions, estimate + warnings.
+ * @summary Get a recipe with lines, modifier consumptions, estimate, warnings, projections + allergen rollup.
  */
 
 export function useRecipesControllerGet<TData = Awaited<ReturnType<typeof recipesControllerGet>>, TError = unknown>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ id: string,
+    params?: RecipesControllerGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getRecipesControllerGetQueryOptions(id,options)
+  const queryOptions = getRecipesControllerGetQueryOptions(id,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

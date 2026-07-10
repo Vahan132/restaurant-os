@@ -67,6 +67,23 @@ export class OutputMustBeProcessedError extends DomainError {
   }
 }
 
+/**
+ * A process definition whose inputs/outputs would close a cycle in the
+ * produced-item graph (CATALOG-1b, ADR-CATALOG §5). Names the conflicting
+ * input item / this process / the output item it loops back to.
+ */
+export class ProcessGraphCycleError extends DomainError {
+  readonly code = 'PROCESS_GRAPH_CYCLE';
+  override readonly httpStatus = 409;
+  constructor(processName: string, inputItemName: string, outputItemName: string) {
+    super(
+      inputItemName === outputItemName
+        ? `Process "${processName}" can't use "${inputItemName}" as both an input and its own output.`
+        : `Can't add "${inputItemName}" to process "${processName}" — "${inputItemName}" already depends on this process's output "${outputItemName}".`,
+    );
+  }
+}
+
 /** An invalid output cost allocation (bps not summing to 10000, no primary, …). */
 export class InvalidCostAllocationError extends DomainError {
   readonly code = 'VALIDATION_ERROR';

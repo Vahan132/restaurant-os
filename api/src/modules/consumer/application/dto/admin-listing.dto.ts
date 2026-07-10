@@ -68,9 +68,19 @@ export class SetAttributesDto {
 }
 
 export class AddPhotoDto {
-  @ApiProperty({ description: 'Photo URL (https only; URL-paste, no upload in v1).' })
+  @ApiPropertyOptional({
+    description: 'Photo URL (https). URL-paste source; omit when supplying objectKey.',
+  })
+  @IsOptional()
   @IsUrl({ require_protocol: true, protocols: ['https'] })
-  url!: string;
+  url?: string;
+
+  @ApiPropertyOptional({
+    description: 'MEDIA-1: object key from a presigned photo upload (finalize). Overrides url.',
+  })
+  @IsOptional()
+  @IsString()
+  objectKey?: string;
 
   @ApiPropertyOptional({ type: I18nTextDto, description: 'Alt text (hy/ru/en).' })
   @IsOptional()
