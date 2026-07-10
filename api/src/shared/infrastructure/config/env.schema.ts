@@ -258,6 +258,24 @@ export const envSchema = z
       (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
       z.string().min(1).optional(),
     ),
+
+    // FISCAL-4: which FiscalConfigPort backing to use. FILE = env/JSON file
+    // (FISCAL_CONFIG_PATH) for edge/single-tenant; DB = the encrypted per-tenant
+    // store (cloud). superRefine enforces the DB-mode requirements below.
+    FISCAL_CONFIG_BACKEND: z.enum(['FILE', 'DB']).default('FILE'),
+    // Master KEK that WRAPS per-tenant DEKs (envelope encryption) — 32 bytes as 64 hex
+    // chars. A SYSTEM key (not per-tenant); it MUST live here / in KMS and NEVER
+    // in a DB column. Blank-safe; required only when FISCAL_CONFIG_BACKEND=DB.
+    FISCAL_MASTER_KEK: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
+    // Path to the shared SRC public CA (PEM) the mTLS client trusts. Non-secret,
+    // same for all tenants. Blank-safe; required only when backend=DB.
+    FISCAL_SRC_CA_PATH: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
   })
   // Fail-fast: in EDGE mode the four edge identity ids are mandatory. CLOUD
   // validation is unchanged (these stay optional and unused).
@@ -308,6 +326,28 @@ export const envSchema = z
           });
         }
       }
+    }
+  })
+  // FISCAL-4: the DB fiscal-config backend needs the KEK (32-byte hex) + the
+  // shared SRC CA path — without them the DB adapter can't decrypt certs or trust
+  // SRC. Per-tenant secrets never live in env; only the KEK (a system key) does.
+  .superRefine((env, ctx) => {
+    if (env.FISCAL_CONFIG_BACKEND !== 'DB') {
+      return;
+    }
+    if (!env.FISCAL_MASTER_KEK || !/^[0-9a-fA-F]{64}$/.test(env.FISCAL_MASTER_KEK)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['FISCAL_MASTER_KEK'],
+        message: 'FISCAL_MASTER_KEK must be 64 hex chars (32 bytes) when FISCAL_CONFIG_BACKEND=DB.',
+      });
+    }
+    if (!env.FISCAL_SRC_CA_PATH) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['FISCAL_SRC_CA_PATH'],
+        message: 'FISCAL_SRC_CA_PATH is required when FISCAL_CONFIG_BACKEND=DB.',
+      });
     }
   });
 

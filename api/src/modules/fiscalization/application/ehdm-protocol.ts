@@ -102,6 +102,11 @@ export function buildPrintPayload(
   input: FiscalizationInput,
   cfg: TenantFiscalConfig,
 ): EHdmPrintRequest {
+  // FISCAL-4: a line's `dep` comes from the tenant's department map (dep -> tax
+  // regime). Single-department tenants get that one dep; a line that already
+  // carries an explicit dep keeps it. Per-line dep routing (menu-item -> dep) is a
+  // follow-up. Deterministic: lowest dep code when several exist.
+  const defaultDep = Object.keys(cfg.departmentMap).sort()[0] ?? null;
   const items: EHdmPrintItem[] = input.lines.map((line) => {
     if (line.adgCode === null || line.adgCode.trim() === '') {
       throw new FatalFiscalError(
@@ -111,7 +116,7 @@ export function buildPrintPayload(
     }
     return {
       adgCode: line.adgCode,
-      dep: line.dep,
+      dep: line.dep ?? defaultDep,
       goodCode: line.goodCode,
       goodName: line.goodName,
       quantity: Quantity.fromThousandths(line.quantityThousandths).toDecimalString(),

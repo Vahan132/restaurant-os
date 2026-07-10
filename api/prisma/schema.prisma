@@ -2356,3 +2356,73 @@ model EdgeOutboxCounter {
 
   @@map("edge_outbox_counter")
 }
+
+
+// ── FISCAL-4: per-tenant e-HDM fiscal config + encrypted secrets ────────────
+enum FiscalEnvironment {
+  PROD
+  TEST
+}
+
+/// Per-(restaurant, branch) SRC e-HDM configuration; feeds FiscalConfigPort.
+/// clientCert/clientKey are AES-256-GCM CIPHERTEXT — the KEK lives OUTSIDE the DB
+/// (FISCAL_SECRET_KEK / KMS, never a column). caRoot is the SRC public CA (shared,
+/// from FISCAL_SRC_CA_PATH, not stored here). `.jks` is converted to PEM by ops
+/// before upload; the runtime never parses `.jks`. Secrets are never returned by
+/// any read model.
+model FiscalConfig {
+  id           String            @id @default(cuid())
+  restaurantId String            @map("restaurant_id")
+  branchId     String            @map("branch_id")
+  crn          String
+  cashierId    String            @map("cashier_id")
+  environment  FiscalEnvironment @default(TEST)
+  language     String            @default("hy")
+  active       Boolean           @default(false)
+
+  // ENVELOPE encryption. cert/key (PEM) are encrypted with a per-tenant random
+  // DEK; the DEK is wrapped by the master KEK (FISCAL_MASTER_KEK / KMS — NEVER in
+  // the DB). All AES-256-GCM (cipher + iv + auth tag). KEK rotation re-wraps the
+  // DEK only (no cert re-encryption); one compromised cert never implies others.
+  certCipher  Bytes @map("cert_cipher")
+  certIv      Bytes @map("cert_iv")
+  certAuthTag Bytes @map("cert_auth_tag")
+  keyCipher   Bytes @map("key_cipher")
+  keyIv       Bytes @map("key_iv")
+  keyAuthTag  Bytes @map("key_auth_tag")
+  // The per-tenant DEK, wrapped by the master KEK.
+  dekCipher   Bytes @map("dek_cipher")
+  dekIv       Bytes @map("dek_iv")
+  dekAuthTag  Bytes @map("dek_auth_tag")
+  // Which master-KEK version wrapped the DEK (for rotation / re-wrap).
+  kekVersion  Int   @default(1) @map("kek_version")
+
+  lastCheckConnectionAt DateTime? @map("last_check_connection_at")
+  lastCheckConnectionOk Boolean?  @map("last_check_connection_ok")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  departments FiscalDepartment[]
+
+  @@unique([restaurantId, branchId])
+  @@index([restaurantId])
+  @@map("fiscal_configs")
+}
+
+/// Per-tenant department map: SRC `dep` code -> tax regime. Homes the deferred
+/// `dep`; the adapter builds departmentMap from these rows. Values come from the
+/// tenant's SRC registration.
+model FiscalDepartment {
+  id             String  @id @default(cuid())
+  fiscalConfigId String  @map("fiscal_config_id")
+  dep            String
+  taxRegime      String  @map("tax_regime")
+  label          String?
+
+  config FiscalConfig @relation(fields: [fiscalConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([fiscalConfigId, dep])
+  @@index([fiscalConfigId])
+  @@map("fiscal_departments")
+}
