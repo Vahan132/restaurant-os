@@ -25,6 +25,7 @@ import type {
   CreateRecipeDto,
   RecipeListItemResponse,
   RecipeResponse,
+  RecipesControllerGetParams,
   RecipesControllerListParams,
   UpdateRecipeDto,
 } from '.././model';
@@ -252,21 +253,25 @@ export const useRecipesControllerCreate = <TError = void, TContext = unknown>(
   return useMutation(mutationOptions, queryClient);
 };
 /**
- * @summary Get a recipe with lines, modifier consumptions, estimate + warnings.
+ * @summary Get a recipe with lines, modifier consumptions, estimate, warnings, projections + allergen rollup.
  */
 export const recipesControllerGet = (
   id: string,
+  params?: RecipesControllerGetParams,
   options?: SecondParameter<typeof apiRequest>,
   signal?: AbortSignal,
 ) => {
   return apiRequest<RecipeResponse>(
-    { url: `/inventory/recipes/${id}`, method: 'GET', signal },
+    { url: `/inventory/recipes/${id}`, method: 'GET', params, signal },
     options,
   );
 };
 
-export const getRecipesControllerGetQueryKey = (id?: string) => {
-  return [`/inventory/recipes/${id}`] as const;
+export const getRecipesControllerGetQueryKey = (
+  id?: string,
+  params?: RecipesControllerGetParams,
+) => {
+  return [`/inventory/recipes/${id}`, ...(params ? [params] : [])] as const;
 };
 
 export const getRecipesControllerGetQueryOptions = <
@@ -274,6 +279,7 @@ export const getRecipesControllerGetQueryOptions = <
   TError = unknown,
 >(
   id: string,
+  params?: RecipesControllerGetParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>
@@ -283,10 +289,10 @@ export const getRecipesControllerGetQueryOptions = <
 ) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getRecipesControllerGetQueryKey(id);
+  const queryKey = queryOptions?.queryKey ?? getRecipesControllerGetQueryKey(id, params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof recipesControllerGet>>> = ({ signal }) =>
-    recipesControllerGet(id, requestOptions, signal);
+    recipesControllerGet(id, params, requestOptions, signal);
 
   return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof recipesControllerGet>>,
@@ -305,6 +311,7 @@ export function useRecipesControllerGet<
   TError = unknown,
 >(
   id: string,
+  params: undefined | RecipesControllerGetParams,
   options: {
     query: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>
@@ -326,6 +333,7 @@ export function useRecipesControllerGet<
   TError = unknown,
 >(
   id: string,
+  params?: RecipesControllerGetParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>
@@ -347,6 +355,7 @@ export function useRecipesControllerGet<
   TError = unknown,
 >(
   id: string,
+  params?: RecipesControllerGetParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>
@@ -356,7 +365,7 @@ export function useRecipesControllerGet<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
 /**
- * @summary Get a recipe with lines, modifier consumptions, estimate + warnings.
+ * @summary Get a recipe with lines, modifier consumptions, estimate, warnings, projections + allergen rollup.
  */
 
 export function useRecipesControllerGet<
@@ -364,6 +373,7 @@ export function useRecipesControllerGet<
   TError = unknown,
 >(
   id: string,
+  params?: RecipesControllerGetParams,
   options?: {
     query?: Partial<
       UseQueryOptions<Awaited<ReturnType<typeof recipesControllerGet>>, TError, TData>
@@ -372,7 +382,7 @@ export function useRecipesControllerGet<
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
-  const queryOptions = getRecipesControllerGetQueryOptions(id, options);
+  const queryOptions = getRecipesControllerGetQueryOptions(id, params, options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData>;

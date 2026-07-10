@@ -175,6 +175,7 @@
     "orderLoadError": "Не удалось загрузить заказ.",
     "takeaway": "Навынос",
     "tableFallback": "Стол",
+    "fiscalError": "Ошибка фискализации",
     "total": "Итого",
     "subtotal": "Подытог",
     "discount": "Скидка",

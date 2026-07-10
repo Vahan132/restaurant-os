@@ -29,6 +29,13 @@ export function TableTile({ table, order, busy, onSelect }: TableTileProps) {
       aria-busy={busy}
       className={`relative flex min-h-[124px] select-none flex-col items-center justify-center gap-1 rounded-2xl p-4 text-white shadow-md transition active:scale-95 disabled:opacity-70 ${STATUS_TILE[table.status]}`}
     >
+      {order?.fiscalStatus === 'FAILED' ? (
+        <span
+          data-testid="table-fiscal-error"
+          title={t('builder.fiscalError')}
+          className="absolute right-2 top-2 h-3 w-3 rounded-full bg-red-500 ring-2 ring-white"
+        />
+      ) : null}
       <span className="text-2xl font-bold leading-none">{table.name}</span>
       <span className="text-sm font-medium opacity-90">
         {t('home.seats', { count: table.seatCapacity })}

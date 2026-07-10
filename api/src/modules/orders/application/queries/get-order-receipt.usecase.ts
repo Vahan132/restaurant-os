@@ -29,6 +29,12 @@ export interface OrderReceiptView {
   /** True once the fiscal receipt exists. When false the order is paid but its
    *  fiscalisation is still pending/retrying — the client should keep polling. */
   fiscalized: boolean;
+  /**
+   * FISCAL-1b: derived fiscal state (customer-safe — NO error code). OK = receipt
+   * issued; PENDING = paid, still fiscalising (keep polling); FAILED = fatal stop
+   * (stop polling, show a "delayed, staff notified" message).
+   */
+  fiscalStatus: 'OK' | 'PENDING' | 'FAILED';
   fiscal: OrderReceiptFiscal | null;
 }
 
@@ -43,6 +49,8 @@ export function toOrderReceiptView(order: Order): OrderReceiptView {
     currency: order.currency,
     totalAmount: order.totalAmount,
     fiscalized,
+    // Always non-null here (the receipt is for a settled order); default defensive.
+    fiscalStatus: order.fiscalStatus() ?? 'PENDING',
     fiscal:
       fiscalized && order.fiscalReceiptId && order.fiscalNumber && order.fiscalQr
         ? {

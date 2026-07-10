@@ -37,14 +37,20 @@ export default function ReceiptView({ orderId, qr, currency, locale, onOrderMore
     ApiError
   >(orderId, {
     query: {
-      // Poll until fiscalisation lands; then stop.
-      refetchInterval: (query) => (query.state.data?.fiscalized ? false : 3000),
+      // Poll until fiscalisation lands OR a fatal error stops it; then stop.
+      refetchInterval: (query) => {
+        const d = query.state.data;
+        return d?.fiscalized || d?.fiscalStatus === 'FAILED' ? false : 3000;
+      },
       refetchIntervalInBackground: true,
     },
   });
 
   const cur = data?.currency ?? currency;
   const fiscalized = data?.fiscalized === true && data?.fiscal != null;
+  // FISCAL-1b: a fatal fiscal stop — show an honest "delayed" state, not an
+  // endless spinner. Customer-safe: state only, no error code/internals.
+  const fiscalFailed = data?.fiscalStatus === 'FAILED';
 
   return (
     <div
@@ -71,6 +77,17 @@ export default function ReceiptView({ orderId, qr, currency, locale, onOrderMore
             <div className="flex flex-col items-center py-10" role="status" aria-live="polite">
               <Spinner />
               <p className="mt-3 text-sm text-gray-500">{t('loading')}</p>
+            </div>
+          ) : fiscalFailed ? (
+            <div
+              className="flex flex-col items-center py-10"
+              role="status"
+              aria-live="polite"
+              data-testid="receipt-delayed"
+            >
+              <ClockBadge />
+              <p className="mt-3 text-sm font-medium text-gray-700">{t('delayedTitle')}</p>
+              <p className="mt-1 text-center text-xs text-gray-500">{t('delayedBody')}</p>
             </div>
           ) : fiscalized && data.fiscal ? (
             <div className="flex flex-col items-center">
@@ -149,6 +166,17 @@ function formatDateTime(iso: string, locale: string): string {
   } catch {
     return d.toLocaleString();
   }
+}
+
+function ClockBadge() {
+  return (
+    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" />
+      </svg>
+    </div>
+  );
 }
 
 function Spinner() {

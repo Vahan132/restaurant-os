@@ -295,6 +295,24 @@ export class Order extends AggregateRoot<string> {
   hasFatalFiscalError(): boolean {
     return this.props.fiscalError !== null;
   }
+  /**
+   * FISCAL-1b: derived fiscal display state for read models. Null until the order
+   * is PAID (nothing to fiscalise yet). Once PAID: FAILED if a fatal-config error
+   * is recorded, OK once a receipt exists, else PENDING (paid-but-unfiscalised,
+   * still retrying). OK and FAILED are mutually exclusive.
+   */
+  fiscalStatus(): 'OK' | 'PENDING' | 'FAILED' | null {
+    if (this.props.paymentStatus !== PaymentStatus.PAID) {
+      return null;
+    }
+    if (this.props.fiscalError !== null) {
+      return 'FAILED';
+    }
+    if (this.props.fiscalizedAt !== null) {
+      return 'OK';
+    }
+    return 'PENDING';
+  }
   get items(): OrderItem[] {
     return [...this.props.items];
   }

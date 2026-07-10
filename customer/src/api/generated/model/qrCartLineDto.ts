@@ -5,7 +5,6 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { QrCartLineDtoNote } from './qrCartLineDtoNote';
 
 export interface QrCartLineDto {
   menuItemId: string;
@@ -14,5 +13,5 @@ export interface QrCartLineDto {
   /** Selected modifier option ids. */
   modifierOptionIds: string[];
   /** @nullable */
-  note?: QrCartLineDtoNote;
+  note?: string | null;
 }

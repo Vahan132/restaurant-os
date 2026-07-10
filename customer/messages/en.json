@@ -86,6 +86,8 @@
     "error": "We couldn’t load your receipt. Your order is still placed.",
     "processingTitle": "Receipt processing",
     "processingBody": "Your payment went through. The fiscal receipt is being generated…",
+    "delayedTitle": "Receipt delayed",
+    "delayedBody": "Your payment went through. The receipt is taking longer than usual — our staff can see this and will sort it out.",
     "qrAlt": "Fiscal receipt QR code",
     "fiscalNumber": "Fiscal number",
     "total": "Total",

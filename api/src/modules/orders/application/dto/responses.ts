@@ -107,6 +107,18 @@ export class OrderResponse {
   @ApiProperty() paidAmount!: number;
   @ApiProperty({ nullable: true, type: String }) splitFromOrderId!: string | null;
   @ApiProperty({ type: [PaymentResponse] }) payments!: PaymentResponse[];
+  @ApiPropertyOptional({
+    enum: ['OK', 'PENDING', 'FAILED'],
+    nullable: true,
+    description: 'FISCAL-1b: derived fiscal state; null until the order is PAID.',
+  })
+  fiscalStatus!: 'OK' | 'PENDING' | 'FAILED' | null;
+  @ApiPropertyOptional({
+    nullable: true,
+    type: String,
+    description: 'FISCAL-1b: fatal fiscal error code (staff-only); null when none.',
+  })
+  fiscalError!: string | null;
 
   static from(
     o: Order,
@@ -136,6 +148,8 @@ export class OrderResponse {
       paidAmount: o.paidAmount,
       splitFromOrderId: o.splitFromOrderId,
       payments: o.payments.map(PaymentResponse.from),
+      fiscalStatus: o.fiscalStatus(),
+      fiscalError: o.fiscalError,
     };
   }
 }

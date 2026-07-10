@@ -175,6 +175,7 @@
     "orderLoadError": "Failed to load this order.",
     "takeaway": "Takeaway",
     "tableFallback": "Table",
+    "fiscalError": "Fiscal error",
     "total": "Total",
     "subtotal": "Subtotal",
     "discount": "Discount",

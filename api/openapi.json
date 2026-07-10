@@ -17047,6 +17047,21 @@
             "items": {
               "$ref": "#/components/schemas/PaymentResponse"
             }
+          },
+          "fiscalStatus": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "PENDING",
+              "FAILED"
+            ],
+            "nullable": true,
+            "description": "FISCAL-1b: derived fiscal state; null until the order is PAID."
+          },
+          "fiscalError": {
+            "type": "string",
+            "nullable": true,
+            "description": "FISCAL-1b: fatal fiscal error code (staff-only); null when none."
           }
         },
         "required": [
@@ -17706,6 +17721,15 @@
             "type": "boolean",
             "description": "False = paid but fiscalisation still pending (poll)."
           },
+          "fiscalStatus": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "PENDING",
+              "FAILED"
+            ],
+            "description": "Derived fiscal state (no error code). FAILED = fatal stop: stop polling and show a delayed message."
+          },
           "fiscal": {
             "nullable": true,
             "allOf": [
@@ -17723,6 +17747,7 @@
           "currency",
           "totalAmount",
           "fiscalized",
+          "fiscalStatus",
           "fiscal"
         ]
       },

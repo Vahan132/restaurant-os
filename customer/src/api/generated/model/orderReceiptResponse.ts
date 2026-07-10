@@ -5,6 +5,7 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { OrderReceiptResponseFiscalStatus } from './orderReceiptResponseFiscalStatus';
 import type { OrderReceiptResponseFiscal } from './orderReceiptResponseFiscal';
 
 export interface OrderReceiptResponse {
@@ -16,6 +17,8 @@ export interface OrderReceiptResponse {
   totalAmount: number;
   /** False = paid but fiscalisation still pending (poll). */
   fiscalized: boolean;
+  /** Derived fiscal state (no error code). FAILED = fatal stop: stop polling and show a delayed message. */
+  fiscalStatus: OrderReceiptResponseFiscalStatus;
   /** @nullable */
   fiscal: OrderReceiptResponseFiscal;
 }

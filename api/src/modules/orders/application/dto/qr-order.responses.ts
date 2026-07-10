@@ -79,6 +79,12 @@ export class OrderReceiptResponse {
   @ApiProperty() totalAmount!: number;
   @ApiProperty({ description: 'False = paid but fiscalisation still pending (poll).' })
   fiscalized!: boolean;
+  @ApiProperty({
+    enum: ['OK', 'PENDING', 'FAILED'],
+    description:
+      'Derived fiscal state (no error code). FAILED = fatal stop: stop polling and show a delayed message.',
+  })
+  fiscalStatus!: 'OK' | 'PENDING' | 'FAILED';
   @ApiProperty({ type: OrderReceiptFiscalResponse, nullable: true })
   fiscal!: OrderReceiptFiscalResponse | null;
 
@@ -91,6 +97,7 @@ export class OrderReceiptResponse {
       currency: view.currency,
       totalAmount: view.totalAmount,
       fiscalized: view.fiscalized,
+      fiscalStatus: view.fiscalStatus,
       fiscal: view.fiscal,
     };
   }

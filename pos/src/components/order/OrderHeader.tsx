@@ -54,6 +54,15 @@ export function OrderHeader({ order, tableName }: OrderHeaderProps) {
           >
             {tStatus(order.status)}
           </span>
+          {order.fiscalStatus === 'FAILED' ? (
+            <span
+              data-testid="pos-fiscal-error"
+              title={order.fiscalError ?? undefined}
+              className="ml-1.5 mt-0.5 inline-block rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold uppercase text-red-700"
+            >
+              {t('fiscalError')}
+            </span>
+          ) : null}
         </div>
       </div>
       <div className="flex items-center gap-3">
