@@ -13,6 +13,7 @@ import {
   type CreateBranchDto,
   type UpdateBranchDto,
 } from '@/api/generated/model';
+import { BranchOrderingSection } from '@/components/branches/branch-ordering-section';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field, inputClass } from '@/components/ui/form';
@@ -126,7 +127,8 @@ export function BranchFormModal({
           />
         </Field>
 
-        {isEdit && (
+        {isEdit && branch && (
+          <>
           <section className="space-y-3 border-t border-gray-200 pt-4">
             <div>
               <h3 className="text-sm font-semibold text-gray-900">{t('ipPolicy')}</h3>
@@ -202,6 +204,8 @@ export function BranchFormModal({
               </div>
             </div>
           </section>
+          <BranchOrderingSection branch={branch} />
+          </>
         )}
       </div>
     </Modal>

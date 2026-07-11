@@ -6,14 +6,24 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { UpdateMenuItemDtoPreparationStation } from './updateMenuItemDtoPreparationStation';
+import type { UpdateMenuItemDtoAdgCode } from './updateMenuItemDtoAdgCode';
 
 export interface UpdateMenuItemDto {
   name?: string;
   description?: string;
   imageUrl?: string;
+  /** MEDIA-1: object key from a presigned upload (finalize). Overrides imageUrl. Send null/empty with imageUrl to switch back to URL-paste. */
+  imageKey?: string;
   /** Reassign to another category in your restaurant. */
   categoryId?: string;
   preparationStation?: UpdateMenuItemDtoPreparationStation;
   /** @minimum 0 */
   prepTimeMinutes?: number;
+  /** CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible). */
+  hideRecipe?: boolean;
+  /**
+   * ADGCODE-UI: SRC ATG classification code (from the SRC N 1406-Ն / N 875-Ն lists) for e-HDM fiscalization. Free-text: SRC is the authority (rejects a bad code with error 183 at fiscalization), so there is NO server format constraint — the UI only soft-warns on obvious typos. Send an empty string or null to clear it; omit to leave it unchanged (partial update).
+   * @nullable
+   */
+  adgCode?: UpdateMenuItemDtoAdgCode;
 }

@@ -7,6 +7,7 @@
  */
 import type { BranchResponseStatus } from './branchResponseStatus';
 import type { BranchResponseIpBindingMode } from './branchResponseIpBindingMode';
+import type { BranchOrderingConfigResponse } from './branchOrderingConfigResponse';
 
 export interface BranchResponse {
   id: string;
@@ -21,4 +22,6 @@ export interface BranchResponse {
   ipBindingMode: BranchResponseIpBindingMode;
   /** 3A: allowed source CIDRs (STRICT mode). */
   ipAllowlist: string[];
+  /** ORDER-1: ordering flow config. */
+  orderingConfig: BranchOrderingConfigResponse;
 }

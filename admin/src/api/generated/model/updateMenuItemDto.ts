@@ -5,6 +5,7 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateMenuItemDtoAdgCode } from './updateMenuItemDtoAdgCode';
 import type { UpdateMenuItemDtoPreparationStation } from './updateMenuItemDtoPreparationStation';
 
 export interface UpdateMenuItemDto {
@@ -20,6 +21,9 @@ export interface UpdateMenuItemDto {
   prepTimeMinutes?: number;
   /** CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible). */
   hideRecipe?: boolean;
-  /** ADGCODE-UI: SRC ATG classification code (from the SRC N 1406-Ն / N 875-Ն lists) for e-HDM fiscalization. Free-text: SRC validates (error 183); the UI only soft-warns. Send an empty string or null to clear it; omit to leave it unchanged (partial update). */
-  adgCode?: string | null;
+  /**
+     * ADGCODE-UI: SRC ATG classification code (from the SRC N 1406-Ն / N 875-Ն lists) for e-HDM fiscalization. Free-text: SRC is the authority (rejects a bad code with error 183 at fiscalization), so there is NO server format constraint — the UI only soft-warns on obvious typos. Send an empty string or null to clear it; omit to leave it unchanged (partial update).
+     * @nullable
+     */
+  adgCode?: UpdateMenuItemDtoAdgCode;
 }

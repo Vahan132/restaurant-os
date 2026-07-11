@@ -10,4 +10,4 @@
  * Default ATG classifier, or null.
  * @nullable
  */
-export type CreateCatalogItemDtoAdgCode = { [key: string]: unknown } | null;
+export type CreateCatalogItemDtoAdgCode = string | null;

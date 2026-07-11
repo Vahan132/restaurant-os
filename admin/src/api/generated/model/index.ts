@@ -564,6 +564,7 @@ export * from './updateInventoryItemDtoKind';
 export * from './updateInventoryLocationDto';
 export * from './updateMarketingProfileDto';
 export * from './updateMenuItemDto';
+export * from './updateMenuItemDtoAdgCode';
 export * from './updateMenuItemDtoPreparationStation';
 export * from './updateModifierGroupDto';
 export * from './updateModifierGroupDtoSelectionType';

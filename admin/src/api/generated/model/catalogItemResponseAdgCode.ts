@@ -9,4 +9,4 @@
 /**
  * @nullable
  */
-export type CatalogItemResponseAdgCode = { [key: string]: unknown } | null;
+export type CatalogItemResponseAdgCode = string | null;

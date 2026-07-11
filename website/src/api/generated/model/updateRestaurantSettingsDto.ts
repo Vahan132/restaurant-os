@@ -9,6 +9,8 @@ import type { OpeningHourDto } from './openingHourDto';
 
 export interface UpdateRestaurantSettingsDto {
   logoUrl?: string;
+  /** MEDIA-1: object key from a presigned logo upload (finalize). Overrides logoUrl. */
+  logoKey?: string;
   phone?: string;
   address?: string;
   /**
@@ -35,4 +37,6 @@ export interface UpdateRestaurantSettingsDto {
   enableQrMenu?: boolean;
   /** Allow customers to submit dine-in order requests (needs enableQrMenu). */
   enableCustomerOrdering?: boolean;
+  /** 3A: when false (default), admin/manager email login must come from an enrolled ADMIN-surface device. Owner is always exempt (break-glass). */
+  allowUnanchoredAdminLogin?: boolean;
 }
