@@ -13,6 +13,8 @@ export interface CreateMenuItemDto {
   categoryId: string;
   description?: string;
   imageUrl?: string;
+  /** MEDIA-1: object key from a presigned upload (finalize). Overrides imageUrl. */
+  imageKey?: string;
   preparationStation?: CreateMenuItemDtoPreparationStation;
   /** @minimum 0 */
   prepTimeMinutes?: number;

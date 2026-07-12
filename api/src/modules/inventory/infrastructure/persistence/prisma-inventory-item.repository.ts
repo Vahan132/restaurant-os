@@ -12,25 +12,31 @@ import { InventoryItemMapper } from './inventory.mappers';
 export class PrismaInventoryItemRepository implements InventoryItemRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(filter: InventoryItemListFilter): Promise<{ items: InventoryItem[]; total: number }> {
+  async list(filter: InventoryItemListFilter): Promise<InventoryItem[]> {
     const where: Prisma.InventoryItemWhereInput = {
       restaurantId: filter.restaurantId,
       branchId: filter.branchId,
       deletedAt: null,
       ...(filter.categoryId ? { categoryId: filter.categoryId } : {}),
       ...(filter.kind ? { kind: filter.kind } : {}),
-      ...(filter.search ? { name: { contains: filter.search, mode: 'insensitive' } } : {}),
+      // INV-SEARCH-1: two-step search — local name OR an adopted item whose catalog name
+      // matched (catalogItemId in the ids resolved by the use-case). No catalog match =>
+      // just the local-name clause (correctly matches only custom items by that name).
+      ...(filter.search
+        ? {
+            OR: [
+              { name: { contains: filter.search, mode: 'insensitive' } },
+              ...(filter.matchedCatalogItemIds && filter.matchedCatalogItemIds.length > 0
+                ? [{ catalogItemId: { in: filter.matchedCatalogItemIds } }]
+                : []),
+            ],
+          }
+        : {}),
     };
-    const [records, total] = await this.prisma.$transaction([
-      this.prisma.inventoryItem.findMany({
-        where,
-        skip: filter.skip,
-        take: filter.take,
-        orderBy: { name: 'asc' },
-      }),
-      this.prisma.inventoryItem.count({ where }),
-    ]);
-    return { items: records.map(InventoryItemMapper.toDomain), total };
+    // No pagination / no DB `orderBy: name`: the use-case resolves effective names, sorts,
+    // then slices (adopted rows carry a null local `name` that SQL can't order).
+    const records = await this.prisma.inventoryItem.findMany({ where });
+    return records.map(InventoryItemMapper.toDomain);
   }
 
   async findById(
@@ -63,6 +69,17 @@ export class PrismaInventoryItemRepository implements InventoryItemRepository {
       where: { id: { in: ids }, restaurantId, branchId, deletedAt: null },
     });
     return records.map(InventoryItemMapper.toDomain);
+  }
+
+  async findByCatalogItemId(
+    restaurantId: string,
+    branchId: string,
+    catalogItemId: string,
+  ): Promise<InventoryItem | null> {
+    const r = await this.prisma.inventoryItem.findFirst({
+      where: { restaurantId, branchId, catalogItemId, deletedAt: null },
+    });
+    return r ? InventoryItemMapper.toDomain(r) : null;
   }
 
   async existsBySku(

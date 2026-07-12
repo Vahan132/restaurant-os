@@ -92,12 +92,14 @@ export class RecipesController {
   @RequirePermissions(MANAGE)
   @ApiForbiddenResponse({ description: 'Missing inventory:recipe:manage permission.' })
   @ApiOperation({ summary: 'Create a recipe for a menu item (includes warnings; always saves).' })
+  @ApiQuery({ name: 'locale', required: false, enum: ['hy', 'ru', 'en'] })
   @ApiCreatedResponse({ type: RecipeResponse })
   async create(
     @CurrentTenant() tenant: TenantContext,
     @ActiveBranchId() branchId: string,
     @CurrentUser() actor: CurrentUserContext,
     @Body() dto: CreateRecipeDto,
+    @Query('locale') locale?: string,
   ): Promise<RecipeResponse> {
     const detail = await this.createRecipe.execute({
       restaurantId: tenant.restaurantId,
@@ -111,6 +113,7 @@ export class RecipesController {
         baseQty: m.baseQty,
       })),
       actorUserId: actor.sub,
+      locale: toLocale(locale),
     });
     return RecipeResponse.from(detail);
   }
@@ -119,12 +122,14 @@ export class RecipesController {
   @RequirePermissions(MANAGE)
   @ApiForbiddenResponse({ description: 'Missing inventory:recipe:manage permission.' })
   @ApiOperation({ summary: 'Update a recipe (full replace of lines + modifier consumptions).' })
+  @ApiQuery({ name: 'locale', required: false, enum: ['hy', 'ru', 'en'] })
   @ApiOkResponse({ type: RecipeResponse })
   async update(
     @CurrentTenant() tenant: TenantContext,
     @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: UpdateRecipeDto,
+    @Query('locale') locale?: string,
   ): Promise<RecipeResponse> {
     const detail = await this.updateRecipe.execute({
       restaurantId: tenant.restaurantId,
@@ -137,6 +142,7 @@ export class RecipesController {
         itemId: m.itemId,
         baseQty: m.baseQty,
       })),
+      locale: toLocale(locale),
     });
     return RecipeResponse.from(detail);
   }

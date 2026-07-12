@@ -9,4 +9,4 @@
 /**
  * @nullable
  */
-export type UpdateCatalogItemDtoAdgCode = string | null;
+export type UpdateCatalogItemDtoAdgCode = { [key: string]: unknown } | null;

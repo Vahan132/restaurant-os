@@ -1,9 +1,16 @@
+import { CatalogLocalizedName } from '../../../platform-catalog/domain/repositories/catalog-item.reader';
+
 export const STOCK_ON_HAND_READER = Symbol('StockOnHandReader');
 
 /** One on-hand row for an (item, location). */
 export interface OnHandRow {
   itemId: string;
-  itemName: string;
+  /** Local name; null for an adopted item (PLATCAT-ADOPT-1B). Use catalogName then. */
+  itemName: string | null;
+  /** PLATCAT-ADOPT-1B: InventoryItem.catalogItemId — drives live name resolution. */
+  catalogItemId: string | null;
+  /** Live-resolved trilingual catalog name; present when adopted (filled by the use-case). */
+  catalogName?: CatalogLocalizedName | null;
   baseUnit: string;
   locationId: string;
   locationName: string;

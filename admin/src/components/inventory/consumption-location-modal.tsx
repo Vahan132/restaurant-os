@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { useInventoryItemsControllerSetConsumptionLocationRoute } from '@/api/generated/inventory-items/inventory-items';
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Field, inputClass } from '@/components/ui/form';
 import { Modal } from '@/components/ui/modal';
 import { getErrorMessage } from '@/lib/api-error';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useInventoryInvalidation } from '@/lib/inventory/use-inventory-data';
 import { useLocations } from '@/lib/inventory/use-locations-data';
 import { toast } from '@/stores/toast';
@@ -30,6 +31,7 @@ export function ConsumptionLocationModal({
 }) {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const invalidate = useInventoryInvalidation();
   const { locations } = useLocations();
 
@@ -72,7 +74,9 @@ export function ConsumptionLocationModal({
       }
     >
       <div className="space-y-3">
-        <p className="text-sm text-gray-600">{t('consumptionLocationBody', { item: item.name })}</p>
+        <p className="text-sm text-gray-600">
+          {t('consumptionLocationBody', { item: itemDisplayName(item, locale) })}
+        </p>
         <Field label={t('consumptionLocationLabel')}>
           <select
             className={inputClass}

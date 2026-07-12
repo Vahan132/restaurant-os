@@ -8,6 +8,21 @@
 import type { UpdateModifierOptionDtoStatus } from './updateModifierOptionDtoStatus';
 
 export interface UpdateModifierOptionDto {
+  /**
+     * Armenian name translation.
+     * @nullable
+     */
+  nameHy?: string | null;
+  /**
+     * Russian name translation.
+     * @nullable
+     */
+  nameRu?: string | null;
+  /**
+     * English name translation.
+     * @nullable
+     */
+  nameEn?: string | null;
   name?: string;
   /** Price delta in minor units. May be 0 or negative. */
   priceDeltaAmount?: number;

@@ -15,11 +15,13 @@ import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorat
 import { CurrentUser } from '../../../../shared/tenancy/current-user.decorator';
 import { CurrentUserContext, TenantContext } from '../../../../shared/tenancy/tenant-context';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
+import { AdoptCatalogItemUseCase } from '../../application/commands/adopt-catalog-item.usecase';
 import { CreateInventoryItemUseCase } from '../../application/commands/create-inventory-item.usecase';
 import { DeleteInventoryItemUseCase } from '../../application/commands/delete-inventory-item.usecase';
 import { SetItemConsumptionLocationUseCase } from '../../application/commands/set-item-consumption-location.usecase';
 import { UpdateInventoryItemUseCase } from '../../application/commands/update-inventory-item.usecase';
 import {
+  AdoptCatalogItemDto,
   CreateInventoryItemDto,
   ListInventoryItemsQuery,
   SetItemConsumptionLocationDto,
@@ -35,6 +37,8 @@ import { GetInventoryItemUseCase } from '../../application/queries/get-inventory
 import { GetItemLayersUseCase } from '../../application/queries/get-item-layers.usecase';
 import { GetItemMovementsUseCase } from '../../application/queries/get-item-movements.usecase';
 import { ListInventoryItemsUseCase } from '../../application/queries/list-inventory-items.usecase';
+import { InventoryItemNameResolver } from '../../application/services/inventory-item-name.resolver';
+import { InventoryItem } from '../../domain/entities/inventory-item';
 
 const READ = PERMISSIONS.INVENTORY_READ;
 const MANAGE = PERMISSIONS.INVENTORY_ITEM_MANAGE;
@@ -48,12 +52,23 @@ export class InventoryItemsController {
     private readonly listItems: ListInventoryItemsUseCase,
     private readonly getItem: GetInventoryItemUseCase,
     private readonly createItem: CreateInventoryItemUseCase,
+    private readonly adoptItem: AdoptCatalogItemUseCase,
     private readonly updateItem: UpdateInventoryItemUseCase,
     private readonly deleteItem: DeleteInventoryItemUseCase,
     private readonly setConsumptionLocation: SetItemConsumptionLocationUseCase,
     private readonly getLayers: GetItemLayersUseCase,
     private readonly getMovements: GetItemMovementsUseCase,
+    private readonly names: InventoryItemNameResolver,
   ) {}
+
+  /** PLATCAT-ADOPT-1B: build a response with the live catalog name attached (adopted items). */
+  private async toResponse(item: InventoryItem): Promise<InventoryItemResponse> {
+    const catalogName = await this.names.resolveOne({
+      id: item.id,
+      catalogItemId: item.catalogItemId,
+    });
+    return InventoryItemResponse.from(item, catalogName);
+  }
 
   @Get()
   @RequirePermissions(READ)
@@ -73,7 +88,12 @@ export class InventoryItemsController {
       page: query.page,
       limit: query.limit,
     });
-    return { data: page.data.map(InventoryItemResponse.from), pagination: page.pagination };
+    // INV-SEARCH-1: the use-case already resolved catalog names (for the effective-name
+    // sort) and returns them attached — no re-resolution here (single batched read).
+    return {
+      data: page.data.map((r) => InventoryItemResponse.from(r.item, r.catalogName)),
+      pagination: page.pagination,
+    };
   }
 
   @Get(':id')
@@ -90,7 +110,7 @@ export class InventoryItemsController {
       branchId,
       itemId: id,
     });
-    return InventoryItemResponse.from(item);
+    return this.toResponse(item);
   }
 
   @Post()
@@ -117,7 +137,31 @@ export class InventoryItemsController {
       lowStockThresholdBase: dto.lowStockThresholdBase ?? null,
       actorUserId: actor.sub,
     });
-    return InventoryItemResponse.from(item);
+    return this.toResponse(item);
+  }
+
+  @Post('adopt')
+  @RequirePermissions(MANAGE)
+  @ApiForbiddenResponse({ description: 'Missing inventory:item:manage permission.' })
+  @ApiOperation({ summary: 'Adopt a platform catalog item into this branch (sets catalogItemId).' })
+  @ApiCreatedResponse({ type: InventoryItemResponse })
+  async adopt(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+    @CurrentUser() actor: CurrentUserContext,
+    @Body() dto: AdoptCatalogItemDto,
+  ): Promise<InventoryItemResponse> {
+    const item = await this.adoptItem.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      catalogItemId: dto.catalogItemId,
+      baseUnit: dto.baseUnit,
+      alternateUnits: dto.alternateUnits,
+      categoryId: dto.categoryId ?? null,
+      sku: dto.sku ?? null,
+      actorUserId: actor.sub,
+    });
+    return this.toResponse(item);
   }
 
   @Patch(':id')
@@ -143,7 +187,7 @@ export class InventoryItemsController {
       trackExpiry: dto.trackExpiry,
       lowStockThresholdBase: dto.lowStockThresholdBase,
     });
-    return InventoryItemResponse.from(item);
+    return this.toResponse(item);
   }
 
   @Delete(':id')
@@ -184,7 +228,7 @@ export class InventoryItemsController {
       itemId: id,
       locationId: dto.locationId ?? null,
     });
-    return InventoryItemResponse.from(item);
+    return this.toResponse(item);
   }
 
   @Get(':id/layers')

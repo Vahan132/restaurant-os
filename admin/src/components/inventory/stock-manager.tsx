@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
@@ -17,6 +17,7 @@ import {
   formatDate,
 } from '@/components/inventory/shared';
 import { StockDetailDrawer } from '@/components/inventory/stock-detail-drawer';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useCategoriesList, usePaginatedStock } from '@/lib/inventory/use-inventory-data';
 import { formatBaseQty } from '@/lib/inventory/units';
 import { formatMoney } from '@/lib/money';
@@ -26,6 +27,7 @@ const PAGE_SIZE = 20;
 
 export function StockManager() {
   const t = useTranslations('inventory');
+  const locale = useLocale();
   const { data: restaurant } = useRestaurant();
   const currency = restaurant?.currency ?? 'USD';
 
@@ -146,7 +148,9 @@ export function StockManager() {
                   >
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-800">{row.name}</span>
+                        <span className="font-medium text-gray-800">
+                          {itemDisplayName(row, locale)}
+                        </span>
                         {row.lowStock && <LowStockBadge />}
                       </div>
                       {categoryName(row.categoryId) && (
@@ -183,7 +187,7 @@ export function StockManager() {
       {selected && (
         <StockDetailDrawer
           itemId={selected.itemId}
-          itemName={selected.name}
+          itemName={itemDisplayName(selected, locale)}
           baseUnit={selected.baseUnit}
           alternateUnits={[]}
           onClose={() => setSelected(null)}

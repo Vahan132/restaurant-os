@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AttachedModifierGroupResponse } from './attachedModifierGroupResponse';
+import type { I18nTextResponse } from './i18nTextResponse';
 import type { MenuItemDetailResponseAvailability } from './menuItemDetailResponseAvailability';
 import type { MenuItemDetailResponsePreparationStation } from './menuItemDetailResponsePreparationStation';
 import type { MenuItemDetailResponseStatus } from './menuItemDetailResponseStatus';
@@ -19,6 +20,10 @@ export interface MenuItemDetailResponse {
   name: string;
   /** @nullable */
   description: string | null;
+  /** LOCALE-2A: hy/ru/en name translations (nulls where empty). */
+  nameI18n: I18nTextResponse;
+  /** LOCALE-2A: hy/ru/en description translations. */
+  descriptionI18n: I18nTextResponse;
   priceAmount: number;
   /** @nullable */
   imageUrl: string | null;

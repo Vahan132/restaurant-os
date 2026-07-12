@@ -18,7 +18,8 @@ export class ModifierConsumptionResponse {
 
 export class RecipeWarningCounterpart {
   @ApiProperty() itemId!: string;
-  @ApiProperty() name!: string;
+  @ApiProperty({ nullable: true, type: String, description: 'Live catalog name (adopted) or local name; null if unresolvable.' })
+  name!: string | null;
 }
 
 export class RecipeWarningResponse {

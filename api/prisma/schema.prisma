@@ -532,6 +532,13 @@ model MenuCategory {
   code         String
   name         String
   description  String?
+  // LOCALE-2A: nullable hy/ru/en translations of name/description (additive).
+  nameHy        String?
+  nameRu        String?
+  nameEn        String?
+  descriptionHy String?
+  descriptionRu String?
+  descriptionEn String?
   displayOrder Int        @default(0)
   status       MenuStatus @default(ACTIVE)
   createdAt    DateTime   @default(now())
@@ -555,6 +562,15 @@ model MenuItem {
   categoryId         String
   name               String
   description        String?
+  // LOCALE-2A: nullable hy/ru/en translations of the primary name/description
+  // (authored in Restaurant.defaultLanguage). Additive; existing rows keep null and
+  // render the primary until translated (LOCALE-2B resolves column(locale) ?? name).
+  nameHy             String?
+  nameRu             String?
+  nameEn             String?
+  descriptionHy      String?
+  descriptionRu      String?
+  descriptionEn      String?
   priceAmount        Int                @map("price_amount")
   imageUrl           String?
   // MEDIA-1: object-storage key for an uploaded image (R2/dev). Additive + nullable;
@@ -598,6 +614,10 @@ model ModifierGroup {
   // BR-2: branch-scoped library — each branch keeps its own modifier groups.
   branchId      String
   name          String
+  // LOCALE-2A: nullable hy/ru/en translations of the name (additive; no description).
+  nameHy        String?
+  nameRu        String?
+  nameEn        String?
   selectionType ModifierSelectionType
   required      Boolean               @default(false)
   minSelect     Int?
@@ -621,6 +641,10 @@ model ModifierOption {
   restaurantId     String
   modifierGroupId  String
   name             String
+  // LOCALE-2A: nullable hy/ru/en translations of the name (additive; no description).
+  nameHy           String?
+  nameRu           String?
+  nameEn           String?
   priceDeltaAmount Int        @default(0) @map("price_delta_amount")
   // Renamed displayOrder -> sortOrder (Prompt 1A). isDefault: pre-selected option.
   sortOrder        Int        @default(0)
@@ -1343,7 +1367,11 @@ model InventoryItem {
   restaurantId          String
   // BR-3: inventory catalog is branch-owned. sku is the per-branch import key.
   branchId              String
-  name                  String
+  // PLATCAT-ADOPT-1B: nullable. Custom items own a local name; ADOPTED items carry
+  // name = null and resolve the platform catalog's trilingual name LIVE at read
+  // time (so a platform name fix propagates to every tenant). Identity is guaranteed
+  // by a DB CHECK: name IS NOT NULL OR "catalogItemId" IS NOT NULL (see migration).
+  name                  String?
   sku                   String?
   categoryId            String?
   kind                  ItemKind            @default(RAW)

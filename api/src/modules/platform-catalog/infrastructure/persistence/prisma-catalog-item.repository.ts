@@ -14,6 +14,9 @@ const ITEM_INCLUDE = {
 
 type ItemRecord = Prisma.CatalogItemGetPayload<{ include: typeof ITEM_INCLUDE }>;
 
+/** Prisma transaction client (works for both `$transaction(fn)` and the base client). */
+type Tx = Prisma.TransactionClient;
+
 function toPrismaStatus(s: CatalogItemStatus): PrismaCatalogItemStatus {
   return s === CatalogItemStatus.ARCHIVED
     ? PrismaCatalogItemStatus.ARCHIVED
@@ -40,6 +43,40 @@ function toDomain(r: ItemRecord): CatalogItem {
   });
 }
 
+/** Scalar fields for a create (id + createdAt included). */
+function toCreateData(item: CatalogItem): Prisma.CatalogItemUncheckedCreateInput {
+  return {
+    id: item.id,
+    slug: item.slug,
+    nameHy: item.nameHy,
+    nameRu: item.nameRu,
+    nameEn: item.nameEn,
+    categoryId: item.categoryId,
+    adgCode: item.adgCode,
+    allergensReviewed: item.allergensReviewed,
+    status: toPrismaStatus(item.status),
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    deletedAt: item.deletedAt,
+  };
+}
+
+/** Scalar fields for an update (id + createdAt untouched). */
+function toUpdateData(item: CatalogItem): Prisma.CatalogItemUncheckedUpdateInput {
+  return {
+    slug: item.slug,
+    nameHy: item.nameHy,
+    nameRu: item.nameRu,
+    nameEn: item.nameEn,
+    categoryId: item.categoryId,
+    adgCode: item.adgCode,
+    allergensReviewed: item.allergensReviewed,
+    status: toPrismaStatus(item.status),
+    updatedAt: item.updatedAt,
+    deletedAt: item.deletedAt,
+  };
+}
+
 /**
  * CatalogItem write + admin-read repository (Prisma). Touches catalog_items + its
  * allergen join only — never tenant inventory (ADR §4). Allergen tags are stored
@@ -50,56 +87,18 @@ export class PrismaCatalogItemRepository implements CatalogItemRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(item: CatalogItem): Promise<void> {
-    const allergenIds = await this.resolveAllergenIds(item.allergenSlugs);
+    const idBySlug = await this.allergenIdBySlug(item.allergenSlugs);
     await this.prisma.$transaction(async (tx) => {
-      await tx.catalogItem.create({
-        data: {
-          id: item.id,
-          slug: item.slug,
-          nameHy: item.nameHy,
-          nameRu: item.nameRu,
-          nameEn: item.nameEn,
-          categoryId: item.categoryId,
-          adgCode: item.adgCode,
-          allergensReviewed: item.allergensReviewed,
-          status: toPrismaStatus(item.status),
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt,
-          deletedAt: item.deletedAt,
-        },
-      });
-      if (allergenIds.length > 0) {
-        await tx.catalogItemAllergen.createMany({
-          data: allergenIds.map((allergenId) => ({ catalogItemId: item.id, allergenId })),
-        });
-      }
+      await tx.catalogItem.create({ data: toCreateData(item) });
+      await this.writeAllergenJoin(tx, item, idBySlug, false);
     });
   }
 
   async update(item: CatalogItem): Promise<void> {
-    const allergenIds = await this.resolveAllergenIds(item.allergenSlugs);
+    const idBySlug = await this.allergenIdBySlug(item.allergenSlugs);
     await this.prisma.$transaction(async (tx) => {
-      await tx.catalogItem.update({
-        where: { id: item.id },
-        data: {
-          slug: item.slug,
-          nameHy: item.nameHy,
-          nameRu: item.nameRu,
-          nameEn: item.nameEn,
-          categoryId: item.categoryId,
-          adgCode: item.adgCode,
-          allergensReviewed: item.allergensReviewed,
-          status: toPrismaStatus(item.status),
-          updatedAt: item.updatedAt,
-          deletedAt: item.deletedAt,
-        },
-      });
-      await tx.catalogItemAllergen.deleteMany({ where: { catalogItemId: item.id } });
-      if (allergenIds.length > 0) {
-        await tx.catalogItemAllergen.createMany({
-          data: allergenIds.map((allergenId) => ({ catalogItemId: item.id, allergenId })),
-        });
-      }
+      await tx.catalogItem.update({ where: { id: item.id }, data: toUpdateData(item) });
+      await this.writeAllergenJoin(tx, item, idBySlug, true);
     });
   }
 
@@ -110,6 +109,46 @@ export class PrismaCatalogItemRepository implements CatalogItemRepository {
 
   async existsBySlug(slug: string): Promise<boolean> {
     return (await this.prisma.catalogItem.count({ where: { slug } })) > 0;
+  }
+
+  async findManyBySlugs(slugs: readonly string[]): Promise<CatalogItem[]> {
+    const unique = [...new Set(slugs)];
+    if (unique.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.catalogItem.findMany({
+      where: { slug: { in: unique } },
+      include: ITEM_INCLUDE,
+    });
+    return rows.map(toDomain);
+  }
+
+  async saveAll(
+    creates: readonly CatalogItem[],
+    updates: readonly CatalogItem[],
+  ): Promise<void> {
+    if (creates.length === 0 && updates.length === 0) {
+      return;
+    }
+    // Resolve every allergen slug used across the batch once (no N+1).
+    const allSlugs = new Set<string>();
+    for (const item of [...creates, ...updates]) {
+      for (const s of item.allergenSlugs) {
+        allSlugs.add(s);
+      }
+    }
+    const idBySlug = await this.allergenIdBySlug([...allSlugs]);
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const item of creates) {
+        await tx.catalogItem.create({ data: toCreateData(item) });
+        await this.writeAllergenJoin(tx, item, idBySlug, false);
+      }
+      for (const item of updates) {
+        await tx.catalogItem.update({ where: { id: item.id }, data: toUpdateData(item) });
+        await this.writeAllergenJoin(tx, item, idBySlug, true);
+      }
+    });
   }
 
   async list(filter: CatalogItemListFilter): Promise<CatalogItemListResult> {
@@ -145,15 +184,39 @@ export class PrismaCatalogItemRepository implements CatalogItemRepository {
     return { items: rows.map(toDomain), total };
   }
 
-  /** Resolve (already-validated) allergen slugs to ids for the join rows. */
-  private async resolveAllergenIds(slugs: string[]): Promise<string[]> {
-    if (slugs.length === 0) {
-      return [];
+  /**
+   * Replace an item's allergen join rows to match its current tag set. When
+   * `replaceExisting` is true (update path) existing rows are cleared first.
+   */
+  private async writeAllergenJoin(
+    tx: Tx,
+    item: CatalogItem,
+    idBySlug: Map<string, string>,
+    replaceExisting: boolean,
+  ): Promise<void> {
+    if (replaceExisting) {
+      await tx.catalogItemAllergen.deleteMany({ where: { catalogItemId: item.id } });
+    }
+    const allergenIds = item.allergenSlugs
+      .map((slug) => idBySlug.get(slug))
+      .filter((id): id is string => id !== undefined);
+    if (allergenIds.length > 0) {
+      await tx.catalogItemAllergen.createMany({
+        data: allergenIds.map((allergenId) => ({ catalogItemId: item.id, allergenId })),
+      });
+    }
+  }
+
+  /** Resolve (already-validated) allergen slugs to a slug→id map for join rows. */
+  private async allergenIdBySlug(slugs: readonly string[]): Promise<Map<string, string>> {
+    const unique = [...new Set(slugs)];
+    if (unique.length === 0) {
+      return new Map();
     }
     const rows = await this.prisma.allergen.findMany({
-      where: { slug: { in: slugs } },
-      select: { id: true },
+      where: { slug: { in: unique } },
+      select: { id: true, slug: true },
     });
-    return rows.map((r) => r.id);
+    return new Map(rows.map((r) => [r.slug, r.id]));
   }
 }

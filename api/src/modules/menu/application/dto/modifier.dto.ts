@@ -13,8 +13,9 @@ import {
 } from 'class-validator';
 import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '../../../../shared/application/pagination';
 import { MenuStatus, ModifierSelectionType } from '../../domain/enums';
+import { NameI18nDto } from './i18n.dto';
 
-export class CreateModifierGroupDto {
+export class CreateModifierGroupDto extends NameI18nDto {
   @ApiProperty({ example: 'Size' })
   @IsString()
   @MinLength(1)
@@ -42,7 +43,7 @@ export class CreateModifierGroupDto {
   maxSelect?: number;
 }
 
-export class UpdateModifierGroupDto {
+export class UpdateModifierGroupDto extends NameI18nDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -103,7 +104,7 @@ export class ListModifierGroupsQuery {
   q?: string;
 }
 
-export class CreateModifierOptionDto {
+export class CreateModifierOptionDto extends NameI18nDto {
   @ApiProperty({ example: 'Large' })
   @IsString()
   @MinLength(1)
@@ -129,7 +130,7 @@ export class CreateModifierOptionDto {
   isDefault?: boolean;
 }
 
-export class UpdateModifierOptionDto {
+export class UpdateModifierOptionDto extends NameI18nDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

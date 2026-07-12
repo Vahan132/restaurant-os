@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useGoodsReceiptsControllerCreate } from '@/api/generated/inventory-goods-receipts/inventory-goods-receipts';
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { Field, inputClass } from '@/components/ui/form';
 import { getErrorMessage } from '@/lib/api-error';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import {
   useInventoryInvalidation,
   useItemsForSelect,
@@ -54,6 +55,7 @@ function nowLocalInput(): string {
 export function ReceiptFormDrawer({ onClose }: { onClose: () => void }) {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const { data: restaurant } = useRestaurant();
   const currency = restaurant?.currency ?? 'USD';
   const invalidate = useInventoryInvalidation();
@@ -241,7 +243,7 @@ export function ReceiptFormDrawer({ onClose }: { onClose: () => void }) {
                         <option value="">{t('selectItem')}</option>
                         {items.map((it) => (
                           <option key={it.id} value={it.id}>
-                            {it.name}
+                            {itemDisplayName(it, locale)}
                           </option>
                         ))}
                       </select>

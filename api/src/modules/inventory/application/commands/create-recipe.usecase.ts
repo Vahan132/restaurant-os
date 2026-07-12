@@ -11,6 +11,7 @@ import {
   RawRecipeLine,
   RecipeDefinitionAssembler,
 } from '../services/recipe-definition.assembler';
+import { Locale } from '../services/dish-projection.resolver';
 
 export interface CreateRecipeInput {
   restaurantId: string | null;
@@ -20,6 +21,8 @@ export interface CreateRecipeInput {
   lines: RawRecipeLine[];
   modifierConsumptions: RawModifierConsumption[];
   actorUserId: string;
+  /** Customer-projection locale (hy/ru/en) for the returned detail; defaults to 'en'. */
+  locale?: Locale;
 }
 
 /** Create a recipe for a menu item (rejects a second recipe for the same item). */
@@ -63,6 +66,6 @@ export class CreateRecipeUseCase implements UseCase<CreateRecipeInput, RecipeDet
     });
     await this.recipes.create(recipe);
     await this.events.publishFromAggregate(recipe);
-    return this.detail.assemble(recipe);
+    return this.detail.assemble(recipe, input.locale ?? 'en');
   }
 }

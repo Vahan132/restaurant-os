@@ -9,6 +9,7 @@ import type { AttachedModifierGroupResponseSelectionType } from './attachedModif
 import type { AttachedModifierGroupResponseStatus } from './attachedModifierGroupResponseStatus';
 import type { DishModifierGroupResponse } from './dishModifierGroupResponse';
 import type { EffectiveModifierRulesResponse } from './effectiveModifierRulesResponse';
+import type { I18nTextResponse } from './i18nTextResponse';
 import type { ModifierOptionResponse } from './modifierOptionResponse';
 
 export interface AttachedModifierGroupResponse {
@@ -16,6 +17,8 @@ export interface AttachedModifierGroupResponse {
   restaurantId: string;
   branchId: string;
   name: string;
+  /** LOCALE-2A: hy/ru/en name translations. */
+  nameI18n: I18nTextResponse;
   selectionType: AttachedModifierGroupResponseSelectionType;
   required: boolean;
   /** @nullable */

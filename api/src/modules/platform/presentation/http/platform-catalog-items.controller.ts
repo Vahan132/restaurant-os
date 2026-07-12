@@ -8,9 +8,14 @@ import {
   UpdateCatalogItemDto,
 } from '../../../platform-catalog/application/dto/catalog-item.dto';
 import { CatalogItemResponse } from '../../../platform-catalog/application/dto/catalog-responses';
+import {
+  ImportCatalogItemsRequestDto,
+  ImportCatalogItemsResponse,
+} from '../../../platform-catalog/application/dto/import-catalog-items.dto';
 import { CreateCatalogItemUseCase } from '../../../platform-catalog/application/commands/create-catalog-item.usecase';
 import { UpdateCatalogItemUseCase } from '../../../platform-catalog/application/commands/update-catalog-item.usecase';
 import { ArchiveCatalogItemUseCase } from '../../../platform-catalog/application/commands/archive-catalog-item.usecase';
+import { ImportCatalogItemsUseCase } from '../../../platform-catalog/application/commands/import-catalog-items.usecase';
 import { GetCatalogItemUseCase } from '../../../platform-catalog/application/queries/get-catalog-item.usecase';
 import { ListCatalogItemsUseCase } from '../../../platform-catalog/application/queries/list-catalog-items.usecase';
 import { PlatformAuthGuard } from '../platform-auth.guard';
@@ -32,6 +37,7 @@ export class PlatformCatalogItemsController {
     private readonly createItem: CreateCatalogItemUseCase,
     private readonly updateItem: UpdateCatalogItemUseCase,
     private readonly archiveItem: ArchiveCatalogItemUseCase,
+    private readonly importItems: ImportCatalogItemsUseCase,
   ) {}
 
   @Get()
@@ -71,6 +77,20 @@ export class PlatformCatalogItemsController {
       allergensReviewed: dto.allergensReviewed ?? false,
     });
     return CatalogItemResponse.from(item);
+  }
+
+  @Post('import')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Bulk import catalog items from CSV (dry-run preview or transactional apply).',
+  })
+  @ApiOkResponse({ type: ImportCatalogItemsResponse })
+  async import(@Body() dto: ImportCatalogItemsRequestDto): Promise<ImportCatalogItemsResponse> {
+    return this.importItems.execute({
+      mode: dto.mode,
+      conflictStrategy: dto.conflictStrategy,
+      csv: dto.csv,
+    });
   }
 
   @Patch(':id')

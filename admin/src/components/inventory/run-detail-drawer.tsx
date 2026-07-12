@@ -1,10 +1,11 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
 import { Drawer } from '@/components/ui/drawer';
 import { formatDateTime } from '@/components/inventory/shared';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useItemsForSelect } from '@/lib/inventory/use-inventory-data';
 import { useProcessesForSelect, useRun } from '@/lib/inventory/use-process-data';
 import { formatNumber } from '@/lib/inventory/units';
@@ -19,12 +20,16 @@ export function RunDetailDrawer({
   onClose: () => void;
 }) {
   const t = useTranslations('inventory');
+  const locale = useLocale();
   const { data: restaurant } = useRestaurant();
   const currency = restaurant?.currency ?? 'USD';
   const { data: runDetail, isLoading } = useRun(runId);
   const { items } = useItemsForSelect();
   const { processes } = useProcessesForSelect();
-  const itemName = (id: string) => items.find((i) => i.id === id)?.name ?? id;
+  const itemName = (id: string) => {
+    const it = items.find((i) => i.id === id);
+    return it ? itemDisplayName(it, locale) : id;
+  };
   const processName = (id: string) => processes.find((p) => p.id === id)?.name ?? id;
 
   return (

@@ -25,6 +25,7 @@ import {
   SetCategoryStatusDto,
   UpdateCategoryDto,
 } from '../../application/dto/category.dto';
+import { pickNameDescriptionI18n } from '../../application/dto/i18n.dto';
 import { CategoryResponse } from '../../application/dto/responses';
 import { ListCategoriesUseCase } from '../../application/queries/list-categories.usecase';
 
@@ -76,6 +77,7 @@ export class CategoriesController {
       branchId,
       name: dto.name,
       description: dto.description ?? null,
+      ...pickNameDescriptionI18n(dto),
       displayOrder: dto.displayOrder,
     });
     return CategoryResponse.from(c);
@@ -117,6 +119,7 @@ export class CategoriesController {
       categoryId: id,
       name: dto.name,
       description: dto.description,
+      ...pickNameDescriptionI18n(dto),
       displayOrder: dto.displayOrder,
     });
     return CategoryResponse.from(c);

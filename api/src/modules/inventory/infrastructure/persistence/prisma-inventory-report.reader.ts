@@ -25,7 +25,7 @@ export class PrismaInventoryReportReader implements InventoryReportReader {
   constructor(private readonly prisma: PrismaService) {}
 
   async stockOnHand(
-    filter: ReportScopeFilter & { lowStockOnly?: boolean; skip: number; take: number },
+    filter: ReportScopeFilter & { lowStockOnly?: boolean },
   ): Promise<StockOnHandReport> {
     let rows = await this.buildRows(filter);
     if (filter.lowStockOnly) {
@@ -33,8 +33,8 @@ export class PrismaInventoryReportReader implements InventoryReportReader {
     }
     const total = rows.length;
     const totalValuationAmount = rows.reduce((s, r) => s + r.valuationAmount, 0);
-    const page = rows.slice(filter.skip, filter.skip + filter.take);
-    return { rows: page, total, totalValuationAmount };
+    // INV-SEARCH-1: no slice here — the use-case sorts by resolved name then paginates.
+    return { rows, total, totalValuationAmount };
   }
 
   async valuationSummary(filter: ReportScopeFilter): Promise<ValuationSummary> {
@@ -115,6 +115,7 @@ export class PrismaInventoryReportReader implements InventoryReportReader {
         select: {
           id: true,
           name: true,
+          catalogItemId: true,
           sku: true,
           categoryId: true,
           baseUnit: true,
@@ -173,6 +174,7 @@ export class PrismaInventoryReportReader implements InventoryReportReader {
         locationName: locationName.get(r.locationId) ?? '',
         itemId: r.itemId,
         itemName: item.name,
+        catalogItemId: item.catalogItemId,
         sku: item.sku,
         categoryId: item.categoryId,
         baseUnit: item.baseUnit,
@@ -182,10 +184,9 @@ export class PrismaInventoryReportReader implements InventoryReportReader {
         lowStock: eff !== null && r.quantity <= eff,
       });
     }
-    rows.sort(
-      (a, b) =>
-        a.itemName.localeCompare(b.itemName) || a.locationName.localeCompare(b.locationName),
-    );
+    // INV-SEARCH-1: no name sort here — itemName is the LOCAL name (null for adopted), so
+    // sorting on it clusters adopted rows. The use-case sorts by the RESOLVED effective
+    // name after attachCatalogNames, keeping all three list paths consistent.
     return rows;
   }
 }

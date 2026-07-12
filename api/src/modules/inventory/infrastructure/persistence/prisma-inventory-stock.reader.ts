@@ -19,22 +19,31 @@ import { roundedDiv } from '../../domain/value-objects/money';
 export class PrismaInventoryStockReader implements InventoryStockReader {
   constructor(private readonly prisma: PrismaService) {}
 
-  async stock(filter: StockFilter): Promise<{ rows: StockRow[]; total: number }> {
+  async stock(filter: StockFilter): Promise<StockRow[]> {
     const where: Prisma.InventoryItemWhereInput = {
       restaurantId: filter.restaurantId,
       branchId: filter.branchId,
       deletedAt: null,
       ...(filter.categoryId ? { categoryId: filter.categoryId } : {}),
       ...(filter.kind ? { kind: filter.kind } : {}),
-      ...(filter.search ? { name: { contains: filter.search, mode: 'insensitive' } } : {}),
+      // INV-SEARCH-1: two-step search — local name OR an adopted item whose catalog name
+      // matched (catalogItemId in the ids resolved by the use-case).
+      ...(filter.search
+        ? {
+            OR: [
+              { name: { contains: filter.search, mode: 'insensitive' } },
+              ...(filter.matchedCatalogItemIds && filter.matchedCatalogItemIds.length > 0
+                ? [{ catalogItemId: { in: filter.matchedCatalogItemIds } }]
+                : []),
+            ],
+          }
+        : {}),
     };
 
-    const items = await this.prisma.inventoryItem.findMany({
-      where,
-      orderBy: { name: 'asc' },
-    });
+    // No DB `orderBy: name`: the use-case resolves effective names, sorts, then paginates.
+    const items = await this.prisma.inventoryItem.findMany({ where });
     if (items.length === 0) {
-      return { rows: [], total: 0 };
+      return [];
     }
 
     const itemIds = items.map((i) => i.id);
@@ -84,6 +93,7 @@ export class PrismaInventoryStockReader implements InventoryStockReader {
       return {
         itemId: i.id,
         name: i.name,
+        catalogItemId: i.catalogItemId,
         sku: i.sku,
         categoryId: i.categoryId,
         kind: i.kind as ItemKind,
@@ -104,8 +114,7 @@ export class PrismaInventoryStockReader implements InventoryStockReader {
       rows = rows.filter((r) => r.earliestExpiry !== null && r.earliestExpiry < before);
     }
 
-    const total = rows.length;
-    const page = rows.slice(filter.skip, filter.skip + filter.take);
-    return { rows: page, total };
+    // Full filtered set, unsorted + unpaginated — the use-case sorts by resolved name.
+    return rows;
   }
 }

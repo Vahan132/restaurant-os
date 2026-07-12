@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { StockOnHandRowResponse } from '@/api/generated/model';
@@ -12,6 +12,7 @@ import {
   FilterSelect,
   useReportScope,
 } from '@/components/inventory/inventory-reports-shared';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useCategoriesList, useItemsForSelect } from '@/lib/inventory/use-inventory-data';
 import { useLocations } from '@/lib/inventory/use-locations-data';
 import { useStockOnHandReport } from '@/lib/inventory/use-inventory-reports';
@@ -24,6 +25,7 @@ const FETCH_LIMIT = 500;
 
 export function StockOnHandReport() {
   const t = useTranslations('inventory');
+  const locale = useLocale();
   const { data: restaurant } = useRestaurant();
   const currency = restaurant?.currency ?? 'USD';
   const { isOwner, activeBranchId, branchName } = useReportScope();
@@ -108,7 +110,7 @@ export function StockOnHandReport() {
           <option value="">{t('repAllItems')}</option>
           {items.map((i) => (
             <option key={i.id} value={i.id}>
-              {i.name}
+              {itemDisplayName(i, locale)}
             </option>
           ))}
         </FilterSelect>
@@ -229,6 +231,7 @@ function LocationGroup({
   currency: string;
   t: (k: string) => string;
 }) {
+  const locale = useLocale();
   return (
     <>
       <tr className="border-t border-gray-200 bg-gray-50">
@@ -245,7 +248,7 @@ function LocationGroup({
         return (
           <tr key={`${r.itemId}-${r.locationId}`} className="border-b border-gray-100">
             <td className="px-4 py-2 pl-6 text-gray-800">
-              {r.itemName}
+              {itemDisplayName(r, locale)}
               {r.lowStock && (
                 <span className="ml-2">
                   <LowStockBadge />

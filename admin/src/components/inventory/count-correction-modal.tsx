@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
 import { useAdjustmentsControllerCount } from '@/api/generated/inventory-adjustments/inventory-adjustments';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Field, inputClass } from '@/components/ui/form';
 import { Modal } from '@/components/ui/modal';
 import { getErrorMessage } from '@/lib/api-error';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useInventoryInvalidation, useItemsForSelect } from '@/lib/inventory/use-inventory-data';
 import {
   useBranchOnHand,
@@ -36,6 +37,7 @@ export function CountCorrectionModal({
 }) {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const invalidateInventory = useInventoryInvalidation();
   const invalidateLocations = useLocationsInvalidation();
   const { items } = useItemsForSelect();
@@ -156,7 +158,9 @@ export function CountCorrectionModal({
           <p className="text-sm text-gray-600">{t('ccConfirmBody')}</p>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-sm">
             <dt className="text-gray-500">{t('ccItem')}</dt>
-            <dd className="font-medium text-gray-800">{selectedItem?.name}</dd>
+            <dd className="font-medium text-gray-800">
+              {selectedItem ? itemDisplayName(selectedItem, locale) : ''}
+            </dd>
             <dt className="text-gray-500">{t('ccLocation')}</dt>
             <dd className="text-gray-800">
               {locations.find((l) => l.id === locationId)?.name ?? locationId}
@@ -200,7 +204,7 @@ export function CountCorrectionModal({
               <option value="">{t('selectItem')}</option>
               {items.map((i) => (
                 <option key={i.id} value={i.id}>
-                  {i.name}
+                  {itemDisplayName(i, locale)}
                 </option>
               ))}
             </select>

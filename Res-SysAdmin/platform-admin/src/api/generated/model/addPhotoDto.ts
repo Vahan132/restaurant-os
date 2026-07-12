@@ -8,8 +8,10 @@
 import type { I18nTextDto } from './i18nTextDto';
 
 export interface AddPhotoDto {
-  /** Photo URL (https only; URL-paste, no upload in v1). */
-  url: string;
+  /** Photo URL (https). URL-paste source; omit when supplying objectKey. */
+  url?: string;
+  /** MEDIA-1: object key from a presigned photo upload (finalize). Overrides url. */
+  objectKey?: string;
   /** Alt text (hy/ru/en). */
   alt?: I18nTextDto;
   /**

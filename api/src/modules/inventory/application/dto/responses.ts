@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { CatalogLocalizedName } from '../../../platform-catalog/domain/repositories/catalog-item.reader';
 import { GoodsReceipt } from '../../domain/entities/goods-receipt';
 import { InventoryCategory } from '../../domain/entities/inventory-category';
 import { InventoryItem } from '../../domain/entities/inventory-item';
@@ -13,11 +14,34 @@ class AlternateUnitView {
   @ApiProperty() factor!: number;
 }
 
+/**
+ * PLATCAT-ADOPT-1B: the platform catalog's trilingual name, resolved live for an
+ * adopted item. Present (non-null) only when the item carries a catalogItemId.
+ */
+export class CatalogNameView {
+  @ApiProperty() hy!: string;
+  @ApiProperty() ru!: string;
+  @ApiProperty() en!: string;
+}
+
 export class InventoryItemResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
   @ApiProperty() branchId!: string;
-  @ApiProperty() name!: string;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description:
+      'PLATCAT-ADOPT-1B: local name; null for an adopted item (use catalogName). ' +
+      'Client display = catalogName ? catalogName[locale] : name.',
+  })
+  name!: string | null;
+  @ApiProperty({
+    nullable: true,
+    type: CatalogNameView,
+    description: 'Live-resolved platform catalog name {hy,ru,en}; present when adopted.',
+  })
+  catalogName!: CatalogLocalizedName | null;
   @ApiProperty({ nullable: true, type: String }) sku!: string | null;
   @ApiProperty({ nullable: true, type: String }) categoryId!: string | null;
   @ApiProperty({ enum: ['RAW', 'PROCESSED'] }) kind!: string;
@@ -37,14 +61,24 @@ export class InventoryItemResponse {
     description: '6C: per-item consumption location (null => branch default Main Storage).',
   })
   consumptionLocationId!: string | null;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'CATALOG-1: platform CatalogItem this item was adopted from (null = custom).',
+  })
+  catalogItemId!: string | null;
   @ApiProperty({ enum: ['ACTIVE', 'INACTIVE'] }) status!: string;
 
-  static from(i: InventoryItem): InventoryItemResponse {
+  static from(
+    i: InventoryItem,
+    catalogName: CatalogLocalizedName | null = null,
+  ): InventoryItemResponse {
     return {
       id: i.id,
       restaurantId: i.restaurantId,
       branchId: i.branchId,
       name: i.name,
+      catalogName,
       sku: i.sku,
       categoryId: i.categoryId,
       kind: i.kind,
@@ -54,6 +88,7 @@ export class InventoryItemResponse {
       lowStockThresholdBase: i.lowStockThresholdBase,
       lastUnitCostMicro: i.lastUnitCostMicro === null ? null : i.lastUnitCostMicro.toString(),
       consumptionLocationId: i.consumptionLocationId,
+      catalogItemId: i.catalogItemId,
       status: i.status,
     };
   }
@@ -217,7 +252,10 @@ export class StockMovementResponse {
 
 export class StockRowResponse {
   @ApiProperty() itemId!: string;
-  @ApiProperty() name!: string;
+  @ApiProperty({ nullable: true, type: String, description: 'Local name; null when adopted (use catalogName).' })
+  name!: string | null;
+  @ApiProperty({ nullable: true, type: CatalogNameView, description: 'Live catalog name {hy,ru,en} when adopted.' })
+  catalogName!: CatalogLocalizedName | null;
   @ApiProperty({ nullable: true, type: String }) sku!: string | null;
   @ApiProperty({ nullable: true, type: String }) categoryId!: string | null;
   @ApiProperty({ enum: ['RAW', 'PROCESSED'] }) kind!: string;
@@ -233,6 +271,7 @@ export class StockRowResponse {
     return {
       itemId: r.itemId,
       name: r.name,
+      catalogName: r.catalogName ?? null,
       sku: r.sku,
       categoryId: r.categoryId,
       kind: r.kind,

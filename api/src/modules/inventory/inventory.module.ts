@@ -29,6 +29,7 @@ import { INVENTORY_REPORT_READER } from './application/ports/inventory-report.re
 
 import { CreateAdjustmentUseCase } from './application/commands/create-adjustment.usecase';
 import { CreateGoodsReceiptUseCase } from './application/commands/create-goods-receipt.usecase';
+import { AdoptCatalogItemUseCase } from './application/commands/adopt-catalog-item.usecase';
 import { CreateInventoryItemUseCase } from './application/commands/create-inventory-item.usecase';
 import { DeleteInventoryItemUseCase } from './application/commands/delete-inventory-item.usecase';
 import { SetItemConsumptionLocationUseCase } from './application/commands/set-item-consumption-location.usecase';
@@ -76,6 +77,7 @@ import { DeleteRecipeUseCase } from './application/commands/delete-recipe.usecas
 import { ListRecipesUseCase } from './application/queries/list-recipes.usecase';
 import { GetRecipeUseCase } from './application/queries/get-recipe.usecase';
 import { DishProjectionResolver } from './application/services/dish-projection.resolver';
+import { InventoryItemNameResolver } from './application/services/inventory-item-name.resolver';
 import { OrderItemAllergenResolver } from './application/services/order-item-allergen.resolver';
 import { ITEM_RESOLUTION_READER } from './application/ports/item-resolution.reader';
 import { PrismaItemResolutionReader } from './infrastructure/persistence/prisma-item-resolution.reader';
@@ -150,6 +152,7 @@ import { AdjustmentsController } from './presentation/http/adjustments.controlle
 import { GoodsReceiptsController } from './presentation/http/goods-receipts.controller';
 import { InventoryCategoriesController } from './presentation/http/inventory-categories.controller';
 import { InventoryItemsController } from './presentation/http/inventory-items.controller';
+import { CatalogBrowseController } from './presentation/http/catalog-browse.controller';
 import { InventorySuppliersController } from './presentation/http/inventory-suppliers.controller';
 import { StockController } from './presentation/http/stock.controller';
 import { ProcessesController } from './presentation/http/processes.controller';
@@ -173,6 +176,7 @@ import { InventoryReportsController } from './presentation/http/inventory-report
   imports: [IdentityModule, PlatformCatalogModule],
   controllers: [
     InventoryItemsController,
+    CatalogBrowseController,
     InventoryCategoriesController,
     InventorySuppliersController,
     GoodsReceiptsController,
@@ -194,6 +198,7 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     ListInventoryItemsUseCase,
     GetInventoryItemUseCase,
     CreateInventoryItemUseCase,
+    AdoptCatalogItemUseCase,
     UpdateInventoryItemUseCase,
     DeleteInventoryItemUseCase,
     SetItemConsumptionLocationUseCase,
@@ -242,6 +247,7 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     RecipeDefinitionAssembler,
     RecipeDetailAssembler,
     DishProjectionResolver,
+    InventoryItemNameResolver,
     OrderItemAllergenResolver,
     RecipeConsumptionService,
     OrderConsumptionListener,

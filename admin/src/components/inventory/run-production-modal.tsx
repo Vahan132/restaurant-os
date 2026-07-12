@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
 import { useProcessesControllerRun } from '@/api/generated/inventory-processes/inventory-processes';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Field, inputClass } from '@/components/ui/form';
 import { Modal } from '@/components/ui/modal';
 import { getErrorMessage } from '@/lib/api-error';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useInventoryInvalidation, useItemsForSelect } from '@/lib/inventory/use-inventory-data';
 import {
   useProcess,
@@ -35,13 +36,17 @@ export function RunProductionModal({
 }) {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const { data: restaurant } = useRestaurant();
   const currency = restaurant?.currency ?? 'USD';
   const { data: process, isLoading } = useProcess(processId);
   const { unitCost } = useUnitCostMap();
   const { items } = useItemsForSelect();
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
-  const itemName = (id: string) => itemById.get(id)?.name ?? id;
+  const itemName = (id: string) => {
+    const it = itemById.get(id);
+    return it ? itemDisplayName(it, locale) : id;
+  };
   const itemUnit = (id: string) => abbr(itemById.get(id)?.baseUnit ?? '');
   const invalidateInventory = useInventoryInvalidation();
   const invalidateRuns = useRunsInvalidation();

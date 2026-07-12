@@ -29,8 +29,8 @@ import type {
   BillingResponse,
   ChangePlanDto,
   SubscriptionHistoryResponse,
+  UpdateAccountProfileDto,
   UpdateBillingDto,
-  UpdateProfileDto,
   UserResponse
 } from '../../model';
 
@@ -136,14 +136,14 @@ export function useAccountControllerAccount<TData = Awaited<ReturnType<typeof ac
  * @summary Update the owner's display name.
  */
 export const accountControllerProfile = (
-    updateProfileDto: BodyType<UpdateProfileDto>,
+    updateAccountProfileDto: BodyType<UpdateAccountProfileDto>,
  ) => {
       
       
       return customInstance<UserResponse>(
       {url: `/account/profile`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
-      data: updateProfileDto
+      data: updateAccountProfileDto
     },
       );
     }
@@ -151,8 +151,8 @@ export const accountControllerProfile = (
 
 
 export const getAccountControllerProfileMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountControllerProfile>>, TError,{data: BodyType<UpdateProfileDto>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof accountControllerProfile>>, TError,{data: BodyType<UpdateProfileDto>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountControllerProfile>>, TError,{data: BodyType<UpdateAccountProfileDto>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof accountControllerProfile>>, TError,{data: BodyType<UpdateAccountProfileDto>}, TContext> => {
 
 const mutationKey = ['accountControllerProfile'];
 const {mutation: mutationOptions} = options ?
@@ -164,7 +164,7 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountControllerProfile>>, {data: BodyType<UpdateProfileDto>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountControllerProfile>>, {data: BodyType<UpdateAccountProfileDto>}> = (props) => {
           const {data} = props ?? {};
 
           return  accountControllerProfile(data,)
@@ -176,18 +176,18 @@ const {mutation: mutationOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type AccountControllerProfileMutationResult = NonNullable<Awaited<ReturnType<typeof accountControllerProfile>>>
-    export type AccountControllerProfileMutationBody = BodyType<UpdateProfileDto>
+    export type AccountControllerProfileMutationBody = BodyType<UpdateAccountProfileDto>
     export type AccountControllerProfileMutationError = ErrorType<void>
 
     /**
  * @summary Update the owner's display name.
  */
 export const useAccountControllerProfile = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountControllerProfile>>, TError,{data: BodyType<UpdateProfileDto>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountControllerProfile>>, TError,{data: BodyType<UpdateAccountProfileDto>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof accountControllerProfile>>,
         TError,
-        {data: BodyType<UpdateProfileDto>},
+        {data: BodyType<UpdateAccountProfileDto>},
         TContext
       > => {
 

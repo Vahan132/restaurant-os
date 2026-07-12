@@ -1,3 +1,5 @@
+import { CatalogLocalizedName } from '../../../platform-catalog/domain/repositories/catalog-item.reader';
+
 export const INVENTORY_REPORT_READER = Symbol('InventoryReportReader');
 
 /** Branch scope + optional narrowing filters shared by the stock reports. */
@@ -16,7 +18,12 @@ export interface StockOnHandReportRow {
   locationId: string;
   locationName: string;
   itemId: string;
-  itemName: string;
+  /** Local name; null for an adopted item (PLATCAT-ADOPT-1B). Use catalogName then. */
+  itemName: string | null;
+  /** PLATCAT-ADOPT-1B: InventoryItem.catalogItemId — drives live name resolution. */
+  catalogItemId: string | null;
+  /** Live-resolved trilingual catalog name; present when adopted (filled by the use-case). */
+  catalogName?: CatalogLocalizedName | null;
   sku: string | null;
   categoryId: string | null;
   baseUnit: string;
@@ -33,7 +40,13 @@ export interface StockOnHandReportRow {
 }
 
 export interface StockOnHandReport {
+  /**
+   * INV-SEARCH-1: the FULL filtered set (lowStockOnly applied), UNSORTED + UNPAGINATED.
+   * The use-case resolves effective names, sorts, then slices the page — adopted rows
+   * carry a null local `itemName` that can't be ordered in SQL.
+   */
   rows: StockOnHandReportRow[];
+  /** Count over ALL matched rows (not just a page). */
   total: number;
   /** Sum of valuationAmount over ALL matched rows (not just the page). */
   totalValuationAmount: number;
@@ -62,10 +75,11 @@ export interface ValuationSummary {
  * an explicit set of branchIds (branch isolation is resolved by the caller).
  */
 export interface InventoryReportReader {
-  /** Per-(item, location) on-hand + FIFO value (paginated). */
-  stockOnHand(
-    filter: ReportScopeFilter & { lowStockOnly?: boolean; skip: number; take: number },
-  ): Promise<StockOnHandReport>;
+  /**
+   * Per-(item, location) on-hand + FIFO value. Returns the full filtered set; the
+   * use-case sorts by resolved name and paginates (INV-SEARCH-1).
+   */
+  stockOnHand(filter: ReportScopeFilter & { lowStockOnly?: boolean }): Promise<StockOnHandReport>;
 
   /** Valuation roll-ups: per location, per branch, and aggregate. */
   valuationSummary(filter: ReportScopeFilter): Promise<ValuationSummary>;

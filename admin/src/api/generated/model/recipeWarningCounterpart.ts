@@ -8,5 +8,9 @@
 
 export interface RecipeWarningCounterpart {
   itemId: string;
-  name: string;
+  /**
+     * Live catalog name (adopted) or local name; null if unresolvable.
+     * @nullable
+     */
+  name: string | null;
 }

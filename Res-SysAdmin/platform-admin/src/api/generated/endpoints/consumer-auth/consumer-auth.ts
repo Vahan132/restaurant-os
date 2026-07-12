@@ -18,9 +18,9 @@ import type {
 import type {
   AcknowledgementResponse,
   AppleSignInDto,
+  ConsumerRefreshDto,
   ConsumerSessionResponse,
   GoogleSignInDto,
-  RefreshDto,
   RequestOtpDto,
   SignOutDto,
   VerifyOtpDto
@@ -265,7 +265,7 @@ const {mutation: mutationOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     export const consumerAuthControllerRefreshToken = (
-    refreshDto: BodyType<RefreshDto>,
+    consumerRefreshDto: BodyType<ConsumerRefreshDto>,
  signal?: AbortSignal
 ) => {
       
@@ -273,7 +273,7 @@ const {mutation: mutationOptions} = options ?
       return customInstance<ConsumerSessionResponse>(
       {url: `/consumer/auth/refresh`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
-      data: refreshDto, signal
+      data: consumerRefreshDto, signal
     },
       );
     }
@@ -281,8 +281,8 @@ const {mutation: mutationOptions} = options ?
 
 
 export const getConsumerAuthControllerRefreshTokenMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof consumerAuthControllerRefreshToken>>, TError,{data: BodyType<RefreshDto>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof consumerAuthControllerRefreshToken>>, TError,{data: BodyType<RefreshDto>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof consumerAuthControllerRefreshToken>>, TError,{data: BodyType<ConsumerRefreshDto>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof consumerAuthControllerRefreshToken>>, TError,{data: BodyType<ConsumerRefreshDto>}, TContext> => {
 
 const mutationKey = ['consumerAuthControllerRefreshToken'];
 const {mutation: mutationOptions} = options ?
@@ -294,7 +294,7 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof consumerAuthControllerRefreshToken>>, {data: BodyType<RefreshDto>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof consumerAuthControllerRefreshToken>>, {data: BodyType<ConsumerRefreshDto>}> = (props) => {
           const {data} = props ?? {};
 
           return  consumerAuthControllerRefreshToken(data,)
@@ -306,15 +306,15 @@ const {mutation: mutationOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type ConsumerAuthControllerRefreshTokenMutationResult = NonNullable<Awaited<ReturnType<typeof consumerAuthControllerRefreshToken>>>
-    export type ConsumerAuthControllerRefreshTokenMutationBody = BodyType<RefreshDto>
+    export type ConsumerAuthControllerRefreshTokenMutationBody = BodyType<ConsumerRefreshDto>
     export type ConsumerAuthControllerRefreshTokenMutationError = ErrorType<unknown>
 
     export const useConsumerAuthControllerRefreshToken = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof consumerAuthControllerRefreshToken>>, TError,{data: BodyType<RefreshDto>}, TContext>, }
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof consumerAuthControllerRefreshToken>>, TError,{data: BodyType<ConsumerRefreshDto>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof consumerAuthControllerRefreshToken>>,
         TError,
-        {data: BodyType<RefreshDto>},
+        {data: BodyType<ConsumerRefreshDto>},
         TContext
       > => {
 

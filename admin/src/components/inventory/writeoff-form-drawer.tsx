@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
 import { useWriteOffsControllerCreate } from '@/api/generated/inventory-write-offs/inventory-write-offs';
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { Field, inputClass } from '@/components/ui/form';
 import { getErrorMessage } from '@/lib/api-error';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useItemsForSelect } from '@/lib/inventory/use-inventory-data';
 import {
   useMenuItemDetail,
@@ -129,6 +130,7 @@ function DishLineFields({
 export function WriteOffFormDrawer({ onClose }: { onClose: () => void }) {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const { data: restaurant } = useRestaurant();
   const currency = restaurant?.currency ?? 'USD';
   const invalidate = useWriteOffsInvalidation();
@@ -285,7 +287,7 @@ export function WriteOffFormDrawer({ onClose }: { onClose: () => void }) {
                         <option value="">{t('woSelectItem')}</option>
                         {items.map((it) => (
                           <option key={it.id} value={it.id}>
-                            {it.name}
+                            {itemDisplayName(it, locale)}
                           </option>
                         ))}
                       </select>

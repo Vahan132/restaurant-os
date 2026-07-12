@@ -38,6 +38,7 @@ import {
   SetItemStatusDto,
   UpdateMenuItemDto,
 } from '../../application/dto/item.dto';
+import { pickNameDescriptionI18n } from '../../application/dto/i18n.dto';
 import {
   DishModifierGroupResponse,
   MenuItemDetailResponse,
@@ -123,6 +124,7 @@ export class ItemsController {
       categoryId: dto.categoryId,
       name: dto.name,
       description: dto.description ?? null,
+      ...pickNameDescriptionI18n(dto),
       // Price is NOT settable on create (INV-3 §7); items start at 0 and price is
       // set via PATCH :id/price under menu:item:set_price.
       priceAmount: 0,
@@ -152,6 +154,7 @@ export class ItemsController {
       itemId: id,
       name: dto.name,
       description: dto.description,
+      ...pickNameDescriptionI18n(dto),
       imageUrl: dto.imageUrl,
       imageKey: dto.imageKey,
       categoryId: dto.categoryId,

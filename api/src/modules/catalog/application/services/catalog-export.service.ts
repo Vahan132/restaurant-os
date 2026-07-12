@@ -126,7 +126,10 @@ export class CatalogExportService {
             : [];
           sections.inventoryItems.push({
             key,
-            name: it.name,
+            // NOTE (PLATCAT-ADOPT-1B): adopted items carry name = null (platform-owned,
+            // resolved live). The bundle has no catalog-reference field yet, so a null
+            // name degrades to '' — proper representation is an export/import ticket.
+            name: it.name ?? '',
             sku: it.sku,
             categoryKey: it.categoryId ? (invCategoryKeyById.get(it.categoryId) ?? null) : null,
             kind: it.kind as ItemKind,

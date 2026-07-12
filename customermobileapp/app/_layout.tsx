@@ -1,5 +1,5 @@
 import '../global.css';
-import '@/i18n'; // side-effect: initialize i18next before any screen renders
+import { hydrateStoredLocale } from '@/i18n'; // side-effect: initialize i18next before any screen renders
 
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -22,6 +22,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     void hydrateSession();
+    // LOCALE-2D: apply the persisted guest language over the device-derived seed.
+    void hydrateStoredLocale();
   }, []);
 
   if (status === 'loading') {

@@ -1,11 +1,12 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 
 import type { InventoryItemResponse } from '@/api/generated/model';
 import { Button } from '@/components/ui/button';
 import { inputClass } from '@/components/ui/form';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useRelatedItems } from '@/lib/inventory/use-recipe-data';
 import { BASE_UNIT_ABBR, type BaseUnit } from '@/lib/inventory/units';
 
@@ -36,6 +37,7 @@ export function RecipeLineRow({
   onSwitch: (counterpartId: string) => void;
 }) {
   const t = useTranslations('inventory');
+  const locale = useLocale();
   const { data: related } = useRelatedItems(line.itemId || null);
 
   const it = line.itemId ? itemById.get(line.itemId) : undefined;
@@ -47,12 +49,18 @@ export function RecipeLineRow({
     if (it.kind === 'RAW') {
       const c = related?.processedOutputs?.[0];
       return c
-        ? { itemId: c.id, name: c.name, relation: 'HAS_PROCESSED_COUNTERPART' as const }
+        ? {
+            itemId: c.id,
+            name: itemDisplayName(c, locale),
+            relation: 'HAS_PROCESSED_COUNTERPART' as const,
+          }
         : null;
     }
     const c = related?.rawSources?.[0];
-    return c ? { itemId: c.id, name: c.name, relation: 'HAS_RAW_SOURCE' as const } : null;
-  }, [related, it]);
+    return c
+      ? { itemId: c.id, name: itemDisplayName(c, locale), relation: 'HAS_RAW_SOURCE' as const }
+      : null;
+  }, [related, it, locale]);
 
   return (
     <div className="space-y-1">
@@ -67,7 +75,7 @@ export function RecipeLineRow({
             <option value="">{t('selectInvItem')}</option>
             {items.map((i) => (
               <option key={i.id} value={i.id}>
-                {i.name}
+                {itemDisplayName(i, locale)}
               </option>
             ))}
           </select>

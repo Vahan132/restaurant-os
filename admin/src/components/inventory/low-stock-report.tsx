@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
@@ -10,6 +10,7 @@ import {
   useReportScope,
 } from '@/components/inventory/inventory-reports-shared';
 import { Badge } from '@/components/ui/badge';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useCategoriesList, useItemsForSelect } from '@/lib/inventory/use-inventory-data';
 import { useLocations } from '@/lib/inventory/use-locations-data';
 import { useLowStockReport } from '@/lib/inventory/use-inventory-reports';
@@ -17,6 +18,7 @@ import { BASE_UNIT_ABBR, formatNumber, type BaseUnit } from '@/lib/inventory/uni
 
 export function LowStockReport() {
   const t = useTranslations('inventory');
+  const locale = useLocale();
   const { isOwner, activeBranchId, branchName } = useReportScope();
 
   const [branchId, setBranchId] = useState('');
@@ -80,7 +82,7 @@ export function LowStockReport() {
           <option value="">{t('repAllItems')}</option>
           {items.map((i) => (
             <option key={i.id} value={i.id}>
-              {i.name}
+              {itemDisplayName(i, locale)}
             </option>
           ))}
         </FilterSelect>
@@ -117,7 +119,7 @@ export function LowStockReport() {
                 return (
                   <tr key={`${r.itemId}-${r.locationId}`} className="border-b border-gray-100">
                     <td className="px-4 py-2 font-medium text-gray-800">
-                      {r.itemName}
+                      {itemDisplayName(r, locale)}
                       {r.quantity < 0 && (
                         <span className="ml-2">
                           <Badge tone="red">{t('repNegative')}</Badge>

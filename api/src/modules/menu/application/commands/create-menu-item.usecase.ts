@@ -26,6 +26,13 @@ export interface CreateMenuItemInput {
   categoryId: string;
   name: string;
   description?: string | null;
+  /** LOCALE-2A: optional hy/ru/en translations of name + description. */
+  nameHy?: string | null;
+  nameRu?: string | null;
+  nameEn?: string | null;
+  descriptionHy?: string | null;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
   priceAmount: number;
   imageUrl?: string | null;
   /** MEDIA-1: an uploaded object key (finalize). When present, overrides imageUrl. */
@@ -73,6 +80,12 @@ export class CreateMenuItemUseCase implements UseCase<CreateMenuItemInput, MenuI
       categoryId: input.categoryId,
       name: input.name,
       description: input.description ?? null,
+      nameHy: input.nameHy,
+      nameRu: input.nameRu,
+      nameEn: input.nameEn,
+      descriptionHy: input.descriptionHy,
+      descriptionRu: input.descriptionRu,
+      descriptionEn: input.descriptionEn,
       priceAmount: input.priceAmount, // aggregate rejects negatives
       imageUrl: image.imageUrl,
       imageKey: image.imageKey,

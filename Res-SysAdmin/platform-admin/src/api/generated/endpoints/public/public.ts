@@ -26,7 +26,11 @@ import type {
 
 import type {
   CreateOrderRequestDto,
+  CreatedQrOrderResponse,
   EmailAvailableResponse,
+  OpenQrTableSessionDto,
+  OpenTableSessionResponse,
+  OrderReceiptResponse,
   PublicAccountControllerEmailAvailableParams,
   PublicAccountControllerSubdomainParams,
   PublicBranchResponse,
@@ -39,13 +43,456 @@ import type {
   PublicRestaurantResponse,
   PublicStorefrontControllerTableParams,
   PublicTableResponse,
+  PublicTableSessionViewResponse,
+  PublicTableSessionsControllerViewParams,
+  QrCartDto,
   SignupDto,
   SignupResponse,
-  SubdomainAvailableResponse
+  SubdomainAvailableResponse,
+  ValidatedCartResponse
 } from '../../model';
 
 import { customInstance } from '../../../../lib/api-client';
 import type { ErrorType , BodyType } from '../../../../lib/api-client';
+
+
+
+
+/**
+ * @summary Open or join the table session for the scanned table (QR-web).
+ */
+export const publicTableSessionsControllerOpen = (
+    openQrTableSessionDto: BodyType<OpenQrTableSessionDto>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<OpenTableSessionResponse>(
+      {url: `/public/table-sessions/open`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: openQrTableSessionDto, signal
+    },
+      );
+    }
+  
+
+
+export const getPublicTableSessionsControllerOpenMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicTableSessionsControllerOpen>>, TError,{data: BodyType<OpenQrTableSessionDto>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof publicTableSessionsControllerOpen>>, TError,{data: BodyType<OpenQrTableSessionDto>}, TContext> => {
+
+const mutationKey = ['publicTableSessionsControllerOpen'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publicTableSessionsControllerOpen>>, {data: BodyType<OpenQrTableSessionDto>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  publicTableSessionsControllerOpen(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublicTableSessionsControllerOpenMutationResult = NonNullable<Awaited<ReturnType<typeof publicTableSessionsControllerOpen>>>
+    export type PublicTableSessionsControllerOpenMutationBody = BodyType<OpenQrTableSessionDto>
+    export type PublicTableSessionsControllerOpenMutationError = ErrorType<void>
+
+    /**
+ * @summary Open or join the table session for the scanned table (QR-web).
+ */
+export const usePublicTableSessionsControllerOpen = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicTableSessionsControllerOpen>>, TError,{data: BodyType<OpenQrTableSessionDto>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof publicTableSessionsControllerOpen>>,
+        TError,
+        {data: BodyType<OpenQrTableSessionDto>},
+        TContext
+      > => {
+
+      const mutationOptions = getPublicTableSessionsControllerOpenMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary View the active session + attached order statuses for a scanned table.
+ */
+export const publicTableSessionsControllerView = (
+    params: PublicTableSessionsControllerViewParams,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<PublicTableSessionViewResponse>(
+      {url: `/public/table-sessions/view`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+  
+
+
+
+export const getPublicTableSessionsControllerViewQueryKey = (params?: PublicTableSessionsControllerViewParams,) => {
+    return [
+    `/public/table-sessions/view`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+    
+export const getPublicTableSessionsControllerViewQueryOptions = <TData = Awaited<ReturnType<typeof publicTableSessionsControllerView>>, TError = ErrorType<void>>(params: PublicTableSessionsControllerViewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTableSessionsControllerView>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPublicTableSessionsControllerViewQueryKey(params);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicTableSessionsControllerView>>> = ({ signal }) => publicTableSessionsControllerView(params, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicTableSessionsControllerView>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type PublicTableSessionsControllerViewQueryResult = NonNullable<Awaited<ReturnType<typeof publicTableSessionsControllerView>>>
+export type PublicTableSessionsControllerViewQueryError = ErrorType<void>
+
+
+export function usePublicTableSessionsControllerView<TData = Awaited<ReturnType<typeof publicTableSessionsControllerView>>, TError = ErrorType<void>>(
+ params: PublicTableSessionsControllerViewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTableSessionsControllerView>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicTableSessionsControllerView>>,
+          TError,
+          Awaited<ReturnType<typeof publicTableSessionsControllerView>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function usePublicTableSessionsControllerView<TData = Awaited<ReturnType<typeof publicTableSessionsControllerView>>, TError = ErrorType<void>>(
+ params: PublicTableSessionsControllerViewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTableSessionsControllerView>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicTableSessionsControllerView>>,
+          TError,
+          Awaited<ReturnType<typeof publicTableSessionsControllerView>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function usePublicTableSessionsControllerView<TData = Awaited<ReturnType<typeof publicTableSessionsControllerView>>, TError = ErrorType<void>>(
+ params: PublicTableSessionsControllerViewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTableSessionsControllerView>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary View the active session + attached order statuses for a scanned table.
+ */
+
+export function usePublicTableSessionsControllerView<TData = Awaited<ReturnType<typeof publicTableSessionsControllerView>>, TError = ErrorType<void>>(
+ params: PublicTableSessionsControllerViewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicTableSessionsControllerView>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getPublicTableSessionsControllerViewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+/**
+ * @summary Recompute cart pricing server-side (QR-web).
+ */
+export const publicQrOrdersControllerValidate = (
+    qrCartDto: BodyType<QrCartDto>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<ValidatedCartResponse>(
+      {url: `/public/qr/orders/validate-cart`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: qrCartDto, signal
+    },
+      );
+    }
+  
+
+
+export const getPublicQrOrdersControllerValidateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicQrOrdersControllerValidate>>, TError,{data: BodyType<QrCartDto>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof publicQrOrdersControllerValidate>>, TError,{data: BodyType<QrCartDto>}, TContext> => {
+
+const mutationKey = ['publicQrOrdersControllerValidate'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publicQrOrdersControllerValidate>>, {data: BodyType<QrCartDto>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  publicQrOrdersControllerValidate(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublicQrOrdersControllerValidateMutationResult = NonNullable<Awaited<ReturnType<typeof publicQrOrdersControllerValidate>>>
+    export type PublicQrOrdersControllerValidateMutationBody = BodyType<QrCartDto>
+    export type PublicQrOrdersControllerValidateMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Recompute cart pricing server-side (QR-web).
+ */
+export const usePublicQrOrdersControllerValidate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicQrOrdersControllerValidate>>, TError,{data: BodyType<QrCartDto>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof publicQrOrdersControllerValidate>>,
+        TError,
+        {data: BodyType<QrCartDto>},
+        TContext
+      > => {
+
+      const mutationOptions = getPublicQrOrdersControllerValidateMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Create a prepayment order from the validated cart (QR-web).
+ */
+export const publicQrOrdersControllerCreate = (
+    qrCartDto: BodyType<QrCartDto>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<CreatedQrOrderResponse>(
+      {url: `/public/qr/orders`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: qrCartDto, signal
+    },
+      );
+    }
+  
+
+
+export const getPublicQrOrdersControllerCreateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicQrOrdersControllerCreate>>, TError,{data: BodyType<QrCartDto>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof publicQrOrdersControllerCreate>>, TError,{data: BodyType<QrCartDto>}, TContext> => {
+
+const mutationKey = ['publicQrOrdersControllerCreate'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publicQrOrdersControllerCreate>>, {data: BodyType<QrCartDto>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  publicQrOrdersControllerCreate(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublicQrOrdersControllerCreateMutationResult = NonNullable<Awaited<ReturnType<typeof publicQrOrdersControllerCreate>>>
+    export type PublicQrOrdersControllerCreateMutationBody = BodyType<QrCartDto>
+    export type PublicQrOrdersControllerCreateMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a prepayment order from the validated cart (QR-web).
+ */
+export const usePublicQrOrdersControllerCreate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicQrOrdersControllerCreate>>, TError,{data: BodyType<QrCartDto>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof publicQrOrdersControllerCreate>>,
+        TError,
+        {data: BodyType<QrCartDto>},
+        TContext
+      > => {
+
+      const mutationOptions = getPublicQrOrdersControllerCreateMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Pay, fiscalise and dispatch the order (idempotent).
+ */
+export const publicQrOrdersControllerConfirm = (
+    orderId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<OrderReceiptResponse>(
+      {url: `/public/qr/orders/${orderId}/confirm-payment`, method: 'POST', signal
+    },
+      );
+    }
+  
+
+
+export const getPublicQrOrdersControllerConfirmMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicQrOrdersControllerConfirm>>, TError,{orderId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof publicQrOrdersControllerConfirm>>, TError,{orderId: string}, TContext> => {
+
+const mutationKey = ['publicQrOrdersControllerConfirm'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publicQrOrdersControllerConfirm>>, {orderId: string}> = (props) => {
+          const {orderId} = props ?? {};
+
+          return  publicQrOrdersControllerConfirm(orderId,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublicQrOrdersControllerConfirmMutationResult = NonNullable<Awaited<ReturnType<typeof publicQrOrdersControllerConfirm>>>
+    
+    export type PublicQrOrdersControllerConfirmMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Pay, fiscalise and dispatch the order (idempotent).
+ */
+export const usePublicQrOrdersControllerConfirm = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publicQrOrdersControllerConfirm>>, TError,{orderId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof publicQrOrdersControllerConfirm>>,
+        TError,
+        {orderId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getPublicQrOrdersControllerConfirmMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Fetch the fiscal receipt (incl. QR) for customer display.
+ */
+export const publicQrOrdersControllerReceipt = (
+    orderId: string,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<OrderReceiptResponse>(
+      {url: `/public/qr/orders/${orderId}/receipt`, method: 'GET', signal
+    },
+      );
+    }
+  
+
+
+
+export const getPublicQrOrdersControllerReceiptQueryKey = (orderId?: string,) => {
+    return [
+    `/public/qr/orders/${orderId}/receipt`
+    ] as const;
+    }
+
+    
+export const getPublicQrOrdersControllerReceiptQueryOptions = <TData = Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>, TError = ErrorType<unknown>>(orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPublicQrOrdersControllerReceiptQueryKey(orderId);
+
+  
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>> = ({ signal }) => publicQrOrdersControllerReceipt(orderId, signal);
+
+      
+
+      
+
+   return  { queryKey, queryFn, enabled: !!(orderId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>, TError, TData> & { queryKey: DataTag<QueryKey, TData> }
+}
+
+export type PublicQrOrdersControllerReceiptQueryResult = NonNullable<Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>>
+export type PublicQrOrdersControllerReceiptQueryError = ErrorType<unknown>
+
+
+export function usePublicQrOrdersControllerReceipt<TData = Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>, TError = ErrorType<unknown>>(
+ orderId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>,
+          TError,
+          Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function usePublicQrOrdersControllerReceipt<TData = Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>, TError = ErrorType<unknown>>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>,
+          TError,
+          Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+export function usePublicQrOrdersControllerReceipt<TData = Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>, TError = ErrorType<unknown>>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
+/**
+ * @summary Fetch the fiscal receipt (incl. QR) for customer display.
+ */
+
+export function usePublicQrOrdersControllerReceipt<TData = Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>, TError = ErrorType<unknown>>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof publicQrOrdersControllerReceipt>>, TError, TData>>, }
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+
+  const queryOptions = getPublicQrOrdersControllerReceiptQueryOptions(orderId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
 
 
 

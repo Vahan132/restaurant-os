@@ -11,6 +11,9 @@ import * as SecureStore from 'expo-secure-store';
  */
 const KEYS = {
   refreshToken: 'consumer.refreshToken',
+  // LOCALE-2D: guest's chosen UI language, persisted across launches. Not sensitive,
+  // but reuses this existing util (no AsyncStorage dep) to keep one storage path.
+  locale: 'consumer.locale',
 } as const;
 
 export type SecureKey = (typeof KEYS)[keyof typeof KEYS];

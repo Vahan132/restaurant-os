@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
 import type { TransferResponse } from '@/api/generated/model';
@@ -9,6 +9,7 @@ import { Pagination, formatDateTime } from '@/components/inventory/shared';
 import { TransferFormModal } from '@/components/inventory/transfer-form-modal';
 import { TransferDetailDrawer } from '@/components/inventory/transfer-detail-drawer';
 import { usePermission } from '@/lib/auth/use-permission';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useItemsForSelect } from '@/lib/inventory/use-inventory-data';
 import { useLocations, usePaginatedTransfers } from '@/lib/inventory/use-locations-data';
 import { formatNumber } from '@/lib/inventory/units';
@@ -19,6 +20,7 @@ const PAGE_SIZE = 20;
 
 export function TransfersManager() {
   const t = useTranslations('inventory');
+  const locale = useLocale();
   const canCreate = usePermission(PERMISSIONS.INVENTORY_TRANSFER_CREATE);
 
   const { data: restaurant } = useRestaurant();
@@ -36,9 +38,9 @@ export function TransfersManager() {
   const hasNext = pagination?.hasNext ?? transfers.length === PAGE_SIZE;
 
   const itemName = useMemo(() => {
-    const map = new Map(items.map((i) => [i.id, i.name]));
+    const map = new Map(items.map((i) => [i.id, itemDisplayName(i, locale)]));
     return (id: string) => map.get(id) ?? id;
-  }, [items]);
+  }, [items, locale]);
   const locationName = useMemo(() => {
     const map = new Map(locations.map((l) => [l.id, l.name]));
     return (id: string) => map.get(id) ?? id;

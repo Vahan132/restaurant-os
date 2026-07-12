@@ -22,10 +22,42 @@ export const InventorySkuAlreadyExists = () =>
     message: 'An inventory item with this SKU already exists.',
   });
 
+/**
+ * PLATCAT-ADOPT-1B: an adopted item's name is owned by the platform catalog and is
+ * not tenant-editable (it resolves the catalog name live). Raised when an update
+ * tries to set/clear `name` on an item that has a catalogItemId.
+ */
+export const InventoryItemNamePlatformOwned = () =>
+  new ConflictException({
+    code: 'INVENTORY_ITEM_NAME_PLATFORM_OWNED',
+    message:
+      'This item was adopted from the platform catalog; its name is owned by the ' +
+      'catalog and cannot be edited here.',
+  });
+
 export const InventoryCategoryNotFound = () =>
   new NotFoundException({
     code: 'INVENTORY_CATEGORY_NOT_FOUND',
     message: 'Inventory category not found.',
+  });
+
+/** CATALOG-1 adopt: the referenced platform CatalogItem does not exist. */
+export const CatalogItemNotFound = () =>
+  new NotFoundException({ code: 'CATALOG_ITEM_NOT_FOUND', message: 'Catalog item not found.' });
+
+/** CATALOG-1 adopt: the CatalogItem exists but is archived (not adoptable). */
+export const CatalogItemNotAdoptable = () =>
+  new BadRequestException({
+    code: 'CATALOG_ITEM_NOT_ADOPTABLE',
+    message: 'This catalog item is archived and cannot be adopted.',
+  });
+
+/** CATALOG-1 adopt: this branch already adopted this CatalogItem. */
+export const CatalogItemAlreadyAdopted = (existingItemId: string) =>
+  new ConflictException({
+    code: 'CATALOG_ITEM_ALREADY_ADOPTED',
+    message: 'This catalog item has already been adopted in this branch.',
+    details: { existingItemId },
   });
 
 export const SupplierNotFound = () =>

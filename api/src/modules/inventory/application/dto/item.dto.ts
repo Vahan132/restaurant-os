@@ -74,6 +74,36 @@ export class CreateInventoryItemDto {
   lowStockThresholdBase?: number;
 }
 
+/** CATALOG-1: adopt a platform catalog item into this branch's inventory. */
+export class AdoptCatalogItemDto {
+  @ApiProperty({ description: 'The platform CatalogItem id to adopt.' })
+  @IsString()
+  @MinLength(1)
+  catalogItemId!: string;
+
+  @ApiProperty({ enum: InventoryBaseUnit, description: 'Base unit (catalog has none).' })
+  @IsEnum(InventoryBaseUnit)
+  baseUnit!: InventoryBaseUnit;
+
+  @ApiPropertyOptional({ type: [AlternateUnitDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => AlternateUnitDto)
+  alternateUnits?: AlternateUnitDto[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  sku?: string;
+}
+
 export class UpdateInventoryItemDto {
   @ApiPropertyOptional()
   @IsOptional()

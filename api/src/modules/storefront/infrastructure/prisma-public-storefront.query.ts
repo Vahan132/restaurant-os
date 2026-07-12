@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Locale, resolveI18n } from '../../../shared/i18n/locale';
 import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.service';
 import {
   PublicBranchInfo,
@@ -62,7 +63,25 @@ export class PrismaPublicStorefrontQuery implements PublicStorefrontQuery {
     return restaurant?.currency ?? 'USD';
   }
 
-  async menuTree(restaurantId: string, branchId: string): Promise<PublicMenuCategory[]> {
+  async defaultLanguage(restaurantId: string): Promise<string> {
+    // LOCALE-1: the restaurant's authored primary language — the fallback for the
+    // guest's effective locale when no valid X-Locale is sent. Defaults to 'en'
+    // (matching Restaurant.defaultLanguage @default("en")).
+    const restaurant = await this.prisma.restaurant.findFirst({
+      where: { id: restaurantId, deletedAt: null },
+      select: { defaultLanguage: true },
+    });
+    return restaurant?.defaultLanguage ?? 'en';
+  }
+
+  async menuTree(
+    restaurantId: string,
+    branchId: string,
+    // LOCALE-2B: the guest's effective locale. Each localizable field resolves as
+    // `translation(locale) ?? primary` via resolveI18n; the response shape stays a
+    // single resolved string (guests get one language, never the {hy,ru,en} object).
+    locale: Locale,
+  ): Promise<PublicMenuCategory[]> {
     // BR-9: the menu is branch-owned (BR-2). The branch is resolved upstream from
     // the URL slug or the table QR token — never defaulted here.
     const categories = await this.prisma.menuCategory.findMany({
@@ -115,7 +134,12 @@ export class PrismaPublicStorefrontQuery implements PublicStorefrontQuery {
     >();
     for (const o of options) {
       const arr = optionsByGroup.get(o.modifierGroupId) ?? [];
-      arr.push({ id: o.id, name: o.name, priceDeltaAmount: o.priceDeltaAmount });
+      arr.push({
+        id: o.id,
+        // LOCALE-2B: resolved option name for the guest locale.
+        name: resolveI18n(locale, { hy: o.nameHy, ru: o.nameRu, en: o.nameEn }, o.name),
+        priceDeltaAmount: o.priceDeltaAmount,
+      });
       optionsByGroup.set(o.modifierGroupId, arr);
     }
     const groupsByItem = new Map<string, PublicModifierGroup[]>();
@@ -128,7 +152,8 @@ export class PrismaPublicStorefrontQuery implements PublicStorefrontQuery {
       const arr = groupsByItem.get(link.menuItemId) ?? [];
       arr.push({
         id: g.id,
-        name: g.name,
+        // LOCALE-2B: resolved group name for the guest locale.
+        name: resolveI18n(locale, { hy: g.nameHy, ru: g.nameRu, en: g.nameEn }, g.name),
         selectionType: eff.selectionType,
         required: eff.required,
         minSelect: eff.minSelect,
@@ -145,14 +170,25 @@ export class PrismaPublicStorefrontQuery implements PublicStorefrontQuery {
       itemsByCategory.set(it.categoryId, arr);
     }
 
+    // LOCALE-2B: resolve category + item name/description for the guest locale
+    // (translation(locale) ?? primary). A null primary description with no
+    // translation stays null.
     return categories.map((c) => ({
       id: c.id,
-      name: c.name,
-      description: c.description,
+      name: resolveI18n(locale, { hy: c.nameHy, ru: c.nameRu, en: c.nameEn }, c.name),
+      description: resolveI18n(
+        locale,
+        { hy: c.descriptionHy, ru: c.descriptionRu, en: c.descriptionEn },
+        c.description,
+      ),
       items: (itemsByCategory.get(c.id) ?? []).map((it) => ({
         id: it.id,
-        name: it.name,
-        description: it.description,
+        name: resolveI18n(locale, { hy: it.nameHy, ru: it.nameRu, en: it.nameEn }, it.name),
+        description: resolveI18n(
+          locale,
+          { hy: it.descriptionHy, ru: it.descriptionRu, en: it.descriptionEn },
+          it.description,
+        ),
         priceAmount: it.priceAmount,
         imageUrl: it.imageUrl,
         available: it.availability === 'AVAILABLE',

@@ -814,7 +814,9 @@ export class CatalogImportService {
       where: { restaurantId, branchId, deletedAt: null },
     });
     for (const it of rows) {
-      const key = it.sku && it.sku.trim() ? it.sku : slugLocal(it.name);
+      // PLATCAT-ADOPT-1B: name is nullable (adopted items resolve it live); coerce for
+      // the local seed key. Adopted no-sku items degrade to '' (see catalog-key.util NOTE).
+      const key = it.sku && it.sku.trim() ? it.sku : slugLocal(it.name ?? '');
       map.set(key, it.id);
     }
   }

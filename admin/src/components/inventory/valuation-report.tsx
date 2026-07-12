@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import {
   FilterSelect,
   useReportScope,
 } from '@/components/inventory/inventory-reports-shared';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useCategoriesList, useItemsForSelect } from '@/lib/inventory/use-inventory-data';
 import { useLocations } from '@/lib/inventory/use-locations-data';
 import { useValuationReport } from '@/lib/inventory/use-inventory-reports';
@@ -18,6 +19,7 @@ import { useRestaurant } from '@/lib/restaurant/use-restaurant';
 
 export function ValuationReport() {
   const t = useTranslations('inventory');
+  const locale = useLocale();
   const { data: restaurant } = useRestaurant();
   const currency = restaurant?.currency ?? 'USD';
   const { isOwner, activeBranchId, branchName } = useReportScope();
@@ -79,7 +81,7 @@ export function ValuationReport() {
           <option value="">{t('repAllItems')}</option>
           {items.map((i) => (
             <option key={i.id} value={i.id}>
-              {i.name}
+              {itemDisplayName(i, locale)}
             </option>
           ))}
         </FilterSelect>

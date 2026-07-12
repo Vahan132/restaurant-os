@@ -14,8 +14,16 @@ import {
 } from '@/api/generated/model';
 import { Button } from '@/components/ui/button';
 import { Field, inputClass } from '@/components/ui/form';
+import {
+  TranslationFields,
+  nameTranslationFields,
+  primaryLocaleName,
+  toI18nDraft,
+  type I18nDraft,
+} from '@/components/menu/translation-fields';
 import { Modal } from '@/components/ui/modal';
 import { getErrorMessage } from '@/lib/api-error';
+import { useRestaurant } from '@/lib/restaurant/use-restaurant';
 import { toast } from '@/stores/toast';
 
 type SelectionType = CreateModifierGroupDtoSelectionType;
@@ -39,9 +47,12 @@ export function ModifierGroupFormModal({
 }) {
   const t = useTranslations('menu');
   const tc = useTranslations('common');
+  const { data: restaurant } = useRestaurant();
+  const primaryLocale = restaurant?.defaultLanguage;
   const isEdit = !!group;
 
   const [name, setName] = useState(group?.name ?? '');
+  const [nameI18n, setNameI18n] = useState<I18nDraft>(toI18nDraft(group?.nameI18n));
   const [selectionType, setSelectionType] = useState<SelectionType>(
     (group?.selectionType as SelectionType) ?? CreateModifierGroupDtoSelectionType.SINGLE,
   );
@@ -96,6 +107,7 @@ export function ModifierGroupFormModal({
       required,
       minSelect: isMultiple ? min : undefined,
       maxSelect: isMultiple ? max : undefined,
+      ...nameTranslationFields(primaryLocale, nameI18n),
     };
 
     try {
@@ -128,7 +140,11 @@ export function ModifierGroupFormModal({
       }
     >
       <div className="space-y-3">
-        <Field label={t('groupName')} required error={error}>
+        <Field
+          label={`${t('groupName')} (${primaryLocaleName(primaryLocale)})`}
+          required
+          error={error}
+        >
           <input
             className={inputClass}
             value={name}
@@ -136,6 +152,12 @@ export function ModifierGroupFormModal({
             autoFocus
           />
         </Field>
+        <TranslationFields
+          primaryLocale={primaryLocale}
+          label={t('groupName')}
+          value={nameI18n}
+          onChange={setNameI18n}
+        />
         <Field label={t('selectionType')}>
           <select
             className={inputClass}

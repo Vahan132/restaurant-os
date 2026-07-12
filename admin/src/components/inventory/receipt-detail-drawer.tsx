@@ -1,9 +1,10 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { Drawer } from '@/components/ui/drawer';
 import { formatDate } from '@/components/inventory/shared';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useItemsForSelect, useReceipt, useSuppliersList } from '@/lib/inventory/use-inventory-data';
 import { formatNumber } from '@/lib/inventory/units';
 import { formatMoney } from '@/lib/money';
@@ -17,12 +18,16 @@ export function ReceiptDetailDrawer({
   onClose: () => void;
 }) {
   const t = useTranslations('inventory');
+  const locale = useLocale();
   const { data: restaurant } = useRestaurant();
   const currency = restaurant?.currency ?? 'USD';
   const { data: receipt, isLoading } = useReceipt(receiptId);
   const { items } = useItemsForSelect();
   const { suppliers } = useSuppliersList();
-  const itemName = (id: string) => items.find((i) => i.id === id)?.name ?? id;
+  const itemName = (id: string) => {
+    const it = items.find((i) => i.id === id);
+    return it ? itemDisplayName(it, locale) : id;
+  };
   const supplierName = (id: string | null) =>
     id ? (suppliers.find((s) => s.id === id)?.name ?? '—') : '—';
   const total = receipt ? receipt.lines.reduce((sum, l) => sum + l.lineTotalCost_amount, 0) : 0;

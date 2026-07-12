@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
 // Import the runtime enum from its generated source file (not the barrel) so
@@ -17,6 +17,7 @@ import {
   FilterSelect,
   useReportScope,
 } from '@/components/inventory/inventory-reports-shared';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useItemsForSelect } from '@/lib/inventory/use-inventory-data';
 import { useLocations } from '@/lib/inventory/use-locations-data';
 import { useMovementsReport } from '@/lib/inventory/use-inventory-reports';
@@ -34,6 +35,7 @@ function isOut(type: string): boolean {
 
 export function MovementsReport() {
   const t = useTranslations('inventory');
+  const locale = useLocale();
   const { data: restaurant } = useRestaurant();
   const currency = restaurant?.currency ?? 'USD';
   const { isOwner, activeBranchId } = useReportScope();
@@ -48,7 +50,10 @@ export function MovementsReport() {
 
   const { items } = useItemsForSelect();
   const { locations } = useLocations();
-  const itemName = (id: string) => items.find((i) => i.id === id)?.name ?? id;
+  const itemName = (id: string) => {
+    const it = items.find((i) => i.id === id);
+    return it ? itemDisplayName(it, locale) : id;
+  };
   const itemUnit = (id: string) => {
     const u = items.find((i) => i.id === id)?.baseUnit;
     return u ? (BASE_UNIT_ABBR[u as BaseUnit] ?? u) : '';
@@ -113,7 +118,7 @@ export function MovementsReport() {
           <option value="">{t('repAllItems')}</option>
           {items.map((i) => (
             <option key={i.id} value={i.id}>
-              {i.name}
+              {itemDisplayName(i, locale)}
             </option>
           ))}
         </FilterSelect>

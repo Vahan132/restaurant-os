@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
 import { useInventoryTransfersControllerCreate } from '@/api/generated/inventory-transfers/inventory-transfers';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Field, inputClass } from '@/components/ui/form';
 import { Modal } from '@/components/ui/modal';
 import { getErrorMessage } from '@/lib/api-error';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useItemsForSelect, useInventoryInvalidation } from '@/lib/inventory/use-inventory-data';
 import {
   useBranchOnHand,
@@ -20,6 +21,7 @@ import { toast } from '@/stores/toast';
 export function TransferFormModal({ onClose }: { onClose: () => void }) {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const { items } = useItemsForSelect();
   const { locations, byItemLocation } = useBranchOnHand();
   const invalidateInventory = useInventoryInvalidation();
@@ -135,7 +137,7 @@ export function TransferFormModal({ onClose }: { onClose: () => void }) {
             <option value="">{t('selectItem')}</option>
             {items.map((i) => (
               <option key={i.id} value={i.id}>
-                {i.name}
+                {itemDisplayName(i, locale)}
               </option>
             ))}
           </select>

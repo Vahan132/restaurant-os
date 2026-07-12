@@ -29,6 +29,7 @@ import {
   UpdateModifierGroupDto,
   UpdateModifierOptionDto,
 } from '../../application/dto/modifier.dto';
+import { pickNameI18n } from '../../application/dto/i18n.dto';
 import {
   ModifierGroupResponse,
   ModifierGroupWithOptionsResponse,
@@ -110,6 +111,7 @@ export class ModifierGroupsController {
       restaurantId: tenant.restaurantId,
       branchId,
       name: dto.name,
+      ...pickNameI18n(dto),
       selectionType: dto.selectionType,
       required: dto.required,
       minSelect: dto.minSelect ?? null,
@@ -134,6 +136,7 @@ export class ModifierGroupsController {
       branchId,
       groupId: id,
       name: dto.name,
+      ...pickNameI18n(dto),
       selectionType: dto.selectionType,
       required: dto.required,
       minSelect: dto.minSelect,
@@ -174,6 +177,7 @@ export class ModifierGroupsController {
       branchId,
       groupId,
       name: dto.name,
+      ...pickNameI18n(dto),
       priceDeltaAmount: dto.priceDeltaAmount,
       sortOrder: dto.sortOrder,
       isDefault: dto.isDefault,
@@ -220,6 +224,7 @@ export class ModifierGroupsController {
       branchId,
       optionId,
       name: dto.name,
+      ...pickNameI18n(dto),
       priceDeltaAmount: dto.priceDeltaAmount,
       sortOrder: dto.sortOrder,
       isDefault: dto.isDefault,
