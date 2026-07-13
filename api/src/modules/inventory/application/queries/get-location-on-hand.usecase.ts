@@ -5,6 +5,7 @@ import {
   InventoryLocationRepository,
 } from '../../domain/repositories/inventory-location.repository';
 import { OnHandRow, STOCK_ON_HAND_READER, StockOnHandReader } from '../ports/stock-on-hand.reader';
+import { InventoryItemNameResolver } from '../services/inventory-item-name.resolver';
 import { InventoryLocationNotFound, NoRestaurantInScope } from '../application.errors';
 
 export interface GetLocationOnHandInput {
@@ -19,6 +20,7 @@ export class GetLocationOnHandUseCase implements UseCase<GetLocationOnHandInput,
   constructor(
     @Inject(INVENTORY_LOCATION_REPOSITORY) private readonly locations: InventoryLocationRepository,
     @Inject(STOCK_ON_HAND_READER) private readonly onHand: StockOnHandReader,
+    private readonly names: InventoryItemNameResolver,
   ) {}
 
   async execute(input: GetLocationOnHandInput): Promise<OnHandRow[]> {
@@ -33,6 +35,14 @@ export class GetLocationOnHandUseCase implements UseCase<GetLocationOnHandInput,
     if (!location) {
       throw InventoryLocationNotFound();
     }
-    return this.onHand.byLocation(input.restaurantId, input.branchId, input.locationId);
+    const rows = await this.onHand.byLocation(input.restaurantId, input.branchId, input.locationId);
+    // PLATCAT-ADOPT-1B: resolve the live catalog name for adopted rows (batched, no N+1).
+    const catalogNames = await this.names.resolveMany(
+      rows.map((r) => ({ id: r.itemId, catalogItemId: r.catalogItemId })),
+    );
+    for (const r of rows) {
+      r.catalogName = catalogNames.get(r.itemId) ?? null;
+    }
+    return rows;
   }
 }

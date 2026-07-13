@@ -17,6 +17,10 @@ export interface UpdateModifierGroupInput {
   branchId: string;
   groupId: string;
   name?: string;
+  /** LOCALE-2A: translations — present (incl. null) sets/clears; absent unchanged. */
+  nameHy?: string | null;
+  nameRu?: string | null;
+  nameEn?: string | null;
   selectionType?: ModifierSelectionType;
   required?: boolean;
   minSelect?: number | null;
@@ -45,6 +49,9 @@ export class UpdateModifierGroupUseCase implements UseCase<
     }
     group.update({
       name: input.name,
+      nameHy: input.nameHy,
+      nameRu: input.nameRu,
+      nameEn: input.nameEn,
       selectionType: input.selectionType,
       required: input.required,
       minSelect: input.minSelect,

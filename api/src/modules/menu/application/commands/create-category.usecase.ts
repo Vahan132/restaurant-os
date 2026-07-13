@@ -14,6 +14,13 @@ export interface CreateCategoryInput {
   branchId: string;
   name: string;
   description?: string | null;
+  /** LOCALE-2A: optional hy/ru/en translations of name + description. */
+  nameHy?: string | null;
+  nameRu?: string | null;
+  nameEn?: string | null;
+  descriptionHy?: string | null;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
   displayOrder?: number;
 }
 
@@ -41,6 +48,12 @@ export class CreateCategoryUseCase implements UseCase<CreateCategoryInput, MenuC
       code,
       name: input.name,
       description: input.description ?? null,
+      nameHy: input.nameHy,
+      nameRu: input.nameRu,
+      nameEn: input.nameEn,
+      descriptionHy: input.descriptionHy,
+      descriptionRu: input.descriptionRu,
+      descriptionEn: input.descriptionEn,
       displayOrder: input.displayOrder,
     });
     await this.categories.create(category);

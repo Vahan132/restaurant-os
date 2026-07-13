@@ -14,9 +14,17 @@ import {
 } from '@/api/generated/model';
 import { Button } from '@/components/ui/button';
 import { Field, inputClass } from '@/components/ui/form';
+import {
+  TranslationFields,
+  nameTranslationFields,
+  primaryLocaleName,
+  toI18nDraft,
+  type I18nDraft,
+} from '@/components/menu/translation-fields';
 import { Modal } from '@/components/ui/modal';
 import { getErrorMessage } from '@/lib/api-error';
 import { minorToInput, toMinor } from '@/lib/money';
+import { useRestaurant } from '@/lib/restaurant/use-restaurant';
 import { toast } from '@/stores/toast';
 
 /**
@@ -43,9 +51,12 @@ export function ModifierOptionFormModal({
 }) {
   const t = useTranslations('menu');
   const tc = useTranslations('common');
+  const { data: restaurant } = useRestaurant();
+  const primaryLocale = restaurant?.defaultLanguage;
   const isEdit = !!option;
 
   const [name, setName] = useState(option?.name ?? '');
+  const [nameI18n, setNameI18n] = useState<I18nDraft>(toI18nDraft(option?.nameI18n));
   const [price, setPrice] = useState(
     option ? minorToInput(option.priceDeltaAmount, currency) : '0',
   );
@@ -77,6 +88,7 @@ export function ModifierOptionFormModal({
             priceDeltaAmount: priceMinor ?? 0,
             isDefault,
             status,
+            ...nameTranslationFields(primaryLocale, nameI18n),
           },
         });
       } else {
@@ -87,6 +99,7 @@ export function ModifierOptionFormModal({
             priceDeltaAmount: priceMinor ?? 0,
             isDefault,
             sortOrder: nextSortOrder ?? 0,
+            ...nameTranslationFields(primaryLocale, nameI18n),
           },
         });
       }
@@ -115,7 +128,11 @@ export function ModifierOptionFormModal({
       }
     >
       <div className="space-y-3">
-        <Field label={t('optionName')} required error={errors.name}>
+        <Field
+          label={`${t('optionName')} (${primaryLocaleName(primaryLocale)})`}
+          required
+          error={errors.name}
+        >
           <input
             className={inputClass}
             value={name}
@@ -123,6 +140,12 @@ export function ModifierOptionFormModal({
             autoFocus
           />
         </Field>
+        <TranslationFields
+          primaryLocale={primaryLocale}
+          label={t('optionName')}
+          value={nameI18n}
+          onChange={setNameI18n}
+        />
         <Field label={`${t('priceDelta')} (${currency})`} error={errors.price}>
           <input
             inputMode="decimal"

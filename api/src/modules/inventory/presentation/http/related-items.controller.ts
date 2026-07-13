@@ -8,6 +8,7 @@ import { TenantContext } from '../../../../shared/tenancy/tenant-context';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { RelatedItemsResponse } from '../../application/dto/process-responses';
 import { GetRelatedItemsUseCase } from '../../application/queries/get-related-items.usecase';
+import { InventoryItemNameResolver } from '../../application/services/inventory-item-name.resolver';
 
 const READ = PERMISSIONS.INVENTORY_READ;
 
@@ -16,7 +17,10 @@ const READ = PERMISSIONS.INVENTORY_READ;
 @BranchScoped()
 @Controller('inventory/items')
 export class RelatedItemsController {
-  constructor(private readonly getRelated: GetRelatedItemsUseCase) {}
+  constructor(
+    private readonly getRelated: GetRelatedItemsUseCase,
+    private readonly names: InventoryItemNameResolver,
+  ) {}
 
   @Get(':id/related')
   @RequirePermissions(READ)
@@ -34,6 +38,13 @@ export class RelatedItemsController {
       branchId,
       itemId: id,
     });
-    return RelatedItemsResponse.from(related);
+    // PLATCAT-ADOPT-1B: resolve live catalog names for adopted counterparts (batched).
+    const catalogNames = await this.names.resolveMany(
+      [...related.rawSources, ...related.processedOutputs].map((i) => ({
+        id: i.id,
+        catalogItemId: i.catalogItemId,
+      })),
+    );
+    return RelatedItemsResponse.from(related, catalogNames);
   }
 }

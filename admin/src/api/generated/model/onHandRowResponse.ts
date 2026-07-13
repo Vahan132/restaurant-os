@@ -5,10 +5,17 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { CatalogNameView } from './catalogNameView';
 
 export interface OnHandRowResponse {
   itemId: string;
-  itemName: string;
+  /**
+     * Local name; null when adopted (use catalogName).
+     * @nullable
+     */
+  itemName: string | null;
+  /** Live catalog name {hy,ru,en} when adopted. */
+  catalogName: CatalogNameView | null;
   baseUnit: string;
   locationId: string;
   locationName: string;

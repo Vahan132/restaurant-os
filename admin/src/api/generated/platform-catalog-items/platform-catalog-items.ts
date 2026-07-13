@@ -27,6 +27,8 @@ import type {
 import type {
   CatalogItemResponse,
   CreateCatalogItemDto,
+  ImportCatalogItemsRequestDto,
+  ImportCatalogItemsResponse,
   PlatformCatalogItemsControllerListParams,
   UpdateCatalogItemDto
 } from '../model';
@@ -349,6 +351,69 @@ export const usePlatformCatalogItemsControllerUpdate = <TError = unknown,
         TContext
       > => {
       return useMutation(getPlatformCatalogItemsControllerUpdateMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Bulk import catalog items from CSV (dry-run preview or transactional apply).
+ */
+export const platformCatalogItemsControllerImport = (
+    importCatalogItemsRequestDto: ImportCatalogItemsRequestDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<ImportCatalogItemsResponse>(
+      {url: `/platform/catalog-items/import`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: importCatalogItemsRequestDto, signal
+    },
+      options);
+    }
+
+
+
+export const getPlatformCatalogItemsControllerImportMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformCatalogItemsControllerImport>>, TError,{data: ImportCatalogItemsRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformCatalogItemsControllerImport>>, TError,{data: ImportCatalogItemsRequestDto}, TContext> => {
+
+const mutationKey = ['platformCatalogItemsControllerImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformCatalogItemsControllerImport>>, {data: ImportCatalogItemsRequestDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  platformCatalogItemsControllerImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformCatalogItemsControllerImportMutationResult = NonNullable<Awaited<ReturnType<typeof platformCatalogItemsControllerImport>>>
+    export type PlatformCatalogItemsControllerImportMutationBody = ImportCatalogItemsRequestDto
+    export type PlatformCatalogItemsControllerImportMutationError = unknown
+
+    /**
+ * @summary Bulk import catalog items from CSV (dry-run preview or transactional apply).
+ */
+export const usePlatformCatalogItemsControllerImport = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformCatalogItemsControllerImport>>, TError,{data: ImportCatalogItemsRequestDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformCatalogItemsControllerImport>>,
+        TError,
+        {data: ImportCatalogItemsRequestDto},
+        TContext
+      > => {
+      return useMutation(getPlatformCatalogItemsControllerImportMutationOptions(options), queryClient);
     }
     /**
  * @summary Archive (soft-delete) a catalog item.

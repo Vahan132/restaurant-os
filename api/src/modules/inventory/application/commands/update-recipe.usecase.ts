@@ -8,6 +8,7 @@ import {
   RawRecipeLine,
   RecipeDefinitionAssembler,
 } from '../services/recipe-definition.assembler';
+import { Locale } from '../services/dish-projection.resolver';
 
 export interface UpdateRecipeInput {
   restaurantId: string | null;
@@ -16,6 +17,8 @@ export interface UpdateRecipeInput {
   note?: string | null;
   lines?: RawRecipeLine[];
   modifierConsumptions?: RawModifierConsumption[];
+  /** Customer-projection locale (hy/ru/en) for the returned detail; defaults to 'en'. */
+  locale?: Locale;
 }
 
 /** Update a recipe (full replace of lines + modifier consumptions when provided). */
@@ -57,6 +60,6 @@ export class UpdateRecipeUseCase implements UseCase<UpdateRecipeInput, RecipeDet
       modifierConsumptions: rebuilt?.modifierConsumptions,
     });
     await this.recipes.update(recipe);
-    return this.detail.assemble(recipe);
+    return this.detail.assemble(recipe, input.locale ?? 'en');
   }
 }

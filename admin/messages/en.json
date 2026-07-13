@@ -114,6 +114,27 @@
       "updated": "Branch updated",
       "madeDefault": "Default branch updated",
       "disabled": "Branch disabled"
+    },
+    "ordering": {
+      "title": "Ordering",
+      "intro": "Control QR-web ordering and prepayment for this branch.",
+      "lockedByRestaurant": "Enable Customer Ordering in restaurant settings first.",
+      "qrOrdering": "QR-web ordering",
+      "qrOrderingDesc": "Let guests open a tab and order from their phone via the table QR (prepayment only).",
+      "prepayment": "Prepayment",
+      "prepaymentDesc": "Guests pay before the order is sent to the kitchen.",
+      "prepaymentLockedByQr": "Required while QR-web ordering is on.",
+      "payAtEnd": "Pay at end (open tab)",
+      "payAtEndDesc": "Requires the dine-in POS flow — coming soon.",
+      "idleExpiry": "Idle auto-expiry (minutes)",
+      "idleExpiryHint": "Auto-close an idle session after this many minutes (30–480).",
+      "save": "Save ordering",
+      "validation": {
+        "idleRange": "Enter a whole number between 30 and 480."
+      },
+      "toast": {
+        "saved": "Ordering settings saved"
+      }
     }
   },
   "devices": {
@@ -1111,6 +1132,22 @@
     }
   },
   "inventory": {
+    "browseCatalog": "Browse catalog",
+    "browseTitle": "Add from catalog",
+    "browseSearch": "Search catalog…",
+    "browseEmpty": "No matching catalog items.",
+    "browseReviewed": "Allergen-reviewed",
+    "browseAdgCode": "ADG code",
+    "adopt": "Adopt",
+    "inYourInventory": "In your inventory",
+    "adoptTitle": "Adopt from catalog",
+    "adoptInheritedTitle": "Inherited from catalog",
+    "adoptBaseUnitPlaceholder": "Select a base unit…",
+    "adoptSubmit": "Adopt",
+    "adoptSuccess": "Added to your inventory.",
+    "adoptValidBaseUnit": "Select a base unit.",
+    "adoptAlreadyAdopted": "This item is already in your inventory.",
+    "adoptNotAdoptable": "This catalog item is no longer available. The list has been refreshed.",
     "allergensTitle": "Allergens",
     "allergensNone": "No allergens",
     "allergensUnverified": "Some ingredients aren't allergen-reviewed yet — this list may be incomplete.",

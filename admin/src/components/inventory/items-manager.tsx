@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useInventoryItemsControllerRemove } from '@/api/generated/inventory-items/inventory-items';
@@ -12,11 +12,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { inputClass } from '@/components/ui/form';
 import { useConfirm } from '@/components/ui/use-confirm';
+import { CatalogBrowseDrawer } from '@/components/inventory/catalog-browse-drawer';
 import { ConsumptionLocationModal } from '@/components/inventory/consumption-location-modal';
 import { ItemFormModal } from '@/components/inventory/item-form-modal';
 import { KindBadge, Pagination } from '@/components/inventory/shared';
 import { getErrorMessage } from '@/lib/api-error';
 import { usePermission } from '@/lib/auth/use-permission';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import {
   useCategoriesList,
   useInventoryInvalidation,
@@ -31,6 +33,7 @@ const PAGE_SIZE = 20;
 export function ItemsManager() {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const canManage = usePermission(PERMISSIONS.INVENTORY_ITEM_MANAGE);
   const invalidate = useInventoryInvalidation();
   const { ask, dialog } = useConfirm();
@@ -42,6 +45,7 @@ export function ItemsManager() {
   const [page, setPage] = useState(1);
 
   const [formOpen, setFormOpen] = useState(false);
+  const [browseOpen, setBrowseOpen] = useState(false);
   const [editing, setEditing] = useState<InventoryItemResponse | null>(null);
   const [consumptionItem, setConsumptionItem] = useState<InventoryItemResponse | null>(null);
 
@@ -131,7 +135,10 @@ export function ItemsManager() {
           <option value={InventoryItemResponseKind.PROCESSED}>{t('kindProcessed')}</option>
         </select>
         {canManage && (
-          <div className="ml-auto">
+          <div className="ml-auto flex gap-2">
+            <Button variant="secondary" onClick={() => setBrowseOpen(true)}>
+              {t('browseCatalog')}
+            </Button>
             <Button variant="primary" onClick={openCreate}>
               + {t('addItem')}
             </Button>
@@ -167,7 +174,7 @@ export function ItemsManager() {
               {items.map((item) => (
                 <tr key={item.id} className="border-b border-gray-100">
                   <td className="px-4 py-2 font-medium text-gray-800">
-                    {item.name}
+                    {itemDisplayName(item, locale)}
                     {item.sku && <span className="ml-2 text-xs text-gray-400">{item.sku}</span>}
                   </td>
                   <td className="px-4 py-2">
@@ -234,6 +241,9 @@ export function ItemsManager() {
           item={consumptionItem}
           onClose={() => setConsumptionItem(null)}
         />
+      )}
+      {browseOpen && (
+        <CatalogBrowseDrawer categories={categories} onClose={() => setBrowseOpen(false)} />
       )}
       {dialog}
     </div>

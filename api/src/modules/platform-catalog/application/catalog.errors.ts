@@ -23,3 +23,10 @@ export const UnknownCatalogCategory = () =>
     code: 'UNKNOWN_CATALOG_CATEGORY',
     message: 'The referenced catalog category does not exist.',
   });
+
+/** Top-level bulk-import failure: unparseable CSV or missing required headers. */
+export const CatalogImportInvalidCsv = (detail: string) =>
+  new BadRequestException({
+    code: 'CATALOG_IMPORT_INVALID_CSV',
+    message: `Invalid import CSV: ${detail}`,
+  });

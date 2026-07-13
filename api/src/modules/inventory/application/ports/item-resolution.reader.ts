@@ -7,8 +7,12 @@ export const ITEM_RESOLUTION_READER = Symbol('ItemResolutionReader');
  */
 export interface ItemResolutionRow {
   itemId: string;
-  /** InventoryItem.name — the customer-projection fallback when un-catalogued. */
-  name: string;
+  /**
+   * InventoryItem.name — the customer-projection fallback when un-catalogued. Null
+   * for an adopted item (PLATCAT-ADOPT-1B): the resolver then uses the live catalog
+   * name, so a null here is expected, not a missing row.
+   */
+  name: string | null;
   /** InventoryItem.baseUnit (GRAM | MILLILITER | PIECE) — the operational unit. */
   baseUnit: string;
   /** null = custom/uncatalogued item (=> unverified leaf). */

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { Field, inputClass } from '@/components/ui/form';
 import { getErrorMessage } from '@/lib/api-error';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import {
   usePaginatedItems,
   useItemsForSelect,
@@ -60,6 +61,7 @@ export function ProcessFormDrawer({
 }) {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const { data: restaurant } = useRestaurant();
   const currency = restaurant?.currency ?? 'USD';
   const invalidate = useProcessesInvalidation();
@@ -307,7 +309,7 @@ export function ProcessFormDrawer({
                     <option value="">{t('pSelectItem')}</option>
                     {allItems.map((it) => (
                       <option key={it.id} value={it.id}>
-                        {it.name}
+                        {itemDisplayName(it, locale)}
                       </option>
                     ))}
                   </select>
@@ -357,7 +359,7 @@ export function ProcessFormDrawer({
                       <option value="">{t('pSelectItem')}</option>
                       {processedItems.map((it) => (
                         <option key={it.id} value={it.id}>
-                          {it.name}
+                          {itemDisplayName(it, locale)}
                         </option>
                       ))}
                     </select>
@@ -431,7 +433,7 @@ export function ProcessFormDrawer({
                   return (
                     <li key={i} className="flex justify-between text-gray-600">
                       <span>
-                        {it.name}
+                        {itemDisplayName(it, locale)}
                         {o.isPrimary && o.costShare.trim() === '' && (
                           <span className="text-gray-400"> · {t('allocPrimaryRemainder')}</span>
                         )}

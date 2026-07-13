@@ -1,0 +1,165 @@
+{
+  "host": "https://msi.tail8514ca.ts.net",
+  "customerUrl": "https://msi.tail8514ca.ts.net/res/m/tavern-ararat?qr=e2e-tavern-ararat-t6",
+  "customerHome": "https://msi.tail8514ca.ts.net/res/m",
+  "posHome": "https://msi.tail8514ca.ts.net/res/pos",
+  "kdsHome": "https://msi.tail8514ca.ts.net/res/kds",
+  "table": {
+    "id": "adc98859-6fa3-53d6-8c46-ed427ebd3ed1",
+    "name": "Պատշգամբ 2",
+    "qr": "e2e-tavern-ararat-t6"
+  },
+  "tablePool": [
+    {
+      "id": "fbd6b429-e23c-5162-8434-0f33c8f85fba",
+      "name": "E2E-Soak 1",
+      "qr": "e2e-soak-t1",
+      "qrUrlPath": "/res/m/tavern-ararat?qr=e2e-soak-t1"
+    },
+    {
+      "id": "68a31230-31aa-5ed9-95cf-3ae87cddaae9",
+      "name": "E2E-Soak 2",
+      "qr": "e2e-soak-t2",
+      "qrUrlPath": "/res/m/tavern-ararat?qr=e2e-soak-t2"
+    },
+    {
+      "id": "9fd80916-9f3b-568a-83af-0cf63ef993f9",
+      "name": "E2E-Soak 3",
+      "qr": "e2e-soak-t3",
+      "qrUrlPath": "/res/m/tavern-ararat?qr=e2e-soak-t3"
+    },
+    {
+      "id": "496fee21-4d27-5e2f-a110-ea5253e6dcc8",
+      "name": "E2E-Soak 4",
+      "qr": "e2e-soak-t4",
+      "qrUrlPath": "/res/m/tavern-ararat?qr=e2e-soak-t4"
+    },
+    {
+      "id": "f4bdb8f5-4527-5a4f-a8ed-05dbc391efc5",
+      "name": "E2E-Soak 5",
+      "qr": "e2e-soak-t5",
+      "qrUrlPath": "/res/m/tavern-ararat?qr=e2e-soak-t5"
+    },
+    {
+      "id": "8c64b460-3307-5195-8489-bf00a91dbe2f",
+      "name": "E2E-Soak 6",
+      "qr": "e2e-soak-t6",
+      "qrUrlPath": "/res/m/tavern-ararat?qr=e2e-soak-t6"
+    },
+    {
+      "id": "666a2b21-067a-52ff-b39c-d6b94e107f33",
+      "name": "E2E-Soak 7",
+      "qr": "e2e-soak-t7",
+      "qrUrlPath": "/res/m/tavern-ararat?qr=e2e-soak-t7"
+    },
+    {
+      "id": "c28a837a-353f-5bd7-bd55-38902c6a520f",
+      "name": "E2E-Soak 8",
+      "qr": "e2e-soak-t8",
+      "qrUrlPath": "/res/m/tavern-ararat?qr=e2e-soak-t8"
+    },
+    {
+      "id": "9b53f88b-ac17-5894-b7f2-9f4d3aa80813",
+      "name": "E2E-Soak 9",
+      "qr": "e2e-soak-t9",
+      "qrUrlPath": "/res/m/tavern-ararat?qr=e2e-soak-t9"
+    },
+    {
+      "id": "c9efd827-1642-5ccd-904e-68424d801900",
+      "name": "E2E-Soak 10",
+      "qr": "e2e-soak-t10",
+      "qrUrlPath": "/res/m/tavern-ararat?qr=e2e-soak-t10"
+    },
+    {
+      "id": "52b93927-10fb-54a3-893c-f89aa296857e",
+      "name": "E2E-Soak 11",
+      "qr": "e2e-soak-t11",
+      "qrUrlPath": "/res/m/tavern-ararat?qr=e2e-soak-t11"
+    },
+    {
+      "id": "f208e7e1-1292-5a7d-9e32-d1f8b4f73969",
+      "name": "E2E-Soak 12",
+      "qr": "e2e-soak-t12",
+      "qrUrlPath": "/res/m/tavern-ararat?qr=e2e-soak-t12"
+    }
+  ],
+  "dish": {
+    "id": "be6cc596-4305-51c4-9e30-9a09a3f50244",
+    "name": "Խոզի խորոված",
+    "modifiers": {
+      "donenessGroup": "6f6a8c7e-e769-5db2-b623-5e484a80a084",
+      "donenessMedium": "dfacc7ff-a732-5493-b0e9-c3c9129b046c",
+      "sideGroup": "934b4bee-af09-5719-8885-e53c26fea9c1",
+      "sideFries": "57159739-093e-5e2f-9dfc-a5ba9d7f665a"
+    }
+  },
+  "pos": {
+    "storageState": {
+      "cookies": [],
+      "origins": [
+        {
+          "origin": "https://msi.tail8514ca.ts.net",
+          "localStorage": [
+            {
+              "name": "pos-auth",
+              "value": "{\"state\":{\"accessToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NjRkNmQ3NS0zNzRmLTUzNTMtODQzMS1lM2M1MmFjYTYxYWIiLCJvcmdhbml6YXRpb25JZCI6IjNiNTIyYjlhLWI1NDUtNWI4OS1hN2RkLTFlOGI4YjQxMzA1ZSIsInJlc3RhdXJhbnRJZCI6IjU4NTlkMGVhLTU0MjYtNTI4ZS05ZjE4LWI5MjI3Yzk0MDZhOCIsImJyYW5jaElkIjpudWxsLCJyb2xlSWQiOiIwYmQzOGVjNS1hOGFkLTUxNjUtYjBhZC01ZmMxMzYwMWI2MzgiLCJwZXJtaXNzaW9ucyI6W10sImlhdCI6MTc4MjgxNzE5MCwiZXhwIjoxNzgyODE4MDkwfQ.SSfidoRUAmbGjMEl5tNNuizOlRBvM1yrOAivfqpqmh0\",\"refreshToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NjRkNmQ3NS0zNzRmLTUzNTMtODQzMS1lM2M1MmFjYTYxYWIiLCJvcmdhbml6YXRpb25JZCI6IjNiNTIyYjlhLWI1NDUtNWI4OS1hN2RkLTFlOGI4YjQxMzA1ZSIsInJlc3RhdXJhbnRJZCI6IjU4NTlkMGVhLTU0MjYtNTI4ZS05ZjE4LWI5MjI3Yzk0MDZhOCIsImp0aSI6ImJlYWFmNjQzLWVmN2ItNDFlMC1iMjQ2LWM0YjNiMDE2NDk2MiIsImlhdCI6MTc4MjgxNzE5MCwiZXhwIjoxNzgzNDIxOTkwfQ.89I4J8RUZcFXkb0iomWxKluZ9mOuatjFzn9MfmZYkpY\",\"user\":{\"id\":\"564d6d75-374f-5353-8431-e3c52aca61ab\",\"organizationId\":\"3b522b9a-b545-5b89-a7dd-1e8b8b41305e\",\"restaurantId\":\"5859d0ea-5426-528e-9f18-b9227c9406a8\",\"branchId\":null,\"email\":\"davit.sargsyan@tavern-ararat.am\",\"fullName\":\"Դավիթ Սարգսյան\",\"status\":\"ACTIVE\",\"roleId\":\"0bd38ec5-a8ad-5165-b0ad-5fc13601b638\",\"lastLoginAt\":\"2026-06-30T10:59:50.709Z\",\"createdAt\":\"2026-06-30T10:52:06.597Z\",\"updatedAt\":\"2026-06-30T10:59:50.709Z\"}},\"version\":0}"
+            },
+            {
+              "name": "pos-branch",
+              "value": "{\"state\":{\"activeBranchId\":\"84d3ed71-89e7-5ef9-8557-3e2354ba74d0\"},\"version\":0}"
+            }
+          ]
+        }
+      ]
+    },
+    "deviceSecret": "e975b169d64bd4e0acc04ebf4bb06f31d397fb8d16f7c1e06ef159949585487e"
+  },
+  "posManager": {
+    "storageState": {
+      "cookies": [],
+      "origins": [
+        {
+          "origin": "https://msi.tail8514ca.ts.net",
+          "localStorage": [
+            {
+              "name": "pos-auth",
+              "value": "{\"state\":{\"accessToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzZmNjZWY5MC0yMmJmLTVlNTYtOWY2NS1hMWE3ZmVjMmUzYTgiLCJvcmdhbml6YXRpb25JZCI6IjNiNTIyYjlhLWI1NDUtNWI4OS1hN2RkLTFlOGI4YjQxMzA1ZSIsInJlc3RhdXJhbnRJZCI6IjU4NTlkMGVhLTU0MjYtNTI4ZS05ZjE4LWI5MjI3Yzk0MDZhOCIsImJyYW5jaElkIjpudWxsLCJyb2xlSWQiOiI0MjE5YTU0NS03MTk0LTU3MGQtOTI0MS0wYjdiNzljZDUwOGYiLCJwZXJtaXNzaW9ucyI6WyJEQVNIQk9BUkRfVklFVyIsIk1FTlVfTUFOQUdFIiwiVEFCTEVfTUFOQUdFIiwiVEFCTEVfU1RBVFVTX1VQREFURSIsIk9SREVSX0NSRUFURSIsIk9SREVSX0VESVQiLCJPUkRFUl9DQU5DRUwiLCJESVNDT1VOVF9BUFBMWSIsIlBBWU1FTlRfUFJPQ0VTUyIsIlJFUE9SVFNfVklFVyIsIkFVRElUX1ZJRVciLCJBQ0NPVU5UX01BTkFHRSIsIlJFU0VSVkFUSU9OX01BTkFHRSIsIktEU19BQ0NFU1MiLCJVU0VSX01BTkFHRSIsIlNFVFRJTkdTX01BTkFHRSIsIkJSQU5DSF9NQU5BR0UiLCJpbnZlbnRvcnk6cmVhZCIsImludmVudG9yeTppdGVtOm1hbmFnZSIsImludmVudG9yeTpyZWNlaXB0OmNyZWF0ZSIsImludmVudG9yeTphZGp1c3RtZW50OmNyZWF0ZSIsImludmVudG9yeTpwcm9jZXNzOm1hbmFnZSIsImludmVudG9yeTpwcm9jZXNzOnJ1biIsImludmVudG9yeTpyZWNpcGU6bWFuYWdlIiwibWVudTppdGVtOnNldF9wcmljZSIsImludmVudG9yeTp3cml0ZW9mZjpjcmVhdGUiLCJpbnZlbnRvcnk6d3JpdGVvZmY6dm9pZCIsImludmVudG9yeTpsb2NhdGlvbjptYW5hZ2UiLCJpbnZlbnRvcnk6cG9saWN5Om1hbmFnZSIsImludmVudG9yeTp0cmFuc2ZlcjpjcmVhdGUiLCJFREdFX01BTkFHRSIsImRldmljZS5lbnJvbGwiLCJzdGFmZi5waW4ubWFuYWdlIiwic2FsZXM6aW1wb3J0Om1hbmFnZSJdLCJpYXQiOjE3ODI4MTcxOTAsImV4cCI6MTc4MjgxODA5MH0.dmHNh8-GHcbppnhlL2d_KDjm4Osf8Md1xMEOcmqrKNo\",\"refreshToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzZmNjZWY5MC0yMmJmLTVlNTYtOWY2NS1hMWE3ZmVjMmUzYTgiLCJvcmdhbml6YXRpb25JZCI6IjNiNTIyYjlhLWI1NDUtNWI4OS1hN2RkLTFlOGI4YjQxMzA1ZSIsInJlc3RhdXJhbnRJZCI6IjU4NTlkMGVhLTU0MjYtNTI4ZS05ZjE4LWI5MjI3Yzk0MDZhOCIsImp0aSI6IjkwY2NkYTcxLWFiNzgtNDZhOS04M2ExLWYzNGNhNWM4NWFiOSIsImlhdCI6MTc4MjgxNzE5MCwiZXhwIjoxNzgzNDIxOTkwfQ.sEDbMhp3ZVAB8LNrJAqD0hWQDPpiL35X1izdOiGDUzs\",\"user\":{\"id\":\"3fccef90-22bf-5e56-9f65-a1a7fec2e3a8\",\"organizationId\":\"3b522b9a-b545-5b89-a7dd-1e8b8b41305e\",\"restaurantId\":\"5859d0ea-5426-528e-9f18-b9227c9406a8\",\"branchId\":null,\"email\":\"gor.hakobyan@tavern-ararat.am\",\"fullName\":\"Գոռ Հակոբյան\",\"status\":\"ACTIVE\",\"roleId\":\"4219a545-7194-570d-9241-0b7b79cd508f\",\"lastLoginAt\":\"2026-06-30T10:59:50.932Z\",\"createdAt\":\"2026-06-30T10:52:06.592Z\",\"updatedAt\":\"2026-06-30T10:59:50.932Z\"}},\"version\":0}"
+            },
+            {
+              "name": "pos-branch",
+              "value": "{\"state\":{\"activeBranchId\":\"84d3ed71-89e7-5ef9-8557-3e2354ba74d0\"},\"version\":0}"
+            }
+          ]
+        }
+      ]
+    },
+    "deviceSecret": "e975b169d64bd4e0acc04ebf4bb06f31d397fb8d16f7c1e06ef159949585487e"
+  },
+  "kds": {
+    "storageState": {
+      "cookies": [],
+      "origins": [
+        {
+          "origin": "https://msi.tail8514ca.ts.net",
+          "localStorage": [
+            {
+              "name": "kds-auth",
+              "value": "{\"state\":{\"accessToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzNDE1Yzk3ZC01YThjLTVjYjQtYTU4ZS0yODg3NmVjNmUzZWEiLCJvcmdhbml6YXRpb25JZCI6IjNiNTIyYjlhLWI1NDUtNWI4OS1hN2RkLTFlOGI4YjQxMzA1ZSIsInJlc3RhdXJhbnRJZCI6IjU4NTlkMGVhLTU0MjYtNTI4ZS05ZjE4LWI5MjI3Yzk0MDZhOCIsImJyYW5jaElkIjpudWxsLCJyb2xlSWQiOiIwYmQzOGVjNS1hOGFkLTUxNjUtYjBhZC01ZmMxMzYwMWI2MzgiLCJwZXJtaXNzaW9ucyI6W10sImlhdCI6MTc4MjgxNzE5MCwiZXhwIjoxNzgyODE4MDkwfQ.UAmcT5mj1fqAeFZtvpMcasZaacrDxK7X3b07G-nA-2k\",\"refreshToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzNDE1Yzk3ZC01YThjLTVjYjQtYTU4ZS0yODg3NmVjNmUzZWEiLCJvcmdhbml6YXRpb25JZCI6IjNiNTIyYjlhLWI1NDUtNWI4OS1hN2RkLTFlOGI4YjQxMzA1ZSIsInJlc3RhdXJhbnRJZCI6IjU4NTlkMGVhLTU0MjYtNTI4ZS05ZjE4LWI5MjI3Yzk0MDZhOCIsImp0aSI6IjZhMTdiNDU0LTMwYWItNGIzNy1hODJjLThlYjkzMDVhZjgzOCIsImlhdCI6MTc4MjgxNzE5MCwiZXhwIjoxNzgzNDIxOTkwfQ.Obv3_OJpVpsyhMWMkgn2IyzWrEdvPrcNxtFmDz5ZuZ4\",\"user\":{\"id\":\"3415c97d-5a8c-5cb4-a58e-28876ec6e3ea\",\"organizationId\":\"3b522b9a-b545-5b89-a7dd-1e8b8b41305e\",\"restaurantId\":\"5859d0ea-5426-528e-9f18-b9227c9406a8\",\"branchId\":null,\"email\":\"hayk.mkrtchyan@tavern-ararat.am\",\"fullName\":\"Հայկ Մկրտչյան\",\"status\":\"ACTIVE\",\"roleId\":\"0bd38ec5-a8ad-5165-b0ad-5fc13601b638\",\"lastLoginAt\":null,\"createdAt\":\"2026-06-30T10:52:06.599Z\",\"updatedAt\":\"2026-06-30T10:52:06.599Z\"},\"permissions\":[],\"allBranches\":false,\"accessibleBranches\":[{\"id\":\"84d3ed71-89e7-5ef9-8557-3e2354ba74d0\",\"name\":\"Կենտրոն (Երևան)\",\"isDefault\":true,\"permissions\":[\"KDS_ACCESS\"]}],\"defaultBranchId\":\"84d3ed71-89e7-5ef9-8557-3e2354ba74d0\"},\"version\":0}"
+            },
+            {
+              "name": "kds-branch",
+              "value": "{\"state\":{\"branchId\":\"84d3ed71-89e7-5ef9-8557-3e2354ba74d0\",\"branchName\":\"Կենտրոն (Երևան)\"},\"version\":0}"
+            },
+            {
+              "name": "kds-station",
+              "value": "{\"state\":{\"station\":\"KITCHEN\"},\"version\":0}"
+            }
+          ]
+        }
+      ]
+    },
+    "deviceSecret": "ad29da65c7ef89a18a5b9c14808671b89e421c3239fedf1f7cd48b8e1079d20d",
+    "surface": "KDS",
+    "station": "KITCHEN"
+  }
+}

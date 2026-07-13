@@ -16,6 +16,8 @@ export const AuditControllerExportRole = {
   WAITER: 'WAITER',
   CASHIER: 'CASHIER',
   KITCHEN_STAFF: 'KITCHEN_STAFF',
+  CHEF: 'CHEF',
+  SOUS_CHEF: 'SOUS_CHEF',
   RECEPTIONIST: 'RECEPTIONIST',
   BRANCH_SCOPED: 'BRANCH_SCOPED',
 } as const;

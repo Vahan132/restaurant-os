@@ -12,6 +12,7 @@ import {
 } from '../../domain/repositories/inventory-item.repository';
 import {
   InventoryCategoryNotFound,
+  InventoryItemNamePlatformOwned,
   InventoryItemNotFound,
   InventorySkuAlreadyExists,
   NoRestaurantInScope,
@@ -48,6 +49,12 @@ export class UpdateInventoryItemUseCase implements UseCase<
     const item = await this.items.findById(input.restaurantId, input.branchId, input.itemId);
     if (!item) {
       throw InventoryItemNotFound();
+    }
+    // PLATCAT-ADOPT-1B: adopted items' names are platform-owned (resolved live), so a
+    // tenant may not set or clear the name on an item that carries a catalogItemId.
+    // Custom items edit their name freely.
+    if (input.name !== undefined && item.catalogItemId !== null) {
+      throw InventoryItemNamePlatformOwned();
     }
     if (input.categoryId) {
       const category = await this.categories.findById(

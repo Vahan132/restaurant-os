@@ -13,8 +13,9 @@ import {
 } from 'class-validator';
 import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '../../../../shared/application/pagination';
 import { ItemAvailability, MenuStatus, PreparationStation } from '../../domain/enums';
+import { NameDescriptionI18nDto } from './i18n.dto';
 
-export class CreateMenuItemDto {
+export class CreateMenuItemDto extends NameDescriptionI18nDto {
   @ApiProperty()
   @IsString()
   @MinLength(1)
@@ -57,7 +58,7 @@ export class CreateMenuItemDto {
   prepTimeMinutes?: number;
 }
 
-export class UpdateMenuItemDto {
+export class UpdateMenuItemDto extends NameDescriptionI18nDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

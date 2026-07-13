@@ -70,7 +70,13 @@ export class PrismaStockOnHandReader implements StockOnHandReader {
     const [items, locations] = await Promise.all([
       this.prisma.inventoryItem.findMany({
         where: { id: { in: itemIds } },
-        select: { id: true, name: true, baseUnit: true, lowStockThresholdBase: true },
+        select: {
+          id: true,
+          name: true,
+          catalogItemId: true,
+          baseUnit: true,
+          lowStockThresholdBase: true,
+        },
       }),
       this.prisma.inventoryLocation.findMany({
         where: { id: { in: locationIds } },
@@ -85,7 +91,9 @@ export class PrismaStockOnHandReader implements StockOnHandReader {
       const eff = r.lowStockThresholdBase ?? item?.lowStockThresholdBase ?? null;
       return {
         itemId: r.itemId,
-        itemName: item?.name ?? '',
+        // PLATCAT-ADOPT-1B: local name (null for adopted); catalogName filled in the use-case.
+        itemName: item?.name ?? null,
+        catalogItemId: item?.catalogItemId ?? null,
         baseUnit: item?.baseUnit ?? '',
         locationId: r.locationId,
         locationName: locationById.get(r.locationId)?.name ?? '',

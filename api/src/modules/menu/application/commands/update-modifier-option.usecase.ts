@@ -13,6 +13,10 @@ export interface UpdateModifierOptionInput {
   branchId: string;
   optionId: string;
   name?: string;
+  /** LOCALE-2A: translations — present (incl. null) sets/clears; absent unchanged. */
+  nameHy?: string | null;
+  nameRu?: string | null;
+  nameEn?: string | null;
   priceDeltaAmount?: number;
   sortOrder?: number;
   isDefault?: boolean;
@@ -39,6 +43,9 @@ export class UpdateModifierOptionUseCase implements UseCase<
     }
     option.update({
       name: input.name,
+      nameHy: input.nameHy,
+      nameRu: input.nameRu,
+      nameEn: input.nameEn,
       priceDeltaAmount: input.priceDeltaAmount,
       sortOrder: input.sortOrder,
       isDefault: input.isDefault,

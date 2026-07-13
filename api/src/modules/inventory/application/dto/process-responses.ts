@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { CatalogLocalizedName } from '../../../platform-catalog/domain/repositories/catalog-item.reader';
 import { Process, ProcessInput, ProcessOutput } from '../../domain/entities/process';
 import { ProcessRun } from '../../domain/entities/process-run';
 import { ProcessRunDetail } from '../ports/process-run-detail.reader';
@@ -117,10 +118,21 @@ export class RelatedItemsResponse {
   @ApiProperty({ type: [InventoryItemResponse] }) rawSources!: InventoryItemResponse[];
   @ApiProperty({ type: [InventoryItemResponse] }) processedOutputs!: InventoryItemResponse[];
 
-  static from(related: RelatedItems): RelatedItemsResponse {
+  /**
+   * PLATCAT-ADOPT-1B: `catalogNames` supplies the live catalog name per item id so
+   * adopted counterparts render their name. Pass an empty map to omit (all local).
+   */
+  static from(
+    related: RelatedItems,
+    catalogNames: Map<string, CatalogLocalizedName | null> = new Map(),
+  ): RelatedItemsResponse {
     return {
-      rawSources: related.rawSources.map(InventoryItemResponse.from),
-      processedOutputs: related.processedOutputs.map(InventoryItemResponse.from),
+      rawSources: related.rawSources.map((i) =>
+        InventoryItemResponse.from(i, catalogNames.get(i.id) ?? null),
+      ),
+      processedOutputs: related.processedOutputs.map((i) =>
+        InventoryItemResponse.from(i, catalogNames.get(i.id) ?? null),
+      ),
     };
   }
 }

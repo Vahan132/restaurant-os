@@ -12716,6 +12716,272 @@
         ]
       }
     },
+    "/platform/fiscal-config/branches/{restaurantId}": {
+      "get": {
+        "operationId": "PlatformFiscalConfigController_branches",
+        "summary": "List a restaurant's branches (tenant picker).",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlatformBranchResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Platform Fiscal Config"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/fiscal-config/{restaurantId}/{branchId}/cert": {
+      "put": {
+        "operationId": "PlatformFiscalConfigController_uploadCert",
+        "summary": "Upload/replace the cert (write-only; never returned).",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFiscalCertDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Fiscal Config"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/fiscal-config/{restaurantId}/{branchId}": {
+      "put": {
+        "operationId": "PlatformFiscalConfigController_upsertConfig",
+        "summary": "Create/replace a branch e-HDM config (cert/key PEM; encrypted at rest).",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertFiscalConfigDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Fiscal Config"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "PlatformFiscalConfigController_status",
+        "summary": "Non-secret fiscal-config status (never returns cert/key).",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiscalConfigStatusResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Platform Fiscal Config"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/fiscal-config/{restaurantId}/{branchId}/departments": {
+      "put": {
+        "operationId": "PlatformFiscalConfigController_setDeps",
+        "summary": "Replace the dep -> tax-regime map for a branch.",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFiscalDepartmentsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Platform Fiscal Config"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/fiscal-config/{restaurantId}/{branchId}/check-connection": {
+      "post": {
+        "operationId": "PlatformFiscalConfigController_checkConnection",
+        "summary": "Validate the config against SRC (checkConnection).",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckFiscalConnectionResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Platform Fiscal Config"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
     "/public/discovery/attributes": {
       "get": {
         "operationId": "PublicDiscoveryController_attributes",
@@ -15572,6 +15838,11 @@
           "hideRecipe": {
             "type": "boolean",
             "description": "Hides the customer ingredient list, not the allergen summary."
+          },
+          "adgCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified)."
           }
         },
         "required": [
@@ -15589,7 +15860,8 @@
           "prepTimeMinutes",
           "status",
           "availability",
-          "hideRecipe"
+          "hideRecipe",
+          "adgCode"
         ]
       },
       "DishModifierGroupResponse": {
@@ -15834,6 +16106,11 @@
             "type": "boolean",
             "description": "Hides the customer ingredient list, not the allergen summary."
           },
+          "adgCode": {
+            "type": "string",
+            "nullable": true,
+            "description": "ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified)."
+          },
           "modifierGroups": {
             "type": "array",
             "items": {
@@ -15857,6 +16134,7 @@
           "status",
           "availability",
           "hideRecipe",
+          "adgCode",
           "modifierGroups"
         ]
       },
@@ -15936,6 +16214,12 @@
           "hideRecipe": {
             "type": "boolean",
             "description": "CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible)."
+          },
+          "adgCode": {
+            "type": "object",
+            "description": "ADGCODE-UI: SRC ATG classification code (from the SRC N 1406-Ն / N 875-Ն lists) for e-HDM fiscalization. Free-text: SRC is the authority (rejects a bad code with error 183 at fiscalization), so there is NO server format constraint — the UI only soft-warns on obvious typos. Send an empty string or null to clear it; omit to leave it unchanged (partial update).",
+            "example": "2130000000",
+            "nullable": true
           }
         }
       },
@@ -23408,6 +23692,212 @@
         "required": [
           "allergens",
           "categories"
+        ]
+      },
+      "PlatformBranchResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "isDefault",
+          "status"
+        ]
+      },
+      "SetFiscalCertDto": {
+        "type": "object",
+        "properties": {
+          "clientCertPem": {
+            "type": "string",
+            "description": "Client certificate PEM (converted from .jks by ops before upload)."
+          },
+          "clientKeyPem": {
+            "type": "string",
+            "description": "Client private key PEM. Encrypted at rest; never returned by any read."
+          }
+        },
+        "required": [
+          "clientCertPem",
+          "clientKeyPem"
+        ]
+      },
+      "UpsertFiscalConfigDto": {
+        "type": "object",
+        "properties": {
+          "crn": {
+            "type": "string"
+          },
+          "cashierId": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "PROD",
+              "TEST"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "hy",
+              "en",
+              "ru"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "crn",
+          "cashierId",
+          "environment",
+          "language",
+          "active"
+        ]
+      },
+      "FiscalDepartmentDto": {
+        "type": "object",
+        "properties": {
+          "dep": {
+            "type": "string"
+          },
+          "taxRegime": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "dep",
+          "taxRegime"
+        ]
+      },
+      "SetFiscalDepartmentsDto": {
+        "type": "object",
+        "properties": {
+          "departments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FiscalDepartmentDto"
+            }
+          }
+        },
+        "required": [
+          "departments"
+        ]
+      },
+      "FiscalDepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "dep": {
+            "type": "string"
+          },
+          "taxRegime": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "dep",
+          "taxRegime",
+          "label"
+        ]
+      },
+      "FiscalConfigStatusResponse": {
+        "type": "object",
+        "properties": {
+          "restaurantId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "crn": {
+            "type": "string"
+          },
+          "cashierId": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "PROD",
+              "TEST"
+            ]
+          },
+          "language": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "certConfigured": {
+            "type": "boolean",
+            "description": "True once a cert/key has been uploaded (never exposes the material)."
+          },
+          "departments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FiscalDepartmentResponse"
+            }
+          },
+          "lastCheckConnectionAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastCheckConnectionOk": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "restaurantId",
+          "branchId",
+          "crn",
+          "cashierId",
+          "environment",
+          "language",
+          "active",
+          "certConfigured",
+          "departments",
+          "lastCheckConnectionAt",
+          "lastCheckConnectionOk",
+          "updatedAt"
+        ]
+      },
+      "CheckFiscalConnectionResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "description": "True when SRC checkConnection succeeded (code 0)."
+          }
+        },
+        "required": [
+          "ok"
         ]
       },
       "AttributeSummaryResponse": {

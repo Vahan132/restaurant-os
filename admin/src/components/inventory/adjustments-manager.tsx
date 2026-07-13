@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
 import type { StockMovementResponse } from '@/api/generated/model';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { AdjustmentFormModal } from '@/components/inventory/adjustment-form-modal';
 import { Pagination, formatDateTime } from '@/components/inventory/shared';
 import { usePermission } from '@/lib/auth/use-permission';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import {
   usePaginatedAdjustments,
   useItemsForSelect,
@@ -20,6 +21,7 @@ const PAGE_SIZE = 20;
 
 export function AdjustmentsManager() {
   const t = useTranslations('inventory');
+  const locale = useLocale();
   const canCreate = usePermission(PERMISSIONS.INVENTORY_ADJUSTMENT_CREATE);
 
   const [page, setPage] = useState(1);
@@ -32,9 +34,9 @@ export function AdjustmentsManager() {
 
   const { items } = useItemsForSelect();
   const itemName = useMemo(() => {
-    const map = new Map(items.map((i) => [i.id, i.name]));
+    const map = new Map(items.map((i) => [i.id, itemDisplayName(i, locale)]));
     return (id: string) => map.get(id) ?? id;
-  }, [items]);
+  }, [items, locale]);
 
   const directionOf = (mov: StockMovementResponse) => (mov.baseQty < 0 ? 'OUT' : 'IN');
 

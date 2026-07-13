@@ -1,6 +1,7 @@
 import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import {
+  ApiHeader,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -9,7 +10,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Public } from '../../../../shared/auth/public.decorator';
+import { Locale } from '../../../../shared/i18n/locale';
 import { CurrentPublic, PublicContext } from '../../../../shared/storefront/public-context';
+import { GuestLocale } from '../../../../shared/storefront/guest-locale.decorator';
 import { PublicRestaurantResolverGuard } from '../../../../shared/storefront/public-restaurant.resolver';
 import {
   PublicBranchResponse,
@@ -52,11 +55,19 @@ export class PublicStorefrontController {
   @ApiOperation({
     summary: 'Public menu tree of the restaurant DEFAULT branch (branch-less landing entry).',
   })
+  // LOCALE-1: guests may request a content locale via X-Locale (hy|ru|en); absent/
+  // invalid falls back to the restaurant default. NOTE: there is no cache layer on
+  // /public today — if one is added, it MUST `Vary: X-Locale` so locales don't
+  // cross-contaminate.
+  @ApiHeader({ name: 'X-Locale', required: false, description: 'Guest content locale: hy | ru | en.' })
   @ApiOkResponse({ type: PublicMenuResponse })
-  menu(@CurrentPublic() ctx: PublicContext): Promise<PublicMenuResponse> {
+  menu(
+    @CurrentPublic() ctx: PublicContext,
+    @GuestLocale() locale: Locale | null,
+  ): Promise<PublicMenuResponse> {
     // No branch in the URL → default branch (BR-9). Prefer the branch-explicit
     // route below or the table QR token for a specific location's menu.
-    return this.getMenu.execute({ restaurantId: ctx.restaurantId });
+    return this.getMenu.execute({ restaurantId: ctx.restaurantId, requestedLocale: locale });
   }
 
   @Get(':restaurantSlug/branches')
@@ -73,10 +84,18 @@ export class PublicStorefrontController {
   @ApiParam({ name: 'restaurantSlug', description: 'Restaurant slug.' })
   @ApiParam({ name: 'branchSlug', description: 'Branch slug within the restaurant.' })
   @ApiNotFoundResponse({ description: 'Unknown restaurant or branch (BRANCH_NOT_FOUND).' })
+  @ApiHeader({ name: 'X-Locale', required: false, description: 'Guest content locale: hy | ru | en.' })
   @ApiOkResponse({ type: PublicMenuResponse })
-  branchMenu(@CurrentPublic() ctx: PublicContext): Promise<PublicMenuResponse> {
+  branchMenu(
+    @CurrentPublic() ctx: PublicContext,
+    @GuestLocale() locale: Locale | null,
+  ): Promise<PublicMenuResponse> {
     // ctx.branchId is resolved + validated by the guard from :branchSlug.
-    return this.getMenu.execute({ restaurantId: ctx.restaurantId, branchId: ctx.branchId });
+    return this.getMenu.execute({
+      restaurantId: ctx.restaurantId,
+      branchId: ctx.branchId,
+      requestedLocale: locale,
+    });
   }
 
   @Get('table')

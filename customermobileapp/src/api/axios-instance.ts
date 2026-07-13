@@ -7,6 +7,7 @@ import { API_BASE_URL } from '@/config';
 import { getAccessToken } from '@/store/auth';
 import { getOrderingRestaurantSlug } from '@/store/cart';
 import { performRefresh } from '@/auth/session';
+import i18n, { isSupportedLocale, DEFAULT_LOCALE } from '@/i18n';
 
 /**
  * Custom axios mutator — every orval-generated react-query hook routes through this.
@@ -72,6 +73,14 @@ instance.interceptors.request.use((config) => {
     config.headers = config.headers ?? {};
     (config.headers as Record<string, string>)['X-Restaurant-Slug'] = orderingSlug;
   }
+  // LOCALE-2D: tell the storefront which language to localize content in. Mirrors how
+  // QR web sends it. Attached on every request from the active i18next language
+  // (validated to hy|ru|en; bad/missing → 'hy'). Endpoints that ignore it are unaffected.
+  const active = (i18n.language ?? '').slice(0, 2).toLowerCase();
+  config.headers = config.headers ?? {};
+  (config.headers as Record<string, string>)['X-Locale'] = isSupportedLocale(active)
+    ? active
+    : DEFAULT_LOCALE;
   return config;
 });
 

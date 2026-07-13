@@ -41,10 +41,17 @@ export function uniqueKey(base: string, used: ReadonlySet<string>): string {
 
 // ── Per-section key derivation ───────────────────────────────────────────────
 
-/** inventoryItem → sku when present, else slug(name). */
-export function inventoryItemKey(rec: { sku: string | null; name: string }): string {
+/**
+ * inventoryItem → sku when present, else slug(name).
+ * NOTE (PLATCAT-ADOPT-1B): `name` is now nullable — an ADOPTED item has no local
+ * name (it resolves the catalog name live). Such an item without a sku has no stable
+ * bundle key here; representing adopted items in the catalog bundle (by catalog
+ * reference) is out of scope and belongs to the catalog export/import ticket. Until
+ * then a null name degrades to an empty slug (deduped by uniqueKey at the call site).
+ */
+export function inventoryItemKey(rec: { sku: string | null; name: string | null }): string {
   const sku = rec.sku?.trim();
-  return sku ? sku : slug(rec.name);
+  return sku ? sku : slug(rec.name ?? '');
 }
 
 /** inventoryCategory → slug(name). */

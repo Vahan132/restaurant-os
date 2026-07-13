@@ -42,20 +42,22 @@ export class PrismaLowStockAlertReader implements LowStockAlertReader {
     const [items, locations] = await Promise.all([
       this.prisma.inventoryItem.findMany({
         where: { id: { in: itemIds } },
-        select: { id: true, name: true },
+        select: { id: true, name: true, catalogItemId: true },
       }),
       this.prisma.inventoryLocation.findMany({
         where: { id: { in: locationIds } },
         select: { id: true, name: true },
       }),
     ]);
-    const itemById = new Map(items.map((i) => [i.id, i.name]));
+    const itemById = new Map(items.map((i) => [i.id, i]));
     const locationById = new Map(locations.map((l) => [l.id, l.name]));
 
     const rows: LowStockAlertRow[] = records.map((r) => ({
       id: r.id,
       itemId: r.itemId,
-      itemName: itemById.get(r.itemId) ?? '',
+      // PLATCAT-ADOPT-1B: local name (null for adopted); catalogName filled in the use-case.
+      itemName: itemById.get(r.itemId)?.name ?? null,
+      catalogItemId: itemById.get(r.itemId)?.catalogItemId ?? null,
       locationId: r.locationId,
       locationName: locationById.get(r.locationId) ?? '',
       thresholdBase: r.thresholdBase,

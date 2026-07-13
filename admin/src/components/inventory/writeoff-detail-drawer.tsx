@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { useWriteOffsControllerVoid } from '@/api/generated/inventory-write-offs/inventory-write-offs';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { ReasonBadge } from '@/components/inventory/writeoff-shared';
 import { formatDateTime } from '@/components/inventory/shared';
 import { getErrorMessage } from '@/lib/api-error';
 import { usePermission } from '@/lib/auth/use-permission';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useItemsForSelect } from '@/lib/inventory/use-inventory-data';
 import { useWriteOff, useWriteOffsInvalidation } from '@/lib/inventory/use-writeoff-data';
 import { formatNumber } from '@/lib/inventory/units';
@@ -28,6 +29,7 @@ export function WriteOffDetailDrawer({
 }) {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const { data: restaurant } = useRestaurant();
   const currency = restaurant?.currency ?? 'USD';
   const canVoid = usePermission(PERMISSIONS.INVENTORY_WRITEOFF_VOID);
@@ -36,8 +38,11 @@ export function WriteOffDetailDrawer({
 
   const { data: writeOff, isLoading } = useWriteOff(writeOffId);
   const { items } = useItemsForSelect();
-  const itemName = (id: string | null) =>
-    id ? (items.find((i) => i.id === id)?.name ?? id) : '—';
+  const itemName = (id: string | null) => {
+    if (!id) return '—';
+    const it = items.find((i) => i.id === id);
+    return it ? itemDisplayName(it, locale) : id;
+  };
   const voidMut = useWriteOffsControllerVoid();
 
   const onVoid = async () => {

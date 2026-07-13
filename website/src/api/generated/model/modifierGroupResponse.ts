@@ -6,10 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ModifierGroupResponseSelectionType } from './modifierGroupResponseSelectionType';
+import type { ModifierGroupResponseStatus } from './modifierGroupResponseStatus';
 
 export interface ModifierGroupResponse {
   id: string;
-  menuItemId: string;
+  restaurantId: string;
+  branchId: string;
   name: string;
   selectionType: ModifierGroupResponseSelectionType;
   required: boolean;
@@ -17,5 +19,5 @@ export interface ModifierGroupResponse {
   minSelect: number | null;
   /** @nullable */
   maxSelect: number | null;
-  displayOrder: number;
+  status: ModifierGroupResponseStatus;
 }

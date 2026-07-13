@@ -17,6 +17,10 @@ export interface AddModifierOptionInput {
   branchId: string;
   groupId: string;
   name: string;
+  /** LOCALE-2A: optional hy/ru/en translations of the name. */
+  nameHy?: string | null;
+  nameRu?: string | null;
+  nameEn?: string | null;
   priceDeltaAmount?: number;
   sortOrder?: number;
   isDefault?: boolean;
@@ -45,6 +49,9 @@ export class AddModifierOptionUseCase implements UseCase<AddModifierOptionInput,
       branchId: input.branchId,
       modifierGroupId: input.groupId,
       name: input.name,
+      nameHy: input.nameHy,
+      nameRu: input.nameRu,
+      nameEn: input.nameEn,
       priceDeltaAmount: input.priceDeltaAmount, // may be 0 or negative (Prompt 1A)
       sortOrder: input.sortOrder,
       isDefault: input.isDefault,

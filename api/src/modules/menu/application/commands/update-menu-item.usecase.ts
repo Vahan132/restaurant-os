@@ -28,6 +28,13 @@ export interface UpdateMenuItemInput {
   itemId: string;
   name?: string;
   description?: string | null;
+  /** LOCALE-2A: translations — present (incl. null) sets/clears; absent unchanged. */
+  nameHy?: string | null;
+  nameRu?: string | null;
+  nameEn?: string | null;
+  descriptionHy?: string | null;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
   imageUrl?: string | null;
   /** MEDIA-1: uploaded object key (finalize). Non-empty overrides imageUrl. */
   imageKey?: string | null;
@@ -88,6 +95,12 @@ export class UpdateMenuItemUseCase implements UseCase<UpdateMenuItemInput, MenuI
     item.updateDetails({
       name: input.name,
       description: input.description,
+      nameHy: input.nameHy,
+      nameRu: input.nameRu,
+      nameEn: input.nameEn,
+      descriptionHy: input.descriptionHy,
+      descriptionRu: input.descriptionRu,
+      descriptionEn: input.descriptionEn,
       imageUrl: image.imageUrl,
       imageKey: image.imageKey,
       preparationStation: input.preparationStation,

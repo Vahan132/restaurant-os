@@ -12,6 +12,7 @@ import {
   LowStockAlertReader,
   LowStockAlertRow,
 } from '../ports/low-stock-alert.reader';
+import { InventoryItemNameResolver } from '../services/inventory-item-name.resolver';
 import { NoRestaurantInScope } from '../application.errors';
 
 export interface ListLowStockAlertsInput {
@@ -26,7 +27,10 @@ export interface ListLowStockAlertsInput {
 export class ListLowStockAlertsUseCase
   implements UseCase<ListLowStockAlertsInput, Paginated<LowStockAlertRow>>
 {
-  constructor(@Inject(LOW_STOCK_ALERT_READER) private readonly reader: LowStockAlertReader) {}
+  constructor(
+    @Inject(LOW_STOCK_ALERT_READER) private readonly reader: LowStockAlertReader,
+    private readonly names: InventoryItemNameResolver,
+  ) {}
 
   async execute(input: ListLowStockAlertsInput): Promise<Paginated<LowStockAlertRow>> {
     if (!input.restaurantId) {
@@ -41,6 +45,13 @@ export class ListLowStockAlertsUseCase
       skip,
       take,
     });
+    // PLATCAT-ADOPT-1B: resolve the live catalog name for adopted rows (batched, no N+1).
+    const catalogNames = await this.names.resolveMany(
+      rows.map((r) => ({ id: r.itemId, catalogItemId: r.catalogItemId })),
+    );
+    for (const r of rows) {
+      r.catalogName = catalogNames.get(r.itemId) ?? null;
+    }
     return paginate(rows, total, query);
   }
 }

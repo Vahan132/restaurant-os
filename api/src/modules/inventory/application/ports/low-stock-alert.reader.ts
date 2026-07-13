@@ -1,3 +1,4 @@
+import { CatalogLocalizedName } from '../../../platform-catalog/domain/repositories/catalog-item.reader';
 import { LowStockAlertStatus } from '../../domain/enums';
 
 export const LOW_STOCK_ALERT_READER = Symbol('LowStockAlertReader');
@@ -6,7 +7,12 @@ export const LOW_STOCK_ALERT_READER = Symbol('LowStockAlertReader');
 export interface LowStockAlertRow {
   id: string;
   itemId: string;
-  itemName: string;
+  /** Local name; null for an adopted item (PLATCAT-ADOPT-1B). Use catalogName then. */
+  itemName: string | null;
+  /** PLATCAT-ADOPT-1B: InventoryItem.catalogItemId — drives live name resolution. */
+  catalogItemId: string | null;
+  /** Live-resolved trilingual catalog name; present when adopted (filled by the use-case). */
+  catalogName?: CatalogLocalizedName | null;
   locationId: string;
   locationName: string;
   thresholdBase: number;

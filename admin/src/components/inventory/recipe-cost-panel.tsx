@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { inputClass } from '@/components/ui/form';
 import { RecipeLineRow, type RecipeLineState } from '@/components/inventory/recipe-line-row';
 import { getErrorMessage } from '@/lib/api-error';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import { useItemsForSelect } from '@/lib/inventory/use-inventory-data';
 import { useUnitCostMap } from '@/lib/inventory/use-process-data';
 import {
@@ -51,6 +52,7 @@ export function RecipeCostPanel({
 }) {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const { recipeId, recipe, isLoading, isFetched } = useRecipeForMenuItem(menuItemId);
   const { items } = useItemsForSelect();
   const { unitCost } = useUnitCostMap();
@@ -212,7 +214,7 @@ export function RecipeCostPanel({
                       )
                     }
                   >
-                    {t('switchTo', { name: cp.name })}
+                    {t('switchTo', { name: itemDisplayName(cp, locale) })}
                   </button>
                 )}
               </div>
@@ -323,7 +325,7 @@ export function RecipeCostPanel({
                     <option value="">{t('mmItem')}</option>
                     {items.map((opt) => (
                       <option key={opt.id} value={opt.id}>
-                        {opt.name}
+                        {itemDisplayName(opt, locale)}
                       </option>
                     ))}
                   </select>
@@ -390,7 +392,7 @@ export function RecipeCostPanel({
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {(recipe.customerIngredients ?? []).map((ci) => (
                   <Badge key={ci.itemId} tone="gray">
-                    {ci.name}
+                    {itemDisplayName(ci, locale)}
                   </Badge>
                 ))}
               </div>

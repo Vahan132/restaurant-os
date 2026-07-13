@@ -1,4 +1,5 @@
 import { AggregateRoot } from '../../../../shared/domain/aggregate-root';
+import { I18nText } from '../../../../shared/i18n/i18n-text';
 import { ItemAvailability, MenuStatus, PreparationStation } from '../enums';
 import {
   MenuItemAvailabilityChangedEvent,
@@ -15,6 +16,13 @@ export interface MenuItemProps {
   categoryId: string;
   name: string;
   description: string | null;
+  /** LOCALE-2A: nullable hy/ru/en translations of the primary name/description. */
+  nameHy: string | null;
+  nameRu: string | null;
+  nameEn: string | null;
+  descriptionHy: string | null;
+  descriptionRu: string | null;
+  descriptionEn: string | null;
   priceAmount: number;
   imageUrl: string | null;
   /** MEDIA-1: object-storage key when the image was uploaded (null for URL-paste). */
@@ -43,6 +51,13 @@ export interface CreateMenuItemInput {
   categoryId: string;
   name: string;
   description?: string | null;
+  /** LOCALE-2A: optional hy/ru/en translations (absent → null). */
+  nameHy?: string | null;
+  nameRu?: string | null;
+  nameEn?: string | null;
+  descriptionHy?: string | null;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
   priceAmount: number;
   imageUrl?: string | null;
   imageKey?: string | null;
@@ -77,6 +92,12 @@ export class MenuItem extends AggregateRoot<string> {
       categoryId: input.categoryId,
       name: input.name,
       description: input.description ?? null,
+      nameHy: input.nameHy ?? null,
+      nameRu: input.nameRu ?? null,
+      nameEn: input.nameEn ?? null,
+      descriptionHy: input.descriptionHy ?? null,
+      descriptionRu: input.descriptionRu ?? null,
+      descriptionEn: input.descriptionEn ?? null,
       priceAmount: input.priceAmount,
       imageUrl: input.imageUrl ?? null,
       imageKey: input.imageKey ?? null,
@@ -123,6 +144,18 @@ export class MenuItem extends AggregateRoot<string> {
   get description(): string | null {
     return this.props.description;
   }
+  /** LOCALE-2A: hy/ru/en translations of the name (nulls where untranslated). */
+  get nameI18n(): I18nText {
+    return { hy: this.props.nameHy, ru: this.props.nameRu, en: this.props.nameEn };
+  }
+  /** LOCALE-2A: hy/ru/en translations of the description. */
+  get descriptionI18n(): I18nText {
+    return {
+      hy: this.props.descriptionHy,
+      ru: this.props.descriptionRu,
+      en: this.props.descriptionEn,
+    };
+  }
   get priceAmount(): number {
     return this.props.priceAmount;
   }
@@ -167,6 +200,13 @@ export class MenuItem extends AggregateRoot<string> {
   updateDetails(input: {
     name?: string;
     description?: string | null;
+    // LOCALE-2A: translations — present (incl. explicit null) sets/clears; absent leaves unchanged.
+    nameHy?: string | null;
+    nameRu?: string | null;
+    nameEn?: string | null;
+    descriptionHy?: string | null;
+    descriptionRu?: string | null;
+    descriptionEn?: string | null;
     imageUrl?: string | null;
     imageKey?: string | null;
     preparationStation?: PreparationStation;
@@ -176,6 +216,12 @@ export class MenuItem extends AggregateRoot<string> {
   }): void {
     if (input.name !== undefined) this.props.name = input.name;
     if (input.description !== undefined) this.props.description = input.description;
+    if (input.nameHy !== undefined) this.props.nameHy = input.nameHy;
+    if (input.nameRu !== undefined) this.props.nameRu = input.nameRu;
+    if (input.nameEn !== undefined) this.props.nameEn = input.nameEn;
+    if (input.descriptionHy !== undefined) this.props.descriptionHy = input.descriptionHy;
+    if (input.descriptionRu !== undefined) this.props.descriptionRu = input.descriptionRu;
+    if (input.descriptionEn !== undefined) this.props.descriptionEn = input.descriptionEn;
     if (input.imageUrl !== undefined) this.props.imageUrl = input.imageUrl;
     if (input.imageKey !== undefined) this.props.imageKey = input.imageKey;
     if (input.preparationStation !== undefined)

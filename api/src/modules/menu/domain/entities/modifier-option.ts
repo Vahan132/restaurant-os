@@ -1,4 +1,5 @@
 import { AggregateRoot } from '../../../../shared/domain/aggregate-root';
+import { I18nText } from '../../../../shared/i18n/i18n-text';
 import { MenuStatus } from '../enums';
 import { InvalidPriceDeltaError } from '../menu.errors';
 
@@ -7,6 +8,10 @@ export interface ModifierOptionProps {
   branchId: string;
   modifierGroupId: string;
   name: string;
+  /** LOCALE-2A: nullable hy/ru/en translations of the name. */
+  nameHy: string | null;
+  nameRu: string | null;
+  nameEn: string | null;
   priceDeltaAmount: number;
   sortOrder: number;
   isDefault: boolean;
@@ -22,6 +27,9 @@ export interface CreateModifierOptionInput {
   branchId: string;
   modifierGroupId: string;
   name: string;
+  nameHy?: string | null;
+  nameRu?: string | null;
+  nameEn?: string | null;
   priceDeltaAmount?: number;
   sortOrder?: number;
   isDefault?: boolean;
@@ -53,6 +61,9 @@ export class ModifierOption extends AggregateRoot<string> {
       branchId: input.branchId,
       modifierGroupId: input.modifierGroupId,
       name: input.name,
+      nameHy: input.nameHy ?? null,
+      nameRu: input.nameRu ?? null,
+      nameEn: input.nameEn ?? null,
       priceDeltaAmount: delta,
       sortOrder: input.sortOrder ?? 0,
       isDefault: input.isDefault ?? false,
@@ -78,6 +89,10 @@ export class ModifierOption extends AggregateRoot<string> {
   }
   get name(): string {
     return this.props.name;
+  }
+  /** LOCALE-2A: hy/ru/en translations of the name (nulls where untranslated). */
+  get nameI18n(): I18nText {
+    return { hy: this.props.nameHy, ru: this.props.nameRu, en: this.props.nameEn };
   }
   get priceDeltaAmount(): number {
     return this.props.priceDeltaAmount;
@@ -107,6 +122,9 @@ export class ModifierOption extends AggregateRoot<string> {
 
   update(input: {
     name?: string;
+    nameHy?: string | null;
+    nameRu?: string | null;
+    nameEn?: string | null;
     priceDeltaAmount?: number;
     sortOrder?: number;
     isDefault?: boolean;
@@ -117,6 +135,9 @@ export class ModifierOption extends AggregateRoot<string> {
       this.props.priceDeltaAmount = input.priceDeltaAmount;
     }
     if (input.name !== undefined) this.props.name = input.name;
+    if (input.nameHy !== undefined) this.props.nameHy = input.nameHy;
+    if (input.nameRu !== undefined) this.props.nameRu = input.nameRu;
+    if (input.nameEn !== undefined) this.props.nameEn = input.nameEn;
     if (input.sortOrder !== undefined) this.props.sortOrder = input.sortOrder;
     if (input.isDefault !== undefined) this.props.isDefault = input.isDefault;
     if (input.status !== undefined) this.props.status = input.status;

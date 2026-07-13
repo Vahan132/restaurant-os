@@ -8,7 +8,13 @@ import { unitCostMicroFromLine } from '../value-objects/money';
 export interface InventoryItemProps {
   restaurantId: string;
   branchId: string;
-  name: string;
+  /**
+   * PLATCAT-ADOPT-1B: null for an ADOPTED (catalog-sourced) item — its name is the
+   * platform catalog's trilingual name, resolved live at read time. A custom
+   * (uncatalogued) item owns a local, non-null name. Identity invariant: name or
+   * catalogItemId is always set (mirrored by a DB CHECK).
+   */
+  name: string | null;
   sku: string | null;
   categoryId: string | null;
   kind: ItemKind;
@@ -19,6 +25,12 @@ export interface InventoryItemProps {
   lastUnitCostMicro: bigint | null;
   /** 6C: per-item consumption location (null => branch default Main Storage). */
   consumptionLocationId: string | null;
+  /**
+   * CATALOG-1: the platform CatalogItem this item was adopted from (plain scalar,
+   * no FK — ADR §4). null = a custom/uncatalogued item; set = catalog-sourced, so
+   * allergens/adgCode resolve by reference. Set once at adopt; never mutated.
+   */
+  catalogItemId: string | null;
   status: InventoryItemStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -29,7 +41,8 @@ export interface CreateInventoryItemInput {
   id: string;
   restaurantId: string;
   branchId: string;
-  name: string;
+  /** Non-null for a custom item; null when adopting from the catalog (name resolves live). */
+  name: string | null;
   sku?: string | null;
   categoryId?: string | null;
   kind?: ItemKind;
@@ -37,6 +50,8 @@ export interface CreateInventoryItemInput {
   alternateUnits?: ReadonlyArray<{ name: string; factor: number }>;
   trackExpiry?: boolean;
   lowStockThresholdBase?: number | null;
+  /** CATALOG-1: set when adopting from the platform catalog; default null. */
+  catalogItemId?: string | null;
   actorUserId?: string | null;
 }
 
@@ -64,6 +79,7 @@ export class InventoryItem extends AggregateRoot<string> {
       lowStockThresholdBase: input.lowStockThresholdBase ?? null,
       lastUnitCostMicro: null,
       consumptionLocationId: null,
+      catalogItemId: input.catalogItemId ?? null,
       status: InventoryItemStatus.ACTIVE,
       createdAt: now,
       updatedAt: now,
@@ -90,7 +106,8 @@ export class InventoryItem extends AggregateRoot<string> {
   get branchId(): string {
     return this.props.branchId;
   }
-  get name(): string {
+  /** Local name; null for an adopted item (resolve the catalog name live for display). */
+  get name(): string | null {
     return this.props.name;
   }
   get sku(): string | null {
@@ -119,6 +136,9 @@ export class InventoryItem extends AggregateRoot<string> {
   }
   get consumptionLocationId(): string | null {
     return this.props.consumptionLocationId;
+  }
+  get catalogItemId(): string | null {
+    return this.props.catalogItemId;
   }
   get status(): InventoryItemStatus {
     return this.props.status;

@@ -1,12 +1,14 @@
 import { useCallback, useSyncExternalStore } from 'react';
-import i18n, { type AppLocale, SUPPORTED_LOCALES } from './index';
+import { queryClient } from '@/api/query-client';
+import i18n, { type AppLocale, SUPPORTED_LOCALES, persistLocale } from './index';
 
 /**
- * useLocale — current app locale + an in-memory setter.
+ * useLocale — current app locale + a persisting setter.
  *
- * Language selection is NOT persisted here (that is a Profile / CX-2 concern). This just
- * exposes the active locale and a setter that updates i18next live. `pickI18n` /
- * `pickLabel` read `locale` to choose the active-language field from API responses.
+ * `setLocale` (LOCALE-2D) updates i18next live, persists the choice to storage so it
+ * survives relaunch, and invalidates cached queries so localized content refetches with
+ * the new `X-Locale` header. `pickI18n` / `pickLabel` read `locale` to choose the
+ * active-language field from API responses.
  */
 export function useLocale(): {
   locale: AppLocale;
@@ -23,7 +25,12 @@ export function useLocale(): {
   );
 
   const setLocale = useCallback((next: AppLocale) => {
+    if (next === normalize(i18n.language)) return;
     void i18n.changeLanguage(next);
+    void persistLocale(next);
+    // New language ⇒ subsequent requests carry the new X-Locale, so localized content
+    // (menu, discovery detail, …) must refetch. Invalidate all queries to reload it.
+    void queryClient.invalidateQueries();
   }, []);
 
   return { locale, setLocale, supported: SUPPORTED_LOCALES };

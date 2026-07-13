@@ -1,3 +1,5 @@
+import { Locale } from '../../../../shared/i18n/locale';
+
 export const PUBLIC_STOREFRONT_QUERY = Symbol('PublicStorefrontQuery');
 
 export interface PublicRestaurantInfo {
@@ -71,8 +73,15 @@ export interface PublicStorefrontQuery {
    * response. Same source the ORDER-2 cart/order uses, so menu == cart currency.
    */
   menuCurrency(restaurantId: string): Promise<string>;
-  /** BR-9: menu for a SPECIFIC branch (branch-owned catalog per BR-2). */
-  menuTree(restaurantId: string, branchId: string): Promise<PublicMenuCategory[]>;
+  /** LOCALE-1: the restaurant's default content language (fallback for the guest locale). */
+  defaultLanguage(restaurantId: string): Promise<string>;
+  /**
+   * BR-9: menu for a SPECIFIC branch (branch-owned catalog per BR-2).
+   * LOCALE-1: `locale` is the guest's effective locale. Carried for LOCALE-2B, which
+   * will resolve trilingual columns as `column(locale) ?? name`. Until then the menu
+   * is monolingual and `locale` does not change the output.
+   */
+  menuTree(restaurantId: string, branchId: string, locale: Locale): Promise<PublicMenuCategory[]>;
   /** BR-9: the table's info INCLUDING its branch (tables are branch-scoped). */
   tableByQr(restaurantId: string, qrIdentifier: string): Promise<PublicTableInfo | null>;
   /** BR-9: active (non-deleted) branches for the public location picker. */

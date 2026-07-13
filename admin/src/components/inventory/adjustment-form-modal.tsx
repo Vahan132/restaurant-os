@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
 import { useAdjustmentsControllerCreate } from '@/api/generated/inventory-adjustments/inventory-adjustments';
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Field, inputClass } from '@/components/ui/form';
 import { Modal } from '@/components/ui/modal';
 import { getErrorMessage } from '@/lib/api-error';
+import { itemDisplayName } from '@/lib/inventory/display-name';
 import {
   useInventoryInvalidation,
   useItemsForSelect,
@@ -29,6 +30,7 @@ const REASONS = [
 export function AdjustmentFormModal({ onClose }: { onClose: () => void }) {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const invalidate = useInventoryInvalidation();
   const { items } = useItemsForSelect();
 
@@ -85,7 +87,11 @@ export function AdjustmentFormModal({ onClose }: { onClose: () => void }) {
       toast.success(t('created'));
       // OUT adjustments that drive stock below zero still succeed; warn softly.
       if (result?.wentNegative) {
-        toast.error(t('wentNegative', { item: selectedItem?.name ?? '' }));
+        toast.error(
+          t('wentNegative', {
+            item: selectedItem ? itemDisplayName(selectedItem, locale) : '',
+          }),
+        );
       }
       await invalidate(itemId);
       onClose();
@@ -121,7 +127,7 @@ export function AdjustmentFormModal({ onClose }: { onClose: () => void }) {
             <option value="">{t('selectItem')}</option>
             {items.map((i) => (
               <option key={i.id} value={i.id}>
-                {i.name}
+                {itemDisplayName(i, locale)}
               </option>
             ))}
           </select>

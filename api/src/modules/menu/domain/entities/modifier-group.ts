@@ -1,4 +1,5 @@
 import { AggregateRoot } from '../../../../shared/domain/aggregate-root';
+import { I18nText } from '../../../../shared/i18n/i18n-text';
 import { MenuStatus, ModifierSelectionType } from '../enums';
 import { InvalidModifierSelectionError } from '../menu.errors';
 
@@ -6,6 +7,10 @@ export interface ModifierGroupProps {
   restaurantId: string;
   branchId: string;
   name: string;
+  /** LOCALE-2A: nullable hy/ru/en translations of the name. */
+  nameHy: string | null;
+  nameRu: string | null;
+  nameEn: string | null;
   selectionType: ModifierSelectionType;
   required: boolean;
   minSelect: number | null;
@@ -21,6 +26,9 @@ export interface CreateModifierGroupInput {
   restaurantId: string;
   branchId: string;
   name: string;
+  nameHy?: string | null;
+  nameRu?: string | null;
+  nameEn?: string | null;
   selectionType: ModifierSelectionType;
   required?: boolean;
   minSelect?: number | null;
@@ -58,6 +66,9 @@ export class ModifierGroup extends AggregateRoot<string> {
       restaurantId: input.restaurantId,
       branchId: input.branchId,
       name: input.name,
+      nameHy: input.nameHy ?? null,
+      nameRu: input.nameRu ?? null,
+      nameEn: input.nameEn ?? null,
       selectionType: input.selectionType,
       required: input.required ?? false,
       minSelect: normalized.minSelect,
@@ -111,6 +122,10 @@ export class ModifierGroup extends AggregateRoot<string> {
   get name(): string {
     return this.props.name;
   }
+  /** LOCALE-2A: hy/ru/en translations of the name (nulls where untranslated). */
+  get nameI18n(): I18nText {
+    return { hy: this.props.nameHy, ru: this.props.nameRu, en: this.props.nameEn };
+  }
   get selectionType(): ModifierSelectionType {
     return this.props.selectionType;
   }
@@ -142,6 +157,9 @@ export class ModifierGroup extends AggregateRoot<string> {
 
   update(input: {
     name?: string;
+    nameHy?: string | null;
+    nameRu?: string | null;
+    nameEn?: string | null;
     selectionType?: ModifierSelectionType;
     required?: boolean;
     minSelect?: number | null;
@@ -149,6 +167,9 @@ export class ModifierGroup extends AggregateRoot<string> {
     status?: MenuStatus;
   }): void {
     if (input.name !== undefined) this.props.name = input.name;
+    if (input.nameHy !== undefined) this.props.nameHy = input.nameHy;
+    if (input.nameRu !== undefined) this.props.nameRu = input.nameRu;
+    if (input.nameEn !== undefined) this.props.nameEn = input.nameEn;
     if (input.selectionType !== undefined) this.props.selectionType = input.selectionType;
     if (input.required !== undefined) this.props.required = input.required;
     if (input.status !== undefined) this.props.status = input.status;

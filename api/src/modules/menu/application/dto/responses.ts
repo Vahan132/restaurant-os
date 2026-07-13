@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { I18nTextResponse } from '../../../consumer/application/dto/responses';
 import { DishModifierGroup } from '../../domain/entities/dish-modifier-group';
 import { MenuCategory } from '../../domain/entities/menu-category';
 import { MenuItem } from '../../domain/entities/menu-item';
@@ -15,6 +16,10 @@ export class CategoryResponse {
   @ApiProperty() code!: string;
   @ApiProperty() name!: string;
   @ApiProperty({ nullable: true, type: String }) description!: string | null;
+  @ApiProperty({ type: I18nTextResponse, description: 'LOCALE-2A: hy/ru/en name translations (nulls where empty).' })
+  nameI18n!: I18nTextResponse;
+  @ApiProperty({ type: I18nTextResponse, description: 'LOCALE-2A: hy/ru/en description translations.' })
+  descriptionI18n!: I18nTextResponse;
   @ApiProperty() displayOrder!: number;
   @ApiProperty({ enum: ['ACTIVE', 'INACTIVE'] }) status!: string;
 
@@ -26,6 +31,8 @@ export class CategoryResponse {
       code: c.code,
       name: c.name,
       description: c.description,
+      nameI18n: c.nameI18n,
+      descriptionI18n: c.descriptionI18n,
       displayOrder: c.displayOrder,
       status: c.status,
     };
@@ -40,6 +47,10 @@ export class MenuItemResponse {
   @ApiProperty() categoryId!: string;
   @ApiProperty() name!: string;
   @ApiProperty({ nullable: true, type: String }) description!: string | null;
+  @ApiProperty({ type: I18nTextResponse, description: 'LOCALE-2A: hy/ru/en name translations (nulls where empty).' })
+  nameI18n!: I18nTextResponse;
+  @ApiProperty({ type: I18nTextResponse, description: 'LOCALE-2A: hy/ru/en description translations.' })
+  descriptionI18n!: I18nTextResponse;
   @ApiProperty() priceAmount!: number;
   @ApiProperty({ nullable: true, type: String }) imageUrl!: string | null;
   @ApiProperty({
@@ -71,6 +82,8 @@ export class MenuItemResponse {
       categoryId: i.categoryId,
       name: i.name,
       description: i.description,
+      nameI18n: i.nameI18n,
+      descriptionI18n: i.descriptionI18n,
       priceAmount: i.priceAmount,
       imageUrl: i.imageUrl,
       imageKey: i.imageKey,
@@ -88,6 +101,8 @@ export class ModifierOptionResponse {
   @ApiProperty() id!: string;
   @ApiProperty() modifierGroupId!: string;
   @ApiProperty() name!: string;
+  @ApiProperty({ type: I18nTextResponse, description: 'LOCALE-2A: hy/ru/en name translations.' })
+  nameI18n!: I18nTextResponse;
   @ApiProperty({ description: 'May be 0 or negative (minor units).' }) priceDeltaAmount!: number;
   @ApiProperty() sortOrder!: number;
   @ApiProperty() isDefault!: boolean;
@@ -98,6 +113,7 @@ export class ModifierOptionResponse {
       id: o.id,
       modifierGroupId: o.modifierGroupId,
       name: o.name,
+      nameI18n: o.nameI18n,
       priceDeltaAmount: o.priceDeltaAmount,
       sortOrder: o.sortOrder,
       isDefault: o.isDefault,
@@ -112,6 +128,8 @@ export class ModifierGroupResponse {
   @ApiProperty() restaurantId!: string;
   @ApiProperty() branchId!: string;
   @ApiProperty() name!: string;
+  @ApiProperty({ type: I18nTextResponse, description: 'LOCALE-2A: hy/ru/en name translations.' })
+  nameI18n!: I18nTextResponse;
   @ApiProperty({ enum: ['SINGLE', 'MULTIPLE'] }) selectionType!: string;
   @ApiProperty() required!: boolean;
   @ApiProperty({ nullable: true, type: Number }) minSelect!: number | null;
@@ -124,6 +142,7 @@ export class ModifierGroupResponse {
       restaurantId: g.restaurantId,
       branchId: g.branchId,
       name: g.name,
+      nameI18n: g.nameI18n,
       selectionType: g.selectionType,
       required: g.required,
       minSelect: g.minSelect,

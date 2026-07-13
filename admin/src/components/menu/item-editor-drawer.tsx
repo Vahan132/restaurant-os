@@ -23,6 +23,15 @@ import {
 } from '@/api/generated/model';
 import { Can } from '@/components/auth/can';
 import { ModifierGroupsEditor } from '@/components/menu/modifier-groups-editor';
+import {
+  TranslationFields,
+  descriptionTranslationFields,
+  nameTranslationFields,
+  primaryLocaleName,
+  toI18nDraft,
+  EMPTY_I18N,
+  type I18nDraft,
+} from '@/components/menu/translation-fields';
 import { RecipeCostPanel } from '@/components/inventory/recipe-cost-panel';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
@@ -32,6 +41,7 @@ import { getErrorMessage } from '@/lib/api-error';
 import { usePermission } from '@/lib/auth/use-permission';
 import { useRecipeForMenuItem } from '@/lib/inventory/use-recipe-data';
 import { useMenuInvalidation } from '@/lib/menu/use-menu-invalidation';
+import { useRestaurant } from '@/lib/restaurant/use-restaurant';
 import { formatMoney, minorToInput, toMinor } from '@/lib/money';
 import { PERMISSIONS } from '@/lib/permissions';
 import { toast } from '@/stores/toast';
@@ -61,6 +71,8 @@ export function ItemEditorDrawer({
   const canManageRecipe = usePermission(PERMISSIONS.INVENTORY_RECIPE_MANAGE);
   const { invalidateItems, invalidateItem, invalidateMenuTree, invalidateCategories } =
     useMenuInvalidation();
+  const { data: restaurant } = useRestaurant();
+  const primaryLocale = restaurant?.defaultLanguage;
 
   const [tab, setTab] = useState<'details' | 'recipe'>(initialTab);
 
@@ -79,6 +91,8 @@ export function ItemEditorDrawer({
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [nameI18n, setNameI18n] = useState<I18nDraft>(EMPTY_I18N);
+  const [descriptionI18n, setDescriptionI18n] = useState<I18nDraft>(EMPTY_I18N);
   const [formCategoryId, setFormCategoryId] = useState(categoryId ?? categories[0]?.id ?? '');
   const [priceInput, setPriceInput] = useState('0');
   const [imageUrl, setImageUrl] = useState('');
@@ -103,6 +117,8 @@ export function ItemEditorDrawer({
     if (!detail) return;
     setName(detail.name);
     setDescription(detail.description ?? '');
+    setNameI18n(toI18nDraft(detail.nameI18n));
+    setDescriptionI18n(toI18nDraft(detail.descriptionI18n));
     setFormCategoryId(detail.categoryId);
     setPriceInput(minorToInput(detail.priceAmount, currency));
     setImageUrl(detail.imageUrl ?? '');
@@ -158,6 +174,8 @@ export function ItemEditorDrawer({
             imageKey: imageKey || undefined,
             preparationStation: station as CreateMenuItemDtoPreparationStation,
             prepTimeMinutes,
+            ...nameTranslationFields(primaryLocale, nameI18n),
+            ...descriptionTranslationFields(primaryLocale, descriptionI18n),
           },
         })) as MenuItemResponse;
 
@@ -205,6 +223,8 @@ export function ItemEditorDrawer({
             // Send the current field value (populated from the dish on load, so an
             // untouched code is preserved); an empty string clears it.
             adgCode: adgCode.trim(),
+            ...nameTranslationFields(primaryLocale, nameI18n),
+            ...descriptionTranslationFields(primaryLocale, descriptionI18n),
           },
         });
         if (canSetPrice && (priceMinor ?? 0) !== detail.priceAmount) {
@@ -295,7 +315,11 @@ export function ItemEditorDrawer({
           {tab === 'details' ? (
             <div className="space-y-5">
               <div className="space-y-3">
-                <Field label={t('itemName')} required error={errors.name}>
+                <Field
+                  label={`${t('itemName')} (${primaryLocaleName(primaryLocale)})`}
+                  required
+                  error={errors.name}
+                >
               <input
                 className={inputClass}
                 value={name}
@@ -303,7 +327,14 @@ export function ItemEditorDrawer({
                 onChange={(e) => setName(e.target.value)}
               />
             </Field>
-            <Field label={t('description')}>
+            <TranslationFields
+              primaryLocale={primaryLocale}
+              label={t('itemName')}
+              value={nameI18n}
+              onChange={setNameI18n}
+              disabled={!canManage}
+            />
+            <Field label={`${t('description')} (${primaryLocaleName(primaryLocale)})`}>
               <textarea
                 className={inputClass}
                 rows={2}
@@ -312,6 +343,14 @@ export function ItemEditorDrawer({
                 onChange={(e) => setDescription(e.target.value)}
               />
             </Field>
+            <TranslationFields
+              primaryLocale={primaryLocale}
+              label={t('description')}
+              value={descriptionI18n}
+              onChange={setDescriptionI18n}
+              multiline
+              disabled={!canManage}
+            />
             <div className="grid grid-cols-2 gap-3">
               <Field label={t('category')} required error={errors.category}>
                 <select

@@ -1,9 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { CatalogLocalizedName } from '../../../platform-catalog/domain/repositories/catalog-item.reader';
 import { BranchInventoryPolicy } from '../../domain/entities/branch-inventory-policy';
 import { InventoryLocation } from '../../domain/entities/inventory-location';
 import { LowStockAlertRow } from '../ports/low-stock-alert.reader';
 import { OnHandRow } from '../ports/stock-on-hand.reader';
 import { SetCountedOnHandResult } from '../commands/set-counted-on-hand.usecase';
+import { CatalogNameView } from './responses';
 
 export class InventoryLocationResponse {
   @ApiProperty() id!: string;
@@ -32,7 +34,10 @@ export class InventoryLocationResponse {
 
 export class OnHandRowResponse {
   @ApiProperty() itemId!: string;
-  @ApiProperty() itemName!: string;
+  @ApiProperty({ nullable: true, type: String, description: 'Local name; null when adopted (use catalogName).' })
+  itemName!: string | null;
+  @ApiProperty({ nullable: true, type: CatalogNameView, description: 'Live catalog name {hy,ru,en} when adopted.' })
+  catalogName!: CatalogLocalizedName | null;
   @ApiProperty() baseUnit!: string;
   @ApiProperty() locationId!: string;
   @ApiProperty() locationName!: string;
@@ -44,6 +49,7 @@ export class OnHandRowResponse {
     return {
       itemId: r.itemId,
       itemName: r.itemName,
+      catalogName: r.catalogName ?? null,
       baseUnit: r.baseUnit,
       locationId: r.locationId,
       locationName: r.locationName,
@@ -71,7 +77,10 @@ export class BranchInventoryPolicyResponse {
 export class LowStockAlertResponse {
   @ApiProperty() id!: string;
   @ApiProperty() itemId!: string;
-  @ApiProperty() itemName!: string;
+  @ApiProperty({ nullable: true, type: String, description: 'Local name; null when adopted (use catalogName).' })
+  itemName!: string | null;
+  @ApiProperty({ nullable: true, type: CatalogNameView, description: 'Live catalog name {hy,ru,en} when adopted.' })
+  catalogName!: CatalogLocalizedName | null;
   @ApiProperty() locationId!: string;
   @ApiProperty() locationName!: string;
   @ApiProperty() thresholdBase!: number;
@@ -85,6 +94,7 @@ export class LowStockAlertResponse {
       id: r.id,
       itemId: r.itemId,
       itemName: r.itemName,
+      catalogName: r.catalogName ?? null,
       locationId: r.locationId,
       locationName: r.locationName,
       thresholdBase: r.thresholdBase,

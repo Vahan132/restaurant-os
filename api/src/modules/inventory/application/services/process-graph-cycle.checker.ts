@@ -64,7 +64,9 @@ export class ProcessGraphCycleChecker {
     restaurantId: string,
     branchId: string,
     ids: string[],
-  ): Promise<Map<string, string>> {
+  ): Promise<Map<string, string | null>> {
+    // PLATCAT-ADOPT-1B: name is nullable (adopted items resolve it live). This is an
+    // error-message path; a null falls back to the item id at the call site.
     const rows = await this.items.findManyByIds(restaurantId, branchId, [...new Set(ids)]);
     return new Map(rows.map((r) => [r.id, r.name]));
   }

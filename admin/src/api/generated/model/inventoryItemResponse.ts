@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AlternateUnitView } from './alternateUnitView';
+import type { CatalogNameView } from './catalogNameView';
 import type { InventoryItemResponseBaseUnit } from './inventoryItemResponseBaseUnit';
 import type { InventoryItemResponseKind } from './inventoryItemResponseKind';
 import type { InventoryItemResponseStatus } from './inventoryItemResponseStatus';
@@ -14,7 +15,13 @@ export interface InventoryItemResponse {
   id: string;
   restaurantId: string;
   branchId: string;
-  name: string;
+  /**
+     * PLATCAT-ADOPT-1B: local name; null for an adopted item (use catalogName). Client display = catalogName ? catalogName[locale] : name.
+     * @nullable
+     */
+  name: string | null;
+  /** Live-resolved platform catalog name {hy,ru,en}; present when adopted. */
+  catalogName: CatalogNameView | null;
   /** @nullable */
   sku: string | null;
   /** @nullable */
@@ -35,5 +42,10 @@ export interface InventoryItemResponse {
      * @nullable
      */
   consumptionLocationId: string | null;
+  /**
+     * CATALOG-1: platform CatalogItem this item was adopted from (null = custom).
+     * @nullable
+     */
+  catalogItemId: string | null;
   status: InventoryItemResponseStatus;
 }
