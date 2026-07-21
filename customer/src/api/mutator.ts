@@ -89,7 +89,7 @@ function resolveLocale(): string | null {
   const match = document.cookie.match(
     new RegExp(`(?:^|;\\s*)${LOCALE_COOKIE}=([^;]*)`),
   );
-  const value = match ? decodeURIComponent(match[1]) : undefined;
+  const value = match ? decodeURIComponent(match[1] ?? '') : undefined;
   return isLocale(value) ? value : null;
 }
 

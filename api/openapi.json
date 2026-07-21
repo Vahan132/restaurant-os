@@ -14536,7 +14536,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOverviewResponse"
+                }
+              }
+            }
           },
           "403": {
             "description": "Missing ACCOUNT_MANAGE permission."
@@ -14599,7 +14606,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSubscriptionDetailResponse"
+                }
+              }
+            }
           },
           "403": {
             "description": "Missing ACCOUNT_MANAGE permission."
@@ -14632,7 +14646,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSubscriptionDetailResponse"
+                }
+              }
+            }
           },
           "403": {
             "description": "Missing ACCOUNT_MANAGE permission."
@@ -14844,6 +14865,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too many pairing-code requests — wait a moment."
           }
         },
         "tags": [
@@ -14903,6 +14927,9 @@
           },
           "401": {
             "description": "The pairing code is invalid, already used, or expired."
+          },
+          "429": {
+            "description": "Too many pairing attempts — wait a moment and retry."
           }
         },
         "tags": [
@@ -26296,6 +26323,119 @@
           "user"
         ]
       },
+      "AccountOrganizationSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ]
+      },
+      "AccountRestaurantSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug"
+        ]
+      },
+      "AccountSubscriptionSummary": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "planCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planName": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentPeriodEnd": {
+            "type": "string",
+            "nullable": true
+          },
+          "trialEndsAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "status",
+          "planCode",
+          "planName",
+          "currentPeriodEnd",
+          "trialEndsAt"
+        ]
+      },
+      "AccountOwnerSummary": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fullName",
+          "email"
+        ]
+      },
+      "AccountOverviewResponse": {
+        "type": "object",
+        "properties": {
+          "organization": {
+            "$ref": "#/components/schemas/AccountOrganizationSummary"
+          },
+          "restaurant": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountRestaurantSummary"
+              }
+            ]
+          },
+          "subscription": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountSubscriptionSummary"
+              }
+            ]
+          },
+          "owner": {
+            "$ref": "#/components/schemas/AccountOwnerSummary"
+          }
+        },
+        "required": [
+          "organization",
+          "restaurant",
+          "subscription",
+          "owner"
+        ]
+      },
       "UpdateAccountProfileDto": {
         "type": "object",
         "properties": {
@@ -26303,17 +26443,6 @@
             "type": "string"
           }
         }
-      },
-      "ChangePlanDto": {
-        "type": "object",
-        "properties": {
-          "planCode": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "planCode"
-        ]
       },
       "SubscriptionHistoryResponse": {
         "type": "object",
@@ -26357,6 +26486,70 @@
           "changedByType",
           "reason",
           "createdAt"
+        ]
+      },
+      "AccountSubscriptionDetailResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "planCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planName": {
+            "type": "string",
+            "nullable": true
+          },
+          "priceAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "interval": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentPeriodEnd": {
+            "type": "string",
+            "nullable": true
+          },
+          "trialEndsAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "recentHistory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionHistoryResponse"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "planCode",
+          "planName",
+          "priceAmount",
+          "currency",
+          "interval",
+          "currentPeriodEnd",
+          "trialEndsAt",
+          "recentHistory"
+        ]
+      },
+      "ChangePlanDto": {
+        "type": "object",
+        "properties": {
+          "planCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "planCode"
         ]
       },
       "BillingResponse": {

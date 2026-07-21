@@ -26,6 +26,8 @@ import type {
 
 import type {
   AccountControllerHistoryParams,
+  AccountOverviewResponse,
+  AccountSubscriptionDetailResponse,
   BillingResponse,
   ChangePlanDto,
   SubscriptionHistoryResponse,
@@ -51,7 +53,7 @@ export const accountControllerAccount = (
 ) => {
       
       
-      return httpClient<void>(
+      return httpClient<AccountOverviewResponse>(
       {url: `/account`, method: 'GET', signal
     },
       options);
@@ -205,7 +207,7 @@ export const accountControllerSubscription = (
 ) => {
       
       
-      return httpClient<void>(
+      return httpClient<AccountSubscriptionDetailResponse>(
       {url: `/account/subscription`, method: 'GET', signal
     },
       options);
@@ -296,7 +298,7 @@ export const accountControllerChange = (
 ) => {
       
       
-      return httpClient<void>(
+      return httpClient<AccountSubscriptionDetailResponse>(
       {url: `/account/subscription/change-plan`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: changePlanDto, signal

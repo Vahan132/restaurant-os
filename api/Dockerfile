@@ -14,7 +14,7 @@ FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
 # pnpm via corepack (version pinned by package.json "packageManager").
-RUN corepack enable
+RUN corepack enable && apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Install deps against the lockfile (cached unless manifests change).
 COPY package.json pnpm-lock.yaml ./
@@ -31,9 +31,9 @@ FROM node:20-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN corepack enable
+RUN corepack enable && apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/scripts ./scripts

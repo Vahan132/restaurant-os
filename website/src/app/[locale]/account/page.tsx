@@ -22,7 +22,7 @@ export default function AccountOverviewPage() {
 function Overview({ data }: { data: NonNullable<ReturnType<typeof useAccountOverview>["data"]> }) {
   const t = useTranslations("account.overview");
   const locale = useLocale();
-  const slug = data.restaurant.slug;
+  const slug = data.restaurant?.slug ?? "";
   const sub = data.subscription;
 
   const links = [
@@ -42,15 +42,15 @@ function Overview({ data }: { data: NonNullable<ReturnType<typeof useAccountOver
             <span className="break-all font-medium text-ink-soft">{buildCustomerUrl(slug)}</span>
           ),
         })}
-        action={<StatusBadge status={sub.status} />}
+        action={<StatusBadge status={sub?.status} />}
       >
         <dl className="grid gap-x-6 sm:grid-cols-2 lg:gap-x-10">
-          <Row label={t("plan")}>{sub.planName}</Row>
-          <Row label={t("status")}>{<StatusBadge status={sub.status} />}</Row>
-          {sub.trialEndsAt ? (
-            <Row label={t("trialEnds")}>{formatDate(sub.trialEndsAt, locale)}</Row>
+          <Row label={t("plan")}>{sub?.planName}</Row>
+          <Row label={t("status")}>{<StatusBadge status={sub?.status} />}</Row>
+          {sub?.trialEndsAt ? (
+            <Row label={t("trialEnds")}>{formatDate(sub?.trialEndsAt, locale)}</Row>
           ) : null}
-          <Row label={t("periodEnds")}>{formatDate(sub.currentPeriodEnd, locale)}</Row>
+          <Row label={t("periodEnds")}>{formatDate(sub?.currentPeriodEnd, locale)}</Row>
         </dl>
         <div className="mt-5 flex flex-wrap gap-3">
           <ButtonLink href="/account/subscription" size="sm">

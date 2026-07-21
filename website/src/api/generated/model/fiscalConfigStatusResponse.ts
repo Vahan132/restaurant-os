@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { FiscalConfigStatusResponseEnvironment } from './fiscalConfigStatusResponseEnvironment';
+import type { FiscalConfigStatusResponseFiscalPrintMode } from './fiscalConfigStatusResponseFiscalPrintMode';
 import type { FiscalDepartmentResponse } from './fiscalDepartmentResponse';
 
 export interface FiscalConfigStatusResponse {
@@ -18,6 +19,20 @@ export interface FiscalConfigStatusResponse {
   active: boolean;
   /** True once a cert/key has been uploaded (never exposes the material). */
   certConfigured: boolean;
+  /**
+   * Non-secret physical-device host.
+   * @nullable
+   */
+  deviceHost: string | null;
+  /**
+   * Non-secret physical-device port.
+   * @nullable
+   */
+  devicePort: number | null;
+  /** True once a device password is set (never exposes the material). */
+  deviceConfigured: boolean;
+  /** Dine-in fiscalize print mode. */
+  fiscalPrintMode: FiscalConfigStatusResponseFiscalPrintMode;
   departments: FiscalDepartmentResponse[];
   /** @nullable */
   lastCheckConnectionAt: string | null;

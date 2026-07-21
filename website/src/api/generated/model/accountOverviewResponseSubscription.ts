@@ -5,9 +5,9 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { AccountSubscriptionSummary } from './accountSubscriptionSummary';
 
 /**
- * Default ATG classifier, or null.
  * @nullable
  */
-export type CreateCatalogItemDtoAdgCode = { [key: string]: unknown } | null;
+export type AccountOverviewResponseSubscription = AccountSubscriptionSummary | null;

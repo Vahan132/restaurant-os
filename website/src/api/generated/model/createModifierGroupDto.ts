@@ -8,6 +8,21 @@
 import type { CreateModifierGroupDtoSelectionType } from './createModifierGroupDtoSelectionType';
 
 export interface CreateModifierGroupDto {
+  /**
+   * Armenian name translation.
+   * @nullable
+   */
+  nameHy?: string | null;
+  /**
+   * Russian name translation.
+   * @nullable
+   */
+  nameRu?: string | null;
+  /**
+   * English name translation.
+   * @nullable
+   */
+  nameEn?: string | null;
   name: string;
   selectionType: CreateModifierGroupDtoSelectionType;
   required?: boolean;

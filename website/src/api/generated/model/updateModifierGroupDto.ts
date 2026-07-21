@@ -9,6 +9,21 @@ import type { UpdateModifierGroupDtoSelectionType } from './updateModifierGroupD
 import type { UpdateModifierGroupDtoStatus } from './updateModifierGroupDtoStatus';
 
 export interface UpdateModifierGroupDto {
+  /**
+   * Armenian name translation.
+   * @nullable
+   */
+  nameHy?: string | null;
+  /**
+   * Russian name translation.
+   * @nullable
+   */
+  nameRu?: string | null;
+  /**
+   * English name translation.
+   * @nullable
+   */
+  nameEn?: string | null;
   name?: string;
   selectionType?: UpdateModifierGroupDtoSelectionType;
   required?: boolean;

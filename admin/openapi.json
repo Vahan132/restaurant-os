@@ -14819,6 +14819,41 @@
         ]
       }
     },
+    "/edge-nodes/pairing-code": {
+      "post": {
+        "operationId": "EdgeNodesController_pairingCode",
+        "summary": "Issue a single-use pairing code for a branch (returns the code ONCE).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssuePairingCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingCodeResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many pairing-code requests — wait a moment."
+          }
+        },
+        "tags": [
+          "edge-nodes"
+        ]
+      }
+    },
     "/edge-nodes/{id}/revoke": {
       "post": {
         "operationId": "EdgeNodesController_revokeNode",
@@ -14840,6 +14875,44 @@
         },
         "tags": [
           "edge-nodes"
+        ]
+      }
+    },
+    "/edge/pair": {
+      "post": {
+        "operationId": "EdgePairController_pairNode",
+        "summary": "Redeem a pairing code: enrol the hub + deliver its token + fiscal KEK ONCE.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairEdgeNodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdgePairResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The pairing code is invalid, already used, or expired."
+          },
+          "429": {
+            "description": "Too many pairing attempts — wait a moment and retry."
+          }
+        },
+        "tags": [
+          "edge"
         ]
       }
     },
@@ -16814,7 +16887,7 @@
             "minimum": 0
           },
           "dep": {
-            "type": "object",
+            "type": "string",
             "description": "FISCAL-DEPT-1: the branch fiscal department code (must exist in this branch FiscalDepartment set) this dish sells under, for the receipt line's VAT regime. Rejected with INVALID_FISCAL_DEPARTMENT if unknown to the branch. Omit or send null to leave it unassigned.",
             "example": "1",
             "nullable": true
@@ -16893,13 +16966,13 @@
             "description": "CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible)."
           },
           "adgCode": {
-            "type": "object",
+            "type": "string",
             "description": "ADGCODE-UI: SRC ATG classification code (from the SRC N 1406-Ն / N 875-Ն lists) for e-HDM fiscalization. Free-text: SRC is the authority (rejects a bad code with error 183 at fiscalization), so there is NO server format constraint — the UI only soft-warns on obvious typos. Send an empty string or null to clear it; omit to leave it unchanged (partial update).",
             "example": "2130000000",
             "nullable": true
           },
           "dep": {
-            "type": "object",
+            "type": "string",
             "description": "FISCAL-DEPT-1: the branch fiscal department code (must exist in this branch FiscalDepartment set) this dish sells under, for the receipt line's VAT regime. Rejected with INVALID_FISCAL_DEPARTMENT if unknown to the branch. Send an empty string or null to clear (unassign); omit to leave it unchanged (partial update).",
             "example": "1",
             "nullable": true
@@ -26443,6 +26516,41 @@
           "token"
         ]
       },
+      "IssuePairingCodeDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "The branch the paired hub will serve."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-friendly node name, e.g. \"Kitchen hub\"."
+          }
+        },
+        "required": [
+          "branchId",
+          "name"
+        ]
+      },
+      "PairingCodeResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The pairing code to read out to the restaurant. Shown ONCE; store it now.",
+            "example": "K7M2-QP9X"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "When the code expires (ISO-8601)."
+          }
+        },
+        "required": [
+          "code",
+          "expiresAt"
+        ]
+      },
       "EdgeNodeResponse": {
         "type": "object",
         "properties": {
@@ -26526,6 +26634,51 @@
           "online",
           "updateAvailable",
           "createdAt"
+        ]
+      },
+      "PairEdgeNodeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The pairing code (case-insensitive; spaces/hyphens ignored)."
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "EdgePairResponse": {
+        "type": "object",
+        "properties": {
+          "nodeId": {
+            "type": "string"
+          },
+          "nodeToken": {
+            "type": "string",
+            "description": "Long-lived node bearer token. Write to EDGE_NODE_TOKEN. Shown ONCE."
+          },
+          "fiscalKek": {
+            "type": "string",
+            "description": "Per-hub fiscal KEK as 64 hex chars (32 bytes). Write VERBATIM to the FISCAL_MASTER_KEK slot (validated as 64-hex). Shown ONCE."
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "restaurantId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "nodeId",
+          "nodeToken",
+          "fiscalKek",
+          "organizationId",
+          "restaurantId",
+          "branchId"
         ]
       },
       "PushEntryDto": {

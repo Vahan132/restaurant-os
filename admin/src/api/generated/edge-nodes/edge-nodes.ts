@@ -26,6 +26,8 @@ import type {
 
 import type {
   EdgeNodeResponse,
+  IssuePairingCodeDto,
+  PairingCodeResponse,
   RegisterEdgeNodeDto,
   RegisterEdgeNodeResponse
 } from '../model';
@@ -193,6 +195,69 @@ export function useEdgeNodesControllerListNodes<TData = Awaited<ReturnType<typeo
 
 
 /**
+ * @summary Issue a single-use pairing code for a branch (returns the code ONCE).
+ */
+export const edgeNodesControllerPairingCode = (
+    issuePairingCodeDto: IssuePairingCodeDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<PairingCodeResponse>(
+      {url: `/edge-nodes/pairing-code`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: issuePairingCodeDto, signal
+    },
+      options);
+    }
+
+
+
+export const getEdgeNodesControllerPairingCodeMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof edgeNodesControllerPairingCode>>, TError,{data: IssuePairingCodeDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof edgeNodesControllerPairingCode>>, TError,{data: IssuePairingCodeDto}, TContext> => {
+
+const mutationKey = ['edgeNodesControllerPairingCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof edgeNodesControllerPairingCode>>, {data: IssuePairingCodeDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  edgeNodesControllerPairingCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EdgeNodesControllerPairingCodeMutationResult = NonNullable<Awaited<ReturnType<typeof edgeNodesControllerPairingCode>>>
+    export type EdgeNodesControllerPairingCodeMutationBody = IssuePairingCodeDto
+    export type EdgeNodesControllerPairingCodeMutationError = void
+
+    /**
+ * @summary Issue a single-use pairing code for a branch (returns the code ONCE).
+ */
+export const useEdgeNodesControllerPairingCode = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof edgeNodesControllerPairingCode>>, TError,{data: IssuePairingCodeDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof edgeNodesControllerPairingCode>>,
+        TError,
+        {data: IssuePairingCodeDto},
+        TContext
+      > => {
+      return useMutation(getEdgeNodesControllerPairingCodeMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Revoke an edge node (idempotent).
  */
 export const edgeNodesControllerRevokeNode = (

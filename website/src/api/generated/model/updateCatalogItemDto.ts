@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { UpdateCatalogItemDtoCategoryId } from './updateCatalogItemDtoCategoryId';
-import type { UpdateCatalogItemDtoAdgCode } from './updateCatalogItemDtoAdgCode';
 
 export interface UpdateCatalogItemDto {
   nameHy?: string;
@@ -14,8 +13,6 @@ export interface UpdateCatalogItemDto {
   nameEn?: string;
   /** @nullable */
   categoryId?: UpdateCatalogItemDtoCategoryId;
-  /** @nullable */
-  adgCode?: UpdateCatalogItemDtoAdgCode;
   /** Replaces the full tag set. */
   allergenSlugs?: string[];
   /** Support tagging gate — flip true once allergen tagging is complete (omitted = unchanged). */

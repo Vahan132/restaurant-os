@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * @nullable
- */
-export type CatalogItemResponseAdgCode = { [key: string]: unknown } | null;
+export interface PairEdgeNodeDto {
+  /** The pairing code (case-insensitive; spaces/hyphens ignored). */
+  code: string;
+}

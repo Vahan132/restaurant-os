@@ -5,8 +5,6 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { UpdateMenuItemDtoAdgCode } from './updateMenuItemDtoAdgCode';
-import type { UpdateMenuItemDtoDep } from './updateMenuItemDtoDep';
 import type { UpdateMenuItemDtoPreparationStation } from './updateMenuItemDtoPreparationStation';
 
 export interface UpdateMenuItemDto {
@@ -56,10 +54,10 @@ export interface UpdateMenuItemDto {
      * ADGCODE-UI: SRC ATG classification code (from the SRC N 1406-Ն / N 875-Ն lists) for e-HDM fiscalization. Free-text: SRC is the authority (rejects a bad code with error 183 at fiscalization), so there is NO server format constraint — the UI only soft-warns on obvious typos. Send an empty string or null to clear it; omit to leave it unchanged (partial update).
      * @nullable
      */
-  adgCode?: UpdateMenuItemDtoAdgCode;
+  adgCode?: string | null;
   /**
      * FISCAL-DEPT-1: the branch fiscal department code (must exist in this branch FiscalDepartment set) this dish sells under, for the receipt line's VAT regime. Rejected with INVALID_FISCAL_DEPARTMENT if unknown to the branch. Send an empty string or null to clear (unassign); omit to leave it unchanged (partial update).
      * @nullable
      */
-  dep?: UpdateMenuItemDtoDep;
+  dep?: string | null;
 }

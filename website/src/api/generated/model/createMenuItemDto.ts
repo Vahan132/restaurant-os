@@ -8,6 +8,36 @@
 import type { CreateMenuItemDtoPreparationStation } from './createMenuItemDtoPreparationStation';
 
 export interface CreateMenuItemDto {
+  /**
+   * Armenian name translation.
+   * @nullable
+   */
+  nameHy?: string | null;
+  /**
+   * Russian name translation.
+   * @nullable
+   */
+  nameRu?: string | null;
+  /**
+   * English name translation.
+   * @nullable
+   */
+  nameEn?: string | null;
+  /**
+   * Armenian description translation.
+   * @nullable
+   */
+  descriptionHy?: string | null;
+  /**
+   * Russian description translation.
+   * @nullable
+   */
+  descriptionRu?: string | null;
+  /**
+   * English description translation.
+   * @nullable
+   */
+  descriptionEn?: string | null;
   name: string;
   /** Category id (must belong to your restaurant). */
   categoryId: string;
@@ -18,4 +48,9 @@ export interface CreateMenuItemDto {
   preparationStation?: CreateMenuItemDtoPreparationStation;
   /** @minimum 0 */
   prepTimeMinutes?: number;
+  /**
+   * FISCAL-DEPT-1: the branch fiscal department code (must exist in this branch FiscalDepartment set) this dish sells under, for the receipt line's VAT regime. Rejected with INVALID_FISCAL_DEPARTMENT if unknown to the branch. Omit or send null to leave it unassigned.
+   * @nullable
+   */
+  dep?: string | null;
 }

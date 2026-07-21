@@ -3881,6 +3881,36 @@
         ]
       }
     },
+    "/fiscal/departments": {
+      "get": {
+        "operationId": "TenantFiscalController_departments",
+        "summary": "List this branch's non-secret fiscal departments (dep/label/taxRegime).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchFiscalDepartmentsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing MENU_MANAGE permission."
+          }
+        },
+        "tags": [
+          "fiscal"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
     "/orders": {
       "post": {
         "operationId": "OrdersController_create",
@@ -13109,6 +13139,114 @@
         ]
       }
     },
+    "/platform/fiscal-config/{restaurantId}/{branchId}/device": {
+      "post": {
+        "operationId": "PlatformFiscalConfigController_setDeviceConfig",
+        "summary": "Set the physical-HDM device (host/port/password; password write-only).",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFiscalDeviceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiscalConfigStatusResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Platform Fiscal Config"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/fiscal-config/{restaurantId}/{branchId}/print-mode": {
+      "patch": {
+        "operationId": "PlatformFiscalConfigController_setPrintModeConfig",
+        "summary": "Set the dine-in fiscalize print mode (AUTO|MANUAL).",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFiscalPrintModeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiscalConfigStatusResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Platform Fiscal Config"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
     "/platform/fiscal-config/{restaurantId}/{branchId}": {
       "put": {
         "operationId": "PlatformFiscalConfigController_upsertConfig",
@@ -14681,6 +14819,41 @@
         ]
       }
     },
+    "/edge-nodes/pairing-code": {
+      "post": {
+        "operationId": "EdgeNodesController_pairingCode",
+        "summary": "Issue a single-use pairing code for a branch (returns the code ONCE).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssuePairingCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingCodeResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many pairing-code requests — wait a moment."
+          }
+        },
+        "tags": [
+          "edge-nodes"
+        ]
+      }
+    },
     "/edge-nodes/{id}/revoke": {
       "post": {
         "operationId": "EdgeNodesController_revokeNode",
@@ -14702,6 +14875,44 @@
         },
         "tags": [
           "edge-nodes"
+        ]
+      }
+    },
+    "/edge/pair": {
+      "post": {
+        "operationId": "EdgePairController_pairNode",
+        "summary": "Redeem a pairing code: enrol the hub + deliver its token + fiscal KEK ONCE.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairEdgeNodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdgePairResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The pairing code is invalid, already used, or expired."
+          },
+          "429": {
+            "description": "Too many pairing attempts — wait a moment and retry."
+          }
+        },
+        "tags": [
+          "edge"
         ]
       }
     },
@@ -16266,6 +16477,11 @@
             "type": "string",
             "nullable": true,
             "description": "ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified)."
+          },
+          "dep": {
+            "type": "string",
+            "nullable": true,
+            "description": "FISCAL-DEPT-1: branch fiscal department code this dish sells under, for the receipt line's VAT regime (null = unassigned)."
           }
         },
         "required": [
@@ -16286,7 +16502,8 @@
           "status",
           "availability",
           "hideRecipe",
-          "adgCode"
+          "adgCode",
+          "dep"
         ]
       },
       "DishModifierGroupResponse": {
@@ -16570,6 +16787,11 @@
             "nullable": true,
             "description": "ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified)."
           },
+          "dep": {
+            "type": "string",
+            "nullable": true,
+            "description": "FISCAL-DEPT-1: branch fiscal department code this dish sells under, for the receipt line's VAT regime (null = unassigned)."
+          },
           "modifierGroups": {
             "type": "array",
             "items": {
@@ -16596,6 +16818,7 @@
           "availability",
           "hideRecipe",
           "adgCode",
+          "dep",
           "modifierGroups"
         ]
       },
@@ -16662,6 +16885,12 @@
           "prepTimeMinutes": {
             "type": "number",
             "minimum": 0
+          },
+          "dep": {
+            "type": "string",
+            "description": "FISCAL-DEPT-1: the branch fiscal department code (must exist in this branch FiscalDepartment set) this dish sells under, for the receipt line's VAT regime. Rejected with INVALID_FISCAL_DEPARTMENT if unknown to the branch. Omit or send null to leave it unassigned.",
+            "example": "1",
+            "nullable": true
           }
         },
         "required": [
@@ -16737,9 +16966,15 @@
             "description": "CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible)."
           },
           "adgCode": {
-            "type": "object",
+            "type": "string",
             "description": "ADGCODE-UI: SRC ATG classification code (from the SRC N 1406-Ն / N 875-Ն lists) for e-HDM fiscalization. Free-text: SRC is the authority (rejects a bad code with error 183 at fiscalization), so there is NO server format constraint — the UI only soft-warns on obvious typos. Send an empty string or null to clear it; omit to leave it unchanged (partial update).",
             "example": "2130000000",
+            "nullable": true
+          },
+          "dep": {
+            "type": "string",
+            "description": "FISCAL-DEPT-1: the branch fiscal department code (must exist in this branch FiscalDepartment set) this dish sells under, for the receipt line's VAT regime. Rejected with INVALID_FISCAL_DEPARTMENT if unknown to the branch. Send an empty string or null to clear (unassign); omit to leave it unchanged (partial update).",
+            "example": "1",
             "nullable": true
           }
         }
@@ -17648,6 +17883,49 @@
           "active",
           "session",
           "orders"
+        ]
+      },
+      "FiscalDepartmentItemResponse": {
+        "type": "object",
+        "properties": {
+          "dep": {
+            "type": "string",
+            "description": "SRC fiscal department code registered for this branch."
+          },
+          "label": {
+            "type": "string",
+            "nullable": true,
+            "description": "Human-friendly label for the department (optional)."
+          },
+          "taxRegime": {
+            "type": "string",
+            "description": "VAT tax regime associated with the department."
+          }
+        },
+        "required": [
+          "dep",
+          "label",
+          "taxRegime"
+        ]
+      },
+      "BranchFiscalDepartmentsResponse": {
+        "type": "object",
+        "properties": {
+          "fiscalActive": {
+            "type": "boolean",
+            "description": "Whether fiscalization is active for this branch (false when unconfigured)."
+          },
+          "departments": {
+            "description": "Non-secret department list; empty when the branch has none registered.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FiscalDepartmentItemResponse"
+            }
+          }
+        },
+        "required": [
+          "fiscalActive",
+          "departments"
         ]
       },
       "CreateOrderDto": {
@@ -24730,6 +25008,156 @@
           "clientKeyPem"
         ]
       },
+      "SetFiscalDeviceDto": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string",
+            "description": "Device IP/hostname on the LAN."
+          },
+          "port": {
+            "type": "number",
+            "description": "Device TCP port (1–65535).",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "password": {
+            "type": "string",
+            "description": "Device password. Encrypted at rest; never returned by any read."
+          }
+        },
+        "required": [
+          "host",
+          "port",
+          "password"
+        ]
+      },
+      "FiscalDepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "dep": {
+            "type": "string"
+          },
+          "taxRegime": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "dep",
+          "taxRegime",
+          "label"
+        ]
+      },
+      "FiscalConfigStatusResponse": {
+        "type": "object",
+        "properties": {
+          "restaurantId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "crn": {
+            "type": "string"
+          },
+          "cashierId": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "PROD",
+              "TEST"
+            ]
+          },
+          "language": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "certConfigured": {
+            "type": "boolean",
+            "description": "True once a cert/key has been uploaded (never exposes the material)."
+          },
+          "deviceHost": {
+            "type": "string",
+            "nullable": true,
+            "description": "Non-secret physical-device host."
+          },
+          "devicePort": {
+            "type": "number",
+            "nullable": true,
+            "description": "Non-secret physical-device port."
+          },
+          "deviceConfigured": {
+            "type": "boolean",
+            "description": "True once a device password is set (never exposes the material)."
+          },
+          "fiscalPrintMode": {
+            "type": "string",
+            "enum": [
+              "AUTO",
+              "MANUAL"
+            ],
+            "description": "Dine-in fiscalize print mode."
+          },
+          "departments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FiscalDepartmentResponse"
+            }
+          },
+          "lastCheckConnectionAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastCheckConnectionOk": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "restaurantId",
+          "branchId",
+          "crn",
+          "cashierId",
+          "environment",
+          "language",
+          "active",
+          "certConfigured",
+          "deviceHost",
+          "devicePort",
+          "deviceConfigured",
+          "fiscalPrintMode",
+          "departments",
+          "lastCheckConnectionAt",
+          "lastCheckConnectionOk",
+          "updatedAt"
+        ]
+      },
+      "SetFiscalPrintModeDto": {
+        "type": "object",
+        "properties": {
+          "fiscalPrintMode": {
+            "type": "string",
+            "enum": [
+              "AUTO",
+              "MANUAL"
+            ]
+          }
+        },
+        "required": [
+          "fiscalPrintMode"
+        ]
+      },
       "UpsertFiscalConfigDto": {
         "type": "object",
         "properties": {
@@ -24797,91 +25225,6 @@
         },
         "required": [
           "departments"
-        ]
-      },
-      "FiscalDepartmentResponse": {
-        "type": "object",
-        "properties": {
-          "dep": {
-            "type": "string"
-          },
-          "taxRegime": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "dep",
-          "taxRegime",
-          "label"
-        ]
-      },
-      "FiscalConfigStatusResponse": {
-        "type": "object",
-        "properties": {
-          "restaurantId": {
-            "type": "string"
-          },
-          "branchId": {
-            "type": "string"
-          },
-          "crn": {
-            "type": "string"
-          },
-          "cashierId": {
-            "type": "string"
-          },
-          "environment": {
-            "type": "string",
-            "enum": [
-              "PROD",
-              "TEST"
-            ]
-          },
-          "language": {
-            "type": "string"
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "certConfigured": {
-            "type": "boolean",
-            "description": "True once a cert/key has been uploaded (never exposes the material)."
-          },
-          "departments": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FiscalDepartmentResponse"
-            }
-          },
-          "lastCheckConnectionAt": {
-            "type": "string",
-            "nullable": true
-          },
-          "lastCheckConnectionOk": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "restaurantId",
-          "branchId",
-          "crn",
-          "cashierId",
-          "environment",
-          "language",
-          "active",
-          "certConfigured",
-          "departments",
-          "lastCheckConnectionAt",
-          "lastCheckConnectionOk",
-          "updatedAt"
         ]
       },
       "CheckFiscalConnectionResponse": {
@@ -26173,6 +26516,41 @@
           "token"
         ]
       },
+      "IssuePairingCodeDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "The branch the paired hub will serve."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-friendly node name, e.g. \"Kitchen hub\"."
+          }
+        },
+        "required": [
+          "branchId",
+          "name"
+        ]
+      },
+      "PairingCodeResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The pairing code to read out to the restaurant. Shown ONCE; store it now.",
+            "example": "K7M2-QP9X"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "When the code expires (ISO-8601)."
+          }
+        },
+        "required": [
+          "code",
+          "expiresAt"
+        ]
+      },
       "EdgeNodeResponse": {
         "type": "object",
         "properties": {
@@ -26256,6 +26634,51 @@
           "online",
           "updateAvailable",
           "createdAt"
+        ]
+      },
+      "PairEdgeNodeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The pairing code (case-insensitive; spaces/hyphens ignored)."
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "EdgePairResponse": {
+        "type": "object",
+        "properties": {
+          "nodeId": {
+            "type": "string"
+          },
+          "nodeToken": {
+            "type": "string",
+            "description": "Long-lived node bearer token. Write to EDGE_NODE_TOKEN. Shown ONCE."
+          },
+          "fiscalKek": {
+            "type": "string",
+            "description": "Per-hub fiscal KEK as 64 hex chars (32 bytes). Write VERBATIM to the FISCAL_MASTER_KEK slot (validated as 64-hex). Shown ONCE."
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "restaurantId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "nodeId",
+          "nodeToken",
+          "fiscalKek",
+          "organizationId",
+          "restaurantId",
+          "branchId"
         ]
       },
       "PushEntryDto": {

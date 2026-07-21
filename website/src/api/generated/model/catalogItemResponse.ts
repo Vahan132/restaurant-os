@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CatalogItemResponseCategoryId } from './catalogItemResponseCategoryId';
-import type { CatalogItemResponseAdgCode } from './catalogItemResponseAdgCode';
 import type { CatalogItemResponseStatus } from './catalogItemResponseStatus';
 
 export interface CatalogItemResponse {
@@ -17,8 +16,6 @@ export interface CatalogItemResponse {
   nameEn: string;
   /** @nullable */
   categoryId: CatalogItemResponseCategoryId;
-  /** @nullable */
-  adgCode: CatalogItemResponseAdgCode;
   allergenSlugs: string[];
   /** Support-set gate; dishes show verified allergens only when true. */
   allergensReviewed: boolean;

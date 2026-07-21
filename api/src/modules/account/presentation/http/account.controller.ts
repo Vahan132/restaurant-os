@@ -20,10 +20,11 @@ import {
   UpdateAccountProfileDto,
 } from '../../application/dto/account.dto';
 import {
-  AccountOverview,
-  AccountSubscriptionView,
-} from '../../application/ports/account-query.port';
-import { BillingResponse, SubscriptionHistoryResponse } from '../../application/dto/responses';
+  AccountOverviewResponse,
+  AccountSubscriptionDetailResponse,
+  BillingResponse,
+  SubscriptionHistoryResponse,
+} from '../../application/dto/responses';
 import { OwnerChangePlanUseCase } from '../../application/commands/change-plan.usecase';
 import { UpdateProfileUseCase } from '../../application/commands/update-profile.usecase';
 import { UpsertBillingUseCase } from '../../application/commands/upsert-billing.usecase';
@@ -52,10 +53,11 @@ export class AccountController {
 
   @Get()
   @ApiOperation({ summary: 'Account overview (organization, restaurant, subscription, owner).' })
+  @ApiOkResponse({ type: AccountOverviewResponse })
   account(
     @CurrentTenant() tenant: TenantContext,
     @CurrentUser() user: CurrentUserContext,
-  ): Promise<AccountOverview> {
+  ): Promise<AccountOverviewResponse> {
     return this.getAccount.execute({ organizationId: tenant.organizationId, userId: user.sub });
   }
 
@@ -77,18 +79,22 @@ export class AccountController {
 
   @Get('subscription')
   @ApiOperation({ summary: 'Current subscription + plan + recent history.' })
-  subscription(@CurrentTenant() tenant: TenantContext): Promise<AccountSubscriptionView> {
+  @ApiOkResponse({ type: AccountSubscriptionDetailResponse })
+  subscription(
+    @CurrentTenant() tenant: TenantContext,
+  ): Promise<AccountSubscriptionDetailResponse> {
     return this.getSubscription.execute({ organizationId: tenant.organizationId });
   }
 
   @Post('subscription/change-plan')
   @HttpCode(200)
   @ApiOperation({ summary: 'Change the subscription plan (history appended as USER).' })
+  @ApiOkResponse({ type: AccountSubscriptionDetailResponse })
   change(
     @CurrentTenant() tenant: TenantContext,
     @CurrentUser() user: CurrentUserContext,
     @Body() dto: ChangePlanDto,
-  ): Promise<AccountSubscriptionView> {
+  ): Promise<AccountSubscriptionDetailResponse> {
     return this.changePlan.execute({
       organizationId: tenant.organizationId,
       userId: user.sub,

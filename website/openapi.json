@@ -3881,6 +3881,36 @@
         ]
       }
     },
+    "/fiscal/departments": {
+      "get": {
+        "operationId": "TenantFiscalController_departments",
+        "summary": "List this branch's non-secret fiscal departments (dep/label/taxRegime).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchFiscalDepartmentsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing MENU_MANAGE permission."
+          }
+        },
+        "tags": [
+          "fiscal"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
     "/orders": {
       "post": {
         "operationId": "OrdersController_create",
@@ -4855,6 +4885,84 @@
         ]
       }
     },
+    "/orders/{id}/fiscalize": {
+      "post": {
+        "operationId": "OrdersController_fiscalize",
+        "summary": "FISCAL-EDGE-4: manually fiscalize a paid dine-in order (MANUAL mode or retry). Hub-only.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing PAYMENT_PROCESS permission."
+          }
+        },
+        "tags": [
+          "orders"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/orders/{id}/fiscal-receipt": {
+      "get": {
+        "operationId": "OrdersController_fiscalReceipt",
+        "summary": "FISCAL-EDGE-4: stored fiscal receipt data (number/QR/receiptId) for reprint — no device call.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiscalReceiptResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing PAYMENT_PROCESS permission."
+          }
+        },
+        "tags": [
+          "orders"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
     "/public/qr/orders/validate-cart": {
       "post": {
         "operationId": "PublicQrOrdersController_validate",
@@ -5368,6 +5476,46 @@
         ]
       }
     },
+    "/inventory/items/adopt": {
+      "post": {
+        "operationId": "InventoryItemsController_adopt",
+        "summary": "Adopt a platform catalog item into this branch (sets catalogItemId).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdoptCatalogItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryItemResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:item:manage permission."
+          }
+        },
+        "tags": [
+          "inventory-items"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
     "/inventory/items/{id}/consumption-location": {
       "patch": {
         "operationId": "InventoryItemsController_setConsumptionLocationRoute",
@@ -5521,6 +5669,112 @@
         },
         "tags": [
           "inventory-items"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/catalog/items": {
+      "get": {
+        "operationId": "CatalogBrowseController_list",
+        "summary": "Browse active catalog items (paged; search slug + trilingual names).",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search by slug + trilingual names (case-insensitive).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by catalog category id.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogBrowseItemResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "catalog-browse"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/catalog/items/{id}": {
+      "get": {
+        "operationId": "CatalogBrowseController_get",
+        "summary": "Get one catalog item (any status, incl. archived).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogBrowseItemResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "catalog-browse"
         ],
         "security": [
           {
@@ -6770,7 +7024,21 @@
       "post": {
         "operationId": "RecipesController_create",
         "summary": "Create a recipe for a menu item (includes warnings; always saves).",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "hy",
+                "ru",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -6863,6 +7131,19 @@
             "required": true,
             "in": "path",
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "hy",
+                "ru",
+                "en"
+              ],
               "type": "string"
             }
           }
@@ -10777,7 +11058,17 @@
       "get": {
         "operationId": "PublicStorefrontController_menu",
         "summary": "Public menu tree of the restaurant DEFAULT branch (branch-less landing entry).",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-Locale",
+            "in": "header",
+            "description": "Guest content locale: hy | ru | en.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -10836,6 +11127,15 @@
         "operationId": "PublicStorefrontController_branchMenu",
         "summary": "BR-9: a specific branch's own menu/prices (branch-explicit).",
         "parameters": [
+          {
+            "name": "X-Locale",
+            "in": "header",
+            "description": "Guest content locale: hy | ru | en.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "branchSlug",
             "required": true,
@@ -12653,6 +12953,43 @@
         ]
       }
     },
+    "/platform/catalog-items/import": {
+      "post": {
+        "operationId": "PlatformCatalogItemsController_import",
+        "summary": "Bulk import catalog items from CSV (dry-run preview or transactional apply).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportCatalogItemsRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportCatalogItemsResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-catalog-items"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
     "/platform/catalog-items/{id}/archive": {
       "post": {
         "operationId": "PlatformCatalogItemsController_archive",
@@ -12790,6 +13127,114 @@
         "responses": {
           "200": {
             "description": ""
+          }
+        },
+        "tags": [
+          "Platform Fiscal Config"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/fiscal-config/{restaurantId}/{branchId}/device": {
+      "post": {
+        "operationId": "PlatformFiscalConfigController_setDeviceConfig",
+        "summary": "Set the physical-HDM device (host/port/password; password write-only).",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFiscalDeviceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiscalConfigStatusResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Platform Fiscal Config"
+        ],
+        "security": [
+          {
+            "platform-token": []
+          }
+        ]
+      }
+    },
+    "/platform/fiscal-config/{restaurantId}/{branchId}/print-mode": {
+      "patch": {
+        "operationId": "PlatformFiscalConfigController_setPrintModeConfig",
+        "summary": "Set the dine-in fiscalize print mode (AUTO|MANUAL).",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFiscalPrintModeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FiscalConfigStatusResponse"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -14091,7 +14536,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOverviewResponse"
+                }
+              }
+            }
           },
           "403": {
             "description": "Missing ACCOUNT_MANAGE permission."
@@ -14154,7 +14606,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSubscriptionDetailResponse"
+                }
+              }
+            }
           },
           "403": {
             "description": "Missing ACCOUNT_MANAGE permission."
@@ -14187,7 +14646,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSubscriptionDetailResponse"
+                }
+              }
+            }
           },
           "403": {
             "description": "Missing ACCOUNT_MANAGE permission."
@@ -14374,6 +14840,41 @@
         ]
       }
     },
+    "/edge-nodes/pairing-code": {
+      "post": {
+        "operationId": "EdgeNodesController_pairingCode",
+        "summary": "Issue a single-use pairing code for a branch (returns the code ONCE).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssuePairingCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingCodeResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many pairing-code requests — wait a moment."
+          }
+        },
+        "tags": [
+          "edge-nodes"
+        ]
+      }
+    },
     "/edge-nodes/{id}/revoke": {
       "post": {
         "operationId": "EdgeNodesController_revokeNode",
@@ -14395,6 +14896,44 @@
         },
         "tags": [
           "edge-nodes"
+        ]
+      }
+    },
+    "/edge/pair": {
+      "post": {
+        "operationId": "EdgePairController_pairNode",
+        "summary": "Redeem a pairing code: enrol the hub + deliver its token + fiscal KEK ONCE.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PairEdgeNodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdgePairResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The pairing code is invalid, already used, or expired."
+          },
+          "429": {
+            "description": "Too many pairing attempts — wait a moment and retry."
+          }
+        },
+        "tags": [
+          "edge"
         ]
       }
     },
@@ -15647,6 +16186,28 @@
           "maxBytes"
         ]
       },
+      "I18nTextResponse": {
+        "type": "object",
+        "properties": {
+          "hy": {
+            "type": "string",
+            "nullable": true
+          },
+          "ru": {
+            "type": "string",
+            "nullable": true
+          },
+          "en": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "hy",
+          "ru",
+          "en"
+        ]
+      },
       "CategoryResponse": {
         "type": "object",
         "properties": {
@@ -15669,6 +16230,22 @@
             "type": "string",
             "nullable": true
           },
+          "nameI18n": {
+            "description": "LOCALE-2A: hy/ru/en name translations (nulls where empty).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/I18nTextResponse"
+              }
+            ]
+          },
+          "descriptionI18n": {
+            "description": "LOCALE-2A: hy/ru/en description translations.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/I18nTextResponse"
+              }
+            ]
+          },
           "displayOrder": {
             "type": "number"
           },
@@ -15687,6 +16264,8 @@
           "code",
           "name",
           "description",
+          "nameI18n",
+          "descriptionI18n",
           "displayOrder",
           "status"
         ]
@@ -15694,6 +16273,36 @@
       "CreateCategoryDto": {
         "type": "object",
         "properties": {
+          "nameHy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Armenian name translation."
+          },
+          "nameRu": {
+            "type": "string",
+            "nullable": true,
+            "description": "Russian name translation."
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true,
+            "description": "English name translation."
+          },
+          "descriptionHy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Armenian description translation."
+          },
+          "descriptionRu": {
+            "type": "string",
+            "nullable": true,
+            "description": "Russian description translation."
+          },
+          "descriptionEn": {
+            "type": "string",
+            "nullable": true,
+            "description": "English description translation."
+          },
           "name": {
             "type": "string",
             "example": "Burgers"
@@ -15744,6 +16353,36 @@
       "UpdateCategoryDto": {
         "type": "object",
         "properties": {
+          "nameHy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Armenian name translation."
+          },
+          "nameRu": {
+            "type": "string",
+            "nullable": true,
+            "description": "Russian name translation."
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true,
+            "description": "English name translation."
+          },
+          "descriptionHy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Armenian description translation."
+          },
+          "descriptionRu": {
+            "type": "string",
+            "nullable": true,
+            "description": "Russian description translation."
+          },
+          "descriptionEn": {
+            "type": "string",
+            "nullable": true,
+            "description": "English description translation."
+          },
           "name": {
             "type": "string"
           },
@@ -15796,6 +16435,22 @@
             "type": "string",
             "nullable": true
           },
+          "nameI18n": {
+            "description": "LOCALE-2A: hy/ru/en name translations (nulls where empty).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/I18nTextResponse"
+              }
+            ]
+          },
+          "descriptionI18n": {
+            "description": "LOCALE-2A: hy/ru/en description translations.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/I18nTextResponse"
+              }
+            ]
+          },
           "priceAmount": {
             "type": "number"
           },
@@ -15843,6 +16498,11 @@
             "type": "string",
             "nullable": true,
             "description": "ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified)."
+          },
+          "dep": {
+            "type": "string",
+            "nullable": true,
+            "description": "FISCAL-DEPT-1: branch fiscal department code this dish sells under, for the receipt line's VAT regime (null = unassigned)."
           }
         },
         "required": [
@@ -15853,6 +16513,8 @@
           "categoryId",
           "name",
           "description",
+          "nameI18n",
+          "descriptionI18n",
           "priceAmount",
           "imageUrl",
           "imageKey",
@@ -15861,7 +16523,8 @@
           "status",
           "availability",
           "hideRecipe",
-          "adgCode"
+          "adgCode",
+          "dep"
         ]
       },
       "DishModifierGroupResponse": {
@@ -15938,6 +16601,14 @@
           "name": {
             "type": "string"
           },
+          "nameI18n": {
+            "description": "LOCALE-2A: hy/ru/en name translations.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/I18nTextResponse"
+              }
+            ]
+          },
           "priceDeltaAmount": {
             "type": "number",
             "description": "May be 0 or negative (minor units)."
@@ -15960,6 +16631,7 @@
           "id",
           "modifierGroupId",
           "name",
+          "nameI18n",
           "priceDeltaAmount",
           "sortOrder",
           "isDefault",
@@ -15980,6 +16652,14 @@
           },
           "name": {
             "type": "string"
+          },
+          "nameI18n": {
+            "description": "LOCALE-2A: hy/ru/en name translations.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/I18nTextResponse"
+              }
+            ]
           },
           "selectionType": {
             "type": "string",
@@ -16027,6 +16707,7 @@
           "restaurantId",
           "branchId",
           "name",
+          "nameI18n",
           "selectionType",
           "required",
           "minSelect",
@@ -16062,6 +16743,22 @@
           "description": {
             "type": "string",
             "nullable": true
+          },
+          "nameI18n": {
+            "description": "LOCALE-2A: hy/ru/en name translations (nulls where empty).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/I18nTextResponse"
+              }
+            ]
+          },
+          "descriptionI18n": {
+            "description": "LOCALE-2A: hy/ru/en description translations.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/I18nTextResponse"
+              }
+            ]
           },
           "priceAmount": {
             "type": "number"
@@ -16111,6 +16808,11 @@
             "nullable": true,
             "description": "ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified)."
           },
+          "dep": {
+            "type": "string",
+            "nullable": true,
+            "description": "FISCAL-DEPT-1: branch fiscal department code this dish sells under, for the receipt line's VAT regime (null = unassigned)."
+          },
           "modifierGroups": {
             "type": "array",
             "items": {
@@ -16126,6 +16828,8 @@
           "categoryId",
           "name",
           "description",
+          "nameI18n",
+          "descriptionI18n",
           "priceAmount",
           "imageUrl",
           "imageKey",
@@ -16135,12 +16839,43 @@
           "availability",
           "hideRecipe",
           "adgCode",
+          "dep",
           "modifierGroups"
         ]
       },
       "CreateMenuItemDto": {
         "type": "object",
         "properties": {
+          "nameHy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Armenian name translation."
+          },
+          "nameRu": {
+            "type": "string",
+            "nullable": true,
+            "description": "Russian name translation."
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true,
+            "description": "English name translation."
+          },
+          "descriptionHy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Armenian description translation."
+          },
+          "descriptionRu": {
+            "type": "string",
+            "nullable": true,
+            "description": "Russian description translation."
+          },
+          "descriptionEn": {
+            "type": "string",
+            "nullable": true,
+            "description": "English description translation."
+          },
           "name": {
             "type": "string"
           },
@@ -16171,6 +16906,12 @@
           "prepTimeMinutes": {
             "type": "number",
             "minimum": 0
+          },
+          "dep": {
+            "type": "string",
+            "description": "FISCAL-DEPT-1: the branch fiscal department code (must exist in this branch FiscalDepartment set) this dish sells under, for the receipt line's VAT regime. Rejected with INVALID_FISCAL_DEPARTMENT if unknown to the branch. Omit or send null to leave it unassigned.",
+            "example": "1",
+            "nullable": true
           }
         },
         "required": [
@@ -16181,6 +16922,36 @@
       "UpdateMenuItemDto": {
         "type": "object",
         "properties": {
+          "nameHy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Armenian name translation."
+          },
+          "nameRu": {
+            "type": "string",
+            "nullable": true,
+            "description": "Russian name translation."
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true,
+            "description": "English name translation."
+          },
+          "descriptionHy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Armenian description translation."
+          },
+          "descriptionRu": {
+            "type": "string",
+            "nullable": true,
+            "description": "Russian description translation."
+          },
+          "descriptionEn": {
+            "type": "string",
+            "nullable": true,
+            "description": "English description translation."
+          },
           "name": {
             "type": "string"
           },
@@ -16216,9 +16987,15 @@
             "description": "CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible)."
           },
           "adgCode": {
-            "type": "object",
+            "type": "string",
             "description": "ADGCODE-UI: SRC ATG classification code (from the SRC N 1406-Ն / N 875-Ն lists) for e-HDM fiscalization. Free-text: SRC is the authority (rejects a bad code with error 183 at fiscalization), so there is NO server format constraint — the UI only soft-warns on obvious typos. Send an empty string or null to clear it; omit to leave it unchanged (partial update).",
             "example": "2130000000",
+            "nullable": true
+          },
+          "dep": {
+            "type": "string",
+            "description": "FISCAL-DEPT-1: the branch fiscal department code (must exist in this branch FiscalDepartment set) this dish sells under, for the receipt line's VAT regime. Rejected with INVALID_FISCAL_DEPARTMENT if unknown to the branch. Send an empty string or null to clear (unassign); omit to leave it unchanged (partial update).",
+            "example": "1",
             "nullable": true
           }
         }
@@ -16348,6 +17125,14 @@
           "name": {
             "type": "string"
           },
+          "nameI18n": {
+            "description": "LOCALE-2A: hy/ru/en name translations.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/I18nTextResponse"
+              }
+            ]
+          },
           "selectionType": {
             "type": "string",
             "enum": [
@@ -16379,6 +17164,7 @@
           "restaurantId",
           "branchId",
           "name",
+          "nameI18n",
           "selectionType",
           "required",
           "minSelect",
@@ -16400,6 +17186,14 @@
           },
           "name": {
             "type": "string"
+          },
+          "nameI18n": {
+            "description": "LOCALE-2A: hy/ru/en name translations.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/I18nTextResponse"
+              }
+            ]
           },
           "selectionType": {
             "type": "string",
@@ -16438,6 +17232,7 @@
           "restaurantId",
           "branchId",
           "name",
+          "nameI18n",
           "selectionType",
           "required",
           "minSelect",
@@ -16449,6 +17244,21 @@
       "CreateModifierGroupDto": {
         "type": "object",
         "properties": {
+          "nameHy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Armenian name translation."
+          },
+          "nameRu": {
+            "type": "string",
+            "nullable": true,
+            "description": "Russian name translation."
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true,
+            "description": "English name translation."
+          },
           "name": {
             "type": "string",
             "example": "Size"
@@ -16481,6 +17291,21 @@
       "UpdateModifierGroupDto": {
         "type": "object",
         "properties": {
+          "nameHy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Armenian name translation."
+          },
+          "nameRu": {
+            "type": "string",
+            "nullable": true,
+            "description": "Russian name translation."
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true,
+            "description": "English name translation."
+          },
           "name": {
             "type": "string"
           },
@@ -16515,6 +17340,21 @@
       "CreateModifierOptionDto": {
         "type": "object",
         "properties": {
+          "nameHy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Armenian name translation."
+          },
+          "nameRu": {
+            "type": "string",
+            "nullable": true,
+            "description": "Russian name translation."
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true,
+            "description": "English name translation."
+          },
           "name": {
             "type": "string",
             "example": "Large"
@@ -16557,6 +17397,21 @@
       "UpdateModifierOptionDto": {
         "type": "object",
         "properties": {
+          "nameHy": {
+            "type": "string",
+            "nullable": true,
+            "description": "Armenian name translation."
+          },
+          "nameRu": {
+            "type": "string",
+            "nullable": true,
+            "description": "Russian name translation."
+          },
+          "nameEn": {
+            "type": "string",
+            "nullable": true,
+            "description": "English name translation."
+          },
           "name": {
             "type": "string"
           },
@@ -17049,6 +17904,49 @@
           "active",
           "session",
           "orders"
+        ]
+      },
+      "FiscalDepartmentItemResponse": {
+        "type": "object",
+        "properties": {
+          "dep": {
+            "type": "string",
+            "description": "SRC fiscal department code registered for this branch."
+          },
+          "label": {
+            "type": "string",
+            "nullable": true,
+            "description": "Human-friendly label for the department (optional)."
+          },
+          "taxRegime": {
+            "type": "string",
+            "description": "VAT tax regime associated with the department."
+          }
+        },
+        "required": [
+          "dep",
+          "label",
+          "taxRegime"
+        ]
+      },
+      "BranchFiscalDepartmentsResponse": {
+        "type": "object",
+        "properties": {
+          "fiscalActive": {
+            "type": "boolean",
+            "description": "Whether fiscalization is active for this branch (false when unconfigured)."
+          },
+          "departments": {
+            "description": "Non-secret department list; empty when the branch has none registered.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FiscalDepartmentItemResponse"
+            }
+          }
+        },
+        "required": [
+          "fiscalActive",
+          "departments"
         ]
       },
       "CreateOrderDto": {
@@ -17798,6 +18696,49 @@
           "footer"
         ]
       },
+      "FiscalReceiptResponse": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "orderNumber": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "receiptId": {
+            "type": "string",
+            "description": "SRC device receipt id."
+          },
+          "fiscalNumber": {
+            "type": "string",
+            "description": "SRC fiscal number printed on the receipt."
+          },
+          "qr": {
+            "type": "string",
+            "description": "SRC QR string the receipt renders as a QR code."
+          },
+          "fiscalizedAt": {
+            "type": "string",
+            "description": "When the fiscal receipt was issued (ISO-8601)."
+          }
+        },
+        "required": [
+          "orderId",
+          "orderNumber",
+          "currency",
+          "totalAmount",
+          "receiptId",
+          "fiscalNumber",
+          "qr",
+          "fiscalizedAt"
+        ]
+      },
       "QrCartLineDto": {
         "type": "object",
         "properties": {
@@ -18055,6 +18996,25 @@
           "lines"
         ]
       },
+      "CatalogNameView": {
+        "type": "object",
+        "properties": {
+          "hy": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string"
+          },
+          "en": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "hy",
+          "ru",
+          "en"
+        ]
+      },
       "AlternateUnitView": {
         "type": "object",
         "properties": {
@@ -18083,7 +19043,18 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "PLATCAT-ADOPT-1B: local name; null for an adopted item (use catalogName). Client display = catalogName ? catalogName[locale] : name."
+          },
+          "catalogName": {
+            "nullable": true,
+            "description": "Live-resolved platform catalog name {hy,ru,en}; present when adopted.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CatalogNameView"
+              }
+            ]
           },
           "sku": {
             "type": "string",
@@ -18131,6 +19102,11 @@
             "nullable": true,
             "description": "6C: per-item consumption location (null => branch default Main Storage)."
           },
+          "catalogItemId": {
+            "type": "string",
+            "nullable": true,
+            "description": "CATALOG-1: platform CatalogItem this item was adopted from (null = custom)."
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -18144,6 +19120,7 @@
           "restaurantId",
           "branchId",
           "name",
+          "catalogName",
           "sku",
           "categoryId",
           "kind",
@@ -18153,6 +19130,7 @@
           "lowStockThresholdBase",
           "lastUnitCostMicro",
           "consumptionLocationId",
+          "catalogItemId",
           "status"
         ]
       },
@@ -18221,6 +19199,40 @@
         },
         "required": [
           "name",
+          "baseUnit"
+        ]
+      },
+      "AdoptCatalogItemDto": {
+        "type": "object",
+        "properties": {
+          "catalogItemId": {
+            "type": "string",
+            "description": "The platform CatalogItem id to adopt."
+          },
+          "baseUnit": {
+            "type": "string",
+            "enum": [
+              "GRAM",
+              "MILLILITER",
+              "PIECE"
+            ],
+            "description": "Base unit (catalog has none)."
+          },
+          "alternateUnits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlternateUnitDto"
+            }
+          },
+          "categoryId": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "catalogItemId",
           "baseUnit"
         ]
       },
@@ -18402,6 +19414,96 @@
           "refId",
           "occurredAt",
           "createdByUserId"
+        ]
+      },
+      "CatalogBrowseNameResponse": {
+        "type": "object",
+        "properties": {
+          "hy": {
+            "type": "string"
+          },
+          "ru": {
+            "type": "string"
+          },
+          "en": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "hy",
+          "ru",
+          "en"
+        ]
+      },
+      "CatalogBrowseCategoryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/CatalogBrowseNameResponse"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name"
+        ]
+      },
+      "CatalogBrowseItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/CatalogBrowseNameResponse"
+          },
+          "categoryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "category": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CatalogBrowseCategoryResponse"
+              }
+            ]
+          },
+          "allergenSlugs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allergensReviewed": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "ARCHIVED"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "categoryId",
+          "category",
+          "allergenSlugs",
+          "allergensReviewed",
+          "status"
         ]
       },
       "InventoryCategoryResponse": {
@@ -18808,7 +19910,18 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Local name; null when adopted (use catalogName)."
+          },
+          "catalogName": {
+            "nullable": true,
+            "description": "Live catalog name {hy,ru,en} when adopted.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CatalogNameView"
+              }
+            ]
           },
           "sku": {
             "type": "string",
@@ -18854,6 +19967,7 @@
         "required": [
           "itemId",
           "name",
+          "catalogName",
           "sku",
           "categoryId",
           "kind",
@@ -19350,7 +20464,9 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Live catalog name (adopted) or local name; null if unresolvable."
           }
         },
         "required": [
@@ -19955,7 +21071,18 @@
             "type": "string"
           },
           "itemName": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Local name; null when adopted (use catalogName)."
+          },
+          "catalogName": {
+            "nullable": true,
+            "description": "Live catalog name {hy,ru,en} when adopted.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CatalogNameView"
+              }
+            ]
           },
           "baseUnit": {
             "type": "string"
@@ -19981,6 +21108,7 @@
         "required": [
           "itemId",
           "itemName",
+          "catalogName",
           "baseUnit",
           "locationId",
           "locationName",
@@ -20040,7 +21168,18 @@
             "type": "string"
           },
           "itemName": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Local name; null when adopted (use catalogName)."
+          },
+          "catalogName": {
+            "nullable": true,
+            "description": "Live catalog name {hy,ru,en} when adopted.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CatalogNameView"
+              }
+            ]
           },
           "locationId": {
             "type": "string"
@@ -20073,6 +21212,7 @@
           "id",
           "itemId",
           "itemName",
+          "catalogName",
           "locationId",
           "locationName",
           "thresholdBase",
@@ -20256,7 +21396,18 @@
             "type": "string"
           },
           "itemName": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Local name; null when adopted (use catalogName)."
+          },
+          "catalogName": {
+            "nullable": true,
+            "description": "Live catalog name {hy,ru,en} when adopted.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CatalogNameView"
+              }
+            ]
           },
           "sku": {
             "type": "string",
@@ -20291,6 +21442,7 @@
           "locationName",
           "itemId",
           "itemName",
+          "catalogName",
           "sku",
           "categoryId",
           "baseUnit",
@@ -23490,10 +24642,6 @@
             "type": "object",
             "nullable": true
           },
-          "adgCode": {
-            "type": "object",
-            "nullable": true
-          },
           "allergenSlugs": {
             "type": "array",
             "items": {
@@ -23525,7 +24673,6 @@
           "nameRu",
           "nameEn",
           "categoryId",
-          "adgCode",
           "allergenSlugs",
           "allergensReviewed",
           "status",
@@ -23554,11 +24701,6 @@
             "nullable": true,
             "description": "Catalog category id, or null."
           },
-          "adgCode": {
-            "type": "object",
-            "nullable": true,
-            "description": "Default ATG classifier, or null."
-          },
           "allergenSlugs": {
             "description": "Allergen slugs from the taxonomy.",
             "type": "array",
@@ -23578,6 +24720,163 @@
           "nameEn"
         ]
       },
+      "ImportCatalogItemsRequestDto": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "DRY_RUN",
+              "APPLY"
+            ],
+            "description": "DRY_RUN previews; APPLY writes."
+          },
+          "conflictStrategy": {
+            "type": "string",
+            "enum": [
+              "SKIP",
+              "OVERWRITE"
+            ],
+            "default": "OVERWRITE",
+            "description": "How to treat rows whose slug already exists. Defaults to OVERWRITE."
+          },
+          "csv": {
+            "type": "string",
+            "description": "Raw CSV text (header row required)."
+          }
+        },
+        "required": [
+          "mode",
+          "csv"
+        ]
+      },
+      "ImportSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "toCreate": {
+            "type": "number"
+          },
+          "toUpdate": {
+            "type": "number"
+          },
+          "unchanged": {
+            "type": "number"
+          },
+          "skipped": {
+            "type": "number"
+          },
+          "errors": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "total",
+          "toCreate",
+          "toUpdate",
+          "unchanged",
+          "skipped",
+          "errors"
+        ]
+      },
+      "ImportRowMessageResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "UPPER_SNAKE per-row error code."
+          },
+          "field": {
+            "type": "string",
+            "description": "The offending CSV column, when applicable."
+          },
+          "detail": {
+            "type": "string",
+            "description": "Human-readable explanation."
+          }
+        },
+        "required": [
+          "code",
+          "detail"
+        ]
+      },
+      "ImportItemRowResponse": {
+        "type": "object",
+        "properties": {
+          "line": {
+            "type": "number",
+            "description": "1-based source line of the row."
+          },
+          "slug": {
+            "type": "string",
+            "description": "Row slug (as normalized), or the raw value when unusable."
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "CREATE",
+              "UPDATE",
+              "UNCHANGED",
+              "SKIP",
+              "ERROR"
+            ],
+            "description": "Resolved action for this row."
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowMessageResponse"
+            }
+          }
+        },
+        "required": [
+          "line",
+          "slug",
+          "action",
+          "messages"
+        ]
+      },
+      "ImportCatalogItemsResponse": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "DRY_RUN",
+              "APPLY"
+            ]
+          },
+          "conflictStrategy": {
+            "type": "string",
+            "enum": [
+              "SKIP",
+              "OVERWRITE"
+            ]
+          },
+          "applied": {
+            "type": "boolean",
+            "description": "True only when APPLY wrote all rows in one transaction."
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ImportSummaryResponse"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportItemRowResponse"
+            }
+          }
+        },
+        "required": [
+          "mode",
+          "conflictStrategy",
+          "applied",
+          "summary",
+          "rows"
+        ]
+      },
       "UpdateCatalogItemDto": {
         "type": "object",
         "properties": {
@@ -23591,10 +24890,6 @@
             "type": "string"
           },
           "categoryId": {
-            "type": "object",
-            "nullable": true
-          },
-          "adgCode": {
             "type": "object",
             "nullable": true
           },
@@ -23734,6 +25029,156 @@
           "clientKeyPem"
         ]
       },
+      "SetFiscalDeviceDto": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string",
+            "description": "Device IP/hostname on the LAN."
+          },
+          "port": {
+            "type": "number",
+            "description": "Device TCP port (1–65535).",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "password": {
+            "type": "string",
+            "description": "Device password. Encrypted at rest; never returned by any read."
+          }
+        },
+        "required": [
+          "host",
+          "port",
+          "password"
+        ]
+      },
+      "FiscalDepartmentResponse": {
+        "type": "object",
+        "properties": {
+          "dep": {
+            "type": "string"
+          },
+          "taxRegime": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "dep",
+          "taxRegime",
+          "label"
+        ]
+      },
+      "FiscalConfigStatusResponse": {
+        "type": "object",
+        "properties": {
+          "restaurantId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "crn": {
+            "type": "string"
+          },
+          "cashierId": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "PROD",
+              "TEST"
+            ]
+          },
+          "language": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "certConfigured": {
+            "type": "boolean",
+            "description": "True once a cert/key has been uploaded (never exposes the material)."
+          },
+          "deviceHost": {
+            "type": "string",
+            "nullable": true,
+            "description": "Non-secret physical-device host."
+          },
+          "devicePort": {
+            "type": "number",
+            "nullable": true,
+            "description": "Non-secret physical-device port."
+          },
+          "deviceConfigured": {
+            "type": "boolean",
+            "description": "True once a device password is set (never exposes the material)."
+          },
+          "fiscalPrintMode": {
+            "type": "string",
+            "enum": [
+              "AUTO",
+              "MANUAL"
+            ],
+            "description": "Dine-in fiscalize print mode."
+          },
+          "departments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FiscalDepartmentResponse"
+            }
+          },
+          "lastCheckConnectionAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastCheckConnectionOk": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "restaurantId",
+          "branchId",
+          "crn",
+          "cashierId",
+          "environment",
+          "language",
+          "active",
+          "certConfigured",
+          "deviceHost",
+          "devicePort",
+          "deviceConfigured",
+          "fiscalPrintMode",
+          "departments",
+          "lastCheckConnectionAt",
+          "lastCheckConnectionOk",
+          "updatedAt"
+        ]
+      },
+      "SetFiscalPrintModeDto": {
+        "type": "object",
+        "properties": {
+          "fiscalPrintMode": {
+            "type": "string",
+            "enum": [
+              "AUTO",
+              "MANUAL"
+            ]
+          }
+        },
+        "required": [
+          "fiscalPrintMode"
+        ]
+      },
       "UpsertFiscalConfigDto": {
         "type": "object",
         "properties": {
@@ -23801,91 +25246,6 @@
         },
         "required": [
           "departments"
-        ]
-      },
-      "FiscalDepartmentResponse": {
-        "type": "object",
-        "properties": {
-          "dep": {
-            "type": "string"
-          },
-          "taxRegime": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "dep",
-          "taxRegime",
-          "label"
-        ]
-      },
-      "FiscalConfigStatusResponse": {
-        "type": "object",
-        "properties": {
-          "restaurantId": {
-            "type": "string"
-          },
-          "branchId": {
-            "type": "string"
-          },
-          "crn": {
-            "type": "string"
-          },
-          "cashierId": {
-            "type": "string"
-          },
-          "environment": {
-            "type": "string",
-            "enum": [
-              "PROD",
-              "TEST"
-            ]
-          },
-          "language": {
-            "type": "string"
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "certConfigured": {
-            "type": "boolean",
-            "description": "True once a cert/key has been uploaded (never exposes the material)."
-          },
-          "departments": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FiscalDepartmentResponse"
-            }
-          },
-          "lastCheckConnectionAt": {
-            "type": "string",
-            "nullable": true
-          },
-          "lastCheckConnectionOk": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "restaurantId",
-          "branchId",
-          "crn",
-          "cashierId",
-          "environment",
-          "language",
-          "active",
-          "certConfigured",
-          "departments",
-          "lastCheckConnectionAt",
-          "lastCheckConnectionOk",
-          "updatedAt"
         ]
       },
       "CheckFiscalConnectionResponse": {
@@ -23978,28 +25338,6 @@
           "menuPublic",
           "reservationsPublic",
           "attributes"
-        ]
-      },
-      "I18nTextResponse": {
-        "type": "object",
-        "properties": {
-          "hy": {
-            "type": "string",
-            "nullable": true
-          },
-          "ru": {
-            "type": "string",
-            "nullable": true
-          },
-          "en": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "hy",
-          "ru",
-          "en"
         ]
       },
       "PublicHoursResponse": {
@@ -24985,6 +26323,119 @@
           "user"
         ]
       },
+      "AccountOrganizationSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ]
+      },
+      "AccountRestaurantSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug"
+        ]
+      },
+      "AccountSubscriptionSummary": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "planCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planName": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentPeriodEnd": {
+            "type": "string",
+            "nullable": true
+          },
+          "trialEndsAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "status",
+          "planCode",
+          "planName",
+          "currentPeriodEnd",
+          "trialEndsAt"
+        ]
+      },
+      "AccountOwnerSummary": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fullName",
+          "email"
+        ]
+      },
+      "AccountOverviewResponse": {
+        "type": "object",
+        "properties": {
+          "organization": {
+            "$ref": "#/components/schemas/AccountOrganizationSummary"
+          },
+          "restaurant": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountRestaurantSummary"
+              }
+            ]
+          },
+          "subscription": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountSubscriptionSummary"
+              }
+            ]
+          },
+          "owner": {
+            "$ref": "#/components/schemas/AccountOwnerSummary"
+          }
+        },
+        "required": [
+          "organization",
+          "restaurant",
+          "subscription",
+          "owner"
+        ]
+      },
       "UpdateAccountProfileDto": {
         "type": "object",
         "properties": {
@@ -24992,17 +26443,6 @@
             "type": "string"
           }
         }
-      },
-      "ChangePlanDto": {
-        "type": "object",
-        "properties": {
-          "planCode": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "planCode"
-        ]
       },
       "SubscriptionHistoryResponse": {
         "type": "object",
@@ -25046,6 +26486,70 @@
           "changedByType",
           "reason",
           "createdAt"
+        ]
+      },
+      "AccountSubscriptionDetailResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "planCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "planName": {
+            "type": "string",
+            "nullable": true
+          },
+          "priceAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "interval": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentPeriodEnd": {
+            "type": "string",
+            "nullable": true
+          },
+          "trialEndsAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "recentHistory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionHistoryResponse"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "planCode",
+          "planName",
+          "priceAmount",
+          "currency",
+          "interval",
+          "currentPeriodEnd",
+          "trialEndsAt",
+          "recentHistory"
+        ]
+      },
+      "ChangePlanDto": {
+        "type": "object",
+        "properties": {
+          "planCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "planCode"
         ]
       },
       "BillingResponse": {
@@ -25199,6 +26703,41 @@
           "token"
         ]
       },
+      "IssuePairingCodeDto": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string",
+            "description": "The branch the paired hub will serve."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-friendly node name, e.g. \"Kitchen hub\"."
+          }
+        },
+        "required": [
+          "branchId",
+          "name"
+        ]
+      },
+      "PairingCodeResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The pairing code to read out to the restaurant. Shown ONCE; store it now.",
+            "example": "K7M2-QP9X"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "When the code expires (ISO-8601)."
+          }
+        },
+        "required": [
+          "code",
+          "expiresAt"
+        ]
+      },
       "EdgeNodeResponse": {
         "type": "object",
         "properties": {
@@ -25282,6 +26821,51 @@
           "online",
           "updateAvailable",
           "createdAt"
+        ]
+      },
+      "PairEdgeNodeDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The pairing code (case-insensitive; spaces/hyphens ignored)."
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "EdgePairResponse": {
+        "type": "object",
+        "properties": {
+          "nodeId": {
+            "type": "string"
+          },
+          "nodeToken": {
+            "type": "string",
+            "description": "Long-lived node bearer token. Write to EDGE_NODE_TOKEN. Shown ONCE."
+          },
+          "fiscalKek": {
+            "type": "string",
+            "description": "Per-hub fiscal KEK as 64 hex chars (32 bytes). Write VERBATIM to the FISCAL_MASTER_KEK slot (validated as 64-hex). Shown ONCE."
+          },
+          "organizationId": {
+            "type": "string"
+          },
+          "restaurantId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "nodeId",
+          "nodeToken",
+          "fiscalKek",
+          "organizationId",
+          "restaurantId",
+          "branchId"
         ]
       },
       "PushEntryDto": {

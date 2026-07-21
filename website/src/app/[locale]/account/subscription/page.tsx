@@ -35,7 +35,7 @@ export default function SubscriptionPage() {
 
   const [pending, setPending] = useState<PublicPlanResponse | null>(null);
 
-  const current = sub.data?.subscription;
+  const current = sub.data;
 
   const unwrap = <T,>(value: unknown): T[] =>
     Array.isArray(value) ? (value as T[]) : ((value as { data?: T[] } | undefined)?.data ?? []);

@@ -5,8 +5,10 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { CatalogNameView } from './catalogNameView';
 
 /**
+ * Live catalog name {hy,ru,en} when adopted.
  * @nullable
  */
-export type UpdateCatalogItemDtoAdgCode = { [key: string]: unknown } | null;
+export type StockOnHandRowResponseCatalogName = CatalogNameView | null;

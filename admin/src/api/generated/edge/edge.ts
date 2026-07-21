@@ -6,22 +6,28 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
-  EdgeSnapshotControllerConfigSyncParams
+  EdgePairResponse,
+  EdgeSnapshotControllerConfigSyncParams,
+  PairEdgeNodeDto
 } from '../model';
 
 import { customInstance } from '../../mutator';
@@ -118,6 +124,69 @@ export function useEdgeControllerInfo<TData = Awaited<ReturnType<typeof edgeCont
 
 
 /**
+ * @summary Redeem a pairing code: enrol the hub + deliver its token + fiscal KEK ONCE.
+ */
+export const edgePairControllerPairNode = (
+    pairEdgeNodeDto: PairEdgeNodeDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<EdgePairResponse>(
+      {url: `/edge/pair`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: pairEdgeNodeDto, signal
+    },
+      options);
+    }
+
+
+
+export const getEdgePairControllerPairNodeMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof edgePairControllerPairNode>>, TError,{data: PairEdgeNodeDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof edgePairControllerPairNode>>, TError,{data: PairEdgeNodeDto}, TContext> => {
+
+const mutationKey = ['edgePairControllerPairNode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof edgePairControllerPairNode>>, {data: PairEdgeNodeDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  edgePairControllerPairNode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EdgePairControllerPairNodeMutationResult = NonNullable<Awaited<ReturnType<typeof edgePairControllerPairNode>>>
+    export type EdgePairControllerPairNodeMutationBody = PairEdgeNodeDto
+    export type EdgePairControllerPairNodeMutationError = void
+
+    /**
+ * @summary Redeem a pairing code: enrol the hub + deliver its token + fiscal KEK ONCE.
+ */
+export const useEdgePairControllerPairNode = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof edgePairControllerPairNode>>, TError,{data: PairEdgeNodeDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof edgePairControllerPairNode>>,
+        TError,
+        {data: PairEdgeNodeDto},
+        TContext
+      > => {
+      return useMutation(getEdgePairControllerPairNodeMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Versioned snapshot of the node's branch (node-token auth).
  */
 export const edgeSnapshotControllerSnapshot = (
