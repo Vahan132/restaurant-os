@@ -1,0 +1,71 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Root .gitignore — restaurant-os
+# Forward protection + keeps process artifacts / build junk out of the repo.
+# Per-app .gitignore files still apply within each app.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.next/
+build/
+out/
+*.tsbuildinfo
+
+# Env files — ignore all real envs; keep the .example templates
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs & coverage
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+coverage/
+
+# Editor / IDE / OS junk
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# OneDrive / MS Office lock files
+~$*
+
+# E2E / Playwright test output
+e2e/artifacts/
+test-results/
+playwright-report/
+
+# Stray build/log dumps seen in the audit
+tsc.out
+*.bak
+_tmp_*
+
+# ── Process artifacts — findings/spec/handoff docs must not re-accumulate ──
+AUDIT-*.md
+*-AUDIT*.md
+*_findings.md
+*_FINDINGS.md
+*_HANDOFF.md
+*-IMPLEMENTATION.md
+*_STEP*_FINDINGS.md
+*_STEP*-*_REPORT.md
+LOCALE-*.md
+PLATCAT-*.md
+FISCAL-*.md
+EDGE-*.md
+PHASE0_FINDINGS.md
+
+# Deliberately KEPT docs (exceptions to the patterns above)
+!DEPLOY.md
+!api/docs/FISCAL-GO-LIVE-RUNBOOK.md
+
+# Cleanup staging — delete this folder manually (rm is blocked over the bridge)
+_cleanup_pending_delete/

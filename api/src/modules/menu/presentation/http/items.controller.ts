@@ -132,6 +132,7 @@ export class ItemsController {
       imageKey: dto.imageKey ?? null,
       preparationStation: dto.preparationStation,
       prepTimeMinutes: dto.prepTimeMinutes ?? null,
+      dep: dto.dep,
       actorUserId: actor.sub,
     });
     return MenuItemResponse.from(item);
@@ -161,6 +162,7 @@ export class ItemsController {
       preparationStation: dto.preparationStation,
       prepTimeMinutes: dto.prepTimeMinutes,
       adgCode: dto.adgCode,
+      dep: dto.dep,
     });
     return MenuItemResponse.from(item);
   }

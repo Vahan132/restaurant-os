@@ -1,0 +1,9 @@
+# EDGE-PKG-2-WIN: keep LF on shell scripts so an image built on a Windows dev box
+# (git core.autocrlf=true) doesn't get CRLF in edge-entrypoint.sh, which would
+# break the `#!/bin/sh` shebang inside the Linux container.
+*.sh text eol=lf
+
+# Windows-native scripts stay CRLF.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf

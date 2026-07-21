@@ -4,6 +4,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Put,
   Req,
@@ -15,6 +16,8 @@ import { Public } from '../../../../shared/auth/public.decorator';
 import { CheckFiscalConnectionUseCase } from '../../application/commands/check-fiscal-connection.usecase';
 import { SetFiscalCertUseCase } from '../../application/commands/set-fiscal-cert.usecase';
 import { SetFiscalDepartmentsUseCase } from '../../application/commands/set-fiscal-departments.usecase';
+import { SetFiscalDeviceUseCase } from '../../application/commands/set-fiscal-device.usecase';
+import { SetFiscalPrintModeUseCase } from '../../application/commands/set-fiscal-print-mode.usecase';
 import { UpsertFiscalConfigUseCase } from '../../application/commands/upsert-fiscal-config.usecase';
 import {
   CheckFiscalConnectionResponse,
@@ -22,6 +25,8 @@ import {
   PlatformBranchResponse,
   SetFiscalCertDto,
   SetFiscalDepartmentsDto,
+  SetFiscalDeviceDto,
+  SetFiscalPrintModeDto,
   UpsertFiscalConfigDto,
 } from '../../application/dto/fiscal-config.dto';
 import { GetFiscalConfigStatusUseCase } from '../../application/queries/get-fiscal-config-status.usecase';
@@ -56,6 +61,8 @@ export class PlatformFiscalConfigController {
     private readonly getStatus: GetFiscalConfigStatusUseCase,
     private readonly check: CheckFiscalConnectionUseCase,
     private readonly setCert: SetFiscalCertUseCase,
+    private readonly setDevice: SetFiscalDeviceUseCase,
+    private readonly setPrintMode: SetFiscalPrintModeUseCase,
     private readonly listBranches: ListRestaurantBranchesUseCase,
   ) {}
 
@@ -79,6 +86,48 @@ export class PlatformFiscalConfigController {
   ): Promise<{ ok: true }> {
     await this.setCert.execute({ restaurantId, branchId, ...dto, ...actorOf(req) });
     return { ok: true };
+  }
+
+  @Post(':restaurantId/:branchId/device')
+  @ApiOperation({ summary: 'Set the physical-HDM device (host/port/password; password write-only).' })
+  @ApiParam({ name: 'restaurantId' })
+  @ApiParam({ name: 'branchId' })
+  @ApiOkResponse({ type: FiscalConfigStatusResponse })
+  async setDeviceConfig(
+    @Param('restaurantId') restaurantId: string,
+    @Param('branchId') branchId: string,
+    @Body() dto: SetFiscalDeviceDto,
+    @Req() req: Request,
+  ): Promise<FiscalConfigStatusResponse> {
+    await this.setDevice.execute({
+      restaurantId,
+      branchId,
+      deviceHost: dto.host,
+      devicePort: dto.port,
+      devicePassword: dto.password,
+      ...actorOf(req),
+    });
+    return this.statusOrThrow(restaurantId, branchId);
+  }
+
+  @Patch(':restaurantId/:branchId/print-mode')
+  @ApiOperation({ summary: 'Set the dine-in fiscalize print mode (AUTO|MANUAL).' })
+  @ApiParam({ name: 'restaurantId' })
+  @ApiParam({ name: 'branchId' })
+  @ApiOkResponse({ type: FiscalConfigStatusResponse })
+  async setPrintModeConfig(
+    @Param('restaurantId') restaurantId: string,
+    @Param('branchId') branchId: string,
+    @Body() dto: SetFiscalPrintModeDto,
+    @Req() req: Request,
+  ): Promise<FiscalConfigStatusResponse> {
+    await this.setPrintMode.execute({
+      restaurantId,
+      branchId,
+      fiscalPrintMode: dto.fiscalPrintMode,
+      ...actorOf(req),
+    });
+    return this.statusOrThrow(restaurantId, branchId);
   }
 
   @Put(':restaurantId/:branchId')
@@ -122,6 +171,14 @@ export class PlatformFiscalConfigController {
   async status(
     @Param('restaurantId') restaurantId: string,
     @Param('branchId') branchId: string,
+  ): Promise<FiscalConfigStatusResponse> {
+    return this.statusOrThrow(restaurantId, branchId);
+  }
+
+  /** Read the non-secret status or 404 — shared by the status GET and the writes. */
+  private async statusOrThrow(
+    restaurantId: string,
+    branchId: string,
   ): Promise<FiscalConfigStatusResponse> {
     const s = await this.getStatus.execute({ restaurantId, branchId });
     if (!s) {

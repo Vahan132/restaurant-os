@@ -11,9 +11,6 @@
  *                         managed by platform-admin later (CATALOG-2).
  *   - CATALOG_ADOPTIONS — links a handful of seeded InventoryItems to a catalog
  *                         item BY REFERENCE, incl. one override, to exercise §3.
- *
- * adgCode values are ILLUSTRATIVE placeholders (ATG classifier, ORDER-2 reserved);
- * real codes come from the SRC classifier lists during CATALOG-2 curation.
  */
 import { seedId } from '../ids';
 
@@ -42,7 +39,6 @@ export interface CatalogItemSeed {
   nameRu: string;
   nameEn: string;
   categorySlug: string;
-  adgCode: string | null;
   allergenSlugs: string[];
   /** CATALOG-3-SUPPORT: platform-support tagging gate. Seeded true for a few items. */
   reviewed: boolean;
@@ -107,7 +103,6 @@ function item(
   nameEn: string,
   categorySlug: string,
   allergenSlugs: string[],
-  adgCode: string | null = null,
   reviewed = false,
 ): CatalogItemSeed {
   return {
@@ -117,7 +112,6 @@ function item(
     nameRu,
     nameEn,
     categorySlug,
-    adgCode,
     allergenSlugs,
     reviewed,
   };
@@ -125,22 +119,22 @@ function item(
 
 /** Starter curated templates (platform-admin curates the full set in CATALOG-2). */
 export const CATALOG_ITEMS: CatalogItemSeed[] = [
-  item('wheat-flour', 'Ցորենի ալյուր', 'Пшеничная мука', 'Wheat flour', 'pantry', ['cereals-gluten'], '1101000000'),
-  item('rice', 'Բրինձ', 'Рис', 'Rice', 'pantry', [], null, true),
+  item('wheat-flour', 'Ցորենի ալյուր', 'Пшеничная мука', 'Wheat flour', 'pantry', ['cereals-gluten']),
+  item('rice', 'Բրինձ', 'Рис', 'Rice', 'pantry', [], true),
   item('vermicelli', 'Արիշտա', 'Вермишель', 'Vermicelli', 'pantry', ['cereals-gluten']),
   item('tomato-paste', 'Տոմատի մածուկ', 'Томатная паста', 'Tomato paste', 'pantry', []),
   item('sunflower-oil', 'Արևածաղկի յուղ', 'Подсолнечное масло', 'Sunflower oil', 'pantry', []),
   item('chickpeas', 'Սիսեռ', 'Нут', 'Chickpeas', 'pantry', []),
-  item('butter', 'Կարագ', 'Сливочное масло', 'Butter', 'dairy', ['milk'], null, true),
+  item('butter', 'Կարագ', 'Сливочное масло', 'Butter', 'dairy', ['milk'], true),
   item('matsun', 'Մածուն', 'Мацун', 'Matsun (yogurt)', 'dairy', ['milk']),
   item('lori-cheese', 'Լոռի պանիր', 'Сыр Лори', 'Lori cheese', 'dairy', ['milk']),
   item('string-cheese', 'Չեչիլ պանիր', 'Сыр чечил', 'String cheese', 'dairy', ['milk']),
   item('egg', 'Ձու', 'Яйцо', 'Egg', 'produce', ['eggs']),
-  item('walnuts', 'Ընկույզ', 'Грецкие орехи', 'Walnuts', 'nuts-seeds', ['nuts'], '0802310000'),
+  item('walnuts', 'Ընկույզ', 'Грецкие орехи', 'Walnuts', 'nuts-seeds', ['nuts']),
   item('coffee-beans', 'Սուրճի հատիկ', 'Кофейные зёрна', 'Coffee beans', 'beverage', []),
   item('areni-red-wine', 'Արենի կարմիր գինի', 'Красное вино Арени', 'Areni red wine', 'beverage', ['sulphites']),
   // CATALOG-3 verification: a reviewed, no-allergen leaf reached via a produced item.
-  item('pork-leg', 'Խոզի բուդ', 'Свиная нога', 'Pork leg', 'meat', [], null, true),
+  item('pork-leg', 'Խոզի բուդ', 'Свиная нога', 'Pork leg', 'meat', [], true),
 ];
 
 /**
@@ -153,7 +147,6 @@ export interface CatalogAdoptionSeed {
   inventorySlug: string;
   catalogSlug: string;
   allergenOverride?: string[];
-  adgCodeOverride?: string;
 }
 
 export const CATALOG_ADOPTIONS: CatalogAdoptionSeed[] = [

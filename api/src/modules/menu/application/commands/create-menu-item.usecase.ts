@@ -18,6 +18,11 @@ import {
   MenuItemRepository,
 } from '../../domain/repositories/menu-item.repository';
 import { CategoryNotFound, CrossBranchReference, NoRestaurantInScope } from '../application.errors';
+import { normalizeAndValidateDep } from '../dep-assignment.util';
+import {
+  FISCAL_DEPARTMENT_READER,
+  FiscalDepartmentReader,
+} from '../ports/fiscal-department.reader';
 import { slugify } from '../menu-code.util';
 
 export interface CreateMenuItemInput {
@@ -39,6 +44,8 @@ export interface CreateMenuItemInput {
   imageKey?: string | null;
   preparationStation?: PreparationStation;
   prepTimeMinutes?: number | null;
+  /** FISCAL-DEPT-1: branch fiscal department code; validated against the branch's set. */
+  dep?: string | null;
   actorUserId?: string | null;
 }
 
@@ -50,6 +57,7 @@ export class CreateMenuItemUseCase implements UseCase<CreateMenuItemInput, MenuI
     @Inject(MENU_CATEGORY_REPOSITORY) private readonly categories: MenuCategoryRepository,
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
     @Inject(OBJECT_STORAGE_PORT) private readonly storage: ObjectStoragePort,
+    @Inject(FISCAL_DEPARTMENT_READER) private readonly fiscalDepartments: FiscalDepartmentReader,
     private readonly events: DomainEventPublisher,
   ) {}
 
@@ -72,6 +80,18 @@ export class CreateMenuItemUseCase implements UseCase<CreateMenuItemInput, MenuI
       input.branchId,
       slugify(input.name, 'item'),
     );
+    // FISCAL-DEPT-1: normalize + validate the assigned dep against this branch's
+    // FiscalDepartment set (absent → unassigned; blank → cleared). Rejects an
+    // unknown dep with INVALID_FISCAL_DEPARTMENT before the item is created.
+    const dep =
+      input.dep === undefined
+        ? null
+        : await normalizeAndValidateDep(
+            this.fiscalDepartments,
+            input.restaurantId,
+            input.branchId,
+            input.dep,
+          );
     const item = MenuItem.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
@@ -91,6 +111,7 @@ export class CreateMenuItemUseCase implements UseCase<CreateMenuItemInput, MenuI
       imageKey: image.imageKey,
       preparationStation: input.preparationStation,
       prepTimeMinutes: input.prepTimeMinutes ?? null,
+      dep,
       actorUserId: input.actorUserId ?? null,
     });
     await this.items.create(item);

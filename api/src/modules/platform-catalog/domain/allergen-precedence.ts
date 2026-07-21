@@ -31,14 +31,3 @@ export function resolveEffectiveAllergens(
   }
   return [];
 }
-
-/**
- * Effective ATG classifier for a stock item.
- *   tenant override → catalog default → null.
- */
-export function resolveEffectiveAdgCode(
-  override: string | null,
-  catalog: string | null,
-): string | null {
-  return override ?? catalog ?? null;
-}

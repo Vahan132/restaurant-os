@@ -5,6 +5,7 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { I18nTextResponse } from './i18nTextResponse';
 import type { CategoryResponseStatus } from './categoryResponseStatus';
 
 export interface CategoryResponse {
@@ -15,6 +16,10 @@ export interface CategoryResponse {
   name: string;
   /** @nullable */
   description: string | null;
+  /** LOCALE-2A: hy/ru/en name translations (nulls where empty). */
+  nameI18n: I18nTextResponse;
+  /** LOCALE-2A: hy/ru/en description translations. */
+  descriptionI18n: I18nTextResponse;
   displayOrder: number;
   status: CategoryResponseStatus;
 }

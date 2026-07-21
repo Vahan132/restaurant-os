@@ -9,14 +9,17 @@ import { CatalogImportInvalidCsv } from '../catalog.errors';
  * trimmed, and alias-collapsing (`nameHy` / `name_hy` / `name hy` all match).
  */
 
-/** Canonical column keys we understand (unknown columns are ignored). */
+/**
+ * Canonical column keys we understand (unknown columns are ignored). A legacy
+ * `adgcode` column is no longer part of the contract (ADGCODE-CLEANUP-1); since
+ * unknown headers are ignored, files that still carry it import unchanged.
+ */
 export const KNOWN_COLUMNS = [
   'slug',
   'namehy',
   'nameru',
   'nameen',
   'category',
-  'adgcode',
   'allergens',
   'allergensreviewed',
   'status',

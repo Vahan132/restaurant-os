@@ -71,7 +71,6 @@ export async function seedPlatformCatalog(ctx: SeedContext, _state: SeedState): 
       nameRu: it.nameRu,
       nameEn: it.nameEn,
       categoryId: catalogCategorySeedId(it.categorySlug),
-      adgCode: it.adgCode,
       allergensReviewed: it.reviewed,
     };
     await prisma.catalogItem.upsert({
@@ -103,11 +102,9 @@ export async function seedPlatformCatalog(ctx: SeedContext, _state: SeedState): 
       // Json column must not be assigned TS null (use omission to leave it NULL).
       const data: {
         catalogItemId: string;
-        adgCodeOverride: string | null;
         allergenOverride?: string[];
       } = {
         catalogItemId: catalogItemSeedId(link.catalogSlug),
-        adgCodeOverride: link.adgCodeOverride ?? null,
       };
       if (link.allergenOverride !== undefined) {
         data.allergenOverride = link.allergenOverride;

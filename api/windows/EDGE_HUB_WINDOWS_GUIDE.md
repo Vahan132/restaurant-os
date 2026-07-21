@@ -1,0 +1,104 @@
+# Setting up your Restaurant OS hub (Windows)
+
+This is the small computer that runs your restaurant locally and keeps working
+even if the internet goes down. Setup takes about 15 minutes and you only do it
+once. You don't need to know any commands — just follow the steps.
+
+You'll need: the hub computer, its power and network cable, and the **pairing
+code** from your Restaurant OS dashboard.
+
+---
+
+## Step 1 — Install Docker Desktop (one time)
+
+Docker is the program that runs the hub.
+
+1. Go to **https://www.docker.com/products/docker-desktop/** and download **Docker
+   Desktop for Windows**.
+2. Run the installer. Accept the defaults (keep **"Use WSL 2"** ticked).
+3. When it finishes, **restart the computer** if it asks.
+4. Open **Docker Desktop** from the Start menu. Wait until the little whale icon
+   near the clock stops animating and it says **"Engine running."**
+
+That's the only install. You won't need to open Docker again.
+
+---
+
+## Step 2 — Run the hub installer
+
+1. Put the setup files (the ones you were given: `install-hub.bat` and the scripts)
+   in a folder, e.g. on the Desktop.
+2. **Double-click `install-hub.bat`.**
+3. Windows will ask for permission ("Do you want to allow this app to make
+   changes?") — click **Yes**.
+4. A black window opens and does everything for you: downloads the hub, creates its
+   settings, opens the network port, and starts it. Wait until it says **"Done. The
+   hub is starting."**
+
+The installer also prints two web addresses — one for this computer, one for
+tablets/phones on the same network. Keep them handy for the next step.
+
+---
+
+## Step 3 — Pair the hub
+
+1. On the hub computer, open a web browser and go to **http://localhost:3001/setup**
+   (or click the address the installer printed).
+2. Type in your **pairing code** and confirm.
+3. The page will tell you it's connected. That's it — the hub is live and will now
+   run your branch.
+
+You can also open the "From a tablet" address on another device on the same Wi-Fi
+to reach the hub.
+
+---
+
+## Step 4 — Make it start by itself after a power cut (recommended)
+
+So the hub comes back on its own if the power blips, run the boot-on-power setup
+once:
+
+1. Right-click **`enable-boot-on-power.ps1`** → **Run with PowerShell** (say **Yes**
+   to the permission prompt). For fully unattended restarts, an installer can pass
+   the auto-login option for you — ask whoever set this up.
+2. It configures Docker to start with Windows and the hub to come up automatically.
+
+Test it: restart the computer, wait about two minutes, and open the `/setup` (or your
+normal) page — it should be back without you doing anything.
+
+---
+
+## Everyday use
+
+**Is it running?** Open Docker Desktop → **Containers**. You should see
+`restaurantos-edge-api` and `restaurantos-edge-postgres` marked **Running** (green).
+
+**Update the hub.** When you're told a new version is available, double-click
+**`update-hub.bat`** (or right-click `update-hub.ps1` → Run with PowerShell). It
+updates and restarts in place — your data and pairing are kept, and it's safe to do
+during service.
+
+**Restart the hub.** Just restart the computer; the hub comes back on its own (if
+you did Step 4).
+
+---
+
+## Important: re-pairing
+
+Only pair the hub **once**. If you run pairing again with a new code, it will
+**disconnect the current setup** and start fresh. Don't re-pair unless support tells
+you to.
+
+---
+
+## If something's wrong
+
+- **The `/setup` page won't open.** Open Docker Desktop and check the two containers
+  are **Running**. If Docker itself isn't running, open Docker Desktop and wait for
+  "Engine running," then try again.
+- **A tablet can't reach the hub.** Make sure it's on the same Wi-Fi as the hub, and
+  use the "From a tablet" address (the hub's network address), not `localhost`.
+- **Still stuck?** In Docker Desktop, click the `restaurantos-edge-api` container to
+  see its logs, or contact support with what you see there.
+
+You never need a password or account to run the hub itself — only your pairing code.

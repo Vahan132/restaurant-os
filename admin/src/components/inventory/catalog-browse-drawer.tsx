@@ -115,7 +115,6 @@ export function CatalogBrowseDrawer({
                       </div>
                       <div className="mt-0.5 text-xs text-gray-500">
                         {categoryLabel(item)}
-                        {item.adgCode ? ` · ${t('browseAdgCode')} ${item.adgCode}` : ''}
                       </div>
                       {item.allergenSlugs.length > 0 && (
                         <div className="mt-1.5 flex flex-wrap gap-1">

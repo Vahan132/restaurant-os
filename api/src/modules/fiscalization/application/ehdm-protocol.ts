@@ -32,6 +32,9 @@ export const FATAL_FISCAL_CODES: ReadonlySet<string> = new Set([
   '107', // cert-CRN issue
   '183', // INVALID_ADG_CODE
   '192', // ADG_CODE_REQUIRED
+  // FISCAL-DEPT-1: synthetic pre-flight code (no SRC equivalent) — a line with no
+  // fiscal department cannot be routed to a VAT regime, and retrying never heals it.
+  'DEP_REQUIRED',
   '195', // CRM_ACTIVATION_FAILED
   '196', // INACTIVE_CERT_CRM
   '199', // BLOCKED_CERT_CRM
@@ -94,19 +97,18 @@ export interface EHdmResponse {
 
 /**
  * Build the mode-2 `print` request. PRE-FLIGHT FAIL-CLOSED: any line missing an
- * `adgCode` throws a FATAL-config 192 (ADG_CODE_REQUIRED) BEFORE any SRC call —
- * SRC would reject it anyway (192), and looping would never self-heal. Money is
- * rendered 2dp, quantity 3dp, at this wire boundary only (the VOs never re-round).
+ * `adgCode` throws a FATAL-config 192 (ADG_CODE_REQUIRED), and (FISCAL-DEPT-1) any
+ * line missing a `dep` throws a FATAL DEP_REQUIRED, BOTH BEFORE any SRC call — SRC
+ * would misclassify (or reject) the line anyway, and looping would never self-heal.
+ * The previous silent lowest-department fallback is removed: a line's fiscal
+ * department is now sourced per-menu-item (MenuItem.dep, snapshotted onto the order
+ * line) and must be present. Money is rendered 2dp, quantity 3dp, at this wire
+ * boundary only (the VOs never re-round).
  */
 export function buildPrintPayload(
   input: FiscalizationInput,
   cfg: TenantFiscalConfig,
 ): EHdmPrintRequest {
-  // FISCAL-4: a line's `dep` comes from the tenant's department map (dep -> tax
-  // regime). Single-department tenants get that one dep; a line that already
-  // carries an explicit dep keeps it. Per-line dep routing (menu-item -> dep) is a
-  // follow-up. Deterministic: lowest dep code when several exist.
-  const defaultDep = Object.keys(cfg.departmentMap).sort()[0] ?? null;
   const items: EHdmPrintItem[] = input.lines.map((line) => {
     if (line.adgCode === null || line.adgCode.trim() === '') {
       throw new FatalFiscalError(
@@ -114,9 +116,18 @@ export function buildPrintPayload(
         `ADG_CODE_REQUIRED: line "${line.goodName}" has no adgCode (fail closed pre-flight).`,
       );
     }
+    // FISCAL-DEPT-1: fail closed on a missing fiscal department. This builder only
+    // runs on the fiscalize path (fiscal-active branches); a non-fiscal branch never
+    // reaches here, so no dep is required for it.
+    if (line.dep === null || line.dep.trim() === '') {
+      throw new FatalFiscalError(
+        'DEP_REQUIRED',
+        `DEP_REQUIRED: line "${line.goodName}" has no fiscal department (fail closed pre-flight).`,
+      );
+    }
     return {
       adgCode: line.adgCode,
-      dep: line.dep ?? defaultDep,
+      dep: line.dep,
       goodCode: line.goodCode,
       goodName: line.goodName,
       quantity: Quantity.fromThousandths(line.quantityThousandths).toDecimalString(),

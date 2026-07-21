@@ -44,5 +44,10 @@ export interface MenuItemDetailResponse {
      * @nullable
      */
   adgCode: string | null;
+  /**
+     * FISCAL-DEPT-1: branch fiscal department code this dish sells under, for the receipt line's VAT regime (null = unassigned).
+     * @nullable
+     */
+  dep: string | null;
   modifierGroups: AttachedModifierGroupResponse[];
 }

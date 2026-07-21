@@ -5,13 +5,23 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { StockOnHandRowResponseCatalogName } from './stockOnHandRowResponseCatalogName';
 
 export interface StockOnHandRowResponse {
   branchId: string;
   locationId: string;
   locationName: string;
   itemId: string;
-  itemName: string;
+  /**
+   * Local name; null when adopted (use catalogName).
+   * @nullable
+   */
+  itemName: string | null;
+  /**
+   * Live catalog name {hy,ru,en} when adopted.
+   * @nullable
+   */
+  catalogName: StockOnHandRowResponseCatalogName;
   /** @nullable */
   sku: string | null;
   /** @nullable */

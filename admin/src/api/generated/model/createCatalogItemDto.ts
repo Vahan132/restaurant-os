@@ -5,7 +5,6 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { CreateCatalogItemDtoAdgCode } from './createCatalogItemDtoAdgCode';
 import type { CreateCatalogItemDtoCategoryId } from './createCatalogItemDtoCategoryId';
 
 export interface CreateCatalogItemDto {
@@ -19,11 +18,6 @@ export interface CreateCatalogItemDto {
      * @nullable
      */
   categoryId?: CreateCatalogItemDtoCategoryId;
-  /**
-     * Default ATG classifier, or null.
-     * @nullable
-     */
-  adgCode?: CreateCatalogItemDtoAdgCode;
   /** Allergen slugs from the taxonomy. */
   allergenSlugs?: string[];
   /** Support tagging gate — dishes show verified allergens only when true. Defaults false. */

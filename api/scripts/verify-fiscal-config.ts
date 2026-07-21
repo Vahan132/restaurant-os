@@ -15,6 +15,7 @@ import { DbFiscalConfigAdapter } from '../src/modules/fiscal-config/infrastructu
 import {
   buildPrintPayload,
 } from '../src/modules/fiscalization/application/ehdm-protocol';
+import { FatalFiscalError } from '../src/modules/fiscalization/application/ports/fiscal-errors';
 import {
   FiscalizationInput,
   FiscalMode,
@@ -99,19 +100,28 @@ const cfgWith = (departmentMap: Record<string, string>): TenantFiscalConfig => (
   clientCert: 'x', clientKey: 'y', caRoot: 'z', language: 'hy', departmentMap,
 });
 
-check('payload: null-dep line takes the tenant default dep from the map', () => {
-  const p = buildPrintPayload(baseInput(), cfgWith({ '01': 'regime-a' }));
-  assert.strictEqual(p.items[0].dep, '01');
+// FISCAL-DEPT-1: the silent lowest-department fallback is REMOVED. A line's dep is
+// now sourced per-menu-item (MenuItem.dep, snapshotted onto the order line) and a
+// missing dep fails closed pre-flight instead of routing to a default department.
+check('payload: null-dep line fails closed (DEP_REQUIRED), not defaulted', () => {
+  assert.throws(
+    () => buildPrintPayload(baseInput(), cfgWith({ '01': 'regime-a' })),
+    (e: unknown) => e instanceof FatalFiscalError && e.code === 'DEP_REQUIRED',
+  );
 });
-check('payload: lowest dep code chosen deterministically when several', () => {
-  const p = buildPrintPayload(baseInput(), cfgWith({ '05': 'e', '02': 'b', '09': 'i' }));
-  assert.strictEqual(p.items[0].dep, '02');
+check('payload: null-dep fails closed regardless of how many departments exist', () => {
+  assert.throws(
+    () => buildPrintPayload(baseInput(), cfgWith({ '05': 'e', '02': 'b', '09': 'i' })),
+    (e: unknown) => e instanceof FatalFiscalError && e.code === 'DEP_REQUIRED',
+  );
 });
-check('payload: empty department map leaves dep null (no crash)', () => {
-  const p = buildPrintPayload(baseInput(), cfgWith({}));
-  assert.strictEqual(p.items[0].dep, null);
+check('payload: null-dep with an empty department map also fails closed', () => {
+  assert.throws(
+    () => buildPrintPayload(baseInput(), cfgWith({})),
+    (e: unknown) => e instanceof FatalFiscalError && e.code === 'DEP_REQUIRED',
+  );
 });
-check('payload: explicit line dep is preserved over the default', () => {
+check('payload: an explicit line dep is preserved and used verbatim', () => {
   const input = baseInput({
     lines: [{
       name: 'X', goodName: 'X', goodCode: 'x', quantityThousandths: 1000, unit: 'pcs',

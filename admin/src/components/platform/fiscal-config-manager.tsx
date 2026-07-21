@@ -17,6 +17,8 @@ import {
   usePlatformFiscalConfigControllerBranches,
   usePlatformFiscalConfigControllerCheckConnection,
   usePlatformFiscalConfigControllerSetDeps,
+  usePlatformFiscalConfigControllerSetDeviceConfig,
+  usePlatformFiscalConfigControllerSetPrintModeConfig,
   usePlatformFiscalConfigControllerStatus,
   usePlatformFiscalConfigControllerUploadCert,
   usePlatformFiscalConfigControllerUpsertConfig,
@@ -30,6 +32,7 @@ import { getErrorMessage } from '@/lib/api-error';
 import { toast } from '@/stores/toast';
 
 type DeptRow = { dep: string; taxRegime: string; label: string };
+type PrintMode = 'AUTO' | 'MANUAL';
 
 /**
  * Platform-admin (support) fiscal-config management. Pick org -> restaurant ->
@@ -74,6 +77,14 @@ export function FiscalConfigManager() {
   const [checkResult, setCheckResult] = useState<'ok' | 'fail' | null>(null);
   const [hydratedKey, setHydratedKey] = useState('');
 
+  // ── device + print-mode state ────────────────────────────────────────────
+  // Password is write-only (mirror the cert pattern): never hydrated from
+  // status, cleared after every save, and never rendered.
+  const [deviceHost, setDeviceHost] = useState('');
+  const [devicePort, setDevicePort] = useState('');
+  const [devicePassword, setDevicePassword] = useState('');
+  const [printMode, setPrintMode] = useState<PrintMode>('AUTO');
+
   const selKey = `${restaurantId}:${branchId}`;
   const branchSelected = restaurantId !== '' && branchId !== '';
   const configExists = status !== undefined;
@@ -96,6 +107,9 @@ export function FiscalConfigManager() {
           label: d.label ?? '',
         })),
       );
+      setDeviceHost(status.deviceHost ?? '');
+      setDevicePort(status.devicePort != null ? String(status.devicePort) : '');
+      setPrintMode(status.fiscalPrintMode as PrintMode);
     } else {
       setCrn('');
       setCashierId('');
@@ -103,9 +117,13 @@ export function FiscalConfigManager() {
       setLanguage('hy');
       setActive(false);
       setDepts([]);
+      setDeviceHost('');
+      setDevicePort('');
+      setPrintMode('AUTO');
     }
     setCertPem('');
     setKeyPem('');
+    setDevicePassword('');
     setCheckResult(null);
     setHydratedKey(selKey);
   }, [status, statusQ.isLoading, selKey, branchSelected, hydratedKey]);
@@ -115,6 +133,8 @@ export function FiscalConfigManager() {
   const certMut = usePlatformFiscalConfigControllerUploadCert();
   const deptsMut = usePlatformFiscalConfigControllerSetDeps();
   const checkMut = usePlatformFiscalConfigControllerCheckConnection();
+  const deviceMut = usePlatformFiscalConfigControllerSetDeviceConfig();
+  const printModeMut = usePlatformFiscalConfigControllerSetPrintModeConfig();
 
   async function refreshStatus() {
     await qc.invalidateQueries({
@@ -170,6 +190,46 @@ export function FiscalConfigManager() {
       await refreshStatus();
       toast.success(t('savedCert'));
     } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  }
+
+  async function saveDevice() {
+    const portNum = Number(devicePort);
+    if (!Number.isInteger(portNum) || portNum < 1 || portNum > 65535) {
+      toast.error(t('devicePortInvalid'));
+      return;
+    }
+    try {
+      await deviceMut.mutateAsync({
+        restaurantId,
+        branchId,
+        data: { host: deviceHost.trim(), port: portNum, password: devicePassword },
+      });
+      setDevicePassword('');
+      await refreshStatus();
+      toast.success(t('savedDevice'));
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  }
+
+  async function changePrintMode(next: PrintMode) {
+    if (next === printMode) {
+      return;
+    }
+    const prev = printMode;
+    setPrintMode(next); // optimistic; revert on failure
+    try {
+      await printModeMut.mutateAsync({
+        restaurantId,
+        branchId,
+        data: { fiscalPrintMode: next },
+      });
+      await refreshStatus();
+      toast.success(t('savedPrintMode'));
+    } catch (err) {
+      setPrintMode(prev);
       toast.error(getErrorMessage(err));
     }
   }
@@ -314,6 +374,7 @@ export function FiscalConfigManager() {
               <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
               {t('active')}
             </label>
+            <p className="text-xs text-gray-500">{t('activationHint')}</p>
             <div>
               <Button variant="primary" onClick={saveConfig} disabled={upsertMut.isPending}>
                 {t('saveConfig')}
@@ -440,6 +501,99 @@ export function FiscalConfigManager() {
             )}
           </section>
 
+          {/* Physical-HDM device (write-only password, mirrors cert) */}
+          <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-900">{t('deviceSection')}</h2>
+              {status?.deviceConfigured ? (
+                <Badge tone="green">{t('deviceConfigured')}</Badge>
+              ) : (
+                <Badge tone="amber">{t('deviceNotConfigured')}</Badge>
+              )}
+            </div>
+            {!configExists ? (
+              <p className="text-sm text-gray-500">{t('saveConfigFirst')}</p>
+            ) : (
+              <>
+                <p className="text-xs text-gray-500">{t('deviceHint')}</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block text-sm">
+                    <span className="mb-1 block text-gray-600">{t('deviceHost')}</span>
+                    <input
+                      className={inputClass}
+                      value={deviceHost}
+                      onChange={(e) => setDeviceHost(e.target.value)}
+                      placeholder="192.168.1.50"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="mb-1 block text-gray-600">{t('devicePort')}</span>
+                    <input
+                      className={inputClass}
+                      type="number"
+                      min={1}
+                      max={65535}
+                      value={devicePort}
+                      onChange={(e) => setDevicePort(e.target.value)}
+                      placeholder="8080"
+                    />
+                  </label>
+                  <label className="block text-sm sm:col-span-2">
+                    <span className="mb-1 block text-gray-600">{t('devicePassword')}</span>
+                    <input
+                      className={inputClass}
+                      type="password"
+                      autoComplete="new-password"
+                      value={devicePassword}
+                      onChange={(e) => setDevicePassword(e.target.value)}
+                      placeholder={status?.deviceConfigured ? t('devicePasswordSet') : ''}
+                    />
+                  </label>
+                </div>
+                <Button
+                  variant="primary"
+                  onClick={saveDevice}
+                  disabled={
+                    deviceMut.isPending ||
+                    deviceHost.trim() === '' ||
+                    devicePort === '' ||
+                    devicePassword === ''
+                  }
+                >
+                  {t('saveDevice')}
+                </Button>
+              </>
+            )}
+          </section>
+
+          {/* Print mode (AUTO / MANUAL) */}
+          <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+            <h2 className="text-sm font-semibold text-gray-900">{t('printModeSection')}</h2>
+            {!configExists ? (
+              <p className="text-sm text-gray-500">{t('saveConfigFirst')}</p>
+            ) : (
+              <>
+                <p className="text-xs text-gray-500">{t('printModeHint')}</p>
+                <div className="flex gap-2">
+                  <Button
+                    variant={printMode === 'AUTO' ? 'primary' : 'secondary'}
+                    onClick={() => changePrintMode('AUTO')}
+                    disabled={printModeMut.isPending}
+                  >
+                    {t('printModeAuto')}
+                  </Button>
+                  <Button
+                    variant={printMode === 'MANUAL' ? 'primary' : 'secondary'}
+                    onClick={() => changePrintMode('MANUAL')}
+                    disabled={printModeMut.isPending}
+                  >
+                    {t('printModeManual')}
+                  </Button>
+                </div>
+              </>
+            )}
+          </section>
+
           {/* Test connection */}
           <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
             <h2 className="text-sm font-semibold text-gray-900">{t('testSection')}</h2>
@@ -460,6 +614,43 @@ export function FiscalConfigManager() {
                 {status.lastCheckConnectionOk ? t('testOk') : t('testFail')}
               </p>
             ) : null}
+          </section>
+
+          {/* Health — only what the cloud can honestly verify */}
+          <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
+            <h2 className="text-sm font-semibold text-gray-900">{t('healthSection')}</h2>
+            <div className="space-y-2 text-sm">
+              {/* e-HDM connection (SRC), from the test-connection result */}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-gray-600">{t('healthEhdm')}</span>
+                {status?.lastCheckConnectionAt == null ? (
+                  <Badge tone="gray">{t('healthNotChecked')}</Badge>
+                ) : status.lastCheckConnectionOk ? (
+                  <Badge tone="green">{t('testOk')}</Badge>
+                ) : (
+                  <Badge tone="amber">{t('testFail')}</Badge>
+                )}
+              </div>
+              {/* Physical device — "Configured", NOT "Connected": the cloud
+                  cannot live-ping the LAN device. */}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-gray-600">
+                  {t('healthDevice')}
+                  {status?.deviceConfigured && status.deviceHost ? (
+                    <span className="ml-1 text-gray-400">
+                      ({status.deviceHost}
+                      {status.devicePort != null ? `:${status.devicePort}` : ''})
+                    </span>
+                  ) : null}
+                </span>
+                {status?.deviceConfigured ? (
+                  <Badge tone="green">{t('deviceConfigured')}</Badge>
+                ) : (
+                  <Badge tone="amber">{t('deviceNotConfigured')}</Badge>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">{t('healthNote')}</p>
           </section>
         </>
       )}

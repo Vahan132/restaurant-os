@@ -61,6 +61,7 @@ export class EdgeSnapshotController {
     @Query('since') since?: string,
   ): Promise<ConfigChanges> {
     return this.getConfigChanges.execute({
+      nodeId: node.nodeId,
       organizationId: node.organizationId,
       restaurantId: node.restaurantId,
       branchId: node.branchId,

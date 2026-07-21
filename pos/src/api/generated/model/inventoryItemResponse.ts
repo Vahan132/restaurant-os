@@ -5,6 +5,7 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { InventoryItemResponseCatalogName } from './inventoryItemResponseCatalogName';
 import type { InventoryItemResponseKind } from './inventoryItemResponseKind';
 import type { InventoryItemResponseBaseUnit } from './inventoryItemResponseBaseUnit';
 import type { AlternateUnitView } from './alternateUnitView';
@@ -14,7 +15,16 @@ export interface InventoryItemResponse {
   id: string;
   restaurantId: string;
   branchId: string;
-  name: string;
+  /**
+   * PLATCAT-ADOPT-1B: local name; null for an adopted item (use catalogName). Client display = catalogName ? catalogName[locale] : name.
+   * @nullable
+   */
+  name: string | null;
+  /**
+   * Live-resolved platform catalog name {hy,ru,en}; present when adopted.
+   * @nullable
+   */
+  catalogName: InventoryItemResponseCatalogName;
   /** @nullable */
   sku: string | null;
   /** @nullable */
@@ -35,5 +45,10 @@ export interface InventoryItemResponse {
    * @nullable
    */
   consumptionLocationId: string | null;
+  /**
+   * CATALOG-1: platform CatalogItem this item was adopted from (null = custom).
+   * @nullable
+   */
+  catalogItemId: string | null;
   status: InventoryItemResponseStatus;
 }

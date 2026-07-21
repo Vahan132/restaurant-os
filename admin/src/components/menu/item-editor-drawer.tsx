@@ -12,6 +12,7 @@ import {
   useItemsControllerUpdate,
 } from '@/api/generated/menu-items/menu-items';
 import { useMediaControllerPresignMenuItemImage } from '@/api/generated/media/media';
+import { useTenantFiscalControllerDepartments } from '@/api/generated/fiscal/fiscal';
 import {
   CreateMenuItemDtoPreparationStation,
   MenuItemResponseAvailability,
@@ -85,6 +86,12 @@ export function ItemEditorDrawer({
   });
   const detail = detailQuery.data;
 
+  // FISCAL-DEPT-3B: the active branch's registered fiscal departments (scoped by
+  // X-Branch-Id — the same context the item is created/edited under). Drives the
+  // department dropdown; an empty list (non-fiscal or unconfigured) disables it.
+  const departmentsQuery = useTenantFiscalControllerDepartments();
+  const fiscalDepartments = departmentsQuery.data?.departments ?? [];
+
   // Recipe estimated cost drives the margin helper (read-only to everyone).
   const { recipe } = useRecipeForMenuItem(workingId);
   const estimatedCost = recipe?.estimatedUnitCost_amount ?? null;
@@ -106,6 +113,8 @@ export function ItemEditorDrawer({
   // ADGCODE-UI: the dish-level SRC ATG classifier code (free-text; soft-warned only,
   // never blocks save — SRC is the real validator at fiscalization).
   const [adgCode, setAdgCode] = useState('');
+  // FISCAL-DEPT-3B: selected fiscal department code ('' = unassigned).
+  const [dep, setDep] = useState('');
   const [errors, setErrors] = useState<{
     name?: string;
     category?: string;
@@ -128,6 +137,7 @@ export function ItemEditorDrawer({
     setStatus(detail.status);
     setAvailability(detail.availability);
     setAdgCode(detail.adgCode ?? '');
+    setDep(detail.dep ?? '');
   }, [detail, currency]);
 
   // ADGCODE-UI: accept 4–15 digits (SRC ATG codes are numeric). Empty is allowed
@@ -174,6 +184,9 @@ export function ItemEditorDrawer({
             imageKey: imageKey || undefined,
             preparationStation: station as CreateMenuItemDtoPreparationStation,
             prepTimeMinutes,
+            // FISCAL-DEPT-3B: send the picked department on create ('' = omit, stays
+            // unassigned). Backend validates it against the branch's registered set.
+            dep: dep.trim() || undefined,
             ...nameTranslationFields(primaryLocale, nameI18n),
             ...descriptionTranslationFields(primaryLocale, descriptionI18n),
           },
@@ -223,6 +236,9 @@ export function ItemEditorDrawer({
             // Send the current field value (populated from the dish on load, so an
             // untouched code is preserved); an empty string clears it.
             adgCode: adgCode.trim(),
+            // FISCAL-DEPT-3B: same partial-update semantics as adgCode — send the
+            // current selection; empty string clears (unassigns) the department.
+            dep: dep.trim(),
             ...nameTranslationFields(primaryLocale, nameI18n),
             ...descriptionTranslationFields(primaryLocale, descriptionI18n),
           },
@@ -424,6 +440,33 @@ export function ItemEditorDrawer({
                 <span className="mt-1 block text-xs text-amber-600">{t('adgCodeWarning')}</span>
               ) : (
                 <span className="mt-1 block text-xs text-gray-500">{t('adgCodeHelper')}</span>
+              )}
+            </Field>
+            {/* FISCAL-DEPT-3B: department dropdown — options come only from the
+                branch's registered fiscal departments (label + dep, submits dep).
+                Empty list (non-fiscal / unconfigured) disables it with a setup hint,
+                never free text. Optional at the data layer; required at fiscalize on
+                a fiscal-active branch (see the coverage view). */}
+            <Field label={t('department')}>
+              <select
+                className={inputClass}
+                value={dep}
+                disabled={!canManage || fiscalDepartments.length === 0}
+                onChange={(e) => setDep(e.target.value)}
+              >
+                <option value="">{t('departmentUnassigned')}</option>
+                {fiscalDepartments.map((d) => (
+                  <option key={d.dep} value={d.dep}>
+                    {d.label ? `${d.label} (${d.dep})` : d.dep}
+                  </option>
+                ))}
+              </select>
+              {fiscalDepartments.length === 0 ? (
+                <span className="mt-1 block text-xs text-amber-600">
+                  {t('departmentNoneHint')}
+                </span>
+              ) : (
+                <span className="mt-1 block text-xs text-gray-500">{t('departmentHelper')}</span>
               )}
             </Field>
             <Field label={t('imageUrl')}>

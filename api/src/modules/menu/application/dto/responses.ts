@@ -72,6 +72,14 @@ export class MenuItemResponse {
       'ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified).',
   })
   adgCode!: string | null;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description:
+      'FISCAL-DEPT-1: branch fiscal department code this dish sells under, for the ' +
+      "receipt line's VAT regime (null = unassigned).",
+  })
+  dep!: string | null;
 
   static from(i: MenuItem): MenuItemResponse {
     return {
@@ -93,6 +101,7 @@ export class MenuItemResponse {
       availability: i.availability,
       hideRecipe: i.hideRecipe,
       adgCode: i.adgCode,
+      dep: i.dep,
     };
   }
 }

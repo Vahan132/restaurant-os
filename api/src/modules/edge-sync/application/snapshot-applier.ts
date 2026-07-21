@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.service';
 import { ConfigChanges } from '../../../shared/edge/contracts/config-sync.contract';
 import { BranchSnapshot } from '../../../shared/edge/contracts/snapshot.contract';
+import { fiscalConfigFromWire } from '../../../shared/edge/contracts/fiscal-sync.mapper';
 
 /** Runs an async fn for each row, in order. */
 async function forEachSeq<T>(rows: T[], fn: (row: T) => Promise<unknown>): Promise<void> {
@@ -207,6 +208,16 @@ export class SnapshotApplier {
           return tx.stockOnHand.upsert({ where: { id: r.id }, create: data, update: data });
         });
 
+        // ── fiscal config (read-only on the edge; bytea base64 -> Buffer) ──────
+        await forEachSeq(s.fiscal.fiscalConfigs, (r) => {
+          const data = fiscalConfigFromWire(r) as unknown as Prisma.FiscalConfigUncheckedCreateInput;
+          return tx.fiscalConfig.upsert({ where: { id: r.id }, create: data, update: data });
+        });
+        await forEachSeq(s.fiscal.fiscalDepartments, (r) => {
+          const data = r as unknown as Prisma.FiscalDepartmentUncheckedCreateInput;
+          return tx.fiscalDepartment.upsert({ where: { id: r.id }, create: data, update: data });
+        });
+
         // ── operational ──────────────────────────────────────────────────────
         await forEachSeq(s.operational.floors, (r) => {
           const data = r as unknown as Prisma.FloorUncheckedCreateInput;
@@ -402,6 +413,27 @@ export class SnapshotApplier {
         await forEachSeq(ch.processOutputs, (r) => {
           const data = r as unknown as Prisma.ProcessOutputUncheckedCreateInput;
           return tx.processOutput.upsert({ where: { id: r.id }, create: data, update: data });
+        });
+
+        // ── fiscal config (+ reconcile departments per CHANGED config) ─────────
+        // Read-only on the edge: upsert only. FiscalConfig carries deletedAt? No —
+        // fiscal configs are not soft-deleted; a config simply stops changing. Its
+        // departments have no updatedAt, so ship+reconcile the FULL set per changed
+        // config (replace-by-parent, like recipe lines). Bytea base64 -> Buffer.
+        await forEachSeq(ch.fiscalConfigs, (r) => {
+          const data = fiscalConfigFromWire(r) as unknown as Prisma.FiscalConfigUncheckedCreateInput;
+          return tx.fiscalConfig.upsert({ where: { id: r.id }, create: data, update: data });
+        });
+        const departmentsByConfig = groupByKey(ch.fiscalDepartments, (d) => d.fiscalConfigId);
+        for (const config of ch.fiscalConfigs) {
+          const departmentIds = (departmentsByConfig.get(config.id) ?? []).map((d) => d.id);
+          await tx.fiscalDepartment.deleteMany({
+            where: { fiscalConfigId: config.id, id: { notIn: departmentIds } },
+          });
+        }
+        await forEachSeq(ch.fiscalDepartments, (r) => {
+          const data = r as unknown as Prisma.FiscalDepartmentUncheckedCreateInput;
+          return tx.fiscalDepartment.upsert({ where: { id: r.id }, create: data, update: data });
         });
       },
       { timeout: 120_000, maxWait: 15_000 },

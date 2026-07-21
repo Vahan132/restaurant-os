@@ -16,7 +16,6 @@ export interface CatalogItemProps {
   nameRu: string;
   nameEn: string;
   categoryId: string | null;
-  adgCode: string | null;
   allergenSlugs: string[];
   allergensReviewed: boolean;
   status: CatalogItemStatus;
@@ -32,7 +31,6 @@ export interface CreateCatalogItemProps {
   nameRu: string;
   nameEn: string;
   categoryId: string | null;
-  adgCode: string | null;
   allergenSlugs: string[];
   /** Support tagging gate; defaults to false on create. */
   allergensReviewed?: boolean;
@@ -60,7 +58,6 @@ export class CatalogItem extends AggregateRoot<string> {
       nameRu: input.nameRu,
       nameEn: input.nameEn,
       categoryId: input.categoryId,
-      adgCode: input.adgCode,
       allergenSlugs: normalizeSlugs(input.allergenSlugs),
       allergensReviewed: input.allergensReviewed ?? false,
       status: CatalogItemStatus.ACTIVE,
@@ -89,9 +86,6 @@ export class CatalogItem extends AggregateRoot<string> {
   get categoryId(): string | null {
     return this.props.categoryId;
   }
-  get adgCode(): string | null {
-    return this.props.adgCode;
-  }
   get allergenSlugs(): string[] {
     return [...this.props.allergenSlugs];
   }
@@ -119,15 +113,14 @@ export class CatalogItem extends AggregateRoot<string> {
   }
 
   /**
-   * Patch mutable fields. `undefined` = leave unchanged; `null` on categoryId/adgCode
-   * clears them. allergenSlugs (when provided) fully REPLACES the tag set.
+   * Patch mutable fields. `undefined` = leave unchanged; `null` on categoryId
+   * clears it. allergenSlugs (when provided) fully REPLACES the tag set.
    */
   update(input: {
     nameHy?: string;
     nameRu?: string;
     nameEn?: string;
     categoryId?: string | null;
-    adgCode?: string | null;
     allergenSlugs?: string[];
     allergensReviewed?: boolean;
   }): void {
@@ -135,7 +128,6 @@ export class CatalogItem extends AggregateRoot<string> {
     if (input.nameRu !== undefined) this.props.nameRu = input.nameRu;
     if (input.nameEn !== undefined) this.props.nameEn = input.nameEn;
     if (input.categoryId !== undefined) this.props.categoryId = input.categoryId;
-    if (input.adgCode !== undefined) this.props.adgCode = input.adgCode;
     if (input.allergenSlugs !== undefined) {
       this.props.allergenSlugs = normalizeSlugs(input.allergenSlugs);
     }

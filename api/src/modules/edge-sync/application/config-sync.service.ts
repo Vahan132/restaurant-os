@@ -43,7 +43,7 @@ export class ConfigSyncService implements OnApplicationBootstrap, OnModuleDestro
   }
 
   onApplicationBootstrap(): void {
-    if (!this.edge.isEdge) {
+    if (!this.edge.isPaired) {
       return;
     }
     // Initial catch-up shortly after boot (once the snapshot bootstrap has run),
@@ -79,7 +79,7 @@ export class ConfigSyncService implements OnApplicationBootstrap, OnModuleDestro
    * cursor + marks online on success; marks offline on failure (cursor unchanged).
    */
   async syncConfig(): Promise<ConfigSyncResult> {
-    if (!this.edge.isEdge) {
+    if (!this.edge.isPaired) {
       return { synced: false, reason: 'NOT_EDGE' };
     }
     // Sync is paused for a schema mismatch — keep serving locally, do not pull.

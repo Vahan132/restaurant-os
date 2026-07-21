@@ -51,6 +51,7 @@ export function FiscalCodeCoverage() {
   }, [categories]);
 
   const [missingOnly, setMissingOnly] = useState(false);
+  const [depMissingOnly, setDepMissingOnly] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   // Optimistic overlay so a saved row's status/count update instantly (the full
@@ -68,6 +69,16 @@ export function FiscalCodeCoverage() {
     return effectiveCode(item) ? 'coded' : 'needs';
   };
 
+  // FISCAL-DEPT-2: department coverage is READ-ONLY here — assigning a dep needs
+  // the branch's FiscalDepartment catalog, exposed only via a platform-scoped read
+  // this operator app can't call, so this view surfaces the pre-go-live gap only.
+  // Same three states as adgCode: an ACTIVE dish with no dep fails-closed
+  // (DEP_REQUIRED) once the branch is fiscal-active; archived (n/a) is excluded.
+  const depBucketOf = (item: MenuItemResponse): Bucket => {
+    if (item.status !== MenuItemResponseStatus.ACTIVE) return 'na';
+    return item.dep ? 'coded' : 'needs';
+  };
+
   // Honest denominator: fiscalizable (ACTIVE) dishes only; archived excluded.
   const fiscalizable = items.filter((i) => i.status === MenuItemResponseStatus.ACTIVE);
   const total = fiscalizable.length;
@@ -75,14 +86,19 @@ export function FiscalCodeCoverage() {
   const needs = total - coded;
   const archivedCount = items.length - total;
 
+  // Department coverage over the same fiscalizable denominator (ACTIVE dishes).
+  const depAssigned = fiscalizable.filter((i) => !!i.dep).length;
+  const depNeeds = total - depAssigned;
+
   const rows = useMemo(() => {
     let list = showArchived
       ? items
       : items.filter((i) => i.status === MenuItemResponseStatus.ACTIVE);
     if (missingOnly) list = list.filter((i) => bucketOf(i) === 'needs');
+    if (depMissingOnly) list = list.filter((i) => depBucketOf(i) === 'needs');
     return [...list].sort((a, b) => a.name.localeCompare(b.name));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, missingOnly, showArchived, overlay]);
+  }, [items, missingOnly, depMissingOnly, showArchived, overlay]);
 
   const draftFor = (item: MenuItemResponse) =>
     item.id in drafts ? drafts[item.id]! : effectiveCode(item) ?? '';
@@ -120,6 +136,18 @@ export function FiscalCodeCoverage() {
       <Badge tone="gray">— {t('statusNa')}</Badge>
     );
 
+  const depBadge = (b: Bucket, dep: string | null) =>
+    b === 'coded' ? (
+      <Badge tone="green">
+        ✓ {t('statusHasDep')}
+        {dep ? ` · ${dep}` : ''}
+      </Badge>
+    ) : b === 'needs' ? (
+      <Badge tone="amber">⚠ {t('statusNeedsDep')}</Badge>
+    ) : (
+      <Badge tone="gray">— {t('statusNa')}</Badge>
+    );
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -128,13 +156,25 @@ export function FiscalCodeCoverage() {
           <p className="mt-1 text-sm text-gray-500">{t('fiscalCodesSubtitle')}</p>
         </div>
         {!isLoading && (
-          <div className="flex flex-col items-end gap-1">
-            <Badge tone={total > 0 && coded === total ? 'green' : 'amber'}>
-              {t('coverageCount', { coded, total })}
-            </Badge>
-            {needs > 0 && (
-              <span className="text-xs text-amber-600">{t('needsCount', { count: needs })}</span>
-            )}
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-col items-end gap-1">
+              <Badge tone={total > 0 && coded === total ? 'green' : 'amber'}>
+                {t('coverageCount', { coded, total })}
+              </Badge>
+              {needs > 0 && (
+                <span className="text-xs text-amber-600">{t('needsCount', { count: needs })}</span>
+              )}
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <Badge tone={total > 0 && depAssigned === total ? 'green' : 'amber'}>
+                {t('depCoverageCount', { assigned: depAssigned, total })}
+              </Badge>
+              {depNeeds > 0 && (
+                <span className="text-xs text-amber-600">
+                  {t('depNeedsCount', { count: depNeeds })}
+                </span>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -149,6 +189,14 @@ export function FiscalCodeCoverage() {
             />
             {t('missingOnly')}
           </label>
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={depMissingOnly}
+              onChange={(e) => setDepMissingOnly(e.target.checked)}
+            />
+            {t('depMissingOnly')}
+          </label>
           {archivedCount > 0 && (
             <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
               <input
@@ -161,6 +209,10 @@ export function FiscalCodeCoverage() {
           )}
         </div>
 
+        <p className="border-b border-gray-200 px-4 py-2 text-xs text-gray-500">
+          {t('depReadinessHint')}
+        </p>
+
         <div className="overflow-x-auto p-4">
           {isLoading ? (
             <div className="space-y-2">
@@ -170,7 +222,11 @@ export function FiscalCodeCoverage() {
             </div>
           ) : rows.length === 0 ? (
             <p className="py-10 text-center text-sm text-gray-500">
-              {missingOnly ? t('allCoded') : t('noItems')}
+              {depMissingOnly && !missingOnly
+                ? t('allDepsAssigned')
+                : missingOnly
+                  ? t('allCoded')
+                  : t('noItems')}
             </p>
           ) : (
             <table className="w-full border-collapse text-sm">
@@ -180,6 +236,7 @@ export function FiscalCodeCoverage() {
                   <th className="py-2 pr-3 font-medium">{t('category')}</th>
                   <th className="py-2 pr-3 font-medium">{t('adgCode')}</th>
                   <th className="py-2 pr-3 font-medium">{t('status')}</th>
+                  <th className="py-2 pr-3 font-medium">{t('depColumn')}</th>
                   <th className="py-2" />
                 </tr>
               </thead>
@@ -212,6 +269,7 @@ export function FiscalCodeCoverage() {
                         )}
                       </td>
                       <td className="py-2 pr-3">{statusBadge(bucket)}</td>
+                      <td className="py-2 pr-3">{depBadge(depBucketOf(item), item.dep)}</td>
                       <td className="py-2">
                         <div className="flex justify-end">
                           <Can permission={PERMISSIONS.MENU_MANAGE}>

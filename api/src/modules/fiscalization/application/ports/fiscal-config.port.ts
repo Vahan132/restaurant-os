@@ -31,6 +31,17 @@ export interface TenantFiscalConfig {
    * (FISCAL-0 kept it null), so this may be empty; wired in a later prompt.
    */
   departmentMap: Record<string, string>;
+  /**
+   * FISCAL-EDGE-1: OPTIONAL physical-HDM device for this branch (1:1). Present
+   * only when a device is configured. `devicePassword` is decrypted IN-PROCESS
+   * for the future physical adapter — it is NEVER returned on any HTTP read model
+   * or logged. Absent (undefined) for e-HDM-only branches.
+   */
+  device?: {
+    host: string;
+    port: number;
+    password: string;
+  };
 }
 
 export interface FiscalConfigPort {

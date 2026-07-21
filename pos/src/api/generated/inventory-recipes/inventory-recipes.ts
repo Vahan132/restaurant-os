@@ -25,8 +25,10 @@ import type {
   CreateRecipeDto,
   RecipeListItemResponse,
   RecipeResponse,
+  RecipesControllerCreateParams,
   RecipesControllerGetParams,
   RecipesControllerListParams,
+  RecipesControllerUpdateParams,
   UpdateRecipeDto,
 } from '.././model';
 
@@ -171,6 +173,7 @@ export function useRecipesControllerList<
  */
 export const recipesControllerCreate = (
   createRecipeDto: CreateRecipeDto,
+  params?: RecipesControllerCreateParams,
   options?: SecondParameter<typeof apiRequest>,
   signal?: AbortSignal,
 ) => {
@@ -180,6 +183,7 @@ export const recipesControllerCreate = (
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       data: createRecipeDto,
+      params,
       signal,
     },
     options,
@@ -193,14 +197,14 @@ export const getRecipesControllerCreateMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof recipesControllerCreate>>,
     TError,
-    { data: CreateRecipeDto },
+    { data: CreateRecipeDto; params?: RecipesControllerCreateParams },
     TContext
   >;
   request?: SecondParameter<typeof apiRequest>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof recipesControllerCreate>>,
   TError,
-  { data: CreateRecipeDto },
+  { data: CreateRecipeDto; params?: RecipesControllerCreateParams },
   TContext
 > => {
   const mutationKey = ['recipesControllerCreate'];
@@ -212,11 +216,11 @@ export const getRecipesControllerCreateMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof recipesControllerCreate>>,
-    { data: CreateRecipeDto }
+    { data: CreateRecipeDto; params?: RecipesControllerCreateParams }
   > = (props) => {
-    const { data } = props ?? {};
+    const { data, params } = props ?? {};
 
-    return recipesControllerCreate(data, requestOptions);
+    return recipesControllerCreate(data, params, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -236,7 +240,7 @@ export const useRecipesControllerCreate = <TError = void, TContext = unknown>(
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof recipesControllerCreate>>,
       TError,
-      { data: CreateRecipeDto },
+      { data: CreateRecipeDto; params?: RecipesControllerCreateParams },
       TContext
     >;
     request?: SecondParameter<typeof apiRequest>;
@@ -245,7 +249,7 @@ export const useRecipesControllerCreate = <TError = void, TContext = unknown>(
 ): UseMutationResult<
   Awaited<ReturnType<typeof recipesControllerCreate>>,
   TError,
-  { data: CreateRecipeDto },
+  { data: CreateRecipeDto; params?: RecipesControllerCreateParams },
   TContext
 > => {
   const mutationOptions = getRecipesControllerCreateMutationOptions(options);
@@ -399,6 +403,7 @@ export function useRecipesControllerGet<
 export const recipesControllerUpdate = (
   id: string,
   updateRecipeDto: UpdateRecipeDto,
+  params?: RecipesControllerUpdateParams,
   options?: SecondParameter<typeof apiRequest>,
 ) => {
   return apiRequest<RecipeResponse>(
@@ -407,6 +412,7 @@ export const recipesControllerUpdate = (
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       data: updateRecipeDto,
+      params,
     },
     options,
   );
@@ -419,14 +425,14 @@ export const getRecipesControllerUpdateMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof recipesControllerUpdate>>,
     TError,
-    { id: string; data: UpdateRecipeDto },
+    { id: string; data: UpdateRecipeDto; params?: RecipesControllerUpdateParams },
     TContext
   >;
   request?: SecondParameter<typeof apiRequest>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof recipesControllerUpdate>>,
   TError,
-  { id: string; data: UpdateRecipeDto },
+  { id: string; data: UpdateRecipeDto; params?: RecipesControllerUpdateParams },
   TContext
 > => {
   const mutationKey = ['recipesControllerUpdate'];
@@ -438,11 +444,11 @@ export const getRecipesControllerUpdateMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof recipesControllerUpdate>>,
-    { id: string; data: UpdateRecipeDto }
+    { id: string; data: UpdateRecipeDto; params?: RecipesControllerUpdateParams }
   > = (props) => {
-    const { id, data } = props ?? {};
+    const { id, data, params } = props ?? {};
 
-    return recipesControllerUpdate(id, data, requestOptions);
+    return recipesControllerUpdate(id, data, params, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -462,7 +468,7 @@ export const useRecipesControllerUpdate = <TError = void, TContext = unknown>(
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof recipesControllerUpdate>>,
       TError,
-      { id: string; data: UpdateRecipeDto },
+      { id: string; data: UpdateRecipeDto; params?: RecipesControllerUpdateParams },
       TContext
     >;
     request?: SecondParameter<typeof apiRequest>;
@@ -471,7 +477,7 @@ export const useRecipesControllerUpdate = <TError = void, TContext = unknown>(
 ): UseMutationResult<
   Awaited<ReturnType<typeof recipesControllerUpdate>>,
   TError,
-  { id: string; data: UpdateRecipeDto },
+  { id: string; data: UpdateRecipeDto; params?: RecipesControllerUpdateParams },
   TContext
 > => {
   const mutationOptions = getRecipesControllerUpdateMutationOptions(options);

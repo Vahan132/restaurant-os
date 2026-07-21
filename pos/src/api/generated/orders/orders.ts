@@ -27,6 +27,7 @@ import type {
   CancelDto,
   CreateOrderDto,
   EditOrderItemDto,
+  FiscalReceiptResponse,
   MoveTableDto,
   OrderResponse,
   OrdersControllerListParams,
@@ -1859,6 +1860,219 @@ export function useOrdersControllerReceipt<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
   const queryOptions = getOrdersControllerReceiptQueryOptions(id, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary FISCAL-EDGE-4: manually fiscalize a paid dine-in order (MANUAL mode or retry). Hub-only.
+ */
+export const ordersControllerFiscalize = (
+  id: string,
+  options?: SecondParameter<typeof apiRequest>,
+  signal?: AbortSignal,
+) => {
+  return apiRequest<OrderResponse>(
+    { url: `/orders/${id}/fiscalize`, method: 'POST', signal },
+    options,
+  );
+};
+
+export const getOrdersControllerFiscalizeMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof ordersControllerFiscalize>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof apiRequest>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof ordersControllerFiscalize>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ['ordersControllerFiscalize'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof ordersControllerFiscalize>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return ordersControllerFiscalize(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type OrdersControllerFiscalizeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof ordersControllerFiscalize>>
+>;
+
+export type OrdersControllerFiscalizeMutationError = void;
+
+/**
+ * @summary FISCAL-EDGE-4: manually fiscalize a paid dine-in order (MANUAL mode or retry). Hub-only.
+ */
+export const useOrdersControllerFiscalize = <TError = void, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof ordersControllerFiscalize>>,
+      TError,
+      { id: string },
+      TContext
+    >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof ordersControllerFiscalize>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationOptions = getOrdersControllerFiscalizeMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary FISCAL-EDGE-4: stored fiscal receipt data (number/QR/receiptId) for reprint — no device call.
+ */
+export const ordersControllerFiscalReceipt = (
+  id: string,
+  options?: SecondParameter<typeof apiRequest>,
+  signal?: AbortSignal,
+) => {
+  return apiRequest<FiscalReceiptResponse>(
+    { url: `/orders/${id}/fiscal-receipt`, method: 'GET', signal },
+    options,
+  );
+};
+
+export const getOrdersControllerFiscalReceiptQueryKey = (id?: string) => {
+  return [`/orders/${id}/fiscal-receipt`] as const;
+};
+
+export const getOrdersControllerFiscalReceiptQueryOptions = <
+  TData = Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>,
+  TError = void,
+>(
+  id: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getOrdersControllerFiscalReceiptQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>> = ({
+    signal,
+  }) => ordersControllerFiscalReceipt(id, requestOptions, signal);
+
+  return { queryKey, queryFn, enabled: !!id, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData> };
+};
+
+export type OrdersControllerFiscalReceiptQueryResult = NonNullable<
+  Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>
+>;
+export type OrdersControllerFiscalReceiptQueryError = void;
+
+export function useOrdersControllerFiscalReceipt<
+  TData = Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>,
+  TError = void,
+>(
+  id: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>,
+          TError,
+          Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+export function useOrdersControllerFiscalReceipt<
+  TData = Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>,
+  TError = void,
+>(
+  id: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>,
+          TError,
+          Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>
+        >,
+        'initialData'
+      >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+export function useOrdersControllerFiscalReceipt<
+  TData = Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>,
+  TError = void,
+>(
+  id: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
+/**
+ * @summary FISCAL-EDGE-4: stored fiscal receipt data (number/QR/receiptId) for reprint — no device call.
+ */
+
+export function useOrdersControllerFiscalReceipt<
+  TData = Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>,
+  TError = void,
+>(
+  id: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof ordersControllerFiscalReceipt>>, TError, TData>
+    >;
+    request?: SecondParameter<typeof apiRequest>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> } {
+  const queryOptions = getOrdersControllerFiscalReceiptQueryOptions(id, options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData>;

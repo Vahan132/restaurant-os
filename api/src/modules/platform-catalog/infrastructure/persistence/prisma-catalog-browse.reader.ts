@@ -15,7 +15,6 @@ const BROWSE_SELECT = {
   nameRu: true,
   nameEn: true,
   categoryId: true,
-  adgCode: true,
   status: true,
   allergensReviewed: true,
   allergens: { select: { allergen: { select: { slug: true } } } },
@@ -37,7 +36,6 @@ function toView(r: BrowseRow): CatalogBrowseView {
           name: { hy: r.category.labelHy, ru: r.category.labelRu, en: r.category.labelEn },
         }
       : null,
-    adgCode: r.adgCode,
     allergenSlugs: r.allergens.map((a) => a.allergen.slug).sort(),
     allergensReviewed: r.allergensReviewed,
     status:

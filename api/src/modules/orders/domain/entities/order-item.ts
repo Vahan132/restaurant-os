@@ -56,6 +56,8 @@ export interface CreateOrderItemInput {
   unit?: string | null;
   /** FISCAL-0: dish-level ATG code (from MenuItem.adgCode). Null until classified. */
   adgCode?: string | null;
+  /** FISCAL-DEPT-1: branch fiscal department (from MenuItem.dep). Null until assigned. */
+  dep?: string | null;
 }
 
 /** Default (all-null) reserved fiscal fields for a freshly created line. */
@@ -102,6 +104,8 @@ export class OrderItem {
       ...EMPTY_RESERVED_FISCAL,
       // FISCAL-0: snapshot the dish-level ATG code (overrides the reserved null).
       adgCode: input.adgCode ?? null,
+      // FISCAL-DEPT-1: snapshot the branch fiscal department (overrides reserved null).
+      dep: input.dep ?? null,
       createdAt: now,
       updatedAt: now,
     });

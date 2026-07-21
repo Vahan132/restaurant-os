@@ -2,6 +2,7 @@ import type {
   Branch,
   BranchMembership,
   Device,
+  FiscalDepartment,
   InventoryCategory,
   InventoryItem,
   MenuCategory,
@@ -23,6 +24,7 @@ import type {
   User,
 } from '@prisma/client';
 import { Jsonify } from './snapshot.contract';
+import { FiscalConfigWire } from './fiscal-sync.mapper';
 
 /**
  * ConfigChanges (OFF-3) — an INCREMENTAL, branch-scoped slice of CLOUD-AUTHORITATIVE
@@ -78,5 +80,14 @@ export interface ConfigChanges {
     processes: Jsonify<Process>[];
     processInputs: Jsonify<ProcessInput>[];
     processOutputs: Jsonify<ProcessOutput>[];
+
+    // FISCAL-EDGE-1: cloud-authoritative fiscal + physical-device config, carried
+    // read-only to the hub. FiscalConfig has its own updatedAt (changed-since);
+    // its ENVELOPE-ENCRYPTED bytea columns ride base64 (FiscalConfigWire) and the
+    // cloud never decrypts them. FiscalDepartment has NO updatedAt — it ships as
+    // the FULL current children of each CHANGED config (reconcile replace-by-parent,
+    // like recipe lines). Empty when nothing fiscal changed since the cursor.
+    fiscalConfigs: FiscalConfigWire[];
+    fiscalDepartments: Jsonify<FiscalDepartment>[];
   };
 }

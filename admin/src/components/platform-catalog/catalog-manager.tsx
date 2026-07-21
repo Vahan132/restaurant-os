@@ -167,7 +167,6 @@ export function CatalogManager() {
                 <th className="px-4 py-2">{t('name')}</th>
                 <th className="px-4 py-2">{t('category')}</th>
                 <th className="px-4 py-2">{t('allergens')}</th>
-                <th className="px-4 py-2">{t('adgCode')}</th>
                 <th className="px-4 py-2">{t('status')}</th>
                 <th className="px-4 py-2" />
               </tr>
@@ -198,7 +197,6 @@ export function CatalogManager() {
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-2 text-gray-600">{item.adgCode ?? '—'}</td>
                   <td className="px-4 py-2">
                     {item.status === CatalogItemResponseStatus.ACTIVE ? (
                       <Badge tone="green">{t('active')}</Badge>

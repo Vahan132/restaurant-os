@@ -42,7 +42,6 @@ export function CatalogItemForm({
   const [nameRu, setNameRu] = useState(item?.nameRu ?? '');
   const [nameEn, setNameEn] = useState(item?.nameEn ?? '');
   const [categoryId, setCategoryId] = useState(item?.categoryId ?? '');
-  const [adgCode, setAdgCode] = useState(item?.adgCode ?? '');
   const [allergens, setAllergens] = useState<Set<string>>(
     new Set(item?.allergenSlugs ?? []),
   );
@@ -84,7 +83,6 @@ export function CatalogItemForm({
     setError(undefined);
     // orval mistyped the nullable fields as object|null; coerce at this boundary.
     const categoryValue = (categoryId || null) as unknown;
-    const adgValue = (adgCode.trim() || null) as unknown;
     try {
       if (isEdit && item) {
         const data: UpdateCatalogItemDto = {
@@ -92,7 +90,6 @@ export function CatalogItemForm({
           nameRu: nameRu.trim(),
           nameEn: nameEn.trim(),
           categoryId: categoryValue as UpdateCatalogItemDto['categoryId'],
-          adgCode: adgValue as UpdateCatalogItemDto['adgCode'],
           allergenSlugs: [...allergens],
           allergensReviewed,
         };
@@ -105,7 +102,6 @@ export function CatalogItemForm({
           nameRu: nameRu.trim(),
           nameEn: nameEn.trim(),
           categoryId: categoryValue as CreateCatalogItemDto['categoryId'],
-          adgCode: adgValue as CreateCatalogItemDto['adgCode'],
           allergenSlugs: [...allergens],
           allergensReviewed,
         };
@@ -169,15 +165,6 @@ export function CatalogItemForm({
               </option>
             ))}
           </select>
-        </Field>
-
-        <Field label={t('adgCode')}>
-          <input
-            className={inputClass}
-            value={adgCode}
-            onChange={(e) => setAdgCode(e.target.value)}
-            placeholder={t('adgCodePlaceholder')}
-          />
         </Field>
 
         <div className="space-y-2">

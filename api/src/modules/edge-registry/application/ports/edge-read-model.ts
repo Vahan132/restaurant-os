@@ -4,6 +4,12 @@ import { BranchSnapshot } from '../../../../shared/edge/contracts/snapshot.contr
 export const EDGE_READ_MODEL = Symbol('EdgeReadModel');
 
 export interface EdgeSnapshotTarget {
+  /**
+   * The authenticated hub's node id. EDGE-KEK-1 uses it to re-wrap synced fiscal
+   * DEKs to this hub's per-hub KEK (when it has one); it never widens the branch
+   * scope — org/restaurant/branch still bound the data.
+   */
+  nodeId: string;
   organizationId: string;
   restaurantId: string;
   branchId: string;

@@ -6,7 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CreateCatalogItemDtoCategoryId } from './createCatalogItemDtoCategoryId';
-import type { CreateCatalogItemDtoAdgCode } from './createCatalogItemDtoAdgCode';
 
 export interface CreateCatalogItemDto {
   /** Stable unique slug (lowercase-kebab). */
@@ -19,11 +18,6 @@ export interface CreateCatalogItemDto {
    * @nullable
    */
   categoryId?: CreateCatalogItemDtoCategoryId;
-  /**
-   * Default ATG classifier, or null.
-   * @nullable
-   */
-  adgCode?: CreateCatalogItemDtoAdgCode;
   /** Allergen slugs from the taxonomy. */
   allergenSlugs?: string[];
   /** Support tagging gate — dishes show verified allergens only when true. Defaults false. */

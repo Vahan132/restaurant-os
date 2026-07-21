@@ -7,6 +7,21 @@
  */
 
 export interface CreateModifierOptionDto {
+  /**
+   * Armenian name translation.
+   * @nullable
+   */
+  nameHy?: string | null;
+  /**
+   * Russian name translation.
+   * @nullable
+   */
+  nameRu?: string | null;
+  /**
+   * English name translation.
+   * @nullable
+   */
+  nameEn?: string | null;
   name: string;
   /** Price delta in minor units. May be 0 or negative (a discount). */
   priceDeltaAmount?: number;

@@ -28,7 +28,6 @@ export interface CatalogItemVM {
   nameRu: string;
   nameEn: string;
   categoryId: string | null;
-  adgCode: string | null;
   allergenSlugs: string[];
   allergensReviewed: boolean;
   status: string;
@@ -44,7 +43,6 @@ export function toCatalogVM(r: CatalogItemResponse): CatalogItemVM {
     nameRu: r.nameRu,
     nameEn: r.nameEn,
     categoryId: (r.categoryId as unknown as string | null) ?? null,
-    adgCode: (r.adgCode as unknown as string | null) ?? null,
     allergenSlugs: r.allergenSlugs,
     allergensReviewed: r.allergensReviewed,
     status: r.status,

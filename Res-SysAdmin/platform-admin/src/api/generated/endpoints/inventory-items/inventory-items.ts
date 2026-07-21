@@ -25,6 +25,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdoptCatalogItemDto,
   CreateInventoryItemDto,
   InventoryItemResponse,
   InventoryItemsControllerLayersParams,
@@ -414,6 +415,70 @@ export const useInventoryItemsControllerRemove = <TError = ErrorType<void>,
       > => {
 
       const mutationOptions = getInventoryItemsControllerRemoveMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    /**
+ * @summary Adopt a platform catalog item into this branch (sets catalogItemId).
+ */
+export const inventoryItemsControllerAdopt = (
+    adoptCatalogItemDto: BodyType<AdoptCatalogItemDto>,
+ signal?: AbortSignal
+) => {
+      
+      
+      return customInstance<InventoryItemResponse>(
+      {url: `/inventory/items/adopt`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: adoptCatalogItemDto, signal
+    },
+      );
+    }
+  
+
+
+export const getInventoryItemsControllerAdoptMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inventoryItemsControllerAdopt>>, TError,{data: BodyType<AdoptCatalogItemDto>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof inventoryItemsControllerAdopt>>, TError,{data: BodyType<AdoptCatalogItemDto>}, TContext> => {
+
+const mutationKey = ['inventoryItemsControllerAdopt'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+      
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof inventoryItemsControllerAdopt>>, {data: BodyType<AdoptCatalogItemDto>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  inventoryItemsControllerAdopt(data,)
+        }
+
+        
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InventoryItemsControllerAdoptMutationResult = NonNullable<Awaited<ReturnType<typeof inventoryItemsControllerAdopt>>>
+    export type InventoryItemsControllerAdoptMutationBody = BodyType<AdoptCatalogItemDto>
+    export type InventoryItemsControllerAdoptMutationError = ErrorType<void>
+
+    /**
+ * @summary Adopt a platform catalog item into this branch (sets catalogItemId).
+ */
+export const useInventoryItemsControllerAdopt = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inventoryItemsControllerAdopt>>, TError,{data: BodyType<AdoptCatalogItemDto>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof inventoryItemsControllerAdopt>>,
+        TError,
+        {data: BodyType<AdoptCatalogItemDto>},
+        TContext
+      > => {
+
+      const mutationOptions = getInventoryItemsControllerAdoptMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

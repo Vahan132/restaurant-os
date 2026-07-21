@@ -162,6 +162,19 @@ export class RecordPaymentResponse {
   @ApiProperty({ type: OrderResponse }) order!: OrderResponse;
 }
 
+/** FISCAL-EDGE-4: stored fiscal receipt data for reprint (local re-render, no device). */
+export class FiscalReceiptResponse {
+  @ApiProperty() orderId!: string;
+  @ApiProperty() orderNumber!: number;
+  @ApiProperty() currency!: string;
+  @ApiProperty() totalAmount!: number;
+  @ApiProperty({ description: 'SRC device receipt id.' }) receiptId!: string;
+  @ApiProperty({ description: 'SRC fiscal number printed on the receipt.' }) fiscalNumber!: string;
+  @ApiProperty({ description: 'SRC QR string the receipt renders as a QR code.' }) qr!: string;
+  @ApiProperty({ description: 'When the fiscal receipt was issued (ISO-8601).' })
+  fiscalizedAt!: string;
+}
+
 /** Even-split breakdown (stateless calc). shares SUM EXACTLY to total. */
 export class SplitEvenResponse {
   @ApiProperty() parts!: number;

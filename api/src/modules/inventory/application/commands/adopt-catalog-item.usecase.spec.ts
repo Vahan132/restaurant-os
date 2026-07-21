@@ -18,7 +18,6 @@ const activeView = (over: Partial<CatalogBrowseView> = {}): CatalogBrowseView =>
   name: { hy: 'Լոլիկ', ru: 'Помидор', en: 'Tomato' },
   categoryId: null,
   category: null,
-  adgCode: null,
   allergenSlugs: [],
   allergensReviewed: false,
   status: CatalogItemStatus.ACTIVE,

@@ -5,6 +5,7 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateMenuItemDtoDep } from './createMenuItemDtoDep';
 import type { CreateMenuItemDtoPreparationStation } from './createMenuItemDtoPreparationStation';
 
 export interface CreateMenuItemDto {
@@ -48,4 +49,9 @@ export interface CreateMenuItemDto {
   preparationStation?: CreateMenuItemDtoPreparationStation;
   /** @minimum 0 */
   prepTimeMinutes?: number;
+  /**
+     * FISCAL-DEPT-1: the branch fiscal department code (must exist in this branch FiscalDepartment set) this dish sells under, for the receipt line's VAT regime. Rejected with INVALID_FISCAL_DEPARTMENT if unknown to the branch. Omit or send null to leave it unassigned.
+     * @nullable
+     */
+  dep?: CreateMenuItemDtoDep;
 }

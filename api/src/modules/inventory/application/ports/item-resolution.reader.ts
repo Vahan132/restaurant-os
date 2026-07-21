@@ -19,8 +19,6 @@ export interface ItemResolutionRow {
   catalogItemId: string | null;
   /** null = defer to catalog; [] or [slugs] = tenant override (CATALOG-1). */
   allergenOverride: string[] | null;
-  /** null = defer to catalog. */
-  adgCodeOverride: string | null;
 }
 
 /**

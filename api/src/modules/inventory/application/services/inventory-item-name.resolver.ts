@@ -35,7 +35,6 @@ export class InventoryItemNameResolver {
         key: i.id,
         catalogItemId: i.catalogItemId,
         allergenOverride: null,
-        adgCodeOverride: null,
       })),
     );
     const out = new Map<string, CatalogLocalizedName | null>();

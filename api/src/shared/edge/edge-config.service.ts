@@ -39,18 +39,37 @@ export class EdgeConfigService {
     const branchId = config.get('EDGE_BRANCH_ID', { infer: true });
     const nodeId = config.get('EDGE_NODE_ID', { infer: true });
 
-    // Defense in depth — validateEnv guarantees these in EDGE, but fail fast if
-    // something bypassed it.
-    if (!organizationId || !restaurantId || !branchId || !nodeId) {
-      throw new Error('APP_MODE=EDGE requires EDGE_ORG_ID/RESTAURANT_ID/BRANCH_ID/NODE_ID');
+    // EDGE-SETUP-3A: the ids are all-or-nothing (validateEnv enforces it). All
+    // present ⇒ PAIRED (identity set). All absent ⇒ UNPAIRED (identity null →
+    // SETUP MODE). A partial set means validateEnv was bypassed — fail fast.
+    if (organizationId && restaurantId && branchId && nodeId) {
+      this.identity = { organizationId, restaurantId, branchId, nodeId };
+    } else if (!organizationId && !restaurantId && !branchId && !nodeId) {
+      this.identity = null; // unpaired — setup mode
+    } else {
+      throw new Error(
+        'APP_MODE=EDGE identity is all-or-nothing: set all of EDGE_ORG_ID/RESTAURANT_ID/BRANCH_ID/NODE_ID, or none (unpaired).',
+      );
     }
-
-    this.identity = { organizationId, restaurantId, branchId, nodeId };
   }
 
-  /** True when this process is an EDGE hub. */
+  /** True when this process is an EDGE hub (paired OR unpaired). */
   get isEdge(): boolean {
     return this.edge;
+  }
+
+  /**
+   * EDGE-SETUP-3A: true only when this is an EDGE hub that has a full identity
+   * (i.e. it has been paired). An unpaired EDGE hub is `isEdge && !isPaired` and
+   * runs in setup mode — the sync/bootstrap/heartbeat/push loops stay dormant.
+   */
+  get isPaired(): boolean {
+    return this.edge && this.identity !== null;
+  }
+
+  /** EDGE-SETUP-3A: true when this is an EDGE hub still waiting to be paired. */
+  get isSetupMode(): boolean {
+    return this.edge && this.identity === null;
   }
 
   /** The runtime mode. */

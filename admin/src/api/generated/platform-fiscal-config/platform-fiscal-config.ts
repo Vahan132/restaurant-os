@@ -30,6 +30,8 @@ import type {
   PlatformBranchResponse,
   SetFiscalCertDto,
   SetFiscalDepartmentsDto,
+  SetFiscalDeviceDto,
+  SetFiscalPrintModeDto,
   UpsertFiscalConfigDto
 } from '../model';
 
@@ -196,6 +198,136 @@ export const usePlatformFiscalConfigControllerUploadCert = <TError = unknown,
         TContext
       > => {
       return useMutation(getPlatformFiscalConfigControllerUploadCertMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Set the physical-HDM device (host/port/password; password write-only).
+ */
+export const platformFiscalConfigControllerSetDeviceConfig = (
+    restaurantId: string,
+    branchId: string,
+    setFiscalDeviceDto: SetFiscalDeviceDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<FiscalConfigStatusResponse>(
+      {url: `/platform/fiscal-config/${restaurantId}/${branchId}/device`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: setFiscalDeviceDto, signal
+    },
+      options);
+    }
+
+
+
+export const getPlatformFiscalConfigControllerSetDeviceConfigMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformFiscalConfigControllerSetDeviceConfig>>, TError,{restaurantId: string;branchId: string;data: SetFiscalDeviceDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformFiscalConfigControllerSetDeviceConfig>>, TError,{restaurantId: string;branchId: string;data: SetFiscalDeviceDto}, TContext> => {
+
+const mutationKey = ['platformFiscalConfigControllerSetDeviceConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformFiscalConfigControllerSetDeviceConfig>>, {restaurantId: string;branchId: string;data: SetFiscalDeviceDto}> = (props) => {
+          const {restaurantId,branchId,data} = props ?? {};
+
+          return  platformFiscalConfigControllerSetDeviceConfig(restaurantId,branchId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformFiscalConfigControllerSetDeviceConfigMutationResult = NonNullable<Awaited<ReturnType<typeof platformFiscalConfigControllerSetDeviceConfig>>>
+    export type PlatformFiscalConfigControllerSetDeviceConfigMutationBody = SetFiscalDeviceDto
+    export type PlatformFiscalConfigControllerSetDeviceConfigMutationError = unknown
+
+    /**
+ * @summary Set the physical-HDM device (host/port/password; password write-only).
+ */
+export const usePlatformFiscalConfigControllerSetDeviceConfig = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformFiscalConfigControllerSetDeviceConfig>>, TError,{restaurantId: string;branchId: string;data: SetFiscalDeviceDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformFiscalConfigControllerSetDeviceConfig>>,
+        TError,
+        {restaurantId: string;branchId: string;data: SetFiscalDeviceDto},
+        TContext
+      > => {
+      return useMutation(getPlatformFiscalConfigControllerSetDeviceConfigMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Set the dine-in fiscalize print mode (AUTO|MANUAL).
+ */
+export const platformFiscalConfigControllerSetPrintModeConfig = (
+    restaurantId: string,
+    branchId: string,
+    setFiscalPrintModeDto: SetFiscalPrintModeDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<FiscalConfigStatusResponse>(
+      {url: `/platform/fiscal-config/${restaurantId}/${branchId}/print-mode`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: setFiscalPrintModeDto, signal
+    },
+      options);
+    }
+
+
+
+export const getPlatformFiscalConfigControllerSetPrintModeConfigMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformFiscalConfigControllerSetPrintModeConfig>>, TError,{restaurantId: string;branchId: string;data: SetFiscalPrintModeDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof platformFiscalConfigControllerSetPrintModeConfig>>, TError,{restaurantId: string;branchId: string;data: SetFiscalPrintModeDto}, TContext> => {
+
+const mutationKey = ['platformFiscalConfigControllerSetPrintModeConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof platformFiscalConfigControllerSetPrintModeConfig>>, {restaurantId: string;branchId: string;data: SetFiscalPrintModeDto}> = (props) => {
+          const {restaurantId,branchId,data} = props ?? {};
+
+          return  platformFiscalConfigControllerSetPrintModeConfig(restaurantId,branchId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PlatformFiscalConfigControllerSetPrintModeConfigMutationResult = NonNullable<Awaited<ReturnType<typeof platformFiscalConfigControllerSetPrintModeConfig>>>
+    export type PlatformFiscalConfigControllerSetPrintModeConfigMutationBody = SetFiscalPrintModeDto
+    export type PlatformFiscalConfigControllerSetPrintModeConfigMutationError = unknown
+
+    /**
+ * @summary Set the dine-in fiscalize print mode (AUTO|MANUAL).
+ */
+export const usePlatformFiscalConfigControllerSetPrintModeConfig = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof platformFiscalConfigControllerSetPrintModeConfig>>, TError,{restaurantId: string;branchId: string;data: SetFiscalPrintModeDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof platformFiscalConfigControllerSetPrintModeConfig>>,
+        TError,
+        {restaurantId: string;branchId: string;data: SetFiscalPrintModeDto},
+        TContext
+      > => {
+      return useMutation(getPlatformFiscalConfigControllerSetPrintModeConfigMutationOptions(options), queryClient);
     }
     /**
  * @summary Create/replace a branch e-HDM config (cert/key PEM; encrypted at rest).

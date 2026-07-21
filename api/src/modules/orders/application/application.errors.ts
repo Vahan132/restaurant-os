@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 
 /** Orders application-level errors (standard error shape). 404 hides cross-tenant rows. */
@@ -102,4 +103,43 @@ export const DiscountAuthorizationFailed = () =>
   new ForbiddenException({
     code: 'DISCOUNT_AUTHORIZATION_FAILED',
     message: 'Discount authorization failed.',
+  });
+
+// ── FISCAL-EDGE-4: manual fiscalize + reprint ───────────────────────────────
+
+/** The manual fiscalize/reprint command is hub-only (the physical HDM is on the LAN). */
+export const FiscalizeHubOnly = () =>
+  new ConflictException({
+    code: 'FISCALIZE_HUB_ONLY',
+    message: 'Fiscalization runs on the on-site hub; this command is unavailable here.',
+  });
+
+/** The order must be PAID before it can be fiscalized. */
+export const OrderNotPaidForFiscalize = () =>
+  new ConflictException({
+    code: 'ORDER_NOT_PAID',
+    message: 'The order must be fully paid before it can be fiscalized.',
+  });
+
+/** The branch has no ACTIVE fiscal config — nothing to fiscalize (not a failure). */
+export const FiscalNotConfiguredForBranch = () =>
+  new ConflictException({
+    code: 'FISCAL_NOT_CONFIGURED',
+    message: 'This branch has no active fiscal configuration; there is nothing to fiscalize.',
+  });
+
+/** Transport/device failure — the order stays PENDING; the operator can retry. */
+export const FiscalDeviceUnavailable = (detail?: string) =>
+  new ServiceUnavailableException({
+    code: 'FISCAL_DEVICE_UNAVAILABLE',
+    message: `The fiscal device could not be reached; the order is still pending. Please retry.${
+      detail ? ` (${detail})` : ''
+    }`,
+  });
+
+/** Reprint requested on an order that has not been fiscalized yet. */
+export const OrderNotFiscalized = () =>
+  new ConflictException({
+    code: 'ORDER_NOT_FISCALIZED',
+    message: 'This order has no fiscal receipt yet; there is nothing to reprint.',
   });

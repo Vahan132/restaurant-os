@@ -42,7 +42,6 @@ interface RowPlan {
     nameRu: string;
     nameEn: string;
     categoryId: string | null;
-    adgCode: string | null;
     allergenSlugs: string[];
     allergensReviewed: boolean;
     status: CatalogItemStatus;
@@ -177,10 +176,6 @@ export class ImportCatalogItemsUseCase
       }
     }
 
-    // adgCode (blank = null).
-    const adgRaw = c.adgcode.trim();
-    const adgCode = adgRaw === '' ? null : adgRaw;
-
     // Allergens (|-delimited existing slugs).
     const allergenList = c.allergens
       .split('|')
@@ -229,7 +224,6 @@ export class ImportCatalogItemsUseCase
       nameRu,
       nameEn,
       categoryId,
-      adgCode,
       allergenSlugs,
       allergensReviewed,
       status,
@@ -266,7 +260,6 @@ export class ImportCatalogItemsUseCase
           nameRu: r.nameRu,
           nameEn: r.nameEn,
           categoryId: r.categoryId,
-          adgCode: r.adgCode,
           allergenSlugs: r.allergenSlugs,
           allergensReviewed: r.allergensReviewed,
         });
@@ -280,7 +273,6 @@ export class ImportCatalogItemsUseCase
           nameRu: r.nameRu,
           nameEn: r.nameEn,
           categoryId: r.categoryId,
-          adgCode: r.adgCode,
           allergenSlugs: r.allergenSlugs,
           allergensReviewed: r.allergensReviewed,
         });
@@ -336,7 +328,6 @@ function isUnchanged(
     nameRu: string;
     nameEn: string;
     categoryId: string | null;
-    adgCode: string | null;
     allergenSlugs: string[];
     allergensReviewed: boolean;
   },
@@ -346,7 +337,6 @@ function isUnchanged(
     existing.nameRu === r.nameRu &&
     existing.nameEn === r.nameEn &&
     existing.categoryId === r.categoryId &&
-    existing.adgCode === r.adgCode &&
     existing.allergensReviewed === r.allergensReviewed &&
     arraysEqual(existing.allergenSlugs, r.allergenSlugs)
   );

@@ -8,6 +8,36 @@
 import type { CreateMenuItemDtoPreparationStation } from './createMenuItemDtoPreparationStation';
 
 export interface CreateMenuItemDto {
+  /**
+   * Armenian name translation.
+   * @nullable
+   */
+  nameHy?: string | null;
+  /**
+   * Russian name translation.
+   * @nullable
+   */
+  nameRu?: string | null;
+  /**
+   * English name translation.
+   * @nullable
+   */
+  nameEn?: string | null;
+  /**
+   * Armenian description translation.
+   * @nullable
+   */
+  descriptionHy?: string | null;
+  /**
+   * Russian description translation.
+   * @nullable
+   */
+  descriptionRu?: string | null;
+  /**
+   * English description translation.
+   * @nullable
+   */
+  descriptionEn?: string | null;
   name: string;
   /** Category id (must belong to your restaurant). */
   categoryId: string;

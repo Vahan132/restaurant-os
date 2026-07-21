@@ -9,6 +9,9 @@ import {
 import { IdGenerator } from '../../../identity/application/ports/id-generator';
 import { ImportCatalogItemsUseCase } from './import-catalog-items.usecase';
 
+// Deliberately retains a legacy `adgCode` column (dropped from the contract in
+// ADGCODE-CLEANUP-1) to prove old import files still parse — the unknown column is
+// ignored and the remaining columns resolve by header name, not position.
 const HEADER = 'slug,nameHy,nameRu,nameEn,category,adgCode,allergens,allergensReviewed,status';
 const csv = (...rows: string[]): string => [HEADER, ...rows].join('\n');
 
@@ -113,7 +116,6 @@ const seededItem = (over: Partial<Parameters<typeof CatalogItem.create>[0]> = {}
     nameRu: 'b',
     nameEn: 'Old',
     categoryId: null,
-    adgCode: null,
     allergenSlugs: [],
     ...over,
   });
@@ -238,6 +240,27 @@ describe('ImportCatalogItemsUseCase', () => {
     await expect(
       useCase.execute({ mode: 'DRY_RUN', csv: 'slug,nameHy,nameRu\nx,a,b' }),
     ).rejects.toMatchObject({ response: { code: 'CATALOG_IMPORT_INVALID_CSV' } });
+  });
+
+  it('imports the new contract header (no adgcode column) and ignores a legacy one', async () => {
+    const { useCase, repo } = makeUseCase();
+    // New canonical header — no adgCode column at all.
+    const newContract = await useCase.execute({
+      mode: 'APPLY',
+      csv: 'slug,nameHy,nameRu,nameEn,category,allergens,allergensReviewed,status\ntomato,Ա,Б,Tomato,produce,gluten|milk,true,ACTIVE',
+    });
+    expect(newContract.applied).toBe(true);
+    expect(newContract.rows[0].action).toBe('CREATE');
+    expect(repo.store.get('tomato')?.allergenSlugs).toEqual(['gluten', 'milk']);
+
+    // Legacy header still carrying adgCode — the unknown column is ignored, the
+    // remaining columns resolve by name so the import succeeds unchanged.
+    const legacy = await makeUseCase().useCase.execute({
+      mode: 'DRY_RUN',
+      csv: 'slug,nameHy,nameRu,nameEn,category,adgCode,allergens,allergensReviewed,status\nbasil,Ա,Б,Basil,produce,01,gluten,true,ACTIVE',
+    });
+    expect(legacy.rows[0].action).toBe('CREATE');
+    expect(legacy.rows[0].messages).toHaveLength(0);
   });
 
   it('maps headers tolerantly and parses quoted fields', async () => {

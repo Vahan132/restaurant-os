@@ -126,6 +126,9 @@ export class OrderItemBuilder {
       goodName: data.item.name,
       // FISCAL-0: dish-level ATG code for fiscalization (null until classified).
       adgCode: data.item.adgCode,
+      // FISCAL-DEPT-1: branch fiscal department for the receipt line's VAT regime
+      // (null until assigned; fiscal print fail-closes on a null-dep line).
+      dep: data.item.dep,
     });
   }
 }

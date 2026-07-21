@@ -42,7 +42,6 @@ export class PrismaItemResolutionReader implements ItemResolutionReader {
         baseUnit: true,
         catalogItemId: true,
         allergenOverride: true,
-        adgCodeOverride: true,
       },
     });
     for (const r of rows) {
@@ -52,7 +51,6 @@ export class PrismaItemResolutionReader implements ItemResolutionReader {
         baseUnit: r.baseUnit,
         catalogItemId: r.catalogItemId ?? null,
         allergenOverride: toAllergenOverride(r.allergenOverride),
-        adgCodeOverride: r.adgCodeOverride ?? null,
       });
     }
     return out;

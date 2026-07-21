@@ -26,7 +26,6 @@ export class CatalogBrowseItemResponse {
   @ApiProperty({ nullable: true, type: String }) categoryId!: string | null;
   @ApiProperty({ nullable: true, type: CatalogBrowseCategoryResponse })
   category!: CatalogBrowseCategoryResponse | null;
-  @ApiProperty({ nullable: true, type: String }) adgCode!: string | null;
   @ApiProperty({ type: [String] }) allergenSlugs!: string[];
   @ApiProperty() allergensReviewed!: boolean;
   @ApiProperty({ enum: ['ACTIVE', 'ARCHIVED'] }) status!: string;
@@ -38,7 +37,6 @@ export class CatalogBrowseItemResponse {
       name: v.name,
       categoryId: v.categoryId,
       category: v.category,
-      adgCode: v.adgCode,
       allergenSlugs: v.allergenSlugs,
       allergensReviewed: v.allergensReviewed,
       status: v.status,

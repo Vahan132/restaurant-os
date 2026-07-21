@@ -240,6 +240,5 @@ function resolutionInput(
     key: id,
     catalogItemId: row?.catalogItemId ?? null,
     allergenOverride: row?.allergenOverride ?? null,
-    adgCodeOverride: row?.adgCodeOverride ?? null,
   };
 }

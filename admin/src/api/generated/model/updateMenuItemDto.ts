@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { UpdateMenuItemDtoAdgCode } from './updateMenuItemDtoAdgCode';
+import type { UpdateMenuItemDtoDep } from './updateMenuItemDtoDep';
 import type { UpdateMenuItemDtoPreparationStation } from './updateMenuItemDtoPreparationStation';
 
 export interface UpdateMenuItemDto {
@@ -56,4 +57,9 @@ export interface UpdateMenuItemDto {
      * @nullable
      */
   adgCode?: UpdateMenuItemDtoAdgCode;
+  /**
+     * FISCAL-DEPT-1: the branch fiscal department code (must exist in this branch FiscalDepartment set) this dish sells under, for the receipt line's VAT regime. Rejected with INVALID_FISCAL_DEPARTMENT if unknown to the branch. Send an empty string or null to clear (unassign); omit to leave it unchanged (partial update).
+     * @nullable
+     */
+  dep?: UpdateMenuItemDtoDep;
 }

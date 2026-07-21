@@ -8,6 +8,7 @@ import { MENU_ITEM_REPOSITORY } from './domain/repositories/menu-item.repository
 import { MODIFIER_GROUP_REPOSITORY } from './domain/repositories/modifier-group.repository';
 import { MODIFIER_OPTION_REPOSITORY } from './domain/repositories/modifier-option.repository';
 import { MENU_TREE_READER } from './application/ports/menu-tree.reader';
+import { FISCAL_DEPARTMENT_READER } from './application/ports/fiscal-department.reader';
 
 import { ListCategoriesUseCase } from './application/queries/list-categories.usecase';
 import { CreateCategoryUseCase } from './application/commands/create-category.usecase';
@@ -44,6 +45,7 @@ import { PrismaModifierGroupRepository } from './infrastructure/persistence/pris
 import { PrismaModifierOptionRepository } from './infrastructure/persistence/prisma-modifier-option.repository';
 import { PrismaDishModifierGroupRepository } from './infrastructure/persistence/prisma-dish-modifier-group.repository';
 import { PrismaMenuTreeReader } from './infrastructure/persistence/prisma-menu-tree.reader';
+import { PrismaFiscalDepartmentReader } from './infrastructure/persistence/prisma-fiscal-department.reader';
 
 import { MenuController } from './presentation/http/menu.controller';
 import { CategoriesController } from './presentation/http/categories.controller';
@@ -100,6 +102,8 @@ import { ModifierGroupsController } from './presentation/http/modifier-groups.co
     { provide: MODIFIER_OPTION_REPOSITORY, useClass: PrismaModifierOptionRepository },
     { provide: DISH_MODIFIER_GROUP_REPOSITORY, useClass: PrismaDishModifierGroupRepository },
     { provide: MENU_TREE_READER, useClass: PrismaMenuTreeReader },
+    // FISCAL-DEPT-1: validates a dish's assigned `dep` against its branch's departments.
+    { provide: FISCAL_DEPARTMENT_READER, useClass: PrismaFiscalDepartmentReader },
   ],
 })
 export class MenuModule {}

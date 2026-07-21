@@ -3,6 +3,11 @@
 # the entrypoint runs `prisma migrate deploy` (and an optional temporary seed)
 # before starting the API. dev deps are kept in the runtime image on purpose so
 # the Prisma CLI + ts-node are available for migrate/seed on bring-up.
+#
+# EDGE-PKG-1: the runtime image is PUBLIC and secret-free (no build args, no baked
+# credentials; CLOUD_URL is a non-secret overridable constant) and runs as a
+# NON-ROOT `node` user. Identity + KEK + device config arrive only at runtime via
+# pairing/sync onto the /data volume — never baked in.
 
 # 1) Build — install everything, generate Prisma client, compile to dist/.
 FROM node:20-bookworm-slim AS builder
@@ -38,6 +43,20 @@ COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/tsconfig.build.json ./tsconfig.build.json
 
 RUN chmod +x scripts/edge-entrypoint.sh
+
+# EDGE-PKG-1: CLOUD_URL is a NON-SECRET image constant (the platform base the hub
+# pairs against). Baked here as an overridable placeholder — set the real URL per
+# deployment (compose env / -e CLOUD_URL=...). Empty ⇒ the hub runs offline/seed-
+# only until paired. No secret is baked into the image.
+ENV CLOUD_URL=""
+
+# EDGE-PKG-1 hardening: run as a NON-ROOT user. The base image ships an unprivileged
+# `node` user (uid 1000). The durable identity + media live under /data (the
+# edge_data named volume); create it owned by `node` so a fresh volume inherits
+# that ownership (Docker seeds a new named volume from the image path) and the
+# app can write the 0600 identity file + /data/media without root.
+RUN mkdir -p /data/media && chown -R node:node /data
+USER node
 
 # Default to the edge bring-up flow (migrate -> optional seed -> start). For a
 # plain run, override with: `node dist/main.js`.

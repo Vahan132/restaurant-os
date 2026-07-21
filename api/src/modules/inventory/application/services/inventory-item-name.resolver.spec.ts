@@ -25,7 +25,6 @@ class FakeCatalog {
       out.set(i.key, {
         allergenSlugs: [],
         allergenSource: 'none',
-        adgCode: null,
         catalogSourced: i.catalogItemId !== null,
         verified: false,
         catalogName,

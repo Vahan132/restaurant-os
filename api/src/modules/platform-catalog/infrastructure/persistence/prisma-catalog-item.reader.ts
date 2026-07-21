@@ -7,7 +7,6 @@ import {
 
 const RESOLUTION_SELECT = {
   id: true,
-  adgCode: true,
   nameHy: true,
   nameRu: true,
   nameEn: true,
@@ -17,7 +16,6 @@ const RESOLUTION_SELECT = {
 
 interface ResolutionRow {
   id: string;
-  adgCode: string | null;
   nameHy: string;
   nameRu: string;
   nameEn: string;
@@ -29,7 +27,6 @@ function toResolution(row: ResolutionRow): CatalogResolution {
   return {
     catalogItemId: row.id,
     allergenSlugs: row.allergens.map((a) => a.allergen.slug),
-    adgCode: row.adgCode,
     allergensReviewed: row.allergensReviewed,
     name: { hy: row.nameHy, ru: row.nameRu, en: row.nameEn },
   };
@@ -37,7 +34,7 @@ function toResolution(row: ResolutionRow): CatalogResolution {
 
 /**
  * Catalog read/validation over Prisma (global reference data, not tenant-scoped).
- * Resolves catalogItemId → allergen slugs + adgCode. Never queries tenant
+ * Resolves catalogItemId → allergen slugs. Never queries tenant
  * inventory (ADR §4 boundary — there is no relation to traverse anyway).
  */
 @Injectable()

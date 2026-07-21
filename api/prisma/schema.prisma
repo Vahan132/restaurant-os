@@ -589,6 +589,14 @@ model MenuItem {
   // onto OrderItem.adgCode at order-build time. Nullable/additive: null = not yet
   // classified (FISCAL-1 fail-closes the fiscal print on a null line, error 192).
   adgCode            String?            @map("adg_code")
+  // FISCAL-DEPT-1: the branch's SRC fiscal department code this dish sells under.
+  // Free-text String matching this branch's FiscalDepartment.dep (validated on
+  // assignment against the branch's department set). Snapshotted onto
+  // OrderItem.dep at order-build so the receipt line carries the correct VAT
+  // taxRegime. Nullable/additive: null = unassigned (fiscal print fail-closes on a
+  // null line for fiscal-active branches, DEP_REQUIRED). Branch-scoped, so a menu
+  // clone into another branch must NOT carry it (re-assign against the target).
+  dep                String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   deletedAt          DateTime?
@@ -1395,13 +1403,12 @@ model InventoryItem {
   // platform catalog editor has NO ORM path back to tenant inventory ("curate the
   // template, never inspect the tenants"). null = a custom, uncatalogued item;
   // set = adopted from the catalog (always persisted when catalog-sourced).
-  // Allergens/adgCode resolve BY REFERENCE (ADR §3): override → catalog (via
+  // Allergens resolve BY REFERENCE (ADR §3): override → catalog (via
   // catalogItemId) → null; the catalog stays the authority — NO denormalized copy
   // is stored here. `allergenOverride`: null = defer to the catalog; a JSON array
   // of allergen slugs = authoritative override (may be [] to assert "no allergens").
   catalogItemId    String?
   allergenOverride Json?    @map("allergen_override")
-  adgCodeOverride  String?  @map("adg_code_override")
 
   @@unique([restaurantId, branchId, sku])
   @@index([restaurantId])
@@ -2044,7 +2051,7 @@ model ModifierConsumption {
 
 // ── Platform catalog / allergens (CATALOG-1, ADR §2–§4, §10) ─────────────────
 //   Platform-CURATED, multilingual stock-item templates a tenant adopts from
-//   (InventoryItem.catalogItemId), so a central allergen/adgCode correction reaches
+//   (InventoryItem.catalogItemId), so a central allergen correction reaches
 //   every adopter by REFERENCE. These tables are PLATFORM-OWNED: no org/restaurant/
 //   branch column, global slug @unique — mirroring the consumer AttributeCategory/
 //   Value taxonomy. There is deliberately NO relation from a CatalogItem back to
@@ -2096,8 +2103,8 @@ enum CatalogItemStatus {
 
 // The curated template a tenant InventoryItem adopts by reference (ADR §2). Carries
 // the multilingual name (operational InventoryItem.name is single-locale, so the
-// translations must live here) + allergen tag set + category + a default ATG
-// classifier (adgCode). All tenant-overridable on the InventoryItem (ADR §3, §10).
+// translations must live here) + allergen tag set + category. Allergens are
+// tenant-overridable on the InventoryItem (ADR §3, §10).
 model CatalogItem {
   id         String            @id @default(cuid())
   slug       String            @unique
@@ -2105,10 +2112,6 @@ model CatalogItem {
   nameRu     String
   nameEn     String
   categoryId String?
-  // ORDER-2 ATG classifier default (mandatory for e-HDM fiscalization). Nullable;
-  // tenant overrides via InventoryItem.adgCodeOverride. Wiring the effective value
-  // into OrderItem.adgCode is a later prompt (dish-level source decision).
-  adgCode    String?           @map("adg_code")
   // CATALOG-2 archive (soft-delete): a hard delete would strand tenant references
   // (catalogItemId is a plain scalar with no FK). Curation archives instead.
   status     CatalogItemStatus @default(ACTIVE)
@@ -2316,12 +2319,49 @@ model EdgeNode {
   appVersion         String?
   // Last STORED health (OK | SYNC_BACKLOG | SCHEMA_MISMATCH). OFFLINE is derived.
   healthStatus       EdgeNodeHealthStatus?
+  // ── EDGE-KEK-1: per-hub fiscal KEK (envelope-wrapped) ───────────────────────
+  // This hub's own 32-byte fiscal KEK, itself wrapped under the CLOUD master KEK
+  // (AES-256-GCM) so the DB never holds it bare. NULLABLE: a node without one is
+  // legacy/shared-KEK — the cloud emits its fiscal DEKs master-wrapped (passthrough)
+  // until the node is (re-)paired (EDGE-PAIR-2), which populates these AND delivers
+  // the bare KEK to the hub. When present, the cloud RE-WRAPS each synced fiscal
+  // row's DEK to THIS KEK, so a stolen hub can only decrypt its own branch's
+  // secrets (blast-radius containment). The master KEK never leaves the cloud.
+  fiscalKekCipher    Bytes?
+  fiscalKekIv        Bytes?
+  fiscalKekAuthTag   Bytes?
   createdByUserId String
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
   @@index([restaurantId, branchId])
   @@map("edge_nodes")
+}
+
+// EDGE-PAIR-2: a single-use, short-TTL, branch-scoped pairing code an admin reads
+// out to a restaurant. The hub redeems it at POST /edge/pair, which creates the
+// EdgeNode, mints its token, and generates + delivers the per-hub fiscal KEK ONCE.
+// Only sha256(code) is stored — the plaintext is shown to the admin once. A
+// redeemed (consumedAt set) or expired (expiresAt passed) code is rejected.
+model EdgePairingCode {
+  id              String    @id @default(cuid())
+  // sha256(normalized plaintext pairing code); the plaintext is shown once.
+  codeHash        String    @unique
+  organizationId  String
+  restaurantId    String
+  branchId        String
+  // Name to give the EdgeNode created when this code is redeemed.
+  name            String
+  createdByUserId String
+  expiresAt       DateTime
+  // Set atomically when redeemed (single-use claim); binds the created node.
+  consumedAt      DateTime?
+  nodeId          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([restaurantId, branchId])
+  @@map("edge_pairing_codes")
 }
 
 // Edge-LOCAL sync bookkeeping. The edge DB only ever holds its own node's row
@@ -2392,6 +2432,14 @@ enum FiscalEnvironment {
   TEST
 }
 
+/// FISCAL-EDGE-3: per-branch fiscal print behaviour. AUTO fiscalizes on the
+/// dine-in PAID transition (like e-HDM); MANUAL defers, leaving the order PAID +
+/// unfiscalized (fiscalStatus PENDING) for an operator to trigger later.
+enum FiscalPrintMode {
+  AUTO
+  MANUAL
+}
+
 /// Per-(restaurant, branch) SRC e-HDM configuration; feeds FiscalConfigPort.
 /// clientCert/clientKey are AES-256-GCM CIPHERTEXT — the KEK lives OUTSIDE the DB
 /// (FISCAL_SECRET_KEK / KMS, never a column). caRoot is the SRC public CA (shared,
@@ -2428,6 +2476,22 @@ model FiscalConfig {
   dekAuthTag  Bytes? @map("dek_auth_tag")
   // Which master-KEK version wrapped the DEK (for rotation / re-wrap).
   kekVersion  Int?   @map("kek_version")
+
+  // FISCAL-EDGE-1: OPTIONAL physical-HDM device (one per branch, 1:1 — hangs off
+  // this per-branch row, no separate table). host/port are NON-secret. The device
+  // password is envelope-encrypted under the SAME per-row DEK as cert/key (shared
+  // DEK — no second DEK), so it rides the existing dek*/kekVersion columns above.
+  // All nullable: existing e-HDM-only rows are unaffected (device fields null).
+  deviceHost        String? @map("device_host")
+  devicePort        Int?    @map("device_port")
+  devicePwdCipher   Bytes?  @map("device_pwd_cipher")
+  devicePwdIv       Bytes?  @map("device_pwd_iv")
+  devicePwdAuthTag  Bytes?  @map("device_pwd_auth_tag")
+
+  // FISCAL-EDGE-3: dine-in fiscalize behaviour (AUTO on payment vs MANUAL/defer).
+  // Non-secret scalar — rides the config sync + snapshot via the FISCAL-EDGE-1
+  // mapper automatically. Default AUTO keeps existing configs' behaviour.
+  fiscalPrintMode FiscalPrintMode @default(AUTO) @map("fiscal_print_mode")
 
   lastCheckConnectionAt DateTime? @map("last_check_connection_at")
   lastCheckConnectionOk Boolean?  @map("last_check_connection_ok")

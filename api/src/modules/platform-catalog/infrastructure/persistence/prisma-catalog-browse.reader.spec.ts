@@ -52,7 +52,6 @@ const row = (over: Record<string, unknown> = {}) => ({
   nameRu: 'Помидор',
   nameEn: 'Tomato',
   categoryId: null,
-  adgCode: null,
   status: 'ACTIVE',
   allergensReviewed: false,
   allergens: [],
@@ -90,7 +89,6 @@ describe('PrismaCatalogBrowseReader', () => {
       0,
       row({
         categoryId: 'c1',
-        adgCode: '01',
         allergensReviewed: true,
         status: 'ARCHIVED',
         allergens: [{ allergen: { slug: 'milk' } }, { allergen: { slug: 'gluten' } }],

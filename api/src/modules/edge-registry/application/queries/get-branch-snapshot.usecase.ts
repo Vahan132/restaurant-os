@@ -27,6 +27,7 @@ export class GetBranchSnapshotUseCase implements UseCase<GetBranchSnapshotInput,
 
   async execute(input: GetBranchSnapshotInput): Promise<BranchSnapshot> {
     const snapshot = await this.readModel.buildBranchSnapshot({
+      nodeId: input.nodeId,
       organizationId: input.organizationId,
       restaurantId: input.restaurantId,
       branchId: input.branchId,

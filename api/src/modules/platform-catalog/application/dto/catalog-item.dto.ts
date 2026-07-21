@@ -29,12 +29,6 @@ export class CreateCatalogItemDto {
   @IsString()
   categoryId?: string | null;
 
-  @ApiPropertyOptional({ nullable: true, description: 'Default ATG classifier, or null.' })
-  @IsOptional()
-  @ValidateIf((_, v) => v !== null)
-  @IsString()
-  adgCode?: string | null;
-
   @ApiPropertyOptional({ type: [String], description: 'Allergen slugs from the taxonomy.' })
   @IsOptional()
   @IsArray()
@@ -59,12 +53,6 @@ export class UpdateCatalogItemDto {
   @ValidateIf((_, v) => v !== null)
   @IsString()
   categoryId?: string | null;
-
-  @ApiPropertyOptional({ nullable: true })
-  @IsOptional()
-  @ValidateIf((_, v) => v !== null)
-  @IsString()
-  adgCode?: string | null;
 
   @ApiPropertyOptional({ type: [String], description: 'Replaces the full tag set.' })
   @IsOptional()

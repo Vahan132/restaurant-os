@@ -5,9 +5,11 @@ import {
   FiscalConfigStore,
   FiscalDepartmentInput,
   SetFiscalCertInput,
+  SetFiscalDeviceInput,
   UpsertFiscalConfigInput,
 } from '../../application/ports/fiscal-config-store.port';
-import { FiscalCryptoService } from '../crypto/fiscal-crypto.service';
+import { FiscalPrintMode } from '../../application/ports/fiscal-print-mode.reader';
+import { CURRENT_KEK_VERSION, FiscalCryptoService } from '../crypto/fiscal-crypto.service';
 
 /** Config not found for the given branch (a cert/department write before upsert). */
 export class FiscalConfigNotFoundError extends Error {
@@ -49,36 +51,121 @@ export class PrismaFiscalConfigStore implements FiscalConfigStore {
   }
 
   async setCert(input: SetFiscalCertInput): Promise<void> {
-    const exists = await this.prisma.fiscalConfig.findUnique({
+    const row = await this.prisma.fiscalConfig.findUnique({
       where: {
         restaurantId_branchId: { restaurantId: input.restaurantId, branchId: input.branchId },
       },
-      select: { id: true },
+      select: { id: true, dekCipher: true, dekIv: true, dekAuthTag: true },
     });
-    if (!exists) {
+    if (!row) {
       throw new FiscalConfigNotFoundError(input.restaurantId, input.branchId);
     }
-    const w = this.crypto.wrap(
-      Buffer.from(input.clientCertPem, 'utf8'),
-      Buffer.from(input.clientKeyPem, 'utf8'),
-    );
+    // Reuse the row's DEK if one already exists (e.g. a device password was set
+    // first) so cert/key/device-password all share ONE DEK; else mint a fresh one.
+    const { dek, dekColumns } = this.resolveRowDek(row);
+    const cert = this.crypto.sealUnderDek(dek, Buffer.from(input.clientCertPem, 'utf8'));
+    const key = this.crypto.sealUnderDek(dek, Buffer.from(input.clientKeyPem, 'utf8'));
     await this.prisma.fiscalConfig.update({
       where: {
         restaurantId_branchId: { restaurantId: input.restaurantId, branchId: input.branchId },
       },
       data: {
-        certCipher: w.cert.cipher,
-        certIv: w.cert.iv,
-        certAuthTag: w.cert.authTag,
-        keyCipher: w.key.cipher,
-        keyIv: w.key.iv,
-        keyAuthTag: w.key.authTag,
-        dekCipher: w.dek.cipher,
-        dekIv: w.dek.iv,
-        dekAuthTag: w.dek.authTag,
-        kekVersion: w.kekVersion,
+        certCipher: cert.cipher,
+        certIv: cert.iv,
+        certAuthTag: cert.authTag,
+        keyCipher: key.cipher,
+        keyIv: key.iv,
+        keyAuthTag: key.authTag,
+        ...dekColumns,
       },
     });
+  }
+
+  async setDevice(input: SetFiscalDeviceInput): Promise<void> {
+    const row = await this.prisma.fiscalConfig.findUnique({
+      where: {
+        restaurantId_branchId: { restaurantId: input.restaurantId, branchId: input.branchId },
+      },
+      select: { id: true, dekCipher: true, dekIv: true, dekAuthTag: true },
+    });
+    if (!row) {
+      throw new FiscalConfigNotFoundError(input.restaurantId, input.branchId);
+    }
+    // Shared DEK: the device password is sealed under the SAME DEK as cert/key
+    // (reused if present, minted here if the device is configured before a cert).
+    const { dek, dekColumns } = this.resolveRowDek(row);
+    const pwd = this.crypto.sealUnderDek(dek, Buffer.from(input.devicePassword, 'utf8'));
+    await this.prisma.fiscalConfig.update({
+      where: {
+        restaurantId_branchId: { restaurantId: input.restaurantId, branchId: input.branchId },
+      },
+      data: {
+        deviceHost: input.deviceHost,
+        devicePort: input.devicePort,
+        devicePwdCipher: pwd.cipher,
+        devicePwdIv: pwd.iv,
+        devicePwdAuthTag: pwd.authTag,
+        ...dekColumns,
+      },
+    });
+  }
+
+  async setPrintMode(
+    restaurantId: string,
+    branchId: string,
+    mode: FiscalPrintMode,
+  ): Promise<void> {
+    const exists = await this.prisma.fiscalConfig.findUnique({
+      where: { restaurantId_branchId: { restaurantId, branchId } },
+      select: { id: true },
+    });
+    if (!exists) {
+      throw new FiscalConfigNotFoundError(restaurantId, branchId);
+    }
+    await this.prisma.fiscalConfig.update({
+      where: { restaurantId_branchId: { restaurantId, branchId } },
+      data: { fiscalPrintMode: mode },
+    });
+  }
+
+  /**
+   * Resolve the per-row DEK. Reuses the existing wrapped DEK when present (so all
+   * of cert/key/device-password share one DEK); otherwise mints a fresh DEK and
+   * returns the dek/kekVersion columns to persist. When the DEK is reused,
+   * `dekColumns` is empty so the existing columns are left untouched.
+   */
+  private resolveRowDek(row: {
+    dekCipher: Buffer | null;
+    dekIv: Buffer | null;
+    dekAuthTag: Buffer | null;
+  }): {
+    dek: Buffer;
+    dekColumns: {
+      dekCipher?: Buffer;
+      dekIv?: Buffer;
+      dekAuthTag?: Buffer;
+      kekVersion?: number;
+    };
+  } {
+    if (row.dekCipher && row.dekIv && row.dekAuthTag) {
+      const dek = this.crypto.unwrapDek({
+        cipher: row.dekCipher,
+        iv: row.dekIv,
+        authTag: row.dekAuthTag,
+      });
+      return { dek, dekColumns: {} };
+    }
+    const dek = this.crypto.generateDek();
+    const wrapped = this.crypto.wrapDek(dek);
+    return {
+      dek,
+      dekColumns: {
+        dekCipher: wrapped.cipher,
+        dekIv: wrapped.iv,
+        dekAuthTag: wrapped.authTag,
+        kekVersion: CURRENT_KEK_VERSION,
+      },
+    };
   }
 
   async setDepartments(
@@ -123,6 +210,10 @@ export class PrismaFiscalConfigStore implements FiscalConfigStore {
       language: cfg.language,
       active: cfg.active,
       certConfigured: cfg.certCipher !== null,
+      deviceHost: cfg.deviceHost,
+      devicePort: cfg.devicePort,
+      deviceConfigured: cfg.devicePwdCipher !== null,
+      fiscalPrintMode: cfg.fiscalPrintMode as FiscalPrintMode,
       departments: cfg.departments.map((d) => ({
         dep: d.dep,
         taxRegime: d.taxRegime,

@@ -14,6 +14,7 @@ import { PaymentEntry } from './PaymentEntry';
 import { SplitEvenControl } from './SplitEvenControl';
 import { SplitItemsSheet } from './SplitItemsSheet';
 import { Receipt } from './Receipt';
+import { FiscalControl } from './FiscalControl';
 
 /** Core checkout screen: bill summary + payments + splits + close + receipt. */
 export function CheckoutScreen({ orderId }: { orderId: string }) {
@@ -146,6 +147,10 @@ export function CheckoutScreen({ orderId }: { orderId: string }) {
                 {t('splitItems')}
               </button>
             </Can>
+
+            {/* Fiscal: status-driven (Fiscalize / Retry / Reprint). Renders
+                nothing on a non-fiscal branch (fiscalStatus === null). */}
+            <FiscalControl order={order} />
 
             {/* Close */}
             <div className="rounded-2xl bg-white p-4 shadow-sm">

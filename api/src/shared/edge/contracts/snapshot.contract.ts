@@ -3,6 +3,7 @@ import type {
   BranchInventoryPolicy,
   BranchMembership,
   Device,
+  FiscalDepartment,
   Floor,
   InventoryCategory,
   InventoryItem,
@@ -34,6 +35,7 @@ import type {
   Supplier,
   User,
 } from '@prisma/client';
+import { FiscalConfigWire } from './fiscal-sync.mapper';
 
 /**
  * Wire representation of a Prisma row: Dates become ISO strings and bigints
@@ -118,6 +120,17 @@ export interface BranchSnapshot {
   stock: {
     stockLayers: Jsonify<StockLayer>[];
     stockOnHand: Jsonify<StockOnHand>[];
+  };
+
+  /**
+   * FISCAL-EDGE-1: cloud-authoritative fiscal + physical-device config so a
+   * freshly-installed hub gets it at first boot (not only on the next incremental
+   * config sync). Envelope-encrypted bytea rides base64 (FiscalConfigWire); the
+   * cloud never decrypts. Empty arrays when the branch has no fiscal config yet.
+   */
+  fiscal: {
+    fiscalConfigs: FiscalConfigWire[];
+    fiscalDepartments: Jsonify<FiscalDepartment>[];
   };
 
   /** Operational starter set: tables + currently-open orders + upcoming bookings. */

@@ -21,6 +21,11 @@ import {
   MenuItemNotFound,
   NoRestaurantInScope,
 } from '../application.errors';
+import { normalizeAndValidateDep } from '../dep-assignment.util';
+import {
+  FISCAL_DEPARTMENT_READER,
+  FiscalDepartmentReader,
+} from '../ports/fiscal-department.reader';
 
 export interface UpdateMenuItemInput {
   restaurantId: string | null;
@@ -48,6 +53,11 @@ export interface UpdateMenuItemInput {
    * DTO boundary — SRC validates (error 183); the UI only soft-warns.
    */
   adgCode?: string | null;
+  /**
+   * FISCAL-DEPT-1: branch fiscal department code. undefined = unchanged; '' or null
+   * = clear (unassign); a value is validated against the branch's department set.
+   */
+  dep?: string | null;
 }
 
 /** Update item details and/or reassign category (verified same-restaurant). */
@@ -57,6 +67,7 @@ export class UpdateMenuItemUseCase implements UseCase<UpdateMenuItemInput, MenuI
     @Inject(MENU_ITEM_REPOSITORY) private readonly items: MenuItemRepository,
     @Inject(MENU_CATEGORY_REPOSITORY) private readonly categories: MenuCategoryRepository,
     @Inject(OBJECT_STORAGE_PORT) private readonly storage: ObjectStoragePort,
+    @Inject(FISCAL_DEPARTMENT_READER) private readonly fiscalDepartments: FiscalDepartmentReader,
   ) {}
 
   async execute(input: UpdateMenuItemInput): Promise<MenuItem> {
@@ -92,6 +103,18 @@ export class UpdateMenuItemUseCase implements UseCase<UpdateMenuItemInput, MenuI
         : input.adgCode === null || input.adgCode.trim() === ''
           ? null
           : input.adgCode.trim();
+    // FISCAL-DEPT-1: undefined = unchanged; otherwise normalize (blank → clear) and
+    // validate a non-null dep against this branch's FiscalDepartment set. An unknown
+    // dep is rejected (INVALID_FISCAL_DEPARTMENT) before any persistence.
+    const dep =
+      input.dep === undefined
+        ? undefined
+        : await normalizeAndValidateDep(
+            this.fiscalDepartments,
+            input.restaurantId,
+            input.branchId,
+            input.dep,
+          );
     item.updateDetails({
       name: input.name,
       description: input.description,
@@ -107,6 +130,7 @@ export class UpdateMenuItemUseCase implements UseCase<UpdateMenuItemInput, MenuI
       prepTimeMinutes: input.prepTimeMinutes,
       hideRecipe: input.hideRecipe,
       adgCode,
+      dep,
     });
     await this.items.update(item);
     return item;

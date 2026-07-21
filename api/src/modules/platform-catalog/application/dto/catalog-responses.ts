@@ -12,7 +12,6 @@ export class CatalogItemResponse {
   @ApiProperty() nameRu!: string;
   @ApiProperty() nameEn!: string;
   @ApiProperty({ nullable: true }) categoryId!: string | null;
-  @ApiProperty({ nullable: true }) adgCode!: string | null;
   @ApiProperty({ type: [String] }) allergenSlugs!: string[];
   @ApiProperty({ description: 'Support-set gate; dishes show verified allergens only when true.' })
   allergensReviewed!: boolean;
@@ -28,7 +27,6 @@ export class CatalogItemResponse {
       nameRu: item.nameRu,
       nameEn: item.nameEn,
       categoryId: item.categoryId,
-      adgCode: item.adgCode,
       allergenSlugs: item.allergenSlugs,
       allergensReviewed: item.allergensReviewed,
       status: item.status,

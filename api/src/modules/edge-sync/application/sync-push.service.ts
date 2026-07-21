@@ -49,7 +49,7 @@ export class SyncPushService implements OnApplicationBootstrap, OnModuleDestroy 
   }
 
   onApplicationBootstrap(): void {
-    if (!this.edge.isEdge) {
+    if (!this.edge.isPaired) {
       return;
     }
     this.initialTimer = setTimeout(() => void this.tick(), INITIAL_PUSH_DELAY_MS);
@@ -67,7 +67,7 @@ export class SyncPushService implements OnApplicationBootstrap, OnModuleDestroy 
 
   /** Best-effort background trigger (e.g. after a burst of writes). */
   schedulePush(): void {
-    if (this.edge.isEdge) {
+    if (this.edge.isPaired) {
       setTimeout(() => void this.tick(), 0);
     }
   }
@@ -89,7 +89,7 @@ export class SyncPushService implements OnApplicationBootstrap, OnModuleDestroy 
    * empty or the cloud stops acking the whole batch.
    */
   async pushNow(): Promise<PushRunResult> {
-    if (!this.edge.isEdge) {
+    if (!this.edge.isPaired) {
       return { pushed: 0, lastPushedSeq: null, pending: 0, reason: 'NOT_EDGE' };
     }
     // Sync is paused for a schema mismatch — keep accruing the outbox locally,

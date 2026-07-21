@@ -399,5 +399,30 @@
       "lupin": "Lupin",
       "molluscs": "Molluscs"
     }
+  },
+  "fiscal": {
+    "title": "Fiscalization",
+    "fiscalize": "Fiscalize",
+    "fiscalizing": "Fiscalizing…",
+    "retry": "Retry",
+    "reprint": "Reprint fiscal receipt",
+    "fiscalizedTitle": "Fiscalized",
+    "fiscalizedBody": "The fiscal receipt was issued.",
+    "fatalTitle": "Fiscalization failed",
+    "fatalBody": "The device rejected this receipt (code {code}). It can’t be fiscalized from the POS.",
+    "deviceSyncTitle": "Device needs sync",
+    "deviceSyncBody": "This device must sync with the tax authority before this receipt can be fiscalized. Try again once it’s synced.",
+    "retryableTitle": "Device unreachable",
+    "retryableBody": "Couldn’t reach the fiscal device. Try again.",
+    "notAllowed": "Not allowed",
+    "noPermission": "You don’t have permission to fiscalize.",
+    "receiptTitle": "Fiscal receipt",
+    "fiscalNumber": "Fiscal number",
+    "receiptId": "Receipt ID",
+    "issuedAt": "Issued",
+    "qrHint": "QR code",
+    "loadError": "Couldn’t load the fiscal receipt.",
+    "print": "Print",
+    "done": "Done"
   }
 }

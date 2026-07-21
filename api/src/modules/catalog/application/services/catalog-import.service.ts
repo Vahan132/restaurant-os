@@ -369,6 +369,12 @@ export class CatalogImportService {
         if (!dryRun) throw new FatalImportError(report);
         continue;
       }
+      // FISCAL-DEPT-1: fiscal fields (adgCode, dep) are DELIBERATELY not carried by
+      // the clone bundle. `dep` is branch-scoped (valid only within the source
+      // branch's FiscalDepartment set), so importing it verbatim into another branch
+      // would fiscalize under the wrong VAT regime. A cloned item is therefore
+      // created with dep = null (unassigned) and must be re-assigned against the
+      // target branch's departments. Do NOT add dep to this payload.
       const data = {
         categoryId,
         name: it.name,

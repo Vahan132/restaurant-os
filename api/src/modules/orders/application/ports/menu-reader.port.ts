@@ -7,6 +7,8 @@ export interface MenuItemForOrder {
   code: string;
   /** FISCAL-0: dish-level SRC ATG classifier code, snapshotted as the fiscal line adgCode. Null until classified. */
   adgCode: string | null;
+  /** FISCAL-DEPT-1: branch fiscal department code, snapshotted as the fiscal line dep. Null until assigned. */
+  dep: string | null;
   name: string;
   priceAmount: number;
   preparationStation: string;

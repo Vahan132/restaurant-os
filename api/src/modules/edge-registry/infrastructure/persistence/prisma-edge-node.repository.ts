@@ -51,4 +51,26 @@ export class PrismaEdgeNodeRepository implements EdgeNodeRepository {
       data: { lastSnapshotAt: at, lastSeenAt: at, schemaVersion },
     });
   }
+
+  async revokeActiveForBranch(restaurantId: string, branchId: string): Promise<number> {
+    const result = await this.prisma.edgeNode.updateMany({
+      where: { restaurantId, branchId, status: 'ACTIVE' },
+      data: { status: 'REVOKED' },
+    });
+    return result.count;
+  }
+
+  async setFiscalKek(
+    nodeId: string,
+    kek: { cipher: Buffer; iv: Buffer; authTag: Buffer },
+  ): Promise<void> {
+    await this.prisma.edgeNode.update({
+      where: { id: nodeId },
+      data: {
+        fiscalKekCipher: kek.cipher,
+        fiscalKekIv: kek.iv,
+        fiscalKekAuthTag: kek.authTag,
+      },
+    });
+  }
 }

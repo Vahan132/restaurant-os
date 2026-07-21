@@ -26,7 +26,6 @@ export const STRINGS = {
   colSlug: "Slug",
   colName: "Name",
   colCategory: "Category",
-  colAdg: "ADG",
   colAllergens: "Allergens",
   colReviewed: "Reviewed",
   colStatus: "Status",
@@ -92,7 +91,6 @@ export const TEMPLATE_COLUMNS = [
   "nameRu",
   "nameEn",
   "category",
-  "adgCode",
   "allergens",
   "allergensReviewed",
   "status",
@@ -106,7 +104,7 @@ export const TEMPLATE_COLUMNS = [
 export function buildTemplateCsv(): string {
   const header = TEMPLATE_COLUMNS.join(",");
   const example =
-    "# khorovats,Խորոված,Хоровац,Grilled pork,mains,ADG-1001,gluten;garlic,true,ACTIVE";
+    "# khorovats,Խորոved,Хоровац,Grilled pork,mains,gluten;garlic,true,ACTIVE";
   return `${header}\n${example}\n`;
 }
 

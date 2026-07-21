@@ -14,6 +14,16 @@ export const CrossBranchReference = () =>
     message: 'Referenced record belongs to a different branch.',
   });
 
+/**
+ * FISCAL-DEPT-1: the assigned fiscal department code is not one of this branch's
+ * registered FiscalDepartment codes. Clearing (null/blank) is always allowed.
+ */
+export const InvalidFiscalDepartment = () =>
+  new BadRequestException({
+    code: 'INVALID_FISCAL_DEPARTMENT',
+    message: "The selected fiscal department does not exist in this branch's fiscal configuration.",
+  });
+
 export const CategoryNotFound = () =>
   new NotFoundException({ code: 'CATEGORY_NOT_FOUND', message: 'Category not found.' });
 

@@ -39,7 +39,7 @@ export interface AdoptCatalogItemInput {
 
 /**
  * Adopt a platform CatalogItem into a branch's inventory (CATALOG-1). Creates an
- * InventoryItem with `catalogItemId` set so allergens/adgCode resolve by reference
+ * InventoryItem with `catalogItemId` set so allergens resolve by reference
  * (overrides left null — that's OVERRIDE-1). The catalog is read via the tenant
  * browse port (ACTIVE-gated), NOT the resolution service (which resolves archived
  * items so adopted refs never orphan).

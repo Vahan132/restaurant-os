@@ -33,7 +33,7 @@ const BASE_UNITS = [
 /**
  * Operational-only adopt modal (PLATCAT-ADOPT-2). No name input: adopted items
  * carry no local name and display the live catalog name. Shows the inherited
- * catalog allergens + adgCode read-only so the owner sees what resolves by
+ * catalog allergens read-only so the owner sees what resolves by
  * reference, then collects base unit (required, no default) + optional inventory
  * category / SKU / alternate units.
  */
@@ -166,10 +166,6 @@ export function AdoptItemModal({
                 ))
               )}
             </div>
-          </div>
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <span className="text-gray-500">{t('browseAdgCode')}</span>
-            <span className="text-gray-700">{item.adgCode ?? '—'}</span>
           </div>
         </div>
 

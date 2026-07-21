@@ -5,7 +5,6 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { UpdateCatalogItemDtoAdgCode } from './updateCatalogItemDtoAdgCode';
 import type { UpdateCatalogItemDtoCategoryId } from './updateCatalogItemDtoCategoryId';
 
 export interface UpdateCatalogItemDto {
@@ -14,8 +13,6 @@ export interface UpdateCatalogItemDto {
   nameEn?: string;
   /** @nullable */
   categoryId?: UpdateCatalogItemDtoCategoryId;
-  /** @nullable */
-  adgCode?: UpdateCatalogItemDtoAdgCode;
   /** Replaces the full tag set. */
   allergenSlugs?: string[];
   /** Support tagging gate — flip true once allergen tagging is complete (omitted = unchanged). */

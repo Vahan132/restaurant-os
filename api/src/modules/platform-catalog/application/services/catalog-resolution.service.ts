@@ -5,10 +5,7 @@ import {
   CatalogLocalizedName,
   CatalogResolution,
 } from '../../domain/repositories/catalog-item.reader';
-import {
-  resolveEffectiveAdgCode,
-  resolveEffectiveAllergens,
-} from '../../domain/allergen-precedence';
+import { resolveEffectiveAllergens } from '../../domain/allergen-precedence';
 
 /** The tenant-side inputs for one stock item (InventoryItem columns). */
 export interface StockItemResolutionInput {
@@ -16,8 +13,6 @@ export interface StockItemResolutionInput {
   catalogItemId: string | null;
   /** InventoryItem.allergenOverride — null = defer; [] or [slugs] = override. */
   allergenOverride: string[] | null;
-  /** InventoryItem.adgCodeOverride — null = defer. */
-  adgCodeOverride: string | null;
 }
 
 /** Provenance of the effective allergen set (for later surfacing / debugging). */
@@ -26,7 +21,6 @@ export type AllergenSource = 'override' | 'catalog' | 'none';
 export interface EffectiveStockItem {
   allergenSlugs: string[];
   allergenSource: AllergenSource;
-  adgCode: string | null;
   /**
    * True when this item is catalog-sourced (has a resolvable CatalogItem). A false
    * value marks an unverified leaf whose allergens are self-declared or absent —
@@ -49,7 +43,7 @@ export interface EffectiveStockItem {
 
 /**
  * Effective-value resolution (ADR §3) — the READ path consumed by CATALOG-3/4.
- * Resolves a stock item's effective allergens + adgCode by precedence
+ * Resolves a stock item's effective allergens by precedence
  * (tenant override → catalog via catalogItemId → null), never from a stale copy.
  */
 @Injectable()
@@ -92,7 +86,6 @@ export class CatalogResolutionService {
     resolution: CatalogResolution | null,
   ): EffectiveStockItem {
     const catalogAllergens = resolution ? resolution.allergenSlugs : null;
-    const catalogAdgCode = resolution ? resolution.adgCode : null;
     return {
       allergenSlugs: resolveEffectiveAllergens(
         input.allergenOverride,
@@ -104,7 +97,6 @@ export class CatalogResolutionService {
           : catalogAllergens !== null
             ? 'catalog'
             : 'none',
-      adgCode: resolveEffectiveAdgCode(input.adgCodeOverride, catalogAdgCode),
       catalogSourced: resolution !== null,
       verified: resolution !== null && resolution.allergensReviewed,
       catalogName: resolution ? resolution.name : null,

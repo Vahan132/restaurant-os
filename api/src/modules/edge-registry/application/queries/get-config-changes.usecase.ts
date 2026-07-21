@@ -5,6 +5,8 @@ import { EDGE_READ_MODEL, EdgeReadModel } from '../ports/edge-read-model';
 import { InvalidCursor } from '../edge-registry.errors';
 
 export interface GetConfigChangesInput {
+  /** Authenticated hub node id (EDGE-KEK-1 per-hub fiscal DEK re-wrap). */
+  nodeId: string;
   organizationId: string;
   restaurantId: string;
   branchId: string;
@@ -31,6 +33,7 @@ export class GetConfigChangesUseCase implements UseCase<GetConfigChangesInput, C
     }
     return this.readModel.buildConfigChanges(
       {
+        nodeId: input.nodeId,
         organizationId: input.organizationId,
         restaurantId: input.restaurantId,
         branchId: input.branchId,

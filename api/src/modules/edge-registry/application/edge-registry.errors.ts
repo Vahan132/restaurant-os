@@ -24,6 +24,30 @@ export const InvalidNodeToken = () =>
     HttpStatus.UNAUTHORIZED,
   );
 
+/** EDGE-PAIR-2: the pairing code is unknown, already used, or expired. */
+export const InvalidPairingCode = () =>
+  new HttpException(
+    {
+      code: 'INVALID_PAIRING_CODE',
+      message: 'The pairing code is invalid, already used, or expired.',
+    },
+    HttpStatus.UNAUTHORIZED,
+  );
+
+/**
+ * EDGE-PAIR-2: pairing cannot deliver a per-hub fiscal KEK because the cloud
+ * master KEK is not configured. This is a cloud misconfiguration, not a client
+ * error — fail closed rather than pair a hub that could never decrypt fiscal data.
+ */
+export const PairingKekUnavailable = () =>
+  new HttpException(
+    {
+      code: 'PAIRING_KEK_UNAVAILABLE',
+      message: 'Cannot issue a per-hub fiscal key: the cloud master KEK is not configured.',
+    },
+    HttpStatus.SERVICE_UNAVAILABLE,
+  );
+
 /** Config-sync `since` cursor is not a valid ISO-8601 timestamp. */
 export const InvalidCursor = () =>
   new BadRequestException({

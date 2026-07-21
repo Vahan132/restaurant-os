@@ -67,9 +67,19 @@ seed locally (below).
 
 ## Bring-up + migrate
 
+`docker-compose.edge.yml` is the admin-facing, **pull-based** file — it fetches
+the published public image `ghcr.io/vahan132/restaurant-os-edge:${EDGE_IMAGE_TAG}`
+(EDGE-PKG-1), no build, no registry credentials.
+
 ```bash
-# build image, start local Postgres + the API (EDGE mode), apply migrations
-docker compose -f docker-compose.edge.yml --env-file .env.edge up -d --build
+# ADMIN (download + run the published image):
+docker compose -f docker-compose.edge.yml --env-file .env.edge up -d
+```
+
+```bash
+# DEVELOPER (build the image from local source): layer the build override.
+docker compose -f docker-compose.edge.yml -f docker-compose.edge.build.yml \
+  --env-file .env.edge up -d --build
 # (or: pnpm edge:up)
 ```
 
@@ -235,6 +245,35 @@ soft-deleted menu item still resolves for historical/in-flight edge orders
 (orders capture their own line snapshots; soft-deleted catalog stays readable).
 Config sync never touches stock layers.
 
+### Fiscal config on the hub (FISCAL-EDGE-1)
+
+The branch's `FiscalConfig` (+ its `FiscalDepartment` map) rides the same
+cloud→edge sync — carried on both the first-boot snapshot (OFF-2) and every
+incremental config pull (OFF-3), **read-only on the edge** like all other config.
+It includes the optional physical-HDM device (one per branch): non-secret
+`deviceHost`/`devicePort` plus the device password. The certificate/key and the
+device password are **envelope-encrypted**; the cloud ships the ciphertext
+**as-is** (base64) and **never decrypts it**. The hub decrypts locally.
+
+To read those synced rows offline the hub runs the **DB** fiscal-config backend
+(not the FILE backend), which unwraps the per-row DEK with the hub's own master
+KEK. That means a hub configured this way needs three extra env vars, all
+**boot-validated** (the app refuses to start if they're missing/invalid):
+
+| Var | Meaning |
+| --- | --- |
+| `FISCAL_CONFIG_BACKEND=DB` | read fiscal config from the synced local DB rows |
+| `FISCAL_MASTER_KEK` | 64-hex (32-byte) master KEK — **must be byte-identical to the cloud's**, or decryption fails closed at GCM verify (no plaintext leak) |
+| `FISCAL_SRC_CA_PATH` | path to the shared SRC public CA (PEM) the mTLS client trusts (non-secret, same for every tenant) |
+
+Key distribution (Option A — same master KEK cloud + hub): the hub is provisioned
+with the **same** `FISCAL_MASTER_KEK` the cloud wrapped the DEK with. Rows
+encrypted in the cloud decrypt on the hub **only** when the KEKs match; a
+mismatched KEK throws at decrypt and yields nothing. Provisioning that KEK onto
+the hub is part of self-install packaging (a later ticket). If `FISCAL_CONFIG_BACKEND`
+is left `FILE`, the synced rows are ignored and the hub falls back to the on-disk
+`FISCAL_CONFIG_PATH` JSON — decrypted device config is then unavailable.
+
 ## Operational sync (OFF-4)
 
 While the hub is running it is the **single authority** for its branch's
@@ -335,11 +374,13 @@ of scope for this MVP** — a bad auto-update could brick a hub mid-service, so
 updates are deliberate and operator-driven. To update a hub:
 
 ```bash
-# on the hub
+# on the hub — pull the newer public image and restart
 docker compose -f docker-compose.edge.yml --env-file .env.edge pull
 docker compose -f docker-compose.edge.yml --env-file .env.edge up -d
 #   ↑ the entrypoint runs `prisma migrate deploy` against the LOCAL DB on start,
 #     then restarts the API on the new image.
+# (or, equivalently: `pnpm edge:update`, or `scripts/edge-update.sh`)
+# To move to a specific release, set EDGE_IMAGE_TAG=edge-vX.Y.Z in .env.edge first.
 curl http://<hub-ip>:3001/edge/info   # confirm appVersion/schemaVersion updated
 ```
 

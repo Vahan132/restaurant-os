@@ -4,12 +4,16 @@ import {
   IsArray,
   IsBoolean,
   IsIn,
+  IsInt,
   IsOptional,
   IsString,
+  Max,
+  Min,
   MinLength,
   ValidateNested,
 } from 'class-validator';
 import { FiscalConfigStatus } from '../../../fiscal-config/application/ports/fiscal-config-store.port';
+import { FiscalPrintMode } from '../../../fiscal-config/application/ports/fiscal-print-mode.reader';
 
 /** Create/replace a branch e-HDM config. cert/key are PEM (encrypted at rest). */
 export class UpsertFiscalConfigDto {
@@ -30,6 +34,30 @@ export class SetFiscalCertDto {
   @IsString()
   @MinLength(1)
   clientKeyPem!: string;
+}
+
+/** FISCAL-EDGE-6A: set a branch's physical-HDM device. Password is WRITE-ONLY. */
+export class SetFiscalDeviceDto {
+  @ApiProperty({ description: 'Device IP/hostname on the LAN.' })
+  @IsString()
+  @MinLength(1)
+  host!: string;
+  @ApiProperty({ description: 'Device TCP port (1–65535).', minimum: 1, maximum: 65535 })
+  @IsInt()
+  @Min(1)
+  @Max(65535)
+  port!: number;
+  @ApiProperty({ description: 'Device password. Encrypted at rest; never returned by any read.' })
+  @IsString()
+  @MinLength(1)
+  password!: string;
+}
+
+/** FISCAL-EDGE-6A: set a branch's dine-in fiscalize print mode. */
+export class SetFiscalPrintModeDto {
+  @ApiProperty({ enum: ['AUTO', 'MANUAL'] })
+  @IsIn(['AUTO', 'MANUAL'])
+  fiscalPrintMode!: FiscalPrintMode;
 }
 
 /** A branch of a restaurant, for the tenant picker. */
@@ -78,6 +106,14 @@ export class FiscalConfigStatusResponse {
   @ApiProperty() active!: boolean;
   @ApiProperty({ description: 'True once a cert/key has been uploaded (never exposes the material).' })
   certConfigured!: boolean;
+  @ApiProperty({ nullable: true, type: String, description: 'Non-secret physical-device host.' })
+  deviceHost!: string | null;
+  @ApiProperty({ nullable: true, type: Number, description: 'Non-secret physical-device port.' })
+  devicePort!: number | null;
+  @ApiProperty({ description: 'True once a device password is set (never exposes the material).' })
+  deviceConfigured!: boolean;
+  @ApiProperty({ enum: ['AUTO', 'MANUAL'], description: 'Dine-in fiscalize print mode.' })
+  fiscalPrintMode!: FiscalPrintMode;
   @ApiProperty({ type: [FiscalDepartmentResponse] }) departments!: FiscalDepartmentResponse[];
   @ApiProperty({ nullable: true, type: String }) lastCheckConnectionAt!: string | null;
   @ApiProperty({ nullable: true, type: Boolean }) lastCheckConnectionOk!: boolean | null;
@@ -93,6 +129,10 @@ export class FiscalConfigStatusResponse {
       language: s.language,
       active: s.active,
       certConfigured: s.certConfigured,
+      deviceHost: s.deviceHost,
+      devicePort: s.devicePort,
+      deviceConfigured: s.deviceConfigured,
+      fiscalPrintMode: s.fiscalPrintMode,
       departments: s.departments.map((d) => ({
         dep: d.dep,
         taxRegime: d.taxRegime,

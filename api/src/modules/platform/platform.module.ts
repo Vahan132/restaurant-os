@@ -11,6 +11,8 @@ import { UpsertFiscalConfigUseCase } from './application/commands/upsert-fiscal-
 import { SetFiscalDepartmentsUseCase } from './application/commands/set-fiscal-departments.usecase';
 import { CheckFiscalConnectionUseCase } from './application/commands/check-fiscal-connection.usecase';
 import { SetFiscalCertUseCase } from './application/commands/set-fiscal-cert.usecase';
+import { SetFiscalDeviceUseCase } from './application/commands/set-fiscal-device.usecase';
+import { SetFiscalPrintModeUseCase } from './application/commands/set-fiscal-print-mode.usecase';
 import { ListRestaurantBranchesUseCase } from './application/queries/list-restaurant-branches.usecase';
 import { GetFiscalConfigStatusUseCase } from './application/queries/get-fiscal-config-status.usecase';
 import { PASSWORD_HASHER } from '../identity/application/ports/password-hasher';
@@ -128,6 +130,8 @@ import { GetPlatformDashboardUseCase } from './application/queries/get-platform-
     CheckFiscalConnectionUseCase,
     GetFiscalConfigStatusUseCase,
     SetFiscalCertUseCase,
+    SetFiscalDeviceUseCase,
+    SetFiscalPrintModeUseCase,
     ListRestaurantBranchesUseCase,
 
     // port -> implementation bindings

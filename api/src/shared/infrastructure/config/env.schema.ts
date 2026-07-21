@@ -14,13 +14,39 @@ export const envSchema = z
     // hub serving exactly one branch (local Postgres, in-process Socket.IO).
     APP_MODE: z.enum(['CLOUD', 'EDGE']).default('CLOUD'),
 
-    // Edge identity — REQUIRED when APP_MODE=EDGE (enforced by superRefine below),
-    // ignored in CLOUD. These pin the hub to one org -> restaurant -> branch and
-    // give the node a stable id.
-    EDGE_ORG_ID: z.string().min(1).optional(),
-    EDGE_RESTAURANT_ID: z.string().min(1).optional(),
-    EDGE_BRANCH_ID: z.string().min(1).optional(),
-    EDGE_NODE_ID: z.string().min(1).optional(),
+    // Edge identity. In CLOUD: ignored. In EDGE: ALL-OR-NOTHING (superRefine below)
+    // — either all four are present (a PAIRED hub, pinned to one
+    // org -> restaurant -> branch with a stable node id) or all four are absent (an
+    // UNPAIRED hub that boots into SETUP MODE and serves /setup/* until paired,
+    // EDGE-SETUP-3A). After pairing they are persisted locally (EDGE_IDENTITY_PATH)
+    // and sourced by the entrypoint on the next boot — not hand-edited.
+    // Blank-safe: an empty string (compose passing an unset var) is treated as
+    // absent, so an unpaired hub boots into setup mode rather than failing on "".
+    EDGE_ORG_ID: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
+    EDGE_RESTAURANT_ID: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
+    EDGE_BRANCH_ID: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
+    EDGE_NODE_ID: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).optional(),
+    ),
+
+    // EDGE-SETUP-3A: where the hub PERSISTS its paired identity (the 4 ids + node
+    // token + fiscal KEK) so it survives restart without a hand-edited env. Written
+    // 0600 by POST /setup/pair and sourced by the entrypoint before the app starts.
+    // Blank-safe; defaults to a path on the durable /data volume.
+    EDGE_IDENTITY_PATH: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(1).default('/data/edge-identity.env'),
+    ),
 
     // Edge pairing (OFF-2): the cloud base URL + this node's bearer token, used
     // for the initial snapshot pull and later resync. Optional/blank-safe — an
@@ -277,25 +303,30 @@ export const envSchema = z
       z.string().min(1).optional(),
     ),
   })
-  // Fail-fast: in EDGE mode the four edge identity ids are mandatory. CLOUD
-  // validation is unchanged (these stay optional and unused).
+  // EDGE-SETUP-3A: in EDGE mode the four identity ids are ALL-OR-NOTHING. All
+  // present ⇒ a PAIRED hub. All absent ⇒ an UNPAIRED hub that boots into SETUP
+  // MODE (serves /setup/* until paired). A PARTIAL set is a corrupt identity and
+  // fails fast. CLOUD validation is unchanged (these stay optional and unused).
   .superRefine((env, ctx) => {
     if (env.APP_MODE !== 'EDGE') {
       return;
     }
-    const required: Array<keyof typeof env> = [
+    const idKeys: Array<keyof typeof env> = [
       'EDGE_ORG_ID',
       'EDGE_RESTAURANT_ID',
       'EDGE_BRANCH_ID',
       'EDGE_NODE_ID',
     ];
-    for (const key of required) {
-      if (!env[key]) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: [key],
-          message: `${key} is required when APP_MODE=EDGE`,
-        });
+    const present = idKeys.filter((k) => !!env[k]);
+    if (present.length !== 0 && present.length !== idKeys.length) {
+      for (const key of idKeys) {
+        if (!env[key]) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${key} is required once any EDGE identity id is set (all-or-nothing; leave all unset for an unpaired hub).`,
+          });
+        }
       }
     }
   })
@@ -303,7 +334,16 @@ export const envSchema = z
   // STORAGE_DRIVER=r2, and additionally the dev driver is refused in production
   // so a prod deploy can never silently fall back to the local filesystem store.
   .superRefine((env, ctx) => {
-    if (env.NODE_ENV === 'production' && env.STORAGE_DRIVER === 'dev') {
+    // EDGE-PKG-1: an EDGE hub is a single on-prem node that runs NODE_ENV=production
+    // but must stay SECRET-FREE (no R2 credentials on the mini-PC). It serves media
+    // locally (dev driver) or by synced cloud URLs, so the dev-driver-in-production
+    // guard is exempted in EDGE mode — mirroring the edge exemptions elsewhere in
+    // this schema. The guard still protects CLOUD production deploys.
+    if (
+      env.NODE_ENV === 'production' &&
+      env.APP_MODE !== 'EDGE' &&
+      env.STORAGE_DRIVER === 'dev'
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['STORAGE_DRIVER'],
@@ -333,6 +373,12 @@ export const envSchema = z
   // SRC. Per-tenant secrets never live in env; only the KEK (a system key) does.
   .superRefine((env, ctx) => {
     if (env.FISCAL_CONFIG_BACKEND !== 'DB') {
+      return;
+    }
+    // EDGE-SETUP-3A: an UNPAIRED edge hub (setup mode) has no fiscal KEK / CA yet —
+    // pairing delivers the KEK and the CA path is image-provided once operational.
+    // Don't require them until the hub is paired, so setup mode can boot.
+    if (env.APP_MODE === 'EDGE' && !env.EDGE_NODE_ID) {
       return;
     }
     if (!env.FISCAL_MASTER_KEK || !/^[0-9a-fA-F]{64}$/.test(env.FISCAL_MASTER_KEK)) {

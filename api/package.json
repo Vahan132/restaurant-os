@@ -29,8 +29,10 @@
     "db:seed:edge": "ts-node --transpile-only prisma/seed.edge.ts",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
-    "edge:up": "docker compose -f docker-compose.edge.yml --env-file .env.edge up -d --build",
-    "edge:down": "docker compose -f docker-compose.edge.yml --env-file .env.edge down"
+    "edge:up": "docker compose -f docker-compose.edge.yml -f docker-compose.edge.build.yml --env-file .env.edge up -d --build",
+    "edge:down": "docker compose -f docker-compose.edge.yml --env-file .env.edge down",
+    "edge:pull": "docker compose -f docker-compose.edge.yml --env-file .env.edge pull",
+    "edge:update": "docker compose -f docker-compose.edge.yml --env-file .env.edge pull && docker compose -f docker-compose.edge.yml --env-file .env.edge up -d"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"

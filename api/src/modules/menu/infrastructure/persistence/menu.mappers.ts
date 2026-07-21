@@ -103,6 +103,7 @@ export class ItemMapper {
       availability: r.availability as ItemAvailability,
       hideRecipe: r.hideRecipe,
       adgCode: r.adgCode,
+      dep: r.dep,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       deletedAt: r.deletedAt,
@@ -133,6 +134,7 @@ export class ItemMapper {
       availability: i.availability as ItemAvailability,
       hideRecipe: i.hideRecipe,
       adgCode: i.adgCode,
+      dep: i.dep,
       createdAt: i.createdAt,
       updatedAt: i.updatedAt,
       deletedAt: i.deletedAt,
@@ -159,6 +161,7 @@ export class ItemMapper {
       availability: i.availability as ItemAvailability,
       hideRecipe: i.hideRecipe,
       adgCode: i.adgCode,
+      dep: i.dep,
       updatedAt: i.updatedAt,
       deletedAt: i.deletedAt,
     };

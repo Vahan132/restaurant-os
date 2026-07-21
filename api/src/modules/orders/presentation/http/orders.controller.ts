@@ -45,6 +45,8 @@ import { CloseOrderUseCase } from '../../application/commands/close-order.usecas
 import { SplitEvenUseCase } from '../../application/commands/split-even.usecase';
 import { SplitItemsToNewCheckUseCase } from '../../application/commands/split-items-to-new-check.usecase';
 import { GetReceiptUseCase } from '../../application/queries/get-receipt.usecase';
+import { FiscalizeOrderManuallyUseCase } from '../../application/commands/fiscalize-order-manually.usecase';
+import { GetFiscalReceiptUseCase } from '../../application/queries/get-fiscal-receipt.usecase';
 import {
   AddOrderItemDto,
   ApplyDiscountDto,
@@ -60,6 +62,7 @@ import {
   VoidPaymentDto,
 } from '../../application/dto/order.dto';
 import {
+  FiscalReceiptResponse,
   OrderResponse,
   PaymentResponse,
   RecordPaymentResponse,
@@ -100,6 +103,8 @@ export class OrdersController {
     private readonly splitEven: SplitEvenUseCase,
     private readonly splitItems: SplitItemsToNewCheckUseCase,
     private readonly getReceipt: GetReceiptUseCase,
+    private readonly fiscalizeManually: FiscalizeOrderManuallyUseCase,
+    private readonly getFiscalReceipt: GetFiscalReceiptUseCase,
     private readonly allergens: OrderItemAllergenResolver,
   ) {}
 
@@ -572,5 +577,57 @@ export class OrdersController {
     @Param('id') id: string,
   ): Promise<ReceiptResponse> {
     return this.getReceipt.execute({ restaurantId: tenant.restaurantId, branchId, orderId: id });
+  }
+
+  @Post(':id/fiscalize')
+  @RequirePermissions(P.PAYMENT_PROCESS)
+  @HttpCode(200)
+  @ApiForbiddenResponse({ description: 'Missing PAYMENT_PROCESS permission.' })
+  @ApiOperation({
+    summary:
+      'FISCAL-EDGE-4: manually fiscalize a paid dine-in order (MANUAL mode or retry). Hub-only.',
+  })
+  @ApiOkResponse({ type: OrderResponse })
+  async fiscalize(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+    @Param('id') id: string,
+  ): Promise<OrderResponse> {
+    const order = await this.fiscalizeManually.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      orderId: id,
+    });
+    return OrderResponse.from(order);
+  }
+
+  @Get(':id/fiscal-receipt')
+  @RequirePermissions(P.PAYMENT_PROCESS)
+  @ApiForbiddenResponse({ description: 'Missing PAYMENT_PROCESS permission.' })
+  @ApiOperation({
+    summary:
+      'FISCAL-EDGE-4: stored fiscal receipt data (number/QR/receiptId) for reprint — no device call.',
+  })
+  @ApiOkResponse({ type: FiscalReceiptResponse })
+  async fiscalReceipt(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+    @Param('id') id: string,
+  ): Promise<FiscalReceiptResponse> {
+    const view = await this.getFiscalReceipt.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      orderId: id,
+    });
+    return {
+      orderId: view.orderId,
+      orderNumber: view.orderNumber,
+      currency: view.currency,
+      totalAmount: view.totalAmount,
+      receiptId: view.fiscal.receiptId,
+      fiscalNumber: view.fiscal.fiscalNumber,
+      qr: view.fiscal.qr,
+      fiscalizedAt: view.fiscal.fiscalizedAt,
+    };
   }
 }

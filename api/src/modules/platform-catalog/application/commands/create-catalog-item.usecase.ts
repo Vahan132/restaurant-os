@@ -19,7 +19,6 @@ export interface CreateCatalogItemInput {
   nameRu: string;
   nameEn: string;
   categoryId: string | null;
-  adgCode: string | null;
   allergenSlugs: string[];
   allergensReviewed?: boolean;
 }
@@ -48,7 +47,6 @@ export class CreateCatalogItemUseCase implements UseCase<CreateCatalogItemInput,
       nameRu: input.nameRu,
       nameEn: input.nameEn,
       categoryId: input.categoryId,
-      adgCode: input.adgCode,
       allergenSlugs: input.allergenSlugs,
       allergensReviewed: input.allergensReviewed ?? false,
     });

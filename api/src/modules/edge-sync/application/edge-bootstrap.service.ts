@@ -31,7 +31,7 @@ export class EdgeBootstrapService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    if (!this.edge.isEdge) {
+    if (!this.edge.isPaired) {
       return;
     }
     const { nodeId } = this.edge.getIdentity();

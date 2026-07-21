@@ -1,8 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import type { FiscalConfig } from '@prisma/client';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
 import { ConfigChanges } from '../../../../shared/edge/contracts/config-sync.contract';
 import { BranchSnapshot, Jsonify } from '../../../../shared/edge/contracts/snapshot.contract';
+import { fiscalConfigToWire } from '../../../../shared/edge/contracts/fiscal-sync.mapper';
 import { SCHEMA_VERSION } from '../../../../shared/edge/version';
+import { FiscalCryptoService } from '../../../fiscal-config/infrastructure/crypto/fiscal-crypto.service';
 import { EdgeReadModel, EdgeSnapshotTarget } from '../../application/ports/edge-read-model';
 
 /** Order statuses that are NOT carried in the operational starter set. */
@@ -37,7 +40,56 @@ function jsonifyOne<T>(row: T): Jsonify<T> {
  */
 @Injectable()
 export class PrismaEdgeReadModel implements EdgeReadModel {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly crypto: FiscalCryptoService,
+  ) {}
+
+  /**
+   * EDGE-KEK-1: resolve the target hub's per-hub fiscal KEK, or null when the node
+   * is legacy/shared-KEK (no KEK provisioned yet) or the cloud master KEK is not
+   * configured — in which case fiscal DEKs are emitted master-wrapped (passthrough).
+   */
+  private async resolveHubKek(nodeId: string): Promise<Buffer | null> {
+    if (!this.crypto.isConfigured) {
+      return null;
+    }
+    const node = await this.prisma.edgeNode.findUnique({
+      where: { id: nodeId },
+      select: { fiscalKekCipher: true, fiscalKekIv: true, fiscalKekAuthTag: true },
+    });
+    if (!node || !node.fiscalKekCipher || !node.fiscalKekIv || !node.fiscalKekAuthTag) {
+      return null;
+    }
+    // Unwrap the per-hub KEK under the cloud master KEK (never leaves the cloud).
+    return this.crypto.unwrapHubKek({
+      cipher: node.fiscalKekCipher,
+      iv: node.fiscalKekIv,
+      authTag: node.fiscalKekAuthTag,
+    });
+  }
+
+  /**
+   * EDGE-KEK-1: re-wrap the fiscal rows' DEKs to `hubKek` (when non-null), leaving
+   * the sealed secrets (cert/key/device password) untouched. Passthrough when the
+   * node has no per-hub KEK. Only the DEK envelope columns are replaced.
+   */
+  private fiscalRowsForHub(rows: FiscalConfig[], hubKek: Buffer | null): FiscalConfig[] {
+    if (!hubKek) {
+      return rows;
+    }
+    return rows.map((row) => {
+      // No DEK envelope (cert not uploaded) ⇒ nothing to re-wrap.
+      if (!row.dekCipher || !row.dekIv || !row.dekAuthTag) {
+        return row;
+      }
+      const reDek = this.crypto.rewrapDekForHub(
+        { cipher: row.dekCipher, iv: row.dekIv, authTag: row.dekAuthTag },
+        hubKek,
+      );
+      return { ...row, dekCipher: reDek.cipher, dekIv: reDek.iv, dekAuthTag: reDek.authTag };
+    });
+  }
 
   async buildBranchSnapshot(target: EdgeSnapshotTarget): Promise<BranchSnapshot> {
     const { organizationId, restaurantId, branchId } = target;
@@ -129,6 +181,21 @@ export class PrismaEdgeReadModel implements EdgeReadModel {
         this.prisma.branchInventoryPolicy.findMany({ where: branchScope }),
       ]);
 
+    // ── fiscal config (branch-owned, 1:1) + its department map ─────────────────
+    // Envelope-encrypted bytea travels base64 (fiscalConfigToWire); the cloud
+    // never decrypts. Departments are the FULL current children of the config.
+    const fiscalConfigs = await this.prisma.fiscalConfig.findMany({ where: branchScope });
+    // EDGE-KEK-1: re-wrap each row's DEK to this hub's per-hub KEK (passthrough for
+    // legacy nodes). The secrets under the DEK are never decrypted here.
+    const hubKek = await this.resolveHubKek(target.nodeId);
+    const fiscalConfigsForHub = this.fiscalRowsForHub(fiscalConfigs, hubKek);
+    const fiscalConfigIds = fiscalConfigs.map((c) => c.id);
+    const fiscalDepartments = fiscalConfigIds.length
+      ? await this.prisma.fiscalDepartment.findMany({
+          where: { fiscalConfigId: { in: fiscalConfigIds } },
+        })
+      : [];
+
     // ── operational starter set ────────────────────────────────────────────────
     const now = new Date();
     const [orderCounter, floors, tables, openOrders, reservations] = await Promise.all([
@@ -195,6 +262,10 @@ export class PrismaEdgeReadModel implements EdgeReadModel {
       stock: {
         stockLayers: jsonifyMany(stockLayers),
         stockOnHand: jsonifyMany(stockOnHand),
+      },
+      fiscal: {
+        fiscalConfigs: fiscalConfigsForHub.map(fiscalConfigToWire),
+        fiscalDepartments: jsonifyMany(fiscalDepartments),
       },
       operational: {
         orderCounter: orderCounter ? jsonifyOne(orderCounter) : null,
@@ -314,6 +385,24 @@ export class PrismaEdgeReadModel implements EdgeReadModel {
       }),
     ]);
 
+    // ── fiscal config changed-since (+ FULL departments of each CHANGED config) ─
+    // FiscalConfig carries its own updatedAt; FiscalDepartment has none, so ship
+    // the full current children of each changed config (reconcile replace-by-parent
+    // on the edge, exactly like recipe lines). Bytea rides base64; never decrypted.
+    const fiscalConfigs = await this.prisma.fiscalConfig.findMany({
+      where: { ...branchScope, ...changedSince },
+    });
+    // EDGE-KEK-1: re-wrap each changed row's DEK to this hub's per-hub KEK
+    // (passthrough for legacy nodes); secrets under the DEK are never decrypted.
+    const hubKek = await this.resolveHubKek(target.nodeId);
+    const fiscalConfigsForHub = this.fiscalRowsForHub(fiscalConfigs, hubKek);
+    const changedFiscalConfigIds = fiscalConfigs.map((c) => c.id);
+    const fiscalDepartments = changedFiscalConfigIds.length
+      ? await this.prisma.fiscalDepartment.findMany({
+          where: { fiscalConfigId: { in: changedFiscalConfigIds } },
+        })
+      : [];
+
     const cursor = new Date(requestStart.getTime() - CONFIG_CURSOR_OVERLAP_MS).toISOString();
 
     return {
@@ -341,6 +430,8 @@ export class PrismaEdgeReadModel implements EdgeReadModel {
         processes: jsonifyMany(processes),
         processInputs: jsonifyMany(processInputs),
         processOutputs: jsonifyMany(processOutputs),
+        fiscalConfigs: fiscalConfigsForHub.map(fiscalConfigToWire),
+        fiscalDepartments: jsonifyMany(fiscalDepartments),
       },
     };
   }

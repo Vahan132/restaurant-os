@@ -38,6 +38,13 @@ export interface MenuItemProps {
    * null = not yet classified (fiscal print fail-closes on a null line, error 192).
    */
   adgCode: string | null;
+  /**
+   * FISCAL-DEPT-1: the branch's SRC fiscal department code this dish sells under
+   * (matches a FiscalDepartment.dep in this branch). Validated on assignment;
+   * snapshotted onto OrderItem.dep at order-build. null = unassigned (fiscal print
+   * fail-closes on a null line for fiscal-active branches, DEP_REQUIRED).
+   */
+  dep: string | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -64,6 +71,8 @@ export interface CreateMenuItemInput {
   preparationStation?: PreparationStation;
   prepTimeMinutes?: number | null;
   adgCode?: string | null;
+  /** FISCAL-DEPT-1: branch fiscal department code (absent → null). */
+  dep?: string | null;
   actorUserId?: string | null;
 }
 
@@ -107,6 +116,7 @@ export class MenuItem extends AggregateRoot<string> {
       availability: ItemAvailability.AVAILABLE,
       hideRecipe: false,
       adgCode: input.adgCode ?? null,
+      dep: input.dep ?? null,
       createdAt: now,
       updatedAt: now,
       deletedAt: null,
@@ -183,6 +193,9 @@ export class MenuItem extends AggregateRoot<string> {
   get adgCode(): string | null {
     return this.props.adgCode;
   }
+  get dep(): string | null {
+    return this.props.dep;
+  }
   get createdAt(): Date {
     return this.props.createdAt;
   }
@@ -213,6 +226,7 @@ export class MenuItem extends AggregateRoot<string> {
     prepTimeMinutes?: number | null;
     hideRecipe?: boolean;
     adgCode?: string | null;
+    dep?: string | null;
   }): void {
     if (input.name !== undefined) this.props.name = input.name;
     if (input.description !== undefined) this.props.description = input.description;
@@ -230,6 +244,8 @@ export class MenuItem extends AggregateRoot<string> {
     if (input.hideRecipe !== undefined) this.props.hideRecipe = input.hideRecipe;
     // Partial-update: omitted (undefined) leaves the code untouched; null clears it.
     if (input.adgCode !== undefined) this.props.adgCode = input.adgCode;
+    // FISCAL-DEPT-1: same partial-update semantics; validation happens in the use case.
+    if (input.dep !== undefined) this.props.dep = input.dep;
     this.touch();
   }
 

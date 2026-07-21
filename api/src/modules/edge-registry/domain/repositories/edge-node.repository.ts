@@ -18,4 +18,15 @@ export interface EdgeNodeRepository {
   touchLastSeen(nodeId: string, at: Date): Promise<void>;
   /** Record a successful snapshot pull (lastSnapshotAt + reported schemaVersion). */
   recordSnapshot(nodeId: string, at: Date, schemaVersion: string): Promise<void>;
+  /**
+   * EDGE-PAIR-2: revoke every ACTIVE node of a branch (idempotent). Called at
+   * (re-)pair so a branch has exactly one active hub — the freshly paired one.
+   * Returns the number of nodes revoked.
+   */
+  revokeActiveForBranch(restaurantId: string, branchId: string): Promise<number>;
+  /**
+   * EDGE-PAIR-2: store this node's per-hub fiscal KEK, wrapped under the cloud
+   * master KEK (EDGE-KEK-1 columns). Set once at pairing; enables re-wrap-on-sync.
+   */
+  setFiscalKek(nodeId: string, kek: { cipher: Buffer; iv: Buffer; authTag: Buffer }): Promise<void>;
 }

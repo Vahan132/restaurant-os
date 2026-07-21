@@ -71,6 +71,7 @@ export class PrismaMenuReader implements MenuReader {
         branchId: item.branchId,
         code: item.code,
         adgCode: item.adgCode,
+        dep: item.dep,
         name: item.name,
         priceAmount: item.priceAmount,
         preparationStation: item.preparationStation,

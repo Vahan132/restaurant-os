@@ -45,7 +45,7 @@ export class HeartbeatService implements OnApplicationBootstrap, OnModuleDestroy
   }
 
   onApplicationBootstrap(): void {
-    if (!this.edge.isEdge) {
+    if (!this.edge.isPaired) {
       return;
     }
     this.initialTimer = setTimeout(() => void this.tick(), INITIAL_HEARTBEAT_DELAY_MS);
@@ -75,7 +75,7 @@ export class HeartbeatService implements OnApplicationBootstrap, OnModuleDestroy
 
   /** Build telemetry, send one heartbeat, and reconcile the gate + online flag. */
   async sendHeartbeat(): Promise<HeartbeatRunResult> {
-    if (!this.edge.isEdge) {
+    if (!this.edge.isPaired) {
       return { sent: false, reason: 'NOT_EDGE' };
     }
     if (!this.client.isConfigured()) {

@@ -119,6 +119,10 @@ export interface BundleModifierGroup {
 }
 
 export interface BundleMenuItem {
+  // FISCAL-DEPT-1: intentionally carries NO fiscal fields (adgCode, dep). `dep` is
+  // branch-scoped (a source-branch FiscalDepartment code), so it must never travel
+  // into another branch via a clone — cloned items are created unassigned and
+  // re-assigned against the target branch's departments.
   /** persisted per-branch code */
   key: string;
   /** key of a BundleMenuCategory */

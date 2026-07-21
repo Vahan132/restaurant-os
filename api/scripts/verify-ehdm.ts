@@ -52,7 +52,7 @@ const CFG: TenantFiscalConfig = {
   clientKey: 'PEM-KEY',
   caRoot: 'PEM-CA',
   language: 'hy',
-  departmentMap: {},
+  departmentMap: { '1': 'T' },
 };
 
 function makeInput(overrides: Partial<FiscalizationInput> = {}): FiscalizationInput {
@@ -74,7 +74,7 @@ function makeInput(overrides: Partial<FiscalizationInput> = {}): FiscalizationIn
         unitPriceAmount: 3500,
         lineTotalAmount: 3500,
         adgCode: '2130000000',
-        dep: null,
+        dep: '1',
       },
     ],
     subtotalAmount: 3500,
@@ -149,13 +149,14 @@ check('buildPrintPayload renders fractional quantity/price correctly', () => {
         name: 'Cheese', goodName: 'Cheese', goodCode: 'c1',
         quantityThousandths: 1500, unit: 'kg',
         unitPriceAmount: 1299, lineTotalAmount: 1949,
-        adgCode: '0406900000', dep: null,
+        adgCode: '0406900000', dep: '1',
       },
     ],
   });
   const p = buildPrintPayload(input, CFG);
   assert.strictEqual(p.items[0].quantity, '1.500');
   assert.strictEqual(p.items[0].price, '12.99');
+  assert.strictEqual(p.items[0].dep, '1');
 });
 
 // ── 2. Fail-closed pre-flight (null adgCode → FatalFiscalError 192) ───────────
@@ -173,6 +174,25 @@ check('buildPrintPayload fails closed on a null-adgCode line (192, pre-HTTP)', (
   assert.throws(
     () => buildPrintPayload(input, CFG),
     (e: unknown) => e instanceof FatalFiscalError && e.code === '192',
+  );
+});
+
+// FISCAL-DEPT-1: a null-dep line fails closed (DEP_REQUIRED) before any HTTP call —
+// the silent lowest-department fallback is gone.
+check('buildPrintPayload fails closed on a null-dep line (DEP_REQUIRED, pre-HTTP)', () => {
+  const input = makeInput({
+    lines: [
+      {
+        name: 'Undepted', goodName: 'Undepted', goodCode: 'x',
+        quantityThousandths: 1000, unit: 'pcs',
+        unitPriceAmount: 1000, lineTotalAmount: 1000,
+        adgCode: '2130000000', dep: null,
+      },
+    ],
+  });
+  assert.throws(
+    () => buildPrintPayload(input, CFG),
+    (e: unknown) => e instanceof FatalFiscalError && e.code === 'DEP_REQUIRED',
   );
 });
 

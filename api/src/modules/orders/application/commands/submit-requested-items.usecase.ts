@@ -119,6 +119,8 @@ export class SubmitRequestedItemsUseCase implements UseCase<SubmitRequestedItems
         modifiers,
         // FISCAL-0: snapshot the dish-level ATG code onto the line (null until classified).
         adgCode: data?.item.adgCode ?? null,
+        // FISCAL-DEPT-1: snapshot the branch fiscal department onto the line (null until assigned).
+        dep: data?.item.dep ?? null,
       });
       order.addItem(item, settings.serviceFeeRateBps);
     }

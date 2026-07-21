@@ -55,12 +55,34 @@ export class DbFiscalConfigAdapter implements FiscalConfigPort {
         `e-HDM config for ${restaurantId}:${branchId} has no cert uploaded.`,
       );
     }
-    const { cert, key } = this.crypto.unwrap({
-      cert: { cipher: certCipher, iv: certIv, authTag: certAuthTag },
-      key: { cipher: keyCipher, iv: keyIv, authTag: keyAuthTag },
-      dek: { cipher: dekCipher, iv: dekIv, authTag: dekAuthTag },
-      kekVersion: cfg.kekVersion ?? 1,
+    // Unwrap the per-row DEK ONCE (fails closed at GCM verify if the hub's
+    // FISCAL_MASTER_KEK doesn't match the one the cloud wrapped with), then open
+    // cert, key AND — when present — the physical-device password under it.
+    const dek = this.crypto.unwrapDek({ cipher: dekCipher, iv: dekIv, authTag: dekAuthTag });
+    const cert = this.crypto.openUnderDek(dek, {
+      cipher: certCipher, iv: certIv, authTag: certAuthTag,
     });
+    const key = this.crypto.openUnderDek(dek, {
+      cipher: keyCipher, iv: keyIv, authTag: keyAuthTag,
+    });
+
+    // FISCAL-EDGE-1: optional physical device. host/port + all three password
+    // blobs must be present together; the password shares the row DEK above.
+    const { deviceHost, devicePort, devicePwdCipher, devicePwdIv, devicePwdAuthTag } = cfg;
+    let device: TenantFiscalConfig['device'];
+    if (
+      deviceHost !== null &&
+      devicePort !== null &&
+      devicePwdCipher &&
+      devicePwdIv &&
+      devicePwdAuthTag
+    ) {
+      const password = this.crypto.openUnderDek(dek, {
+        cipher: devicePwdCipher, iv: devicePwdIv, authTag: devicePwdAuthTag,
+      });
+      device = { host: deviceHost, port: devicePort, password: password.toString('utf8') };
+    }
+
     const departmentMap: Record<string, string> = {};
     for (const d of cfg.departments) {
       departmentMap[d.dep] = d.taxRegime;
@@ -76,6 +98,7 @@ export class DbFiscalConfigAdapter implements FiscalConfigPort {
       caRoot: this.caRoot(),
       language: cfg.language as 'hy' | 'en' | 'ru',
       departmentMap,
+      ...(device ? { device } : {}),
     };
   }
 

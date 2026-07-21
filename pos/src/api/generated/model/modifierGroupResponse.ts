@@ -5,6 +5,7 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { I18nTextResponse } from './i18nTextResponse';
 import type { ModifierGroupResponseSelectionType } from './modifierGroupResponseSelectionType';
 import type { ModifierGroupResponseStatus } from './modifierGroupResponseStatus';
 
@@ -13,6 +14,8 @@ export interface ModifierGroupResponse {
   restaurantId: string;
   branchId: string;
   name: string;
+  /** LOCALE-2A: hy/ru/en name translations. */
+  nameI18n: I18nTextResponse;
   selectionType: ModifierGroupResponseSelectionType;
   required: boolean;
   /** @nullable */

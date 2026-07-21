@@ -19,7 +19,6 @@ export interface UpdateCatalogItemInput {
   nameEn?: string;
   /** undefined = unchanged; null = clear. */
   categoryId?: string | null;
-  adgCode?: string | null;
   /** Replaces the full tag set when provided. */
   allergenSlugs?: string[];
   /** undefined = unchanged. Support flips this true once tagging is complete. */
@@ -47,7 +46,6 @@ export class UpdateCatalogItemUseCase implements UseCase<UpdateCatalogItemInput,
       nameRu: input.nameRu,
       nameEn: input.nameEn,
       categoryId: input.categoryId,
-      adgCode: input.adgCode,
       allergenSlugs: input.allergenSlugs,
       allergensReviewed: input.allergensReviewed,
     });

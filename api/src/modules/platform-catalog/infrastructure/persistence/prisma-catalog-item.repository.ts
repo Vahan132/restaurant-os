@@ -30,7 +30,6 @@ function toDomain(r: ItemRecord): CatalogItem {
     nameRu: r.nameRu,
     nameEn: r.nameEn,
     categoryId: r.categoryId,
-    adgCode: r.adgCode,
     allergenSlugs: r.allergens.map((a) => a.allergen.slug).sort(),
     allergensReviewed: r.allergensReviewed,
     status:
@@ -52,7 +51,6 @@ function toCreateData(item: CatalogItem): Prisma.CatalogItemUncheckedCreateInput
     nameRu: item.nameRu,
     nameEn: item.nameEn,
     categoryId: item.categoryId,
-    adgCode: item.adgCode,
     allergensReviewed: item.allergensReviewed,
     status: toPrismaStatus(item.status),
     createdAt: item.createdAt,
@@ -69,7 +67,6 @@ function toUpdateData(item: CatalogItem): Prisma.CatalogItemUncheckedUpdateInput
     nameRu: item.nameRu,
     nameEn: item.nameEn,
     categoryId: item.categoryId,
-    adgCode: item.adgCode,
     allergensReviewed: item.allergensReviewed,
     status: toPrismaStatus(item.status),
     updatedAt: item.updatedAt,

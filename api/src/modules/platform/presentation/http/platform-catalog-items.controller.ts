@@ -72,7 +72,6 @@ export class PlatformCatalogItemsController {
       nameRu: dto.nameRu,
       nameEn: dto.nameEn,
       categoryId: dto.categoryId ?? null,
-      adgCode: dto.adgCode ?? null,
       allergenSlugs: dto.allergenSlugs ?? [],
       allergensReviewed: dto.allergensReviewed ?? false,
     });
@@ -106,7 +105,6 @@ export class PlatformCatalogItemsController {
       nameRu: dto.nameRu,
       nameEn: dto.nameEn,
       categoryId: dto.categoryId,
-      adgCode: dto.adgCode,
       allergenSlugs: dto.allergenSlugs,
       allergensReviewed: dto.allergensReviewed,
     });

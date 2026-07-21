@@ -12,8 +12,6 @@ export interface CatalogResolution {
   catalogItemId: string;
   /** Allergen slugs tagged on the CatalogItem (may be empty). */
   allergenSlugs: string[];
-  /** Default ATG classifier, or null. */
-  adgCode: string | null;
   /**
    * Platform-support tagging gate (CATALOG-3 §Locked-4). A leaf is VERIFIED only
    * when catalog-sourced AND this is true; false => unverified until support flips it.
@@ -30,7 +28,7 @@ export interface CatalogResolution {
  */
 export interface CatalogItemReader {
   /**
-   * Resolve one catalog item to its allergen set + adgCode. Returns null when the
+   * Resolve one catalog item to its allergen set. Returns null when the
    * id references no CatalogItem (e.g. a stale/removed link) — the caller then
    * treats the leaf as unverified (CATALOG-3 §8).
    */

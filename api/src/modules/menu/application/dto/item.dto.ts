@@ -56,6 +56,26 @@ export class CreateMenuItemDto extends NameDescriptionI18nDto {
   @IsInt()
   @Min(0)
   prepTimeMinutes?: number;
+
+  @ApiPropertyOptional({
+    description:
+      'FISCAL-DEPT-1: the branch fiscal department code (must exist in this branch ' +
+      "FiscalDepartment set) this dish sells under, for the receipt line's VAT regime. " +
+      'Rejected with INVALID_FISCAL_DEPARTMENT if unknown to the branch. Omit or send ' +
+      'null to leave it unassigned.',
+    example: '1',
+    nullable: true,
+    // DTO-FIX-1: explicit type so the spec emits `type: string` (a `string | null`
+    // property reflects design:type Object, which without this emits `type: object`).
+    type: String,
+  })
+  @IsOptional()
+  // Accept null (unassigned) as well as a string; type-check only when not null.
+  // The value set is validated in the use case against the branch's departments;
+  // no format @Matches here (dep codes are free-text from SRC registration).
+  @ValidateIf((o) => o.dep !== null)
+  @IsString()
+  dep?: string | null;
 }
 
 export class UpdateMenuItemDto extends NameDescriptionI18nDto {
@@ -116,6 +136,8 @@ export class UpdateMenuItemDto extends NameDescriptionI18nDto {
       '(partial update).',
     example: '2130000000',
     nullable: true,
+    // DTO-FIX-1: explicit type so the spec emits `type: string`, not `type: object`.
+    type: String,
   })
   @IsOptional()
   // Accept null (explicit clear) as well as a string; type-check only when not null.
@@ -124,6 +146,22 @@ export class UpdateMenuItemDto extends NameDescriptionI18nDto {
   @ValidateIf((o) => o.adgCode !== null)
   @IsString()
   adgCode?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'FISCAL-DEPT-1: the branch fiscal department code (must exist in this branch ' +
+      "FiscalDepartment set) this dish sells under, for the receipt line's VAT regime. " +
+      'Rejected with INVALID_FISCAL_DEPARTMENT if unknown to the branch. Send an empty ' +
+      'string or null to clear (unassign); omit to leave it unchanged (partial update).',
+    example: '1',
+    nullable: true,
+    // DTO-FIX-1: explicit type so the spec emits `type: string`, not `type: object`.
+    type: String,
+  })
+  @IsOptional()
+  @ValidateIf((o) => o.dep !== null)
+  @IsString()
+  dep?: string | null;
 }
 
 export class ChangeItemPriceDto {
