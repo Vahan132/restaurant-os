@@ -222,4 +222,4 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "$SSH_USER@$SSH_HOST" \
-            "cd ~/restaurant-os && git pull --ff-only && docker compose pull && docker compose up -d && docker compose ps"
+            "cd ~/restaurant-os && git pull --ff-only && docker compose pull && docker compose up -d && { docker compose exec -T proxy nginx -s reload || docker compose restart proxy; } && docker compose ps"
