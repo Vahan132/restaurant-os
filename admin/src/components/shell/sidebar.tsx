@@ -57,11 +57,11 @@ export function Sidebar() {
   const t = useTranslations('common');
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-gray-200 bg-white md:flex">
-      <div className="flex h-14 items-center border-b border-gray-200 px-4 text-lg font-semibold">
+    <aside className="hidden h-screen w-60 shrink-0 flex-col border-r border-gray-200 bg-white md:flex">
+      <div className="flex h-14 shrink-0 items-center border-b border-gray-200 px-4 text-lg font-semibold">
         {t('appName')}
       </div>
-      <nav className="flex flex-1 flex-col gap-1 p-3">
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3">
         {NAV_ITEMS.map((item) => (
           <GatedNavLink key={item.href} item={item} />
         ))}

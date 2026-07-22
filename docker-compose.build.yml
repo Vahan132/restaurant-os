@@ -1,0 +1,50 @@
+# Restaurant OS — LOCAL DEV override: build images from source instead of pulling
+# from GHCR. Mirrors the edge track's docker-compose.edge.build.yml. Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+# The relative NEXT_PUBLIC_* build-args match what CI bakes (deploy-web.yml), so a
+# locally built image behaves identically to the published one.
+services:
+  api:
+    build:
+      context: ./api
+
+  website:
+    build:
+      context: ./website
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /res/api
+        NEXT_PUBLIC_ADMIN_URL: /res/admin
+        NEXT_PUBLIC_POS_URL: /res/pos
+        NEXT_PUBLIC_KDS_URL: /res/kds
+        NEXT_PUBLIC_CUSTOMER_URL_TEMPLATE: /res/m/{slug}?qr={qr}
+
+  admin:
+    build:
+      context: ./admin
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /res/api
+        NEXT_PUBLIC_SOCKET_BASE_URL: ''
+        NEXT_PUBLIC_SOCKET_PATH: /res/socket.io
+        NEXT_PUBLIC_CUSTOMER_URL_TEMPLATE: /res/m/{slug}?qr={qr}
+
+  pos:
+    build:
+      context: ./pos
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /res/api
+        NEXT_PUBLIC_SOCKET_BASE_URL: ''
+        NEXT_PUBLIC_SOCKET_PATH: /res/socket.io
+
+  kds:
+    build:
+      context: ./kds
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /res/api
+        NEXT_PUBLIC_SOCKET_BASE_URL: ''
+        NEXT_PUBLIC_SOCKET_PATH: /res/socket.io
+
+  customer:
+    build:
+      context: ./customer
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /res/api

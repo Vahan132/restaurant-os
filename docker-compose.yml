@@ -1,17 +1,13 @@
-# Restaurant OS — full web stack. Two run modes:
+# Restaurant OS — full web stack (PULL-BASED / canonical).
+# Services run PUBLISHED images from GHCR (built by .github/workflows/deploy-web.yml).
+# This is what the droplet runs: `docker compose pull && docker compose up -d`.
+# For local dev that builds from source, layer the override:
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 #
-#  A) Behind YOUR existing host nginx (e.g. the Tailscale host, TLS):
-#        docker compose up -d --build
-#     Apps are published on 127.0.0.1 (api 5200, website 4000, admin 4001,
-#     pos 4002, kds 4003, customer 4004) — exactly where your nginx proxy_pass
-#     points. The bundled proxy does NOT start (it's behind a profile).
-#
-#  B) Fully self-contained (no external nginx), one origin on :80:
-#        docker compose --profile bundled-proxy up -d --build
-#     then open http://localhost/res
-#
-# Frontends reach the API SAME-ORIGIN via /res/api, so one image set runs local
-# and staging unchanged. Excludes the Expo apps (customer mobile, reservations).
+# IMAGE_TAG (default "develop") selects the moving channel tag; pin a sha-<short>
+# in .env for rollback. COMPOSE_PROFILES=bundled-proxy (in .env) starts the bundled
+# nginx on :80 — omit it if a host nginx fronts the app ports instead.
+# Excludes the Expo apps (customer mobile, reservations).
 name: restaurant-os
 
 services:
@@ -42,27 +38,25 @@ services:
       retries: 12
 
   api:
-    build:
-      context: ./api            # reuses the existing hardened api/Dockerfile
+    image: ghcr.io/vahan132/restaurant-os-api:${IMAGE_TAG:-develop}
     restart: unless-stopped
     ports:
-      - '127.0.0.1:5200:5200'   # your host nginx: /res/api/ -> 127.0.0.1:5200/
-    # api/Dockerfile's ENTRYPOINT (edge-entrypoint.sh) calls `node dist/main.js`, but
-    # `nest build` emits dist/src/main.js here (tsconfig includes prisma/**/*.ts, so the
-    # output root is the project root). Override with a cloud entrypoint: migrate, then
-    # start whichever main.js exists.
+      - '127.0.0.1:5200:5200'
+    # api image ENTRYPOINT (edge-entrypoint.sh) calls `node dist/main.js`, but
+    # `nest build` emits dist/src/main.js (tsconfig includes prisma/**/*.ts). Override
+    # with a cloud entrypoint: migrate, then start whichever main.js exists.
     entrypoint:
       - sh
       - -c
       - 'node node_modules/prisma/build/index.js migrate deploy && exec node "$(ls dist/src/main.js dist/main.js 2>/dev/null | head -1)"'
     environment:
-      NODE_ENV: ${NODE_ENV:-development}   # local: development. staging/prod: production + STORAGE_DRIVER=r2
+      NODE_ENV: ${NODE_ENV:-development}
       APP_MODE: CLOUD
       PORT: '5200'
       DATABASE_URL: postgresql://${POSTGRES_USER:-restaurantos}:${POSTGRES_PASSWORD:-restaurantos}@postgres:5432/${POSTGRES_DB:-restaurantos}
       REDIS_URL: redis://redis:6379
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}          # ⚑ Tailscale: https://msi.tail8514ca.ts.net
-      PLATFORM_ROOT_DOMAIN: ${PLATFORM_ROOT_DOMAIN:-localhost}  # ⚑ Tailscale: msi.tail8514ca.ts.net
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      PLATFORM_ROOT_DOMAIN: ${PLATFORM_ROOT_DOMAIN:-localhost}
       STORAGE_DRIVER: ${STORAGE_DRIVER:-dev}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set in .env}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set in .env}
@@ -89,68 +83,42 @@ services:
       start_period: 40s
 
   website:
-    build:
-      context: ./website
-      args:
-        NEXT_PUBLIC_API_BASE_URL: /res/api
-        NEXT_PUBLIC_ADMIN_URL: /res/admin
-        NEXT_PUBLIC_POS_URL: /res/pos
-        NEXT_PUBLIC_KDS_URL: /res/kds
-        NEXT_PUBLIC_CUSTOMER_URL_TEMPLATE: /res/m/{slug}?qr={qr}
+    image: ghcr.io/vahan132/restaurant-os-website:${IMAGE_TAG:-develop}
     restart: unless-stopped
     ports:
       - '127.0.0.1:4000:4000'
     depends_on: [api]
 
   admin:
-    build:
-      context: ./admin
-      args:
-        NEXT_PUBLIC_API_BASE_URL: /res/api
-        NEXT_PUBLIC_SOCKET_BASE_URL: ''
-        NEXT_PUBLIC_SOCKET_PATH: /res/socket.io
-        NEXT_PUBLIC_CUSTOMER_URL_TEMPLATE: /res/m/{slug}?qr={qr}
+    image: ghcr.io/vahan132/restaurant-os-admin:${IMAGE_TAG:-develop}
     restart: unless-stopped
     ports:
       - '127.0.0.1:4001:4001'
     depends_on: [api]
 
   pos:
-    build:
-      context: ./pos
-      args:
-        NEXT_PUBLIC_API_BASE_URL: /res/api
-        NEXT_PUBLIC_SOCKET_BASE_URL: ''
-        NEXT_PUBLIC_SOCKET_PATH: /res/socket.io
+    image: ghcr.io/vahan132/restaurant-os-pos:${IMAGE_TAG:-develop}
     restart: unless-stopped
     ports:
       - '127.0.0.1:4002:4002'
     depends_on: [api]
 
   kds:
-    build:
-      context: ./kds
-      args:
-        NEXT_PUBLIC_API_BASE_URL: /res/api
-        NEXT_PUBLIC_SOCKET_BASE_URL: ''
-        NEXT_PUBLIC_SOCKET_PATH: /res/socket.io
+    image: ghcr.io/vahan132/restaurant-os-kds:${IMAGE_TAG:-develop}
     restart: unless-stopped
     ports:
       - '127.0.0.1:4003:4003'
     depends_on: [api]
 
   customer:
-    build:
-      context: ./customer
-      args:
-        NEXT_PUBLIC_API_BASE_URL: /res/api
+    image: ghcr.io/vahan132/restaurant-os-customer:${IMAGE_TAG:-develop}
     restart: unless-stopped
     ports:
       - '127.0.0.1:4004:4004'
     depends_on: [api]
 
-  # Bundled HTTP proxy — ONLY for the self-contained mode (mode B). Opt in with
-  # `--profile bundled-proxy`. Skip it when your own nginx fronts the stack.
+  # Bundled HTTP proxy — starts only when COMPOSE_PROFILES includes "bundled-proxy"
+  # (or `--profile bundled-proxy`). Omit when a host nginx fronts the app ports.
   proxy:
     image: nginx:1.27-alpine
     profiles: ["bundled-proxy"]

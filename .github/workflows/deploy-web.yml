@@ -1,0 +1,123 @@
+# ── DEPLOY-3 — build & publish the six web images, then auto-deploy the droplet ──
+# Mirrors .github/workflows/edge-image.yml conventions (GITHUB_TOKEN + packages:
+# write, buildx, GHA cache) but for the CLOUD web stack:
+#   - trigger: push to `develop` (auto-deploy) or manual workflow_dispatch
+#   - amd64-only (the droplet is Intel; edge stays multi-arch, untouched)
+#   - two tags per image: sha-<short> (immutable, rollback) + develop (moving)
+#   - images: ghcr.io/vahan132/restaurant-os-<app> for api/website/admin/pos/kds/customer
+#   - the relative NEXT_PUBLIC_* URLs are baked HERE (CI), never on the droplet
+#
+# One-time: after the FIRST successful push, flip each of the six GHCR packages to
+# Public (GitHub -> Packages -> restaurant-os-<app> -> Package settings -> Change
+# visibility -> Public). Images hold no secrets, so public is safe by design.
+name: deploy-web
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: vahan132 # ghcr requires a lowercase owner; hardcoded so forks/renames are explicit
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: api
+            context: ./api
+            build-args: ''
+          - app: website
+            context: ./website
+            build-args: |
+              NEXT_PUBLIC_API_BASE_URL=/res/api
+              NEXT_PUBLIC_ADMIN_URL=/res/admin
+              NEXT_PUBLIC_POS_URL=/res/pos
+              NEXT_PUBLIC_KDS_URL=/res/kds
+              NEXT_PUBLIC_CUSTOMER_URL_TEMPLATE=/res/m/{slug}?qr={qr}
+          - app: admin
+            context: ./admin
+            build-args: |
+              NEXT_PUBLIC_API_BASE_URL=/res/api
+              NEXT_PUBLIC_SOCKET_BASE_URL=
+              NEXT_PUBLIC_SOCKET_PATH=/res/socket.io
+              NEXT_PUBLIC_CUSTOMER_URL_TEMPLATE=/res/m/{slug}?qr={qr}
+          - app: pos
+            context: ./pos
+            build-args: |
+              NEXT_PUBLIC_API_BASE_URL=/res/api
+              NEXT_PUBLIC_SOCKET_BASE_URL=
+              NEXT_PUBLIC_SOCKET_PATH=/res/socket.io
+          - app: kds
+            context: ./kds
+            build-args: |
+              NEXT_PUBLIC_API_BASE_URL=/res/api
+              NEXT_PUBLIC_SOCKET_BASE_URL=
+              NEXT_PUBLIC_SOCKET_PATH=/res/socket.io
+          - app: customer
+            context: ./customer
+            build-args: |
+              NEXT_PUBLIC_API_BASE_URL=/res/api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/restaurant-os-${{ matrix.app }}
+          tags: |
+            type=raw,value=develop
+            type=sha,format=short,prefix=sha-
+
+      - name: Build and push (${{ matrix.app }}, amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/amd64
+          push: true
+          build-args: ${{ matrix.build-args }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to droplet over SSH
+        env:
+          SSH_KEY: ${{ secrets.DROPLET_SSH_KEY }}
+          SSH_HOST: ${{ secrets.DROPLET_HOST }}
+          SSH_USER: ${{ secrets.DROPLET_USER }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "$SSH_USER@$SSH_HOST" \
+            "cd ~/restaurant-os && git pull --ff-only && docker compose pull && docker compose up -d && docker compose ps"
