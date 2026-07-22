@@ -89,8 +89,11 @@ jobs:
             if [ "$build" = "1" ]; then changed+=("$app"); else unchanged+=("$app"); fi
           done
 
-          cj=$(printf '%s\n' "${changed[@]:-}"   | grep -v '^$' | jq -R . | jq -cs .)
-          uj=$(printf '%s\n' "${unchanged[@]:-}" | grep -v '^$' | jq -R . | jq -cs .)
+          # Build JSON arrays with jq --args (robust when an array is EMPTY; the
+          # old `printf | grep -v '^$'` aborted under pipefail because grep exits 1
+          # on no match — which happens whenever all/none of the apps changed).
+          cj=$(jq -cn '$ARGS.positional' --args "${changed[@]}")
+          uj=$(jq -cn '$ARGS.positional' --args "${unchanged[@]}")
           echo "changed=$cj"     >> "$GITHUB_OUTPUT"
           echo "unchanged=$uj"   >> "$GITHUB_OUTPUT"
           echo "force_all=$force_all changed=$cj unchanged=$uj"
