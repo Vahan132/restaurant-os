@@ -1,10 +1,17 @@
 <#
-  EDGE-PKG-2-WIN - Start the Restaurant OS Edge Hub.
+  EDGE-PKG-2-WIN / EDGE-PKG-5-WIN - Start the Restaurant OS Edge Hub.
 
-  Ensures the Docker engine is running (launching Docker Desktop and waiting for
-  it if needed), then brings the stack up. Safe to run repeatedly - if the hub is
+  Ensures the Docker engine is running (launching Docker Desktop and waiting for it
+  if needed), then brings the stack up. Safe to run repeatedly - if the hub is
   already up this is a no-op. This is what the logon Scheduled Task runs after a
   power-cut so the hub returns with no human action.
+
+  MUST run as the INTERACTIVE (auto-login) user, NOT SYSTEM. Docker Desktop is a
+  per-user application: its engine pipe and context live in that user's profile, so
+  SYSTEM (or any other account) can never reach it. enable-boot-on-power.ps1
+  registers this task -AtLogOn under that user; this script hard-checks that and
+  fails loudly (with a log line) rather than looping forever if it's ever run as
+  SYSTEM. Progress is logged to <InstallDir>\start-hub.log for unattended diagnosis.
 #>
 [CmdletBinding()]
 param(
@@ -14,6 +21,16 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+
+New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
+$script:LogFile = Join-Path $InstallDir 'start-hub.log'
+
+function Write-Log {
+  param([string]$Message)
+  $line = '[{0}] {1}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message
+  Write-Host $line
+  try { Add-Content -Path $script:LogFile -Value $line -Encoding UTF8 } catch { }
+}
 
 $script:DockerBinDirs = @(
   (Join-Path $env:ProgramFiles 'Docker\Docker\resources\bin'),
@@ -25,9 +42,8 @@ $script:DockerDesktopExe = @(
 ) | Select-Object -Unique
 
 function Update-SessionPath {
-  # A logon Scheduled Task starts with the environment as it was at sign-in, which
-  # may predate Docker's PATH entry. Re-read the live Machine + User PATH so
-  # `docker` resolves instead of false-negativing (same fix as the installer).
+  # A logon task starts with the environment as it was at sign-in, which may predate
+  # Docker's PATH entry. Re-read the live Machine + User PATH so `docker` resolves.
   $machine = [Environment]::GetEnvironmentVariable('Path', 'Machine')
   $user    = [Environment]::GetEnvironmentVariable('Path', 'User')
   $env:Path = (@($machine, $user) | Where-Object { $_ }) -join ';'
@@ -46,11 +62,22 @@ function Resolve-DockerCli {
 }
 
 function Test-DockerReady {
-  # $true only if the Docker engine is installed AND responding. Uses `docker info`
-  # (daemon reachable), not just `docker --version` (CLI present).
+  # $true only if the Docker engine is installed AND responding in THIS session.
+  # Uses `docker info` (daemon reachable), not `docker --version` (CLI present).
   if (-not (Resolve-DockerCli)) { return $false }
   try { docker info *> $null; return ($LASTEXITCODE -eq 0) } catch { return $false }
 }
+
+# ---- Guard: this MUST be the interactive user, not SYSTEM -------------------
+$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+if ($identity.IsSystem) {
+  Write-Log "ERROR: start-hub.ps1 is running as SYSTEM ($($identity.Name))."
+  Write-Log "Docker Desktop is per-user and is NOT reachable from SYSTEM, so the hub"
+  Write-Log "cannot be started here. Fix the boot-on-power task to run as the"
+  Write-Log "interactive auto-login user (re-run enable-boot-on-power.ps1), then reboot."
+  exit 1
+}
+Write-Log "start-hub: running as $($identity.Name); InstallDir=$InstallDir"
 
 Set-Location $InstallDir
 
@@ -59,16 +86,24 @@ if (-not (Test-DockerReady)) {
   $dd = $script:DockerDesktopExe | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
   if ($dd) {
     if (-not (Get-Process 'Docker Desktop' -ErrorAction SilentlyContinue)) {
+      Write-Log "Launching Docker Desktop..."
       Start-Process $dd | Out-Null
     }
+  } else {
+    Write-Log "WARNING: Docker Desktop.exe not found in the usual location; waiting anyway."
   }
-  Write-Host "Waiting for the Docker engine to start ..."
+  Write-Log "Waiting up to $TimeoutSeconds s for the Docker engine to become ready..."
   $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
   while (-not (Test-DockerReady)) {
-    if ((Get-Date) -gt $deadline) { throw "Docker engine did not become ready within $TimeoutSeconds s." }
+    if ((Get-Date) -gt $deadline) {
+      Write-Log "ERROR: Docker engine did not become ready within $TimeoutSeconds s. The hub was not started."
+      exit 2
+    }
     Start-Sleep -Seconds 5
   }
 }
 
+Write-Log "Docker engine ready. Bringing the hub up..."
 docker compose -f docker-compose.edge.yml --env-file .env.edge up -d
+Write-Log "Hub is up."
 Write-Host "Hub is up."

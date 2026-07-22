@@ -1,19 +1,27 @@
 <#
-  EDGE-PKG-2-WIN - Restaurant OS Edge Hub installer (Windows)
+  EDGE-PKG-2-WIN / EDGE-PKG-5-WIN - Restaurant OS Edge Hub installer (Windows)
+
+  Runs AS THE INTERACTIVE USER. Docker Desktop is a PER-USER application (its engine
+  pipe and `.docker` context live in the logged-in user's profile), so all Docker
+  work - `docker info`, `docker compose pull/up` - MUST run in that user's session.
+  This script therefore does NOT self-elevate. It elevates only the few genuinely
+  privileged steps (firewall rule, winget/wsl install), each briefly and on its own,
+  then drops back to the user context.
 
   One command to install and start the hub on a Windows mini-PC:
     * makes sure Docker is installed AND running (installs Docker Desktop for you
       if it's missing - Ubuntu parity - and starts it if it's just not running),
     * downloads the public compose + env template from the GitHub Release,
     * generates the required auth secrets into .env.edge (nothing to hand-edit),
-    * opens the LAN port in Windows Firewall,
+    * opens the LAN port in Windows Firewall (elevates just for that),
     * pulls the public image and brings the stack up.
 
   No registry credentials are ever needed (the image is public). The hub's
   identity + keys arrive later, when you pair it at /setup.
 
-  Run from an elevated PowerShell (Run as Administrator), or just double-click
-  install-hub.bat which elevates for you.
+  IMPORTANT: run this NORMALLY (double-click install-hub.bat). Do NOT "Run as
+  administrator" - that can start it under a different Windows account than the one
+  running Docker Desktop, and Docker would be unreachable.
 
   Examples:
     .\install-hub.ps1                       # uses defaults below
@@ -24,7 +32,8 @@
     2  Docker was just installed and the machine must REBOOT; re-run afterwards
     3  winget is unavailable - Docker must be installed by hand (URL printed)
     4  Docker is installed but the engine did not become ready in time
-    5  the automatic Docker install failed (details + manual URL printed)
+    5  the automatic Docker install failed / was declined (details + URL printed)
+    6  running elevated and Docker is unreachable - re-run WITHOUT administrator
 #>
 [CmdletBinding()]
 param(
@@ -34,9 +43,11 @@ param(
   [string]$InstallDir = 'C:\RestaurantOS',            # where the hub files live
   [string]$CloudUrl = '',                             # optional: your platform base URL
   [int]$DockerStartTimeoutSeconds = 180,              # how long to wait for the engine
-  [switch]$SkipDockerAutoInstall,                     # detect only; never auto-install
-  [switch]$ConfigureBootOnPower                        # also set up unattended boot-on-power
+  [switch]$SkipDockerAutoInstall                       # detect only; never auto-install
 )
+# NOTE: -ConfigureBootOnPower was intentionally removed here. Boot-on-power setup
+# (enable-boot-on-power.ps1) genuinely needs admin and is run separately, so this
+# non-elevated installer no longer chains into it.
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -51,21 +62,36 @@ $script:DockerDesktopExe = @(
   'C:\Program Files\Docker\Docker\Docker Desktop.exe'
 ) | Select-Object -Unique
 
-function Assert-Admin {
+function Test-IsElevated {
   $id = [Security.Principal.WindowsIdentity]::GetCurrent()
-  $p = New-Object Security.Principal.WindowsPrincipal($id)
-  if (-not $p.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)) {
-    throw 'Please run this as Administrator (right-click PowerShell -> Run as administrator, or use install-hub.bat).'
+  (New-Object Security.Principal.WindowsPrincipal($id)).IsInRole(
+    [Security.Principal.WindowsBuiltinRole]::Administrator)
+}
+
+function Invoke-Privileged {
+  # Run ONE privileged command. If we're already elevated, run it in-process (no
+  # extra prompt). Otherwise spawn a single elevated PowerShell for just this
+  # command - a brief UAC prompt - then return to the user context.
+  # Returns $true on success, $false if the user declined UAC or the command failed.
+  param([string[]]$PowerShellArgs)
+  if (Test-IsElevated) {
+    try {
+      & powershell.exe -NoProfile -ExecutionPolicy Bypass @PowerShellArgs
+      return ($LASTEXITCODE -eq 0)
+    } catch { return $false }
+  }
+  try {
+    $p = Start-Process powershell.exe -Verb RunAs -Wait -PassThru -ArgumentList (
+      @('-NoProfile','-ExecutionPolicy','Bypass') + $PowerShellArgs)
+    return ($p.ExitCode -eq 0)
+  } catch {
+    return $false   # user declined the UAC prompt
   }
 }
 
 function Update-SessionPath {
-  # THE FIX for the reported false negative: an elevated / double-clicked process
-  # inherits a STALE environment block from whatever started it (Explorer, an old
-  # shell) - a snapshot taken before Docker Desktop added its bin folder to the
-  # Machine PATH. So `docker` looks missing even though it's installed and running.
-  # Re-read the live Machine + User PATH from the registry and rebuild this
-  # session's $env:Path so `docker` resolves the way a fresh shell would.
+  # From EDGE-PKG-4-WIN: an inherited environment block can predate Docker's PATH
+  # entry. Re-read the live Machine + User PATH so `docker` resolves.
   $machine = [Environment]::GetEnvironmentVariable('Path', 'Machine')
   $user    = [Environment]::GetEnvironmentVariable('Path', 'User')
   $env:Path = (@($machine, $user) | Where-Object { $_ }) -join ';'
@@ -87,9 +113,10 @@ function Resolve-DockerCli {
 
 function Get-DockerState {
   # Three distinct states, never conflated:
-  #   NotInstalled - the CLI cannot be found anywhere.
-  #   DaemonDown   - the CLI exists but the engine (Docker Desktop) isn't answering.
-  #   Ready        - `docker info` succeeds; the engine is up.
+  #   NotInstalled - the CLI cannot be found anywhere (system PATH, so account-agnostic).
+  #   DaemonDown   - the CLI exists but the engine (Docker Desktop) isn't answering
+  #                  in THIS session (down, or unreachable because we're a different user).
+  #   Ready        - `docker info` succeeds; the engine is up and reachable here.
   if (-not (Resolve-DockerCli)) { return 'NotInstalled' }
   try {
     docker info *> $null
@@ -120,45 +147,73 @@ function Wait-DockerReady {
   }
 }
 
+function Show-ElevationHelp {
+  Write-Warning @"
+Docker is not reachable from this session.
+
+This almost always means the installer is running as a DIFFERENT Windows account
+than the one running Docker Desktop - usually because it was started with
+"Run as administrator" and Windows switched to an admin account.
+
+  1. Close this window.
+  2. Double-click install-hub.bat NORMALLY (do NOT "Run as administrator").
+
+The installer only needs admin for a couple of small steps and will ask for it
+just for those.
+"@
+}
+
 function Install-DockerDesktop {
-  # Ubuntu parity: the .sh runs `get.docker.com`; here we use winget. Returns one
-  # of: NoWinget | Installed | RebootRequired | Failed.
+  # Ubuntu parity: the .sh runs `get.docker.com`; here we use winget - but the
+  # install (winget + WSL2) is the one part that needs admin, so it runs in a single
+  # elevated child. Returns: NoWinget | Installed | RebootRequired | Failed.
   if (-not (Get-Command winget -ErrorAction SilentlyContinue)) { return 'NoWinget' }
 
-  # Docker Desktop needs the WSL2 platform. Turning it on requires a reboot.
-  $needWslReboot = $false
-  $wslReady = $false
-  try { wsl.exe --status *> $null; if ($LASTEXITCODE -eq 0) { $wslReady = $true } } catch { $wslReady = $false }
-  if (-not $wslReady) {
-    Write-Host "  enabling WSL2 (Docker Desktop requires it)..."
+  # Elevated helper script: enable WSL2 if needed, then winget-install Docker Desktop.
+  # Exit codes are read back by the (non-elevated) parent: 0 ok, 10 reboot, 12 failed.
+  $elevated = @'
+$ErrorActionPreference = "Continue"
+$reboot = $false
+$wslReady = $false
+try { wsl.exe --status *> $null; if ($LASTEXITCODE -eq 0) { $wslReady = $true } } catch {}
+if (-not $wslReady) {
+  wsl.exe --install --no-distribution *> $null
+  if ($LASTEXITCODE -ne 0) { wsl.exe --install *> $null }
+  $reboot = $true
+}
+winget install -e --id Docker.DockerDesktop --accept-package-agreements --accept-source-agreements --silent | Out-Host
+$code = $LASTEXITCODE
+$present = Test-Path "C:\Program Files\Docker\Docker\resources\bin\docker.exe"
+if (-not $present -and $code -ne 0) { exit 12 }
+if ($reboot) { exit 10 }
+exit 0
+'@
+  $tmp = Join-Path $env:TEMP ("edge-docker-install-{0}.ps1" -f ([guid]::NewGuid().ToString('N')))
+  Set-Content -Path $tmp -Value $elevated -Encoding UTF8
+
+  Write-Host "  installing Docker Desktop (this needs admin once, and can take several minutes)..."
+  $exit = $null
+  if (Test-IsElevated) {
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $tmp
+    $exit = $LASTEXITCODE
+  } else {
     try {
-      wsl.exe --install --no-distribution *> $null
-      if ($LASTEXITCODE -ne 0) { wsl.exe --install *> $null }
-    } catch { }
-    $needWslReboot = $true
+      $p = Start-Process powershell.exe -Verb RunAs -Wait -PassThru -ArgumentList @(
+        '-NoProfile','-ExecutionPolicy','Bypass','-File', $tmp)
+      $exit = $p.ExitCode
+    } catch {
+      Remove-Item $tmp -ErrorAction SilentlyContinue
+      return 'Failed'   # user declined the UAC prompt
+    }
   }
+  Remove-Item $tmp -ErrorAction SilentlyContinue
 
-  Write-Host "  installing Docker Desktop via winget (this can take several minutes)..."
-  # Pipe winget's own output to the host so the user sees progress but it does NOT
-  # leak into this function's return value (the caller switches on that value).
-  try {
-    winget install -e --id Docker.DockerDesktop --accept-package-agreements --accept-source-agreements --silent | Out-Host
-  } catch { }
-  $code = $LASTEXITCODE
-
-  # Decide success by whether Docker actually landed on disk, not by decoding
-  # winget's exit code (reboot-required vs. success codes are not portable).
-  $present = (Resolve-DockerCli) -or ($script:DockerBinDirs | Where-Object { $_ -and (Test-Path (Join-Path $_ 'docker.exe')) })
-  if ($present) {
-    if ($needWslReboot) { return 'RebootRequired' }
-    return 'Installed'
+  switch ($exit) {
+    0       { return 'Installed' }
+    10      { return 'RebootRequired' }
+    12      { return 'Failed' }
+    default { if (Resolve-DockerCli) { return 'Installed' } else { return 'Failed' } }
   }
-  if ($code -eq 0) {
-    if ($needWslReboot) { return 'RebootRequired' }
-    return 'Installed'
-  }
-  Write-Host "  winget exited with code $code and Docker was not found afterwards."
-  return 'Failed'
 }
 
 function Show-ManualDockerHelp {
@@ -169,13 +224,13 @@ Couldn't install Docker automatically on this machine.
        https://www.docker.com/products/docker-desktop/
   2. Restart the computer if it asks.
   3. Open Docker Desktop once and wait until it says "Engine running."
-  4. Run install-hub.bat again - it will pick up from here.
+  4. Run install-hub.bat again (normally, not as administrator).
 "@
 }
 
 function Ensure-DockerReady {
-  # Guarantees the engine is up before we touch compose - or exits with a clear,
-  # jargon-light message and a distinct exit code telling the user how to resume.
+  # Guarantees the engine is up and reachable in THIS (user) session before we touch
+  # compose - or exits with a clear, jargon-light message and a distinct code.
   $state = Get-DockerState
 
   if ($state -eq 'Ready') {
@@ -184,6 +239,13 @@ function Ensure-DockerReady {
   }
 
   if ($state -eq 'DaemonDown') {
+    # CLI is present but `docker info` failed. If we're elevated, the overwhelmingly
+    # likely cause is a different-account session, not a stopped engine - so say so
+    # immediately instead of waiting out the whole timeout (EDGE-PKG-5 2.3).
+    if (Test-IsElevated) {
+      Show-ElevationHelp
+      exit 6
+    }
     Write-Host "Docker is installed but not running yet. Starting Docker Desktop..." -ForegroundColor Cyan
     if (-not (Start-DockerDesktop)) {
       Write-Warning @"
@@ -281,17 +343,45 @@ function Get-ReleaseAsset {
   Invoke-WebRequest -Uri $url -OutFile $OutFile -UseBasicParsing
 }
 
+function Set-HubFirewallRule {
+  # Opening a LAN port genuinely needs admin - elevate JUST this, idempotently.
+  # If the user declines, the hub still runs; only remote (tablet/phone) access is
+  # affected, so warn and continue (EDGE-PKG-5 2.2).
+  param([int]$Port)
+  $ruleName = "RestaurantOS Hub $Port"
+  $exists = $false
+  try { if (Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue) { $exists = $true } } catch { }
+  if ($exists) { Write-Host "Firewall already allows TCP $Port."; return }
+
+  $cmd = "if (-not (Get-NetFirewallRule -DisplayName '$ruleName' -ErrorAction SilentlyContinue)) { " +
+         "New-NetFirewallRule -DisplayName '$ruleName' -Direction Inbound -Action Allow " +
+         "-Protocol TCP -LocalPort $Port -Profile Any | Out-Null }"
+  if (Invoke-Privileged -PowerShellArgs @('-Command', $cmd)) {
+    Write-Host "Opened inbound TCP $Port in Windows Firewall."
+  } else {
+    Write-Warning @"
+Skipped opening the firewall port (you may have declined the prompt).
+The hub still runs - but LAN devices (tablets/phones) may not reach it until TCP
+$Port is allowed. You can re-run install-hub.bat later to open it.
+"@
+  }
+}
+
 # ---- 1. Preconditions -------------------------------------------------------
-Assert-Admin
+# NOTE (EDGE-PKG-5): no Assert-Admin here. This script runs as the interactive user
+# on purpose; admin is requested per-step only.
 
 Write-Host "Restaurant OS Edge Hub installer" -ForegroundColor Cyan
 Write-Host "  release : $Tag"
 Write-Host "  folder  : $InstallDir"
 Write-Host "  port    : $Port"
+if (Test-IsElevated) {
+  Write-Warning "This window is running as administrator. Docker work must run as your normal user; if Docker turns out to be unreachable, close this and run install-hub.bat WITHOUT 'Run as administrator'."
+}
 Write-Host ""
 
-# Robust Docker detection + auto-install/-start. Returns only when the engine is
-# ready; otherwise it has already printed guidance and exited with a code above.
+# Robust Docker detection + auto-install/-start, all in the USER context. Returns
+# only when the engine is ready; otherwise it printed guidance and exited above.
 Ensure-DockerReady
 
 # ---- 2. Files ---------------------------------------------------------------
@@ -318,28 +408,15 @@ if (-not (Test-Path $envFile)) {
   Write-Host ".env.edge already exists - keeping your settings (not regenerating secrets)."
 }
 
-# ---- 4. Firewall (LAN access from tablets/phones on the branch network) ------
-$ruleName = "RestaurantOS Hub $Port"
-if (-not (Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue)) {
-  New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Action Allow `
-    -Protocol TCP -LocalPort $Port -Profile Any | Out-Null
-  Write-Host "Opened inbound TCP $Port in Windows Firewall."
-}
+# ---- 4. Firewall (LAN access from tablets/phones) - elevates just this step ---
+Set-HubFirewallRule -Port $Port
 
-# ---- 5. Bring the stack up --------------------------------------------------
+# ---- 5. Bring the stack up (as the USER - Docker lives in this profile) -------
 Write-Host "Pulling the public image and starting the hub ..." -ForegroundColor Cyan
 docker compose -f docker-compose.edge.yml --env-file .env.edge pull
 docker compose -f docker-compose.edge.yml --env-file .env.edge up -d
 
-# ---- 6. Optional: unattended boot-on-power ----------------------------------
-if ($ConfigureBootOnPower) {
-  $boot = Join-Path $PSScriptRoot 'enable-boot-on-power.ps1'
-  if (Test-Path $boot) { & $boot -InstallDir $InstallDir } else {
-    Write-Warning "enable-boot-on-power.ps1 not found next to the installer - run it separately."
-  }
-}
-
-# ---- 7. Where to go next ----------------------------------------------------
+# ---- 6. Where to go next ----------------------------------------------------
 $lan = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
         Where-Object { $_.IPAddress -notlike '169.254.*' -and $_.IPAddress -ne '127.0.0.1' } |
         Select-Object -First 1 -ExpandProperty IPAddress)
@@ -349,3 +426,6 @@ Write-Host "  On this machine : http://localhost:$Port/setup"
 if ($lan) { Write-Host "  From a tablet   : http://$lan`:$Port/setup" }
 Write-Host ""
 Write-Host "Open that page, enter your pairing code, and the hub takes over from there."
+Write-Host ""
+Write-Host "To make the hub restart by itself after a power cut, right-click"
+Write-Host "enable-boot-on-power.ps1 -> Run with PowerShell (that step needs admin)."
