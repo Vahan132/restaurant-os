@@ -9,38 +9,35 @@ code** from your Restaurant OS dashboard.
 
 ---
 
-## Step 1 — Install Docker Desktop (one time)
-
-Docker is the program that runs the hub.
-
-1. Go to **https://www.docker.com/products/docker-desktop/** and download **Docker
-   Desktop for Windows**.
-2. Run the installer. Accept the defaults (keep **"Use WSL 2"** ticked).
-3. When it finishes, **restart the computer** if it asks.
-4. Open **Docker Desktop** from the Start menu. Wait until the little whale icon
-   near the clock stops animating and it says **"Engine running."**
-
-That's the only install. You won't need to open Docker again.
-
----
-
-## Step 2 — Run the hub installer
+## Step 1 — Run the hub installer
 
 1. Put the setup files (the ones you were given: `install-hub.bat` and the scripts)
    in a folder, e.g. on the Desktop.
 2. **Double-click `install-hub.bat`.**
 3. Windows will ask for permission ("Do you want to allow this app to make
    changes?") — click **Yes**.
-4. A black window opens and does everything for you: downloads the hub, creates its
-   settings, opens the network port, and starts it. Wait until it says **"Done. The
-   hub is starting."**
+4. A black window opens and does everything for you, including **installing Docker
+   (the program that runs the hub) if it isn't already there.** It then downloads
+   the hub, creates its settings, opens the network port, and starts it. Wait until
+   it says **"Done. The hub is starting."**
 
 The installer also prints two web addresses — one for this computer, one for
 tablets/phones on the same network. Keep them handy for the next step.
 
+> **If it asks you to restart.** The very first time, Windows sometimes needs one
+> restart to finish turning on the piece Docker runs on (WSL2). If the window tells
+> you to restart, do it, then **double-click `install-hub.bat` again** — it picks up
+> where it left off. This only happens once.
+>
+> **If it can't install Docker automatically** (rare — usually an older Windows
+> without the app installer), it will print a link to
+> **https://www.docker.com/products/docker-desktop/**. Install Docker Desktop from
+> there (keep **"Use WSL 2"** ticked), open it once until it says **"Engine
+> running,"** then run `install-hub.bat` again.
+
 ---
 
-## Step 3 — Pair the hub
+## Step 2 — Pair the hub
 
 1. On the hub computer, open a web browser and go to **http://localhost:3001/setup**
    (or click the address the installer printed).
@@ -53,7 +50,7 @@ to reach the hub.
 
 ---
 
-## Step 4 — Make it start by itself after a power cut (recommended)
+## Step 3 — Make it start by itself after a power cut (recommended)
 
 So the hub comes back on its own if the power blips, run the boot-on-power setup
 once:
@@ -79,7 +76,7 @@ updates and restarts in place — your data and pairing are kept, and it's safe 
 during service.
 
 **Restart the hub.** Just restart the computer; the hub comes back on its own (if
-you did Step 4).
+you did Step 3).
 
 ---
 
@@ -95,7 +92,8 @@ you to.
 
 - **The `/setup` page won't open.** Open Docker Desktop and check the two containers
   are **Running**. If Docker itself isn't running, open Docker Desktop and wait for
-  "Engine running," then try again.
+  "Engine running," then try again — or just run `install-hub.bat` again, which
+  starts Docker for you.
 - **A tablet can't reach the hub.** Make sure it's on the same Wi-Fi as the hub, and
   use the "From a tablet" address (the hub's network address), not `localhost`.
 - **Still stuck?** In Docker Desktop, click the `restaurantos-edge-api` container to

@@ -15,8 +15,40 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+$script:DockerBinDirs = @(
+  (Join-Path $env:ProgramFiles 'Docker\Docker\resources\bin'),
+  'C:\Program Files\Docker\Docker\resources\bin'
+) | Select-Object -Unique
+$script:DockerDesktopExe = @(
+  (Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'),
+  'C:\Program Files\Docker\Docker\Docker Desktop.exe'
+) | Select-Object -Unique
+
+function Update-SessionPath {
+  # A logon Scheduled Task starts with the environment as it was at sign-in, which
+  # may predate Docker's PATH entry. Re-read the live Machine + User PATH so
+  # `docker` resolves instead of false-negativing (same fix as the installer).
+  $machine = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+  $user    = [Environment]::GetEnvironmentVariable('Path', 'User')
+  $env:Path = (@($machine, $user) | Where-Object { $_ }) -join ';'
+}
+
+function Resolve-DockerCli {
+  Update-SessionPath
+  if (Get-Command docker -ErrorAction SilentlyContinue) { return $true }
+  foreach ($dir in $script:DockerBinDirs) {
+    if ($dir -and (Test-Path (Join-Path $dir 'docker.exe'))) {
+      $env:Path = "$dir;$env:Path"
+      return $true
+    }
+  }
+  return $false
+}
+
 function Test-DockerReady {
-  if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { return $false }
+  # $true only if the Docker engine is installed AND responding. Uses `docker info`
+  # (daemon reachable), not just `docker --version` (CLI present).
+  if (-not (Resolve-DockerCli)) { return $false }
   try { docker info *> $null; return ($LASTEXITCODE -eq 0) } catch { return $false }
 }
 
@@ -24,8 +56,8 @@ Set-Location $InstallDir
 
 if (-not (Test-DockerReady)) {
   # Launch Docker Desktop if it isn't already coming up.
-  $dd = Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe'
-  if (Test-Path $dd) {
+  $dd = $script:DockerDesktopExe | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+  if ($dd) {
     if (-not (Get-Process 'Docker Desktop' -ErrorAction SilentlyContinue)) {
       Start-Process $dd | Out-Null
     }
