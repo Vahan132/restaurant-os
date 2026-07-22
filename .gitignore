@@ -16,9 +16,9 @@ out/
 
 # Env files — ignore all real envs; keep the .example templates
 .env
-.env.*
-!.env.example
-!.env.*.example
+#.env.*
+#!.env.example
+#!.env.*.example
 
 # Logs & coverage
 logs/
