@@ -15,7 +15,7 @@ the **pairing code** from your Restaurant OS dashboard.
 2. Copy and paste these two lines, one at a time, and press Enter after each:
 
    ```bash
-   curl -fsSLO https://github.com/Vahan132/restaurant-os/releases/download/edge-v0.1.0/install-hub.sh
+   curl -fsSLO https://raw.githubusercontent.com/Vahan132/restaurant-os-hub/main/install-hub.sh
    sudo bash install-hub.sh
    ```
 

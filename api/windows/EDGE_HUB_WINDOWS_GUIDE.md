@@ -11,8 +11,12 @@ code** from your Restaurant OS dashboard.
 
 ## Step 1 — Run the hub installer
 
-1. Put the setup files (the ones you were given: `install-hub.bat` and the scripts)
-   in a folder, e.g. on the Desktop.
+1. Download the setup files into one folder, e.g. on the Desktop. Get them from the
+   public hub page (no GitHub account or login needed):
+   **https://github.com/Vahan132/restaurant-os-hub** — you need at least
+   `install-hub.bat` and `install-hub.ps1` (grab the other `*.ps1` scripts too so
+   updates and boot-on-power work). Click each file → **Download raw file**, or use
+   the green **Code → Download ZIP** button and unzip them into one folder.
 2. **Double-click `install-hub.bat`.**
 3. Windows will ask for permission ("Do you want to allow this app to make
    changes?") — click **Yes**.

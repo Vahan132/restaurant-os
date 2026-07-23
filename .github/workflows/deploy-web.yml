@@ -1,5 +1,5 @@
 # ── DEPLOY-3/4 — build only CHANGED web images, retag the rest, auto-deploy ──────
-# Mirrors edge-image.yml conventions (GITHUB_TOKEN + packages: write, buildx, GHA
+# Mirrors edge-image-old.yml conventions (GITHUB_TOKEN + packages: write, buildx, GHA
 # cache). Path-filtered (DEPLOY-4): only changed app folders rebuild; unchanged apps
 # get their `develop` manifest COPIED to the new sha- tag (server-side, no rebuild),
 # so IMAGE_TAG=sha-<commit> always addresses a COMPLETE, consistent six-image stack.

@@ -87,24 +87,21 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── EDGE-PKG-4 — cut the Release and attach the installer assets ─────────────
-  # Runs only on a real `edge-v*` tag (never the dispatch dry-run). Gives a
-  # restaurant admin public download links for the exact scripts the guides tell
-  # them to run — the Ubuntu guide's `.../releases/download/<tag>/install-hub.sh`
-  # URL only resolves because THIS job uploads it. Assets are attached by
-  # basename, so `install-hub.sh`, `docker-compose.edge.yml`, `.env.edge.example`,
-  # etc. all download under their plain filenames.
+  # ── EDGE-PKG-4 — cut the release notes (changelog only) ──────────────────────
+  # Runs only on a real `edge-v*` tag (never the dispatch dry-run). Records a
+  # GitHub Release purely for the changelog. It attaches NO installer assets: the
+  # installer/compose/env files are published to the PUBLIC `restaurant-os-hub`
+  # repo by `mirror-hub.yml`, and both installers fetch them from that repo's raw
+  # URLs. Private-repo release-asset downloads are auth-walled, so they are
+  # deliberately NOT part of any install path.
   release:
     needs: build-and-push
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
-      contents: write # create the Release + upload assets
+      contents: write # create the Release (notes only)
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Create Release and attach installer assets
+      - name: Create Release (notes only)
         uses: softprops/action-gh-release@v2
         with:
           # The tag that triggered the run (refs/tags/edge-v0.1.0 -> edge-v0.1.0).
@@ -112,33 +109,21 @@ jobs:
           name: Restaurant OS Edge Hub ${{ github.ref_name }}
           draft: false
           prerelease: false
-          fail_on_unmatched_files: true # a missing installer asset fails the run loudly
           generate_release_notes: true
           body: |
-            Restaurant OS Edge Hub — installer bundle for `${{ github.ref_name }}`.
+            Restaurant OS Edge Hub — release notes for `${{ github.ref_name }}`.
 
             Public image: `${{ env.IMAGE }}:${{ github.ref_name }}` (and `:latest`).
 
-            **Windows** — download `install-hub.bat` + the `*.ps1` scripts into one
-            folder and double-click `install-hub.bat`. See `EDGE_HUB_WINDOWS_GUIDE.md`.
+            Installers are published to the PUBLIC hub repo (no GitHub account, no
+            login, no token): https://github.com/Vahan132/restaurant-os-hub
+
+            **Windows** — download `install-hub.bat` + the `*.ps1` scripts from the
+            hub repo and double-click `install-hub.bat`. See `EDGE_HUB_WINDOWS_GUIDE.md`.
 
             **Ubuntu / Debian** — one command:
             ```bash
-            curl -fsSLO https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/install-hub.sh
+            curl -fsSLO https://raw.githubusercontent.com/Vahan132/restaurant-os-hub/main/install-hub.sh
             sudo bash install-hub.sh
             ```
             See `EDGE_HUB_UBUNTU_GUIDE.md`.
-          files: |
-            api/windows/install-hub.bat
-            api/windows/install-hub.ps1
-            api/windows/start-hub.ps1
-            api/windows/update-hub.ps1
-            api/windows/update-hub.bat
-            api/windows/enable-boot-on-power.ps1
-            api/windows/EDGE_HUB_WINDOWS_GUIDE.md
-            api/ubuntu/install-hub.sh
-            api/ubuntu/edge-hub.service
-            api/ubuntu/update-hub.sh
-            api/ubuntu/EDGE_HUB_UBUNTU_GUIDE.md
-            api/docker-compose.edge.yml
-            api/.env.edge.example

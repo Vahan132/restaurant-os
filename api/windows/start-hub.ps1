@@ -22,6 +22,23 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+function Invoke-Native {
+  # Run a native command WITHOUT letting its stderr become a terminating error.
+  # PowerShell 5.1 + $ErrorActionPreference='Stop' turns a native command's stderr
+  # into a THROW even when the command exits 0 (e.g. `docker info` prints a benign
+  # "WARNING: No blkio throttle.read_bps_device support" to stderr). Success is
+  # judged by EXIT CODE only. The string / Invoke-Expression form is deliberate: a
+  # [scriptblock] parameter trips Set-StrictMode -Version Latest ("variable not
+  # set"), so keep the string form (or an equivalent that survives StrictMode).
+  param([Parameter(Mandatory)][string]$CommandLine)
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    Invoke-Expression "$CommandLine 2>`$null 1>`$null"
+    return ($LASTEXITCODE -eq 0)
+  } finally { $ErrorActionPreference = $prev }
+}
+
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 $script:LogFile = Join-Path $InstallDir 'start-hub.log'
 
@@ -65,7 +82,10 @@ function Test-DockerReady {
   # $true only if the Docker engine is installed AND responding in THIS session.
   # Uses `docker info` (daemon reachable), not `docker --version` (CLI present).
   if (-not (Resolve-DockerCli)) { return $false }
-  try { docker info *> $null; return ($LASTEXITCODE -eq 0) } catch { return $false }
+  # Judge readiness by exit code only; `docker info` writes a harmless warning to
+  # stderr that would otherwise throw under 'Stop' and be misread as "not ready"
+  # (an infinite wait / silent boot-on-power failure). See Invoke-Native.
+  return (Invoke-Native 'docker info')
 }
 
 # ---- Guard: this MUST be the interactive user, not SYSTEM -------------------
@@ -104,6 +124,12 @@ if (-not (Test-DockerReady)) {
 }
 
 Write-Log "Docker engine ready. Bringing the hub up..."
-docker compose -f docker-compose.edge.yml --env-file .env.edge up -d
+# compose writes normal progress to stderr; under 'Stop' that would throw. Route
+# through Invoke-Native (exit-code only) so a benign stderr line can't abort the
+# unattended boot-on-power path.
+if (-not (Invoke-Native 'docker compose -f docker-compose.edge.yml --env-file .env.edge up -d')) {
+  Write-Log "ERROR: 'docker compose up -d' failed. The hub may not be running; check Docker Desktop and re-run start-hub.ps1."
+  exit 3
+}
 Write-Log "Hub is up."
 Write-Host "Hub is up."

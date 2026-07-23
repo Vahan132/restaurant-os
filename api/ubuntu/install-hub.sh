@@ -13,19 +13,21 @@
 # identity + keys arrive later, when you pair it at /setup.
 #
 # Recommended (download, review, then run as root):
-#   curl -fsSLO https://github.com/Vahan132/restaurant-os/releases/download/edge-v0.1.0/install-hub.sh
+#   curl -fsSLO https://raw.githubusercontent.com/Vahan132/restaurant-os-hub/main/install-hub.sh
 #   sudo bash install-hub.sh
 #
 # Options (flags or env vars):
-#   --tag edge-v0.1.0   (TAG)        release to install (pin this)
-#   --repo owner/repo   (REPO)       GitHub repo hosting the release
+#   --tag edge-v0.1.0   (TAG)        image release to PIN (EDGE_IMAGE_TAG)
+#   --repo owner/repo   (REPO)       PUBLIC repo holding the dist files
+#   --branch main       (BRANCH)     branch to fetch the raw dist files from
 #   --port 3001         (PORT)       LAN port the hub serves on
 #   --dir /opt/restaurant-os (INSTALL_DIR)
 #   --cloud-url URL     (CLOUD_URL)  optional platform base URL
 set -euo pipefail
 
 TAG="${TAG:-edge-v0.1.0}"
-REPO="${REPO:-Vahan132/restaurant-os}"
+REPO="${REPO:-Vahan132/restaurant-os-hub}"
+BRANCH="${BRANCH:-main}"
 PORT="${PORT:-3001}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/restaurant-os}"
 CLOUD_URL="${CLOUD_URL:-}"
@@ -34,6 +36,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --tag) TAG="$2"; shift 2;;
     --repo) REPO="$2"; shift 2;;
+    --branch) BRANCH="$2"; shift 2;;
     --port) PORT="$2"; shift 2;;
     --dir) INSTALL_DIR="$2"; shift 2;;
     --cloud-url) CLOUD_URL="$2"; shift 2;;
@@ -65,7 +68,11 @@ systemctl enable --now docker >/dev/null 2>&1 || true
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 asset() { # asset <name> <outfile>
-  local url="https://github.com/$REPO/releases/download/$TAG/$1"
+  # Fetch from the PUBLIC hub repo's RAW URL: no auth (public repo), the file keeps
+  # its real name (no `default.` prefix that Release-asset downloads add to leading-
+  # dot files like .env.edge.example), and no Release needs to exist. The image
+  # version is pinned separately via --tag (EDGE_IMAGE_TAG).
+  local url="https://raw.githubusercontent.com/$REPO/$BRANCH/$1"
   log "downloading $1 ..."
   curl -fsSL "$url" -o "$2"
 }

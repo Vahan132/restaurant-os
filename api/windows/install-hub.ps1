@@ -11,7 +11,8 @@
   One command to install and start the hub on a Windows mini-PC:
     * makes sure Docker is installed AND running (installs Docker Desktop for you
       if it's missing - Ubuntu parity - and starts it if it's just not running),
-    * downloads the public compose + env template from the GitHub Release,
+    * downloads the public compose + env template from the PUBLIC hub repo
+      (raw.githubusercontent.com/Vahan132/restaurant-os-hub) - no auth, no login,
     * generates the required auth secrets into .env.edge (nothing to hand-edit),
     * opens the LAN port in Windows Firewall (elevates just for that),
     * pulls the public image and brings the stack up.
@@ -37,8 +38,9 @@
 #>
 [CmdletBinding()]
 param(
-  [string]$Tag = 'edge-v0.1.0',                       # release to install (pin this)
-  [string]$Repo = 'Vahan132/restaurant-os',          # GitHub owner/repo of the release
+  [string]$Tag = 'edge-v0.1.0',                       # image release to PIN (EDGE_IMAGE_TAG)
+  [string]$Repo = 'Vahan132/restaurant-os-hub',      # PUBLIC repo holding the dist files
+  [string]$Branch = 'main',                           # branch to fetch the raw dist files from
   [int]$Port = 3001,                                  # LAN port the hub serves on
   [string]$InstallDir = 'C:\RestaurantOS',            # where the hub files live
   [string]$CloudUrl = '',                             # optional: your platform base URL
@@ -51,6 +53,23 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+
+function Invoke-Native {
+  # Run a native command WITHOUT letting its stderr become a terminating error.
+  # PowerShell 5.1 + $ErrorActionPreference='Stop' turns a native command's stderr
+  # into a THROW even when the command exits 0 (e.g. `docker info` prints a benign
+  # "WARNING: No blkio throttle.read_bps_device support" to stderr). Success is
+  # judged by EXIT CODE only. The string / Invoke-Expression form is deliberate: a
+  # [scriptblock] parameter trips Set-StrictMode -Version Latest ("variable not
+  # set"), so keep the string form (or an equivalent that survives StrictMode).
+  param([Parameter(Mandatory)][string]$CommandLine)
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    Invoke-Expression "$CommandLine 2>`$null 1>`$null"
+    return ($LASTEXITCODE -eq 0)
+  } finally { $ErrorActionPreference = $prev }
+}
 
 # Known-good Docker locations, used when PATH still doesn't resolve `docker`.
 $script:DockerBinDirs = @(
@@ -118,10 +137,9 @@ function Get-DockerState {
   #                  in THIS session (down, or unreachable because we're a different user).
   #   Ready        - `docker info` succeeds; the engine is up and reachable here.
   if (-not (Resolve-DockerCli)) { return 'NotInstalled' }
-  try {
-    docker info *> $null
-    if ($LASTEXITCODE -eq 0) { return 'Ready' } else { return 'DaemonDown' }
-  } catch { return 'DaemonDown' }
+  # `docker info` prints a harmless warning to stderr; judge by exit code only
+  # (see Invoke-Native) so a stderr line can't be mistaken for the daemon being down.
+  if (Invoke-Native 'docker info') { return 'Ready' } else { return 'DaemonDown' }
 }
 
 function Start-DockerDesktop {
@@ -336,9 +354,14 @@ function Set-EnvValue {
   Add-Content -Path $Path -Value $line -Encoding UTF8
 }
 
-function Get-ReleaseAsset {
+function Get-DistFile {
+  # Fetch a dist file from the PUBLIC hub repo by its RAW URL. Raw URLs need no
+  # auth (public repo), serve the file under its real name (so `.env.edge.example`
+  # is NOT renamed to `default.env.edge.example` the way a Release asset download
+  # would be), and don't depend on a Release existing. The image version is pinned
+  # separately via -Tag (EDGE_IMAGE_TAG), not by this path.
   param([string]$Name, [string]$OutFile)
-  $url = "https://github.com/$Repo/releases/download/$Tag/$Name"
+  $url = "https://raw.githubusercontent.com/$Repo/$Branch/$Name"
   Write-Host "  downloading $Name ..."
   Invoke-WebRequest -Uri $url -OutFile $OutFile -UseBasicParsing
 }
@@ -388,9 +411,9 @@ Ensure-DockerReady
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 Set-Location $InstallDir
 
-Get-ReleaseAsset -Name 'docker-compose.edge.yml' -OutFile (Join-Path $InstallDir 'docker-compose.edge.yml')
+Get-DistFile -Name 'docker-compose.edge.yml' -OutFile (Join-Path $InstallDir 'docker-compose.edge.yml')
 if (-not (Test-Path (Join-Path $InstallDir '.env.edge.example'))) {
-  Get-ReleaseAsset -Name '.env.edge.example' -OutFile (Join-Path $InstallDir '.env.edge.example')
+  Get-DistFile -Name '.env.edge.example' -OutFile (Join-Path $InstallDir '.env.edge.example')
 }
 
 # ---- 3. Environment + secrets ----------------------------------------------
@@ -413,8 +436,17 @@ Set-HubFirewallRule -Port $Port
 
 # ---- 5. Bring the stack up (as the USER - Docker lives in this profile) -------
 Write-Host "Pulling the public image and starting the hub ..." -ForegroundColor Cyan
-docker compose -f docker-compose.edge.yml --env-file .env.edge pull
-docker compose -f docker-compose.edge.yml --env-file .env.edge up -d
+# Both compose calls write normal progress to stderr; under $ErrorActionPreference
+# 'Stop' that stderr would throw mid-pull, so route them through Invoke-Native and
+# judge success by exit code.
+if (-not (Invoke-Native 'docker compose -f docker-compose.edge.yml --env-file .env.edge pull')) {
+  Write-Warning "docker compose pull reported a problem; continuing to 'up' (an already-present image will still be used)."
+}
+if (-not (Invoke-Native 'docker compose -f docker-compose.edge.yml --env-file .env.edge up -d')) {
+  Write-Warning "docker compose up failed. Run it manually in $InstallDir to see the error:"
+  Write-Warning "  docker compose -f docker-compose.edge.yml --env-file .env.edge up -d"
+  exit 1
+}
 
 # ---- 6. Where to go next ----------------------------------------------------
 $lan = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
