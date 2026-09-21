@@ -23,8 +23,4 @@ export interface KdsTicketItemResponse {
   elapsedSeconds: number;
   /** elapsed > prepTime*60 (or > 900s when no estimate). */
   delayed: boolean;
-  /** CATALOG-4: allergen slugs for this line as ordered (dish + selected modifiers). */
-  allergens: string[];
-  /** False when any contributing ingredient is unverified — show as "+ unverified", never a clean claim. */
-  allergensComplete: boolean;
 }

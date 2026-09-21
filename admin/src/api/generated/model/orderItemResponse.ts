@@ -20,8 +20,4 @@ export interface OrderItemResponse {
   status: OrderItemResponseStatus;
   lineTotalAmount: number;
   modifiers: OrderItemModifierResponse[];
-  /** CATALOG-4: allergen slugs as ordered (dish + selected modifiers). Present on order reads. */
-  allergens?: string[];
-  /** False when any contributing ingredient is unverified — never a clean claim. */
-  allergensComplete?: boolean;
 }

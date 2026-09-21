@@ -71,8 +71,6 @@ export function CatalogManager() {
                   <th className="px-4 py-2">{STRINGS.colSlug}</th>
                   <th className="px-4 py-2">{STRINGS.colName}</th>
                   <th className="px-4 py-2">{STRINGS.colCategory}</th>
-                  <th className="px-4 py-2">{STRINGS.colAllergens}</th>
-                  <th className="px-4 py-2">{STRINGS.colReviewed}</th>
                   <th className="px-4 py-2">{STRINGS.colStatus}</th>
                 </tr>
               </thead>
@@ -87,16 +85,6 @@ export function CatalogManager() {
                       </div>
                     </td>
                     <td className="px-4 py-2 text-gray-600">{item.categoryId ? String(item.categoryId) : "—"}</td>
-                    <td className="px-4 py-2 text-xs text-gray-600">
-                      {item.allergenSlugs.length > 0 ? item.allergenSlugs.join(", ") : "—"}
-                    </td>
-                    <td className="px-4 py-2 text-xs">
-                      {item.allergensReviewed ? (
-                        <span className="text-green-700">{STRINGS.reviewedYes}</span>
-                      ) : (
-                        <span className="text-gray-400">{STRINGS.reviewedNo}</span>
-                      )}
-                    </td>
                     <td className="px-4 py-2">
                       <StatusBadge status={item.status} />
                     </td>

@@ -36,6 +36,18 @@ export class TimeSeriesBucketResponse {
 export class PaymentMethodResponse {
   @ApiProperty() method!: string;
   @ApiProperty() amount!: number;
+  @ApiProperty({ description: 'Number of ACTIVE payments recorded with this method.' })
+  paymentCount!: number;
+}
+export class BranchPaymentMethodsResponse {
+  @ApiProperty({ description: 'Business day reported on (YYYY-MM-DD, restaurant tz).' })
+  date!: string;
+  @ApiProperty() branchId!: string;
+  @ApiProperty({ type: [PaymentMethodResponse] }) rows!: PaymentMethodResponse[];
+  @ApiProperty() totalAmount!: number;
+  @ApiProperty() paymentCount!: number;
+  @ApiProperty({ description: 'Closed orders in the day that carry at least one payment.' })
+  orderCount!: number;
 }
 export class WaiterRowResponse {
   @ApiProperty() waiterId!: string;

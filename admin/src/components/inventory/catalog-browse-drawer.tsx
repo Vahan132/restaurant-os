@@ -11,7 +11,6 @@ import {
 } from '@/api/generated/model';
 import { AdoptItemModal } from '@/components/inventory/adopt-item-modal';
 import { Pagination } from '@/components/inventory/shared';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { inputClass } from '@/components/ui/form';
@@ -109,22 +108,10 @@ export function CatalogBrowseDrawer({
                         <span className="font-medium text-gray-900">
                           {pickName(item.name, locale)}
                         </span>
-                        {item.allergensReviewed && (
-                          <Badge tone="green">{t('browseReviewed')}</Badge>
-                        )}
                       </div>
                       <div className="mt-0.5 text-xs text-gray-500">
                         {categoryLabel(item)}
                       </div>
-                      {item.allergenSlugs.length > 0 && (
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {item.allergenSlugs.map((s) => (
-                            <Badge key={s} tone="amber">
-                              {s}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
                     </div>
                     <div className="shrink-0">
                       {adopted ? (

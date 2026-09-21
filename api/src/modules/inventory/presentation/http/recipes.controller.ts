@@ -69,7 +69,7 @@ export class RecipesController {
   @RequirePermissions(READ)
   @ApiOperation({
     summary:
-      'Get a recipe with lines, modifier consumptions, estimate, warnings, projections + allergen rollup.',
+      'Get a recipe with lines, modifier consumptions, estimate, warnings, projections.',
   })
   @ApiQuery({ name: 'locale', required: false, enum: ['hy', 'ru', 'en'] })
   @ApiOkResponse({ type: RecipeResponse })

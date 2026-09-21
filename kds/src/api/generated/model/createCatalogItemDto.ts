@@ -24,8 +24,4 @@ export interface CreateCatalogItemDto {
    * @nullable
    */
   adgCode?: CreateCatalogItemDtoAdgCode;
-  /** Allergen slugs from the taxonomy. */
-  allergenSlugs?: string[];
-  /** Support tagging gate — dishes show verified allergens only when true. Defaults false. */
-  allergensReviewed?: boolean;
 }

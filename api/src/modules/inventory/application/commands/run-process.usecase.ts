@@ -117,7 +117,17 @@ export class RunProcessUseCase implements UseCase<RunProcessUseCaseInput, Proces
     // 6C per-item resolver — item override else branch Main Storage), depleting
     // that location's FIFO lots exactly like serving a dish. (Pre-7A the draw was
     // not location-scoped.)
+    //
+    // A process may also list the SAME item on more than one input line (a raw
+    // and a processed line both drawing the same semi-finished item, say). The
+    // ledger's idempotency guard keys on (refType, refId, itemId) and refId is
+    // the run id, so a second consume for the same item in one run is treated as
+    // a re-fire and skipped — the run would report the full quantity while only
+    // the first line ever left stock. Merge duplicates up-front instead, exactly
+    // as RecipeConsumptionService does for a recipe line plus a modifier extra
+    // on the same ingredient.
     const inputs: RunProcessInputSpec[] = [];
+    const inputByKey = new Map<string, RunProcessInputSpec>();
     for (const pi of process.inputs) {
       const item = byId.get(pi.itemId)!;
       const locationId = await this.locations.resolveConsumptionLocationId(
@@ -125,14 +135,22 @@ export class RunProcessUseCase implements UseCase<RunProcessUseCaseInput, Proces
         pi.branchId,
         item.consumptionLocationId,
       );
-      inputs.push({
+      const key = `${pi.branchId}:${pi.itemId}:${locationId}`;
+      const merged = inputByKey.get(key);
+      if (merged) {
+        merged.baseQty += pi.baseQty * multiplier;
+        continue;
+      }
+      const spec: RunProcessInputSpec = {
         itemId: pi.itemId,
         branchId: pi.branchId,
         locationId,
         baseQty: pi.baseQty * multiplier,
         trackExpiry: item.trackExpiry,
         lastUnitCostMicro: item.lastUnitCostMicro,
-      });
+      };
+      inputByKey.set(key, spec);
+      inputs.push(spec);
     }
 
     // 7A: each output is produced INTO its own default consumption location (same

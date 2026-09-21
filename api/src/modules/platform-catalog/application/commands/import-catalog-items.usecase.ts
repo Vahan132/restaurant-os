@@ -27,8 +27,6 @@ export interface ImportCatalogItemsInput {
 }
 
 const SLUG_RE = /^[a-z0-9-]+$/;
-const TRUE_VALUES = new Set(['true', '1', 'yes']);
-const FALSE_VALUES = new Set(['false', '0', 'no']);
 
 /** A validated row plus its resolved target fields, ready for APPLY. */
 interface RowPlan {
@@ -42,8 +40,6 @@ interface RowPlan {
     nameRu: string;
     nameEn: string;
     categoryId: string | null;
-    allergenSlugs: string[];
-    allergensReviewed: boolean;
     status: CatalogItemStatus;
     /** Present when the slug already exists (UPDATE / UNCHANGED / SKIP). */
     existing?: CatalogItem;
@@ -59,8 +55,8 @@ interface RowPlan {
  * otherwise executes all creates/updates in one transaction reusing the same
  * entity construction the single-item use-cases use.
  *
- * References categories + allergens by slug against seed-managed reference data —
- * it NEVER creates a category or allergen. `status` is honored on CREATE only;
+ * References categories by slug against seed-managed reference data — it NEVER
+ * creates a category. `status` is honored on CREATE only;
  * archive/restore of an existing item is the dedicated archive endpoint's job (the
  * domain has no restore), so the column is ignored for existing rows.
  */
@@ -79,12 +75,8 @@ export class ImportCatalogItemsUseCase
     const rows = parseCatalogCsv(input.csv); // throws CATALOG_IMPORT_INVALID_CSV
 
     // Batch-load reference data + existing items once.
-    const [categories, allergens] = await Promise.all([
-      this.taxonomy.listCategories(),
-      this.taxonomy.listAllergens(),
-    ]);
+    const categories = await this.taxonomy.listCategories();
     const categoryIdBySlug = new Map(categories.map((c) => [c.slug, c.id]));
-    const allergenSlugs = new Set(allergens.map((a) => a.slug));
 
     const candidateSlugs = rows
       .map((r) => r.cells.slug.trim().toLowerCase())
@@ -102,7 +94,6 @@ export class ImportCatalogItemsUseCase
       this.validateRow(row, {
         conflictStrategy,
         categoryIdBySlug,
-        allergenSlugs,
         existingBySlug,
         slugCounts,
       }),
@@ -138,7 +129,6 @@ export class ImportCatalogItemsUseCase
     ctx: {
       conflictStrategy: ConflictStrategy;
       categoryIdBySlug: Map<string, string>;
-      allergenSlugs: Set<string>;
       existingBySlug: Map<string, CatalogItem>;
       slugCounts: Map<string, number>;
     },
@@ -176,29 +166,6 @@ export class ImportCatalogItemsUseCase
       }
     }
 
-    // Allergens (|-delimited existing slugs).
-    const allergenList = c.allergens
-      .split('|')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-    for (const a of allergenList) {
-      if (!ctx.allergenSlugs.has(a)) {
-        messages.push(err('UNKNOWN_ALLERGEN', 'allergens', `Unknown allergen slug "${a}".`));
-      }
-    }
-
-    // allergensReviewed (default false).
-    const reviewedRaw = c.allergensreviewed.trim().toLowerCase();
-    let allergensReviewed = false;
-    if (reviewedRaw !== '') {
-      if (TRUE_VALUES.has(reviewedRaw)) allergensReviewed = true;
-      else if (FALSE_VALUES.has(reviewedRaw)) allergensReviewed = false;
-      else
-        messages.push(
-          err('INVALID_VALUE', 'allergensReviewed', `Not a boolean: "${reviewedRaw}".`),
-        );
-    }
-
     // status (default ACTIVE).
     const statusRaw = c.status.trim().toUpperCase();
     let status = CatalogItemStatus.ACTIVE;
@@ -217,15 +184,12 @@ export class ImportCatalogItemsUseCase
 
     // Determine action for a fully valid row.
     const existing = ctx.existingBySlug.get(slug);
-    const allergenSlugs = normalize(allergenList);
     const resolved = {
       slug,
       nameHy,
       nameRu,
       nameEn,
       categoryId,
-      allergenSlugs,
-      allergensReviewed,
       status,
       existing,
     };
@@ -260,8 +224,6 @@ export class ImportCatalogItemsUseCase
           nameRu: r.nameRu,
           nameEn: r.nameEn,
           categoryId: r.categoryId,
-          allergenSlugs: r.allergenSlugs,
-          allergensReviewed: r.allergensReviewed,
         });
         if (r.status === CatalogItemStatus.ARCHIVED) {
           item.archive();
@@ -273,8 +235,6 @@ export class ImportCatalogItemsUseCase
           nameRu: r.nameRu,
           nameEn: r.nameEn,
           categoryId: r.categoryId,
-          allergenSlugs: r.allergenSlugs,
-          allergensReviewed: r.allergensReviewed,
         });
         updates.push(r.existing);
       }
@@ -312,14 +272,6 @@ function err(code: string, field: string, detail: string): ImportRowMessageRespo
   return { code, field, detail };
 }
 
-function normalize(slugs: string[]): string[] {
-  return Array.from(new Set(slugs)).sort();
-}
-
-function arraysEqual(a: string[], b: string[]): boolean {
-  return a.length === b.length && a.every((v, i) => v === b[i]);
-}
-
 /** True when an existing item's resolvable fields already match the row (status excluded). */
 function isUnchanged(
   existing: CatalogItem,
@@ -328,16 +280,12 @@ function isUnchanged(
     nameRu: string;
     nameEn: string;
     categoryId: string | null;
-    allergenSlugs: string[];
-    allergensReviewed: boolean;
   },
 ): boolean {
   return (
     existing.nameHy === r.nameHy &&
     existing.nameRu === r.nameRu &&
     existing.nameEn === r.nameEn &&
-    existing.categoryId === r.categoryId &&
-    existing.allergensReviewed === r.allergensReviewed &&
-    arraysEqual(existing.allergenSlugs, r.allergenSlugs)
+    existing.categoryId === r.categoryId
   );
 }

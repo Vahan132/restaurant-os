@@ -42,6 +42,14 @@ export const KDS_EVENTS = {
 /** Prefix every server ticket event shares. */
 const ORDER_EVENT_PREFIX = 'order.';
 
+/**
+ * Prefix of the STATION-room events the backend targets at one station
+ * (`kds:ticket.new` / `.updated` / `.cancelled`). These are the precise signal —
+ * they only reach a kiosk subscribed to that branch:station room — while the
+ * branch-wide `order.*` events are the broad fallback.
+ */
+const STATION_EVENT_PREFIX = 'kds:ticket.';
+
 type TicketEventName = (typeof KDS_EVENTS)[keyof typeof KDS_EVENTS];
 
 /**
@@ -52,8 +60,12 @@ type TicketEventName = (typeof KDS_EVENTS)[keyof typeof KDS_EVENTS];
  * the board still refetches.
  */
 function classifyOrderEvent(event: string): TicketEventName | null {
-  if (!event.startsWith(ORDER_EVENT_PREFIX)) return null;
-  const suffix = event.slice(ORDER_EVENT_PREFIX.length);
+  const suffix = event.startsWith(STATION_EVENT_PREFIX)
+    ? event.slice(STATION_EVENT_PREFIX.length)
+    : event.startsWith(ORDER_EVENT_PREFIX)
+      ? event.slice(ORDER_EVENT_PREFIX.length)
+      : null;
+  if (suffix === null) return null;
   if (/^(new|created|placed|added)/.test(suffix)) return KDS_EVENTS.ticketNew;
   if (/^(cancel|delet|void|remov)/.test(suffix)) return KDS_EVENTS.ticketCancelled;
   return KDS_EVENTS.ticketUpdated;
@@ -231,10 +243,20 @@ class RealtimeClient {
     });
   }
 
+  /**
+   * Join the pinned branch:station room.
+   *
+   * The gateway reads `stations` as an ARRAY — sending only the singular
+   * `station` made it filter an empty list, so the room was never joined and
+   * `kds:ticket.*` never reached the board (it stayed live only by accident,
+   * via the branch-wide `order.updated` refetch). Both keys are sent so the
+   * kiosk works against an older hub build too.
+   */
   private emitSubscribe(): void {
     if (!this.socket?.connected || !this.pin) return;
     this.socket.emit('kds:subscribe', {
       branchId: this.pin.branchId,
+      stations: [this.pin.station],
       station: this.pin.station,
     });
   }

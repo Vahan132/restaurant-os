@@ -20,8 +20,6 @@ export const KNOWN_COLUMNS = [
   'nameru',
   'nameen',
   'category',
-  'allergens',
-  'allergensreviewed',
   'status',
 ] as const;
 

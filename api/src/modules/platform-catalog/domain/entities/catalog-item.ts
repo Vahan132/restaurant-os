@@ -5,19 +5,12 @@ export enum CatalogItemStatus {
   ARCHIVED = 'ARCHIVED',
 }
 
-/** Dedupe + sort allergen slugs for a stable, comparable set. */
-function normalizeSlugs(slugs: readonly string[]): string[] {
-  return Array.from(new Set(slugs)).sort();
-}
-
 export interface CatalogItemProps {
   slug: string;
   nameHy: string;
   nameRu: string;
   nameEn: string;
   categoryId: string | null;
-  allergenSlugs: string[];
-  allergensReviewed: boolean;
   status: CatalogItemStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -31,16 +24,12 @@ export interface CreateCatalogItemProps {
   nameRu: string;
   nameEn: string;
   categoryId: string | null;
-  allergenSlugs: string[];
-  /** Support tagging gate; defaults to false on create. */
-  allergensReviewed?: boolean;
 }
 
 /**
  * CatalogItem aggregate — a PLATFORM-owned curated stock-item template (ADR §2).
  * Not tenant-scoped. Deletion is ARCHIVE, not hard-delete, so a tenant's
- * catalogItemId reference is never orphaned (CATALOG-2 / ADR §4). Allergen tags are
- * validated against the taxonomy by the use-case before they reach the aggregate.
+ * catalogItemId reference is never orphaned (CATALOG-2 / ADR §4).
  */
 export class CatalogItem extends AggregateRoot<string> {
   private props: CatalogItemProps;
@@ -58,8 +47,6 @@ export class CatalogItem extends AggregateRoot<string> {
       nameRu: input.nameRu,
       nameEn: input.nameEn,
       categoryId: input.categoryId,
-      allergenSlugs: normalizeSlugs(input.allergenSlugs),
-      allergensReviewed: input.allergensReviewed ?? false,
       status: CatalogItemStatus.ACTIVE,
       createdAt: now,
       updatedAt: now,
@@ -86,12 +73,6 @@ export class CatalogItem extends AggregateRoot<string> {
   get categoryId(): string | null {
     return this.props.categoryId;
   }
-  get allergenSlugs(): string[] {
-    return [...this.props.allergenSlugs];
-  }
-  get allergensReviewed(): boolean {
-    return this.props.allergensReviewed;
-  }
   get status(): CatalogItemStatus {
     return this.props.status;
   }
@@ -114,26 +95,18 @@ export class CatalogItem extends AggregateRoot<string> {
 
   /**
    * Patch mutable fields. `undefined` = leave unchanged; `null` on categoryId
-   * clears it. allergenSlugs (when provided) fully REPLACES the tag set.
+   * clears it.
    */
   update(input: {
     nameHy?: string;
     nameRu?: string;
     nameEn?: string;
     categoryId?: string | null;
-    allergenSlugs?: string[];
-    allergensReviewed?: boolean;
   }): void {
     if (input.nameHy !== undefined) this.props.nameHy = input.nameHy;
     if (input.nameRu !== undefined) this.props.nameRu = input.nameRu;
     if (input.nameEn !== undefined) this.props.nameEn = input.nameEn;
     if (input.categoryId !== undefined) this.props.categoryId = input.categoryId;
-    if (input.allergenSlugs !== undefined) {
-      this.props.allergenSlugs = normalizeSlugs(input.allergenSlugs);
-    }
-    if (input.allergensReviewed !== undefined) {
-      this.props.allergensReviewed = input.allergensReviewed;
-    }
     this.touch();
   }
 

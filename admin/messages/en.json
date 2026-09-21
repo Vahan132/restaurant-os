@@ -570,6 +570,17 @@
     "validation": {
       "required": "This field is required",
       "code": "Use UPPER_SNAKE_CASE (A–Z, 0–9, _)"
+    },
+    "systemName": {
+      "OWNER": "Owner",
+      "MANAGER": "Manager",
+      "WAITER": "Waiter",
+      "CASHIER": "Cashier",
+      "KITCHEN_STAFF": "Kitchen staff",
+      "CHEF": "Chef",
+      "SOUS_CHEF": "Sous-chef",
+      "RECEPTIONIST": "Receptionist",
+      "BRANCH_SCOPED": "Branch-scoped (no restaurant-wide access)"
     }
   },
   "perm": {
@@ -640,6 +651,88 @@
     "DASHBOARD_VIEW": {
       "label": "View dashboard",
       "desc": "See the operations dashboard"
+    },
+    "ACCOUNT_MANAGE": {
+      "label": "Manage account",
+      "desc": "Change the subscription, plan and billing details"
+    },
+    "inventory:read": {
+      "label": "View inventory",
+      "desc": "See stock levels, items, receipts and movements"
+    },
+    "inventory:item:manage": {
+      "label": "Manage inventory items",
+      "desc": "Create and edit stock items, units and categories"
+    },
+    "inventory:receipt:create": {
+      "label": "Receive goods",
+      "desc": "Register incoming goods receipts from suppliers"
+    },
+    "inventory:adjustment:create": {
+      "label": "Adjust stock",
+      "desc": "Correct on-hand quantities after a stock count"
+    },
+    "inventory:process:manage": {
+      "label": "Manage processes",
+      "desc": "Define production processes and their inputs and outputs"
+    },
+    "inventory:process:run": {
+      "label": "Run processes",
+      "desc": "Execute a production run and post its stock movements"
+    },
+    "inventory:recipe:manage": {
+      "label": "Manage recipes",
+      "desc": "Build dish recipes and attach them to menu items"
+    },
+    "menu:item:set_price": {
+      "label": "Set menu prices",
+      "desc": "Change the selling price of a menu item"
+    },
+    "inventory:writeoff:create": {
+      "label": "Create write-offs",
+      "desc": "Write off spoiled, lost or broken stock"
+    },
+    "inventory:writeoff:void": {
+      "label": "Void write-offs",
+      "desc": "Reverse a write-off that was posted by mistake"
+    },
+    "inventory:location:manage": {
+      "label": "Manage stock locations",
+      "desc": "Create, rename and delete a branch's stock locations"
+    },
+    "inventory:policy:manage": {
+      "label": "Manage stock policy",
+      "desc": "Set the branch's negative-stock mode (allow, warn or block)"
+    },
+    "inventory:transfer:create": {
+      "label": "Transfer stock",
+      "desc": "Move stock between a branch's locations"
+    },
+    "EDGE_MANAGE": {
+      "label": "Manage edge hubs",
+      "desc": "Register, list and revoke on-premise edge hubs"
+    },
+    "sales:import:manage": {
+      "label": "Import sales",
+      "desc": "Upload historical sales files and view import batches"
+    },
+    "device": {
+      "enroll": {
+        "label": "Enroll devices",
+        "desc": "Enroll, list and revoke a branch's POS and kitchen devices"
+      }
+    },
+    "staff": {
+      "pin": {
+        "manage": {
+          "label": "Manage staff PINs",
+          "desc": "Create, reset and revoke staff sign-in PINs"
+        }
+      }
+    },
+    "reports:shift:view": {
+      "label": "View shift report",
+      "desc": "See the branch payment-method totals for a business day on the POS"
     }
   },
   "reservations": {
@@ -1148,42 +1241,21 @@
     "browseTitle": "Add from catalog",
     "browseSearch": "Search catalog…",
     "browseEmpty": "No matching catalog items.",
-    "browseReviewed": "Allergen-reviewed",
     "adopt": "Adopt",
     "inYourInventory": "In your inventory",
     "adoptTitle": "Adopt from catalog",
-    "adoptInheritedTitle": "Inherited from catalog",
     "adoptBaseUnitPlaceholder": "Select a base unit…",
     "adoptSubmit": "Adopt",
     "adoptSuccess": "Added to your inventory.",
     "adoptValidBaseUnit": "Select a base unit.",
     "adoptAlreadyAdopted": "This item is already in your inventory.",
     "adoptNotAdoptable": "This catalog item is no longer available. The list has been refreshed.",
-    "allergensTitle": "Allergens",
-    "allergensNone": "No allergens",
-    "allergensUnverified": "Some ingredients aren't allergen-reviewed yet — this list may be incomplete.",
     "hideRecipeLabel": "Hide recipe from customers",
-    "hideRecipeDesc": "Customers won't see the ingredient list. The allergen summary stays visible.",
+    "hideRecipeDesc": "Customers won't see the ingredient list.",
     "hideRecipeSaved": "Recipe visibility updated",
     "customerPreviewTitle": "What customers see",
-    "customerPreviewHidden": "Ingredient list hidden. Allergens are still shown to customers.",
+    "customerPreviewHidden": "Ingredient list hidden from customers.",
     "customerPreviewEmpty": "No ingredients to show yet.",
-    "allergen": {
-      "cereals-gluten": "Cereals containing gluten",
-      "crustaceans": "Crustaceans",
-      "eggs": "Eggs",
-      "fish": "Fish",
-      "peanuts": "Peanuts",
-      "soybeans": "Soybeans",
-      "milk": "Milk",
-      "nuts": "Tree nuts",
-      "celery": "Celery",
-      "mustard": "Mustard",
-      "sesame": "Sesame seeds",
-      "sulphites": "Sulphur dioxide and sulphites",
-      "lupin": "Lupin",
-      "molluscs": "Molluscs"
-    },
     "page": "Page {page}",
     "prev": "Previous",
     "next": "Next",
@@ -1795,12 +1867,6 @@
     "invalidCredentials": "Invalid email or password"
   },
   "platformCatalog": {
-    "reviewed": "Allergen tags reviewed",
-    "reviewedDesc": "Allergen tags reviewed — dishes using this item can show verified allergens.",
-    "filterReviewed": "Review",
-    "reviewedAll": "All",
-    "reviewedPending": "Pending review",
-    "reviewedDone": "Reviewed",
     "title": "Catalog",
     "newItem": "New item",
     "searchPlaceholder": "Search name or slug…",
@@ -1810,14 +1876,12 @@
     "active": "Active",
     "archived": "Item archived",
     "name": "Name",
-    "allergens": "Allergens",
     "status": "Status",
     "empty": "No catalog items.",
     "slug": "Slug",
     "validSlug": "Slug is required.",
     "validNames": "All three names are required.",
     "noCategory": "No category",
-    "noAllergens": "No allergens defined.",
     "createTitle": "New catalog item",
     "editTitle": "Edit catalog item",
     "created": "Item created",

@@ -23,10 +23,7 @@ class FakeCatalog {
     for (const i of inputs) {
       const catalogName = i.catalogItemId ? this.names[i.catalogItemId] ?? null : null;
       out.set(i.key, {
-        allergenSlugs: [],
-        allergenSource: 'none',
         catalogSourced: i.catalogItemId !== null,
-        verified: false,
         catalogName,
       });
     }

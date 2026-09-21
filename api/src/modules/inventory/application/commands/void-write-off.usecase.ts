@@ -25,6 +25,11 @@ export interface VoidWriteOffInput {
  * emits CONSUMPTION_REVERSAL) and stamp voidedAt/voidedByUserId. Rejects a
  * second void with WRITE_OFF_ALREADY_VOIDED; the underlying reversal is
  * inherently idempotent.
+ *
+ * Consumption is keyed per LINE (see CreateWriteOffUseCase), so the reversal
+ * walks the lines. The write-off id is reversed too: rows written before the
+ * per-line ref used it, and `reverse` is a no-op when nothing matches, so this
+ * stays correct for both.
  */
 @Injectable()
 export class VoidWriteOffUseCase implements UseCase<VoidWriteOffInput, WriteOff> {
@@ -51,12 +56,14 @@ export class VoidWriteOffUseCase implements UseCase<VoidWriteOffInput, WriteOff>
     // re-void never even reaches the reversal.
     writeOff.void(input.actorUserId);
 
-    await this.consumption.reverse({
-      restaurantId: input.restaurantId,
-      refType: WRITE_OFF_REF_TYPE,
-      refId: writeOff.id,
-      createdByUserId: input.actorUserId,
-    });
+    for (const refId of [writeOff.id, ...writeOff.lines.map((l) => l.id)]) {
+      await this.consumption.reverse({
+        restaurantId: input.restaurantId,
+        refType: WRITE_OFF_REF_TYPE,
+        refId,
+        createdByUserId: input.actorUserId,
+      });
+    }
     await this.writeOffs.update(writeOff);
     await this.events.publishFromAggregate(writeOff);
     return writeOff;

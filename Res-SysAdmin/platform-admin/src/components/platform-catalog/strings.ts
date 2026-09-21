@@ -26,11 +26,7 @@ export const STRINGS = {
   colSlug: "Slug",
   colName: "Name",
   colCategory: "Category",
-  colAllergens: "Allergens",
-  colReviewed: "Reviewed",
   colStatus: "Status",
-  reviewedYes: "Reviewed",
-  reviewedNo: "Unreviewed",
 
   // Import panel
   importTitle: "Import catalog items",
@@ -91,8 +87,6 @@ export const TEMPLATE_COLUMNS = [
   "nameRu",
   "nameEn",
   "category",
-  "allergens",
-  "allergensReviewed",
   "status",
 ] as const;
 
@@ -104,7 +98,7 @@ export const TEMPLATE_COLUMNS = [
 export function buildTemplateCsv(): string {
   const header = TEMPLATE_COLUMNS.join(",");
   const example =
-    "# khorovats,Խորոved,Хоровац,Grilled pork,mains,gluten;garlic,true,ACTIVE";
+    "# khorovats,Խորոved,Хоровац,Grilled pork,mains,ACTIVE";
   return `${header}\n${example}\n`;
 }
 

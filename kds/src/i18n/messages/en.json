@@ -36,7 +36,8 @@
     "checking": "Checking…",
     "wrongPin": "Wrong PIN. Try again.",
     "locked": "Too many attempts. Locked — try again in {seconds}s.",
-    "mustRotate": "Your PIN was reset. Please set a new one soon."
+    "mustRotate": "Your PIN was reset. Please set a new one soon.",
+    "cancel": "Cancel"
   },
   "access": {
     "noAccessTitle": "No kitchen access",
@@ -119,7 +120,8 @@
     "sound": "Sound",
     "muted": "Muted",
     "mute": "Mute new-ticket sound",
-    "unmute": "Unmute new-ticket sound"
+    "unmute": "Unmute new-ticket sound",
+    "switchUser": "Change account"
   },
   "connection": {
     "connected": "Connected",
@@ -137,25 +139,5 @@
     "hubUrlLabel": "Hub address (LAN)",
     "hubUrlPlaceholder": "http://192.168.1.50:3001",
     "hubUrlHint": "The hub's address on the local network. All tickets and updates will come from it."
-  },
-  "allergens": {
-    "unverified": "+ unverified",
-    "none": "No allergens",
-    "label": {
-      "cereals-gluten": "Cereals containing gluten",
-      "crustaceans": "Crustaceans",
-      "eggs": "Eggs",
-      "fish": "Fish",
-      "peanuts": "Peanuts",
-      "soybeans": "Soybeans",
-      "milk": "Milk",
-      "nuts": "Tree nuts",
-      "celery": "Celery",
-      "mustard": "Mustard",
-      "sesame": "Sesame seeds",
-      "sulphites": "Sulphur dioxide and sulphites",
-      "lupin": "Lupin",
-      "molluscs": "Molluscs"
-    }
   }
 }

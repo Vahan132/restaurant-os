@@ -17,7 +17,5 @@ export interface CatalogBrowseItemResponse {
   categoryId: string | null;
   /** @nullable */
   category: CatalogBrowseItemResponseCategory;
-  allergenSlugs: string[];
-  allergensReviewed: boolean;
   status: CatalogBrowseItemResponseStatus;
 }

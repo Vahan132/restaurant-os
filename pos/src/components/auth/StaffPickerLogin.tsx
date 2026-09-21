@@ -42,9 +42,20 @@ const PIN_LENGTH = 6;
  * Lockout/rate-limit: when the backend reports a locked/rate-limited PIN we show
  * a clear locked state with a live countdown and disable the keypad, so the UI
  * never hammers the endpoint.
+ *
+ * Reused for the mid-shift handover overlay ("Change account"): with `onSwitched`
+ * the successful login swaps the session in place instead of navigating home, and
+ * `onCancel` grows a dismiss button so the current user stays signed in.
  */
-export function StaffPickerLogin() {
+export function StaffPickerLogin({
+  onSwitched,
+  onCancel,
+}: {
+  onSwitched?: () => void;
+  onCancel?: () => void;
+} = {}) {
   const t = useTranslations('staffLogin');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const { secret } = useDeviceSecret();
   const deviceSecret = secret ?? '';
@@ -66,9 +77,15 @@ export function StaffPickerLogin() {
     (branchId: string) => {
       // Bind the terminal to the device's branch, then enter the app.
       if (branchId) setActiveBranch(branchId);
+      // Handover: the session is already swapped, so stay on the current screen
+      // rather than bouncing the new user back to table-select.
+      if (onSwitched) {
+        onSwitched();
+        return;
+      }
       router.replace('/');
     },
-    [router, setActiveBranch],
+    [onSwitched, router, setActiveBranch],
   );
 
   // Step 2 — PIN entry for the chosen staff member.
@@ -100,7 +117,19 @@ export function StaffPickerLogin() {
             <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
             <p className="mt-2 text-base text-gray-500">{t('subtitle')}</p>
           </div>
-          <EndpointSettings variant="gear" />
+          {/* Endpoint setup belongs to the unauthenticated sign-in screen only —
+              a mid-shift handover must not let anyone repoint the terminal. */}
+          {onCancel ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="min-h-tap shrink-0 rounded-xl border border-gray-300 bg-white px-5 text-base font-semibold text-gray-700 active:scale-95"
+            >
+              {tCommon('cancel')}
+            </button>
+          ) : (
+            <EndpointSettings variant="gear" />
+          )}
         </div>
 
         <div className="mt-8">

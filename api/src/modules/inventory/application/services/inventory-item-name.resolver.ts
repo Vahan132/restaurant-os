@@ -31,11 +31,7 @@ export class InventoryItemNameResolver {
     items: readonly ItemNameSource[],
   ): Promise<Map<string, CatalogLocalizedName | null>> {
     const effective = await this.catalog.resolveMany(
-      items.map((i) => ({
-        key: i.id,
-        catalogItemId: i.catalogItemId,
-        allergenOverride: null,
-      })),
+      items.map((i) => ({ key: i.id, catalogItemId: i.catalogItemId })),
     );
     const out = new Map<string, CatalogLocalizedName | null>();
     for (const i of items) {

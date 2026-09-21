@@ -26,7 +26,7 @@ export interface RecipeDetail {
   recipe: Recipe;
   estimatedUnitCostAmount: number;
   warnings: RecipeWarning[];
-  /** CATALOG-3: two projections + honest allergen rollup (one resolver). */
+  /** CATALOG-3: the customer + operational projections (one resolver). */
   projection: DishProjection;
 }
 

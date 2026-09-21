@@ -580,7 +580,7 @@ model MenuItem {
   prepTimeMinutes    Int?
   status             MenuStatus         @default(ACTIVE)
   availability       ItemAvailability   @default(AVAILABLE)
-  // CATALOG-3 §9: hides the customer ingredient list (NOT the allergen summary).
+  // CATALOG-3 §9: hides the customer ingredient list.
   // Additive, default false; safe on existing rows.
   hideRecipe         Boolean            @default(false)
   // FISCAL-0: the dish-level SRC ATG classifier code for fiscalization. The ATG
@@ -1403,12 +1403,9 @@ model InventoryItem {
   // platform catalog editor has NO ORM path back to tenant inventory ("curate the
   // template, never inspect the tenants"). null = a custom, uncatalogued item;
   // set = adopted from the catalog (always persisted when catalog-sourced).
-  // Allergens resolve BY REFERENCE (ADR §3): override → catalog (via
-  // catalogItemId) → null; the catalog stays the authority — NO denormalized copy
-  // is stored here. `allergenOverride`: null = defer to the catalog; a JSON array
-  // of allergen slugs = authoritative override (may be [] to assert "no allergens").
+  // Catalog values resolve BY REFERENCE (ADR §3) through catalogItemId; the
+  // catalog stays the authority — NO denormalized copy is stored here.
   catalogItemId    String?
-  allergenOverride Json?    @map("allergen_override")
 
   @@unique([restaurantId, branchId, sku])
   @@index([restaurantId])
@@ -2049,31 +2046,13 @@ model ModifierConsumption {
   @@map("inventory_modifier_consumptions")
 }
 
-// ── Platform catalog / allergens (CATALOG-1, ADR §2–§4, §10) ─────────────────
+// ── Platform catalog (CATALOG-1, ADR §2–§4, §10) ─────────────────────────────
 //   Platform-CURATED, multilingual stock-item templates a tenant adopts from
-//   (InventoryItem.catalogItemId), so a central allergen correction reaches
-//   every adopter by REFERENCE. These tables are PLATFORM-OWNED: no org/restaurant/
-//   branch column, global slug @unique — mirroring the consumer AttributeCategory/
-//   Value taxonomy. There is deliberately NO relation from a CatalogItem back to
+//   (InventoryItem.catalogItemId), so a central correction reaches every adopter
+//   by REFERENCE. These tables are PLATFORM-OWNED: no org/restaurant/branch
+//   column, global slug @unique — mirroring the consumer AttributeCategory/Value
+//   taxonomy. There is deliberately NO relation from a CatalogItem back to
 //   InventoryItem: the catalog cannot enumerate its adopters (ADR §4 boundary).
-
-// Platform-defined allergen taxonomy — a fixed, seeded reference set (the EU-14).
-// CatalogItems tag against it many-to-many. Not tenant-editable.
-model Allergen {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  labelHy   String
-  labelRu   String
-  labelEn   String
-  position  Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  catalogItems CatalogItemAllergen[]
-
-  @@index([position])
-  @@map("catalog_allergens")
-}
 
 // Platform-defined catalog category (multilingual). Small taxonomy the curator
 // groups CatalogItems under (produce, dairy, meat, pantry…). Not tenant-scoped.
@@ -2103,8 +2082,7 @@ enum CatalogItemStatus {
 
 // The curated template a tenant InventoryItem adopts by reference (ADR §2). Carries
 // the multilingual name (operational InventoryItem.name is single-locale, so the
-// translations must live here) + allergen tag set + category. Allergens are
-// tenant-overridable on the InventoryItem (ADR §3, §10).
+// translations must live here) + category.
 model CatalogItem {
   id         String            @id @default(cuid())
   slug       String            @unique
@@ -2115,35 +2093,15 @@ model CatalogItem {
   // CATALOG-2 archive (soft-delete): a hard delete would strand tenant references
   // (catalogItemId is a plain scalar with no FK). Curation archives instead.
   status     CatalogItemStatus @default(ACTIVE)
-  // CATALOG-3 §Locked-4: platform support flips this true once allergen tagging is complete.
-  // Un-reviewed items count as UNVERIFIED at resolve time (verified = catalogSourced && allergensReviewed).
-  allergensReviewed Boolean           @default(false)
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
   deletedAt  DateTime?
 
   category  CatalogCategory?      @relation(fields: [categoryId], references: [id])
-  allergens CatalogItemAllergen[]
 
   @@index([categoryId])
   @@index([status])
   @@map("catalog_items")
-}
-
-// Join: a CatalogItem's allergen tag set (many-to-many). Cascade-deletes with
-// either side. The authoritative allergen set for an adopted item resolves through
-// here (unless the tenant sets InventoryItem.allergenOverride).
-model CatalogItemAllergen {
-  catalogItemId String
-  allergenId    String
-  createdAt     DateTime @default(now())
-
-  catalogItem CatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
-  allergen    Allergen    @relation(fields: [allergenId], references: [id], onDelete: Cascade)
-
-  @@id([catalogItemId, allergenId])
-  @@index([allergenId])
-  @@map("catalog_item_allergens")
 }
 
 // ── Stock write-offs (INV-4) — reason-coded losses + staff meals ─────────────

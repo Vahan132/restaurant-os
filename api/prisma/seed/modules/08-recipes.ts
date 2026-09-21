@@ -52,7 +52,7 @@ export async function seedRecipes(ctx: SeedContext, state: SeedState): Promise<v
         });
       }
 
-      // CATALOG-3/4: modifier-option-triggered inventory draws (allergen walk roots).
+      // CATALOG-3/4: modifier-option-triggered inventory draws.
       for (const mc of dish.modifierConsumptions ?? []) {
         const cid = seedId(`rmc:${bk}:${dish.slug}:${mc.group}:${mc.option}:${mc.item}`);
         const modifierOptionId = state.modifierOptionIds[bk][`${mc.group}:${mc.option}`];

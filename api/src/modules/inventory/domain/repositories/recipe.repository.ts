@@ -30,7 +30,7 @@ export interface RecipeRepository {
   findByMenuItemId(restaurantId: string, menuItemId: string): Promise<Recipe | null>;
   /**
    * Batch analog of findByMenuItemId (restaurant-wide, NOT branch-scoped) for the
-   * CATALOG-4 order/board allergen rollup — one query for many menu items.
+   * CATALOG-4 order/board rollup — one query for many menu items.
    */
   findByMenuItemIds(restaurantId: string, menuItemIds: readonly string[]): Promise<Recipe[]>;
   create(recipe: Recipe): Promise<void>;

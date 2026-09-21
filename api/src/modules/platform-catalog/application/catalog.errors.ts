@@ -11,13 +11,6 @@ export const CatalogSlugAlreadyExists = () =>
     message: 'A catalog item with this slug already exists.',
   });
 
-export const UnknownAllergenTags = (slugs: string[]) =>
-  new BadRequestException({
-    code: 'UNKNOWN_ALLERGEN_TAGS',
-    message: `Unknown allergen tags: ${slugs.join(', ')}.`,
-    details: { slugs },
-  });
-
 export const UnknownCatalogCategory = () =>
   new BadRequestException({
     code: 'UNKNOWN_CATALOG_CATEGORY',

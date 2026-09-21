@@ -13,8 +13,4 @@ export interface UpdateCatalogItemDto {
   nameEn?: string;
   /** @nullable */
   categoryId?: UpdateCatalogItemDtoCategoryId;
-  /** Replaces the full tag set. */
-  allergenSlugs?: string[];
-  /** Support tagging gate — flip true once allergen tagging is complete (omitted = unchanged). */
-  allergensReviewed?: boolean;
 }

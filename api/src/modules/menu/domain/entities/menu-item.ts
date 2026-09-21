@@ -31,7 +31,7 @@ export interface MenuItemProps {
   prepTimeMinutes: number | null;
   status: MenuStatus;
   availability: ItemAvailability;
-  /** CATALOG-3 §9: hides the customer ingredient list, not the allergen summary. */
+  /** CATALOG-3 §9: hides the customer ingredient list. */
   hideRecipe: boolean;
   /**
    * FISCAL-0/ADGCODE-UI: the dish-level SRC ATG classifier code for fiscalization.

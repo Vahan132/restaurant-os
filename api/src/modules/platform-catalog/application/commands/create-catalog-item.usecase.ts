@@ -11,7 +11,7 @@ import {
   CatalogTaxonomyReader,
 } from '../../domain/repositories/catalog-taxonomy.reader';
 import { CatalogSlugAlreadyExists } from '../catalog.errors';
-import { assertAllergenTagsKnown, assertCategoryKnown } from '../validate-catalog-write';
+import { assertCategoryKnown } from '../validate-catalog-write';
 
 export interface CreateCatalogItemInput {
   slug: string;
@@ -19,8 +19,6 @@ export interface CreateCatalogItemInput {
   nameRu: string;
   nameEn: string;
   categoryId: string | null;
-  allergenSlugs: string[];
-  allergensReviewed?: boolean;
 }
 
 /** Create a platform CatalogItem (runtime id via cuid2 IdGenerator). */
@@ -37,7 +35,6 @@ export class CreateCatalogItemUseCase implements UseCase<CreateCatalogItemInput,
     if (await this.repo.existsBySlug(slug)) {
       throw CatalogSlugAlreadyExists();
     }
-    await assertAllergenTagsKnown(this.taxonomy, input.allergenSlugs);
     await assertCategoryKnown(this.taxonomy, input.categoryId);
 
     const item = CatalogItem.create({
@@ -47,8 +44,6 @@ export class CreateCatalogItemUseCase implements UseCase<CreateCatalogItemInput,
       nameRu: input.nameRu,
       nameEn: input.nameEn,
       categoryId: input.categoryId,
-      allergenSlugs: input.allergenSlugs,
-      allergensReviewed: input.allergensReviewed ?? false,
     });
     await this.repo.create(item);
     return item;

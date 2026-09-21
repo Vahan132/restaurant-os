@@ -60,6 +60,15 @@ export interface CreateWriteOffInput {
  * direct consume; DISH: recipe explosion via the reusable RecipeConsumptionService),
  * keyed by refType=WRITE_OFF so a later void reverses it. Never throws on
  * insufficient stock (warn-don't-block); negatives surface via an event.
+ *
+ * The consumption ref is the LINE id, not the write-off id. The ledger's
+ * idempotency guard keys on (refType, refId, itemId); with the write-off id as
+ * the ref, a second line touching the same item — two ITEM lines for one
+ * ingredient, or an ITEM line plus a DISH line whose recipe uses it — looked
+ * like a re-fire and was silently skipped, so that quantity never left stock.
+ * Per-line refs keep each line's draw independent; VoidWriteOffUseCase reverses
+ * every line's ref (and the legacy write-off-id ref, for rows written before
+ * this change).
  */
 @Injectable()
 export class CreateWriteOffUseCase implements UseCase<CreateWriteOffInput, WriteOff> {
@@ -85,6 +94,9 @@ export class CreateWriteOffUseCase implements UseCase<CreateWriteOffInput, Write
     const lines: WriteOffLine[] = [];
 
     for (const line of input.lines) {
+      // Allocated up-front: it is this line's consumption ref, so it must exist
+      // before the draw, not just when the line row is built.
+      const lineId = this.ids.generate();
       if (line.kind === WriteOffLineKind.ITEM) {
         // §5 cross-branch: load branch-AGNOSTIC so we can inspect the item's branch.
         const item = await this.items.findInRestaurant(restaurantId, line.itemId);
@@ -102,7 +114,7 @@ export class CreateWriteOffUseCase implements UseCase<CreateWriteOffInput, Write
           type: StockMovementType.WRITE_OFF_OUT,
           reason: input.reason,
           refType: WRITE_OFF_REF_TYPE,
-          refId: writeOffId,
+          refId: lineId,
           createdByUserId: input.actorUserId,
           occurredAt,
         });
@@ -111,7 +123,7 @@ export class CreateWriteOffUseCase implements UseCase<CreateWriteOffInput, Write
         }
         lines.push(
           new WriteOffLine({
-            id: this.ids.generate(),
+            id: lineId,
             branchId: item.branchId,
             kind: WriteOffLineKind.ITEM,
             itemId: line.itemId,
@@ -143,7 +155,7 @@ export class CreateWriteOffUseCase implements UseCase<CreateWriteOffInput, Write
           type: StockMovementType.WRITE_OFF_OUT,
           reason: input.reason,
           refType: WRITE_OFF_REF_TYPE,
-          refId: writeOffId,
+          refId: lineId,
           modifierOptionIds: line.modifierOptionIds,
           createdByUserId: input.actorUserId,
         });
@@ -152,7 +164,7 @@ export class CreateWriteOffUseCase implements UseCase<CreateWriteOffInput, Write
         }
         lines.push(
           new WriteOffLine({
-            id: this.ids.generate(),
+            id: lineId,
             branchId,
             kind: WriteOffLineKind.DISH,
             itemId: null,

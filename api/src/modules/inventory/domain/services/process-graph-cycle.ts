@@ -14,7 +14,7 @@
  *
  * The walk carries a `visited` set, so it terminates even if the existing graph
  * already contains a cycle (bad data from a path that skipped the guard). This is
- * the same downward traversal CATALOG-3's allergen flatten will reuse.
+ * the same downward traversal CATALOG-3's component flatten will reuse.
  */
 
 /** One process's edges as item ids (branch-scoped, soft-deleted excluded). */

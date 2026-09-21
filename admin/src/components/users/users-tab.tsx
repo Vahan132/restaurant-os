@@ -20,6 +20,7 @@ import { useConfirm } from '@/components/ui/use-confirm';
 import { getErrorMessage } from '@/lib/api-error';
 import { usePermission } from '@/lib/auth/use-permission';
 import { PERMISSIONS } from '@/lib/permissions';
+import { useRoleLabel } from '@/lib/users/role-label';
 import {
   useCurrentUser,
   usePaginatedUsers,
@@ -56,10 +57,11 @@ export function UsersTab() {
   const { users, pagination, isLoading, isFetching } = usePaginatedUsers(params);
   const { roles } = useRoles();
 
+  const roleLabel = useRoleLabel();
   const roleName = useMemo(() => {
-    const map = new Map(roles.map((r) => [r.id, r.name]));
+    const map = new Map(roles.map((r) => [r.id, roleLabel(r)]));
     return (id: string) => map.get(id) ?? id;
-  }, [roles]);
+  }, [roles, roleLabel]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserResponse | null>(null);

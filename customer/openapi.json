@@ -7077,7 +7077,7 @@
     "/inventory/recipes/{id}": {
       "get": {
         "operationId": "RecipesController_get",
-        "summary": "Get a recipe with lines, modifier consumptions, estimate, warnings, projections + allergen rollup.",
+        "summary": "Get a recipe with lines, modifier consumptions, estimate, warnings, projections.",
         "parameters": [
           {
             "name": "id",
@@ -12796,21 +12796,6 @@
               "default": false,
               "type": "boolean"
             }
-          },
-          {
-            "name": "reviewed",
-            "required": false,
-            "in": "query",
-            "description": "Allergen-review queue filter. unreviewed = the support work list.",
-            "schema": {
-              "default": "all",
-              "enum": [
-                "all",
-                "reviewed",
-                "unreviewed"
-              ],
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -13029,7 +13014,7 @@
     "/platform/catalog-taxonomy": {
       "get": {
         "operationId": "PlatformCatalogTaxonomyController_get",
-        "summary": "List the allergen + category taxonomy for the picker.",
+        "summary": "List the category taxonomy for the picker.",
         "parameters": [],
         "responses": {
           "200": {
@@ -16471,7 +16456,7 @@
           },
           "hideRecipe": {
             "type": "boolean",
-            "description": "Hides the customer ingredient list, not the allergen summary."
+            "description": "Hides the customer ingredient list."
           },
           "adgCode": {
             "type": "string",
@@ -16780,7 +16765,7 @@
           },
           "hideRecipe": {
             "type": "boolean",
-            "description": "Hides the customer ingredient list, not the allergen summary."
+            "description": "Hides the customer ingredient list."
           },
           "adgCode": {
             "type": "string",
@@ -16963,7 +16948,7 @@
           },
           "hideRecipe": {
             "type": "boolean",
-            "description": "CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible)."
+            "description": "CATALOG-3: hide the customer ingredient list for this dish."
           },
           "adgCode": {
             "type": "string",
@@ -18048,17 +18033,6 @@
             "items": {
               "$ref": "#/components/schemas/OrderItemModifierResponse"
             }
-          },
-          "allergens": {
-            "description": "CATALOG-4: allergen slugs as ordered (dish + selected modifiers). Present on order reads.",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "allergensComplete": {
-            "type": "boolean",
-            "description": "False when any contributing ingredient is unverified — never a clean claim."
           }
         },
         "required": [
@@ -19457,15 +19431,6 @@
               }
             ]
           },
-          "allergenSlugs": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "allergensReviewed": {
-            "type": "boolean"
-          },
           "status": {
             "type": "string",
             "enum": [
@@ -19480,8 +19445,6 @@
           "name",
           "categoryId",
           "category",
-          "allergenSlugs",
-          "allergensReviewed",
           "status"
         ]
       },
@@ -20514,34 +20477,6 @@
           "unit"
         ]
       },
-      "DishAllergensResponse": {
-        "type": "object",
-        "properties": {
-          "slugs": {
-            "description": "Union of effective allergen slugs over all leaves.",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "complete": {
-            "type": "boolean",
-            "description": "True only when every contributing leaf is verified (catalogSourced && reviewed). Never inferred from an empty slugs array (empty = known-none, not unknown)."
-          },
-          "unverifiedItemIds": {
-            "description": "Leaf item ids that made the profile incomplete.",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "slugs",
-          "complete",
-          "unverifiedItemIds"
-        ]
-      },
       "RecipeResponse": {
         "type": "object",
         "properties": {
@@ -20585,7 +20520,7 @@
           },
           "hideRecipe": {
             "type": "boolean",
-            "description": "Hides the customer ingredient list, never the allergens (ADR §9)."
+            "description": "Hides the customer ingredient list (ADR §9)."
           },
           "customerIngredients": {
             "nullable": true,
@@ -20600,9 +20535,6 @@
             "items": {
               "$ref": "#/components/schemas/OperationalIngredientResponse"
             }
-          },
-          "allergens": {
-            "$ref": "#/components/schemas/DishAllergensResponse"
           }
         },
         "required": [
@@ -20617,8 +20549,7 @@
           "warnings",
           "hideRecipe",
           "customerIngredients",
-          "operationalIngredients",
-          "allergens"
+          "operationalIngredients"
         ]
       },
       "RecipeLineDto": {
@@ -22366,17 +22297,6 @@
           "delayed": {
             "type": "boolean",
             "description": "elapsed > prepTime*60 (or > 900s when no estimate)."
-          },
-          "allergens": {
-            "description": "CATALOG-4: allergen slugs for this line as ordered (dish + selected modifiers).",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "allergensComplete": {
-            "type": "boolean",
-            "description": "False when any contributing ingredient is unverified — show as \"+ unverified\", never a clean claim."
           }
         },
         "required": [
@@ -22389,9 +22309,7 @@
           "sentToKitchenAt",
           "prepTimeMinutes",
           "elapsedSeconds",
-          "delayed",
-          "allergens",
-          "allergensComplete"
+          "delayed"
         ]
       },
       "KdsTicketResponse": {
@@ -24621,16 +24539,6 @@
             "type": "object",
             "nullable": true
           },
-          "allergenSlugs": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "allergensReviewed": {
-            "type": "boolean",
-            "description": "Support-set gate; dishes show verified allergens only when true."
-          },
           "status": {
             "type": "string",
             "enum": [
@@ -24652,8 +24560,6 @@
           "nameRu",
           "nameEn",
           "categoryId",
-          "allergenSlugs",
-          "allergensReviewed",
           "status",
           "createdAt",
           "updatedAt"
@@ -24679,17 +24585,6 @@
             "type": "object",
             "nullable": true,
             "description": "Catalog category id, or null."
-          },
-          "allergenSlugs": {
-            "description": "Allergen slugs from the taxonomy.",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "allergensReviewed": {
-            "type": "boolean",
-            "description": "Support tagging gate — dishes show verified allergens only when true. Defaults false."
           }
         },
         "required": [
@@ -24871,50 +24766,8 @@
           "categoryId": {
             "type": "object",
             "nullable": true
-          },
-          "allergenSlugs": {
-            "description": "Replaces the full tag set.",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "allergensReviewed": {
-            "type": "boolean",
-            "description": "Support tagging gate — flip true once allergen tagging is complete (omitted = unchanged)."
           }
         }
-      },
-      "AllergenResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "slug": {
-            "type": "string"
-          },
-          "labelHy": {
-            "type": "string"
-          },
-          "labelRu": {
-            "type": "string"
-          },
-          "labelEn": {
-            "type": "string"
-          },
-          "position": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "id",
-          "slug",
-          "labelHy",
-          "labelRu",
-          "labelEn",
-          "position"
-        ]
       },
       "CatalogCategoryResponse": {
         "type": "object",
@@ -24950,12 +24803,6 @@
       "CatalogTaxonomyResponse": {
         "type": "object",
         "properties": {
-          "allergens": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AllergenResponse"
-            }
-          },
           "categories": {
             "type": "array",
             "items": {
@@ -24964,7 +24811,6 @@
           }
         },
         "required": [
-          "allergens",
           "categories"
         ]
       },

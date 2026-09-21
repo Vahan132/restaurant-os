@@ -46,20 +46,6 @@ export class OperationalIngredientResponse {
   unit!: string;
 }
 
-/** Honest dish allergen rollup (CATALOG-3): union + completeness + unverified leaves. */
-export class DishAllergensResponse {
-  @ApiProperty({ type: [String], description: 'Union of effective allergen slugs over all leaves.' })
-  slugs!: string[];
-  @ApiProperty({
-    description:
-      'True only when every contributing leaf is verified (catalogSourced && reviewed). ' +
-      'Never inferred from an empty slugs array (empty = known-none, not unknown).',
-  })
-  complete!: boolean;
-  @ApiProperty({ type: [String], description: 'Leaf item ids that made the profile incomplete.' })
-  unverifiedItemIds!: string[];
-}
-
 /** Full recipe view: lines + modifier consumptions + estimate + warnings (§3,§6). */
 export class RecipeResponse {
   @ApiProperty() id!: string;
@@ -75,8 +61,8 @@ export class RecipeResponse {
   estimatedUnitCost_amount!: number;
   @ApiProperty({ type: [RecipeWarningResponse] }) warnings!: RecipeWarningResponse[];
 
-  // ── CATALOG-3: hideRecipe + dual projections + allergen rollup ───────────────
-  @ApiProperty({ description: 'Hides the customer ingredient list, never the allergens (ADR §9).' })
+  // ── CATALOG-3: hideRecipe + dual projections ────────────────────────────────
+  @ApiProperty({ description: 'Hides the customer ingredient list (ADR §9).' })
   hideRecipe!: boolean;
   @ApiProperty({
     type: [CustomerIngredientResponse],
@@ -86,8 +72,6 @@ export class RecipeResponse {
   customerIngredients!: CustomerIngredientResponse[] | null;
   @ApiProperty({ type: [OperationalIngredientResponse] })
   operationalIngredients!: OperationalIngredientResponse[];
-  @ApiProperty({ type: DishAllergensResponse })
-  allergens!: DishAllergensResponse;
 
   static from(detail: RecipeDetail): RecipeResponse {
     const p: DishProjection = detail.projection;
@@ -98,7 +82,6 @@ export class RecipeResponse {
       hideRecipe: p.hideRecipe,
       customerIngredients: p.customerIngredients,
       operationalIngredients: p.operationalIngredients,
-      allergens: p.allergens,
     };
   }
 
@@ -111,7 +94,6 @@ export class RecipeResponse {
     | 'hideRecipe'
     | 'customerIngredients'
     | 'operationalIngredients'
-    | 'allergens'
   > {
     return {
       id: r.id,

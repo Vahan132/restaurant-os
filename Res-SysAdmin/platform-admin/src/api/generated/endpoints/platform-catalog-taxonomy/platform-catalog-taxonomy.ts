@@ -31,7 +31,7 @@ import type { ErrorType } from '../../../../lib/api-client';
 
 
 /**
- * @summary List the allergen + category taxonomy for the picker.
+ * @summary List the category taxonomy for the picker.
  */
 export const platformCatalogTaxonomyControllerGet = (
     
@@ -102,7 +102,7 @@ export function usePlatformCatalogTaxonomyControllerGet<TData = Awaited<ReturnTy
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
 /**
- * @summary List the allergen + category taxonomy for the picker.
+ * @summary List the category taxonomy for the picker.
  */
 
 export function usePlatformCatalogTaxonomyControllerGet<TData = Awaited<ReturnType<typeof platformCatalogTaxonomyControllerGet>>, TError = ErrorType<unknown>>(

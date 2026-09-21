@@ -121,7 +121,7 @@ export class UpdateMenuItemDto extends NameDescriptionI18nDto {
 
   @ApiPropertyOptional({
     description:
-      'CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible).',
+      'CATALOG-3: hide the customer ingredient list for this dish.',
   })
   @IsOptional()
   @IsBoolean()

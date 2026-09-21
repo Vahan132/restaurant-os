@@ -257,7 +257,7 @@ export const useRecipesControllerCreate = <TError = void, TContext = unknown>(
   return useMutation(mutationOptions, queryClient);
 };
 /**
- * @summary Get a recipe with lines, modifier consumptions, estimate, warnings, projections + allergen rollup.
+ * @summary Get a recipe with lines, modifier consumptions, estimate, warnings, projections.
  */
 export const recipesControllerGet = (
   id: string,
@@ -369,7 +369,7 @@ export function useRecipesControllerGet<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
 /**
- * @summary Get a recipe with lines, modifier consumptions, estimate, warnings, projections + allergen rollup.
+ * @summary Get a recipe with lines, modifier consumptions, estimate, warnings, projections.
  */
 
 export function useRecipesControllerGet<

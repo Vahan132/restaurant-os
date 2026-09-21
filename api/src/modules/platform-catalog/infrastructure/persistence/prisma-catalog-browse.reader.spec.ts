@@ -53,8 +53,6 @@ const row = (over: Record<string, unknown> = {}) => ({
   nameEn: 'Tomato',
   categoryId: null,
   status: 'ACTIVE',
-  allergensReviewed: false,
-  allergens: [],
   category: null,
   ...over,
 });
@@ -83,15 +81,13 @@ describe('PrismaCatalogBrowseReader', () => {
     expect(calls.findMany!.where.OR).toBeUndefined();
   });
 
-  it('maps a row to a browse view (sorted allergens, localized category, status)', async () => {
+  it('maps a row to a browse view (localized category, status)', async () => {
     const { prisma } = fakePrisma(
       [],
       0,
       row({
         categoryId: 'c1',
-        allergensReviewed: true,
         status: 'ARCHIVED',
-        allergens: [{ allergen: { slug: 'milk' } }, { allergen: { slug: 'gluten' } }],
         category: { id: 'c1', slug: 'produce', labelHy: 'x', labelRu: 'y', labelEn: 'z' },
       }),
     );
@@ -99,7 +95,6 @@ describe('PrismaCatalogBrowseReader', () => {
     const view = await reader.findById('i1');
     expect(view).not.toBeNull();
     expect(view!.status).toBe(CatalogItemStatus.ARCHIVED);
-    expect(view!.allergenSlugs).toEqual(['gluten', 'milk']);
     expect(view!.category).toEqual({
       id: 'c1',
       slug: 'produce',

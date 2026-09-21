@@ -9,7 +9,6 @@ import {
   type CatalogBrowseItemResponse,
   type InventoryCategoryResponse,
 } from '@/api/generated/model';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field, inputClass } from '@/components/ui/form';
 import { Modal } from '@/components/ui/modal';
@@ -32,10 +31,8 @@ const BASE_UNITS = [
 
 /**
  * Operational-only adopt modal (PLATCAT-ADOPT-2). No name input: adopted items
- * carry no local name and display the live catalog name. Shows the inherited
- * catalog allergens read-only so the owner sees what resolves by
- * reference, then collects base unit (required, no default) + optional inventory
- * category / SKU / alternate units.
+ * carry no local name and display the live catalog name. Collects base unit
+ * (required, no default) + optional inventory category / SKU / alternate units.
  */
 export function AdoptItemModal({
   item,
@@ -146,27 +143,6 @@ export function AdoptItemModal({
             {pickName(item.name, locale)}
           </div>
           <div className="text-xs text-gray-400">{item.slug}</div>
-        </div>
-
-        {/* Read-only, inherited-by-reference from the catalog */}
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm">
-          <div className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
-            {t('adoptInheritedTitle')}
-          </div>
-          <div className="flex items-start justify-between gap-3">
-            <span className="text-gray-500">{t('allergensTitle')}</span>
-            <div className="flex flex-1 flex-wrap justify-end gap-1">
-              {item.allergenSlugs.length === 0 ? (
-                <span className="text-gray-400">{t('allergensNone')}</span>
-              ) : (
-                item.allergenSlugs.map((s) => (
-                  <Badge key={s} tone="amber">
-                    {s}
-                  </Badge>
-                ))
-              )}
-            </div>
-          </div>
         </div>
 
         {/* Operational inputs */}

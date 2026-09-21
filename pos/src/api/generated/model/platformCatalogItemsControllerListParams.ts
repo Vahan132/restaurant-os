@@ -5,7 +5,6 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { PlatformCatalogItemsControllerListReviewed } from './platformCatalogItemsControllerListReviewed';
 
 export type PlatformCatalogItemsControllerListParams = {
   page?: number;
@@ -25,8 +24,4 @@ export type PlatformCatalogItemsControllerListParams = {
    * Include archived items.
    */
   includeArchived?: boolean;
-  /**
-   * Allergen-review queue filter. unreviewed = the support work list.
-   */
-  reviewed?: PlatformCatalogItemsControllerListReviewed;
 };

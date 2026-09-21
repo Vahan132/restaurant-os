@@ -24,6 +24,7 @@ import { Modal } from '@/components/ui/modal';
 import { useConfirm } from '@/components/ui/use-confirm';
 import { getErrorMessage } from '@/lib/api-error';
 import { generateStrongPassword } from '@/lib/users/password';
+import { useRoleLabel } from '@/lib/users/role-label';
 import { useUsersInvalidation } from '@/lib/users/use-users-data';
 import type { AuthUser } from '@/stores/auth';
 import { toast } from '@/stores/toast';
@@ -46,6 +47,7 @@ export function UserFormModal({
 }) {
   const t = useTranslations('users');
   const tc = useTranslations('common');
+  const roleLabel = useRoleLabel();
   const invalidate = useUsersInvalidation();
   const { ask, dialog } = useConfirm();
   const isEdit = !!user;
@@ -200,7 +202,7 @@ export function UserFormModal({
             <select className={inputClass} value={roleId} onChange={(e) => setRoleId(e.target.value)}>
               {roles.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.name}
+                  {roleLabel(r)}
                 </option>
               ))}
             </select>

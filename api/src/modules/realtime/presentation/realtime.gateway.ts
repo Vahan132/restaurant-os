@@ -29,6 +29,23 @@ import { SocketAuthContext, branchRoom, orgRoom, stationRoom } from '../applicat
 
 const VALID_STATIONS = new Set<string>(Object.values(PreparationStation));
 
+/** Body accepted by kds:subscribe / kds:unsubscribe. */
+interface StationSubscription {
+  stations?: string[];
+  /** Single-station kiosks (the KDS pins exactly one) may send this instead. */
+  station?: string;
+}
+
+/**
+ * Normalize a subscription body to the set of valid stations it names. Accepts
+ * both the plural `stations` array and a singular `station` string so a kiosk
+ * pinned to one station is never silently filtered down to an empty list.
+ */
+function readStations(body: StationSubscription | undefined): string[] {
+  const raw = [...(body?.stations ?? []), ...(body?.station ? [body.station] : [])];
+  return [...new Set(raw.filter((s) => VALID_STATIONS.has(s)))];
+}
+
 /**
  * Real-time gateway (namespace "/realtime"). Sockets are liveness only — the
  * authoritative data lives behind HTTP; clients refetch on (re)connect.
@@ -156,7 +173,7 @@ export class RealtimeGateway implements OnGatewayConnection {
   @SubscribeMessage('kds:subscribe')
   async subscribe(
     @ConnectedSocket() client: Socket,
-    @MessageBody() body: { stations?: string[] },
+    @MessageBody() body: StationSubscription,
   ): Promise<{ ok: boolean; stations?: string[]; error?: string }> {
     const auth = client.data.auth as SocketAuthContext | undefined;
     if (!auth) {
@@ -166,7 +183,7 @@ export class RealtimeGateway implements OnGatewayConnection {
     if (!auth.permissions.includes(PERMISSIONS.KDS_ACCESS)) {
       return { ok: false, error: 'KDS_ACCESS_REQUIRED' };
     }
-    const stations = (body?.stations ?? []).filter((s) => VALID_STATIONS.has(s));
+    const stations = readStations(body);
     for (const station of stations) {
       await client.join(stationRoom(auth.restaurantId, auth.branchId, station));
     }
@@ -176,13 +193,13 @@ export class RealtimeGateway implements OnGatewayConnection {
   @SubscribeMessage('kds:unsubscribe')
   async unsubscribe(
     @ConnectedSocket() client: Socket,
-    @MessageBody() body: { stations?: string[] },
+    @MessageBody() body: StationSubscription,
   ): Promise<{ ok: boolean }> {
     const auth = client.data.auth as SocketAuthContext | undefined;
     if (!auth) {
       return { ok: false };
     }
-    const stations = (body?.stations ?? []).filter((s) => VALID_STATIONS.has(s));
+    const stations = readStations(body);
     for (const station of stations) {
       await client.leave(stationRoom(auth.restaurantId, auth.branchId, station));
     }

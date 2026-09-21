@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { inputClass } from '@/components/ui/form';
 import { getErrorMessage } from '@/lib/api-error';
 import { normalizeList } from '@/lib/normalize-list';
+import { useRoleLabel } from '@/lib/users/role-label';
 import { toast } from '@/stores/toast';
 
 /** A pending membership (create flow, before the user exists). */
@@ -82,10 +83,11 @@ export function BranchMembershipsEditor({
     const map = new Map(branches.map((b) => [b.id, b.name]));
     return (id: string) => map.get(id) ?? id;
   }, [branches]);
+  const roleLabel = useRoleLabel();
   const roleName = useMemo(() => {
-    const map = new Map(roles.map((r) => [r.id, r.name]));
+    const map = new Map(roles.map((r) => [r.id, roleLabel(r)]));
     return (id: string) => map.get(id) ?? id;
-  }, [roles]);
+  }, [roles, roleLabel]);
 
   const rows: Row[] = live
     ? liveMemberships.map((m) => ({ branchId: m.branchId, roleId: m.roleId }))
@@ -193,7 +195,7 @@ export function BranchMembershipsEditor({
           >
             {roles.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.name}
+                {roleLabel(r)}
               </option>
             ))}
           </select>

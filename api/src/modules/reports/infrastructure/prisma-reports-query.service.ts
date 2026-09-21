@@ -3,6 +3,7 @@ import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.serv
 import { OrderStatus } from '../../orders/domain/enums';
 import { bucketKey } from '../application/report-time.util';
 import {
+  BranchPaymentMethodsData,
   CancellationsData,
   DashboardData,
   DiscountsData,
@@ -171,16 +172,54 @@ export class PrismaReportsQueryService implements ReportsQuery {
     to: Date,
   ): Promise<PaymentMethodRow[]> {
     const closed = await this.closedOrders(restaurantId, from, to);
-    const orderIds = closed.map((o) => o.id);
-    if (orderIds.length === 0) return [];
+    return (await this.paymentBreakdown(closed.map((o) => o.id))).rows;
+  }
+
+  /**
+   * Cashier shift report: the same breakdown narrowed to ONE branch. Scoped by
+   * the ORDER's branch (not the payment's) so the basis matches the rest of the
+   * reports — a payment always belongs to the order it settles.
+   */
+  async branchPaymentMethods(
+    restaurantId: string,
+    branchId: string,
+    from: Date,
+    to: Date,
+  ): Promise<BranchPaymentMethodsData> {
+    const closed = await this.prisma.order.findMany({
+      where: { restaurantId, branchId, status: 'CLOSED', closedAt: { gte: from, lt: to } },
+      select: { id: true },
+    });
+    return this.paymentBreakdown(closed.map((o) => o.id));
+  }
+
+  /** Sum ACTIVE payments on the given orders, grouped by method. */
+  private async paymentBreakdown(orderIds: string[]): Promise<BranchPaymentMethodsData> {
+    if (orderIds.length === 0) {
+      return { rows: [], totalAmount: 0, paymentCount: 0, orderCount: 0 };
+    }
     const payments = await this.prisma.payment.findMany({
       where: { orderId: { in: orderIds }, state: 'ACTIVE' },
     });
-    const byMethod = new Map<string, number>();
-    for (const p of payments) byMethod.set(p.method, (byMethod.get(p.method) ?? 0) + p.amount);
-    return [...byMethod.entries()]
-      .map(([method, amount]) => ({ method, amount }))
-      .sort((a, b) => b.amount - a.amount);
+    const byMethod = new Map<string, { amount: number; paymentCount: number }>();
+    const paidOrders = new Set<string>();
+    let totalAmount = 0;
+    for (const p of payments) {
+      const cur = byMethod.get(p.method) ?? { amount: 0, paymentCount: 0 };
+      cur.amount += p.amount;
+      cur.paymentCount += 1;
+      byMethod.set(p.method, cur);
+      paidOrders.add(p.orderId);
+      totalAmount += p.amount;
+    }
+    return {
+      rows: [...byMethod.entries()]
+        .map(([method, v]) => ({ method, ...v }))
+        .sort((a, b) => b.amount - a.amount),
+      totalAmount,
+      paymentCount: payments.length,
+      orderCount: paidOrders.size,
+    };
   }
 
   async salesByWaiter(restaurantId: string, from: Date, to: Date): Promise<WaiterRow[]> {

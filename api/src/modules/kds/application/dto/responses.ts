@@ -18,10 +18,6 @@ export class KdsTicketItemResponse {
   elapsedSeconds!: number;
   @ApiProperty({ description: 'elapsed > prepTime*60 (or > 900s when no estimate).' })
   delayed!: boolean;
-  @ApiProperty({ type: [String], description: 'CATALOG-4: allergen slugs for this line as ordered (dish + selected modifiers).' })
-  allergens!: string[];
-  @ApiProperty({ description: 'False when any contributing ingredient is unverified — show as "+ unverified", never a clean claim.' })
-  allergensComplete!: boolean;
 }
 
 export class KdsTicketResponse {

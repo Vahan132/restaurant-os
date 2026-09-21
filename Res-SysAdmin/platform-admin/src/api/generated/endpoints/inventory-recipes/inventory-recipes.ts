@@ -201,7 +201,7 @@ export const useRecipesControllerCreate = <TError = ErrorType<void>,
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * @summary Get a recipe with lines, modifier consumptions, estimate, warnings, projections + allergen rollup.
+ * @summary Get a recipe with lines, modifier consumptions, estimate, warnings, projections.
  */
 export const recipesControllerGet = (
     id: string,
@@ -279,7 +279,7 @@ export function useRecipesControllerGet<TData = Awaited<ReturnType<typeof recipe
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> }
 /**
- * @summary Get a recipe with lines, modifier consumptions, estimate, warnings, projections + allergen rollup.
+ * @summary Get a recipe with lines, modifier consumptions, estimate, warnings, projections.
  */
 
 export function useRecipesControllerGet<TData = Awaited<ReturnType<typeof recipesControllerGet>>, TError = ErrorType<unknown>>(

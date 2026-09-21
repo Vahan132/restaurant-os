@@ -12,7 +12,7 @@ import {
  * Read-time entry point for the produced-item dependency walk (CATALOG-1b §5,
  * Step 3). Loads the branch's process graph once and walks it downward from an
  * item with the visited-set backstop, so any traversal terminates regardless of
- * how the data arrived. CATALOG-3's allergen flatten consumes this instead of
+ * how the data arrived. A recursive component flatten consumes this instead of
  * writing its own recursion.
  */
 @Injectable()

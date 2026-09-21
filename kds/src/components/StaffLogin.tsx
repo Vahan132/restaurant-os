@@ -23,8 +23,18 @@ const LOCAL_COOLDOWN_SECONDS = 30;
  * Lockout/rate-limit is shown clearly and the pad is disabled while locked — both
  * when the server reports a lockout (401 locked / 429) and after repeated local
  * misses — so a locked PIN never hammers the endpoint.
+ *
+ * Reused for the mid-shift handover overlay ("Change account"): pass `onCancel`
+ * and the picker grows a dismiss button, so a cook who opened it by mistake can
+ * back out without ending the current session.
  */
-export function StaffLogin({ onSuccess }: { onSuccess: () => void }) {
+export function StaffLogin({
+  onSuccess,
+  onCancel,
+}: {
+  onSuccess: () => void;
+  onCancel?: () => void;
+}) {
   const t = useTranslations('staff');
   const { push } = useToast();
   const staff = useStaffPicker(true);
@@ -130,6 +140,16 @@ export function StaffLogin({ onSuccess }: { onSuccess: () => void }) {
           <LanguageSwitcher />
         </div>
 
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="absolute left-6 top-6 rounded-lg border border-kiosk-border px-5 py-3 text-kiosk text-kiosk-muted hover:bg-kiosk-border"
+          >
+            {t('cancel')}
+          </button>
+        )}
+
         <div className="text-center">
           <h1 className="text-kiosk-xl font-bold">{t('title')}</h1>
           <p className="mt-2 text-kiosk text-kiosk-muted">{t('subtitle')}</p>
@@ -168,9 +188,13 @@ export function StaffLogin({ onSuccess }: { onSuccess: () => void }) {
           </div>
         )}
 
-        <div className="border-t border-kiosk-border pt-6">
-          <EndpointConfig />
-        </div>
+        {/* Endpoint setup belongs to the unauthenticated sign-in screen only —
+            a mid-shift handover must not let anyone repoint the kiosk. */}
+        {!onCancel && (
+          <div className="border-t border-kiosk-border pt-6">
+            <EndpointConfig />
+          </div>
+        )}
       </Screen>
     );
   }

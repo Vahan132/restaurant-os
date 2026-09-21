@@ -24,10 +24,10 @@ import { GetCatalogBrowseItemUseCase } from './application/queries/get-catalog-b
 
 /**
  * Platform catalog (CATALOG-1 read/resolution + CATALOG-2 curation). Owns the
- * platform-curated stock-item catalog + allergen taxonomy, the reference-with-
- * override resolution path (ADR §3), and the CRUD use-cases the platform-admin
- * controllers (in PlatformModule) consume. Touches CatalogItem + taxonomy only —
- * never tenant inventory (ADR §4). Distinct from the `catalog` export/import module.
+ * platform-curated stock-item catalog + category taxonomy, the by-reference
+ * resolution path (ADR §3), and the CRUD use-cases the platform-admin controllers
+ * (in PlatformModule) consume. Touches CatalogItem + taxonomy only — never tenant
+ * inventory (ADR §4). Distinct from the `catalog` export/import module.
  *
  * IdentityModule is imported for ID_GENERATOR (cuid2 runtime ids on create).
  */

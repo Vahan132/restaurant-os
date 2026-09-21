@@ -7,7 +7,9 @@
     "language": "Language",
     "cancel": "Cancel",
     "confirm": "Confirm",
-    "back": "Back"
+    "back": "Back",
+    "switchUser": "Change account",
+    "shiftReport": "Shift report"
   },
   "connection": {
     "offline": "Connection lost — trying to reconnect…",
@@ -380,26 +382,6 @@
     "mute": "Mute alert sound",
     "unmute": "Unmute alert sound"
   },
-  "allergens": {
-    "unverified": "+ unverified",
-    "none": "No allergens",
-    "label": {
-      "cereals-gluten": "Cereals containing gluten",
-      "crustaceans": "Crustaceans",
-      "eggs": "Eggs",
-      "fish": "Fish",
-      "peanuts": "Peanuts",
-      "soybeans": "Soybeans",
-      "milk": "Milk",
-      "nuts": "Tree nuts",
-      "celery": "Celery",
-      "mustard": "Mustard",
-      "sesame": "Sesame seeds",
-      "sulphites": "Sulphur dioxide and sulphites",
-      "lupin": "Lupin",
-      "molluscs": "Molluscs"
-    }
-  },
   "fiscal": {
     "title": "Fiscalization",
     "fiscalize": "Fiscalize",
@@ -424,5 +406,18 @@
     "loadError": "Couldn’t load the fiscal receipt.",
     "print": "Print",
     "done": "Done"
+  },
+  "shiftReport": {
+    "title": "Shift report",
+    "subtitle": "Today's take at this branch",
+    "forDay": "Payments taken on {date} at this branch",
+    "total": "Total",
+    "paymentCount": "{count, plural, one {# payment} other {# payments}}",
+    "orderCount": "{count, plural, one {# closed bill} other {# closed bills}}",
+    "empty": "No payments have been taken yet today.",
+    "loadError": "Couldn't load the shift report.",
+    "refresh": "Refresh",
+    "noPermission": "You don't have permission to view the shift report.",
+    "basisNote": "Counts every active payment on bills closed today."
   }
 }

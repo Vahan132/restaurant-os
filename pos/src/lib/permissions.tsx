@@ -17,6 +17,8 @@ export const PERMISSIONS = {
   PAYMENT_PROCESS: 'PAYMENT_PROCESS',
   TABLE_STATUS_UPDATE: 'TABLE_STATUS_UPDATE',
   DASHBOARD_VIEW: 'DASHBOARD_VIEW',
+  /** Branch-scoped cashier shift report (payment-method totals for a day). */
+  REPORTS_SHIFT_VIEW: 'reports:shift:view',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

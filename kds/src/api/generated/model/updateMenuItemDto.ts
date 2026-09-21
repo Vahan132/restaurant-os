@@ -19,7 +19,7 @@ export interface UpdateMenuItemDto {
   preparationStation?: UpdateMenuItemDtoPreparationStation;
   /** @minimum 0 */
   prepTimeMinutes?: number;
-  /** CATALOG-3: hide the customer ingredient list for this dish (allergens stay visible). */
+  /** CATALOG-3: hide the customer ingredient list for this dish. */
   hideRecipe?: boolean;
   /**
    * ADGCODE-UI: SRC ATG classification code (from the SRC N 1406-Ն / N 875-Ն lists) for e-HDM fiscalization. Free-text: SRC is the authority (rejects a bad code with error 183 at fiscalization), so there is NO server format constraint — the UI only soft-warns on obvious typos. Send an empty string or null to clear it; omit to leave it unchanged (partial update).

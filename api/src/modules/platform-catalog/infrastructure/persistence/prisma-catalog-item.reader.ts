@@ -10,8 +10,6 @@ const RESOLUTION_SELECT = {
   nameHy: true,
   nameRu: true,
   nameEn: true,
-  allergensReviewed: true,
-  allergens: { select: { allergen: { select: { slug: true } } } },
 } as const;
 
 interface ResolutionRow {
@@ -19,23 +17,19 @@ interface ResolutionRow {
   nameHy: string;
   nameRu: string;
   nameEn: string;
-  allergensReviewed: boolean;
-  allergens: { allergen: { slug: string } }[];
 }
 
 function toResolution(row: ResolutionRow): CatalogResolution {
   return {
     catalogItemId: row.id,
-    allergenSlugs: row.allergens.map((a) => a.allergen.slug),
-    allergensReviewed: row.allergensReviewed,
     name: { hy: row.nameHy, ru: row.nameRu, en: row.nameEn },
   };
 }
 
 /**
  * Catalog read/validation over Prisma (global reference data, not tenant-scoped).
- * Resolves catalogItemId → allergen slugs. Never queries tenant
- * inventory (ADR §4 boundary — there is no relation to traverse anyway).
+ * Resolves catalogItemId → its curated values. Never queries tenant inventory
+ * (ADR §4 boundary — there is no relation to traverse anyway).
  */
 @Injectable()
 export class PrismaCatalogItemReader implements CatalogItemReader {
@@ -64,18 +58,5 @@ export class PrismaCatalogItemReader implements CatalogItemReader {
       out.set(row.id, toResolution(row));
     }
     return out;
-  }
-
-  async findUnknownAllergenSlugs(slugs: readonly string[]): Promise<string[]> {
-    if (slugs.length === 0) {
-      return [];
-    }
-    const unique = [...new Set(slugs)];
-    const found = await this.prisma.allergen.findMany({
-      where: { slug: { in: unique } },
-      select: { slug: true },
-    });
-    const foundSet = new Set(found.map((r) => r.slug));
-    return unique.filter((s) => !foundSet.has(s));
   }
 }

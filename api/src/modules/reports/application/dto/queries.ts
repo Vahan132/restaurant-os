@@ -13,6 +13,15 @@ export class DateRangeQuery {
   to!: string;
 }
 
+export class BusinessDayQuery {
+  @ApiPropertyOptional({
+    description: 'Business day (YYYY-MM-DD, restaurant tz). Defaults to today there.',
+  })
+  @IsOptional()
+  @Matches(DATE, { message: 'date must be YYYY-MM-DD' })
+  date?: string;
+}
+
 export class TimeSeriesQuery extends DateRangeQuery {
   @ApiPropertyOptional({ enum: ['day', 'week', 'month'], default: 'day' })
   @IsOptional()

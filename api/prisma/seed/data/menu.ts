@@ -114,7 +114,7 @@ export const MODIFIER_GROUPS: ModifierGroupSeed[] = [
       { slug: 'large', name: 'Մեծ', nameRu: 'Большой', nameEn: 'Large', priceDelta: 300 },
     ],
   },
-  // CATALOG-3/4 verification: an add-on that introduces an allergen (nuts).
+  // CATALOG-3/4 verification: an add-on that draws an extra inventory item.
   {
     key: 'addons',
     name: 'Հավելումներ',
@@ -425,8 +425,7 @@ export const DISHES: DishSeed[] = [
   // ── CATALOG-3/4 verification fixtures (verify on the FLAGSHIP branch; the
   //    produced-item process graph is seeded there). ─────────────────────────────
   {
-    // Deep walk + VERIFIED allergen: marinated-pork-cubes (produced) -> pork-leg
-    // (reviewed, no allergen); butter (reviewed, milk). Rollup => {milk}, complete=true.
+    // Deep walk: marinated-pork-cubes (produced) -> pork-leg; plus butter.
     slug: 'verify-pork-skewer', category: 'grill',
     name: 'Ստուգում՝ խոզի շիշ', nameRu: 'Проверка: свиной шашлык', nameEn: 'Verify: pork skewer',
     descHy: 'CATALOG ստուգման ուտեստ՝ արտադրված բաղադրիչով (խորը քայլք)։',
@@ -435,22 +434,20 @@ export const DISHES: DishSeed[] = [
     recipe: [{ item: 'marinated-pork-cubes', baseQty: 200 }, { item: 'butter', baseQty: 10 }],
   },
   {
-    // UNVERIFIED leaf: walnuts (adopted but NOT reviewed) + butter (reviewed, milk).
-    // Rollup => {milk, nuts}, complete=FALSE. Flip walnuts reviewed => complete=TRUE.
+    // Adopted leaf (walnuts) + butter — a shallow two-ingredient recipe.
     slug: 'verify-walnut-plate', category: 'salads',
     name: 'Ստուգում՝ ընկույզով ափսե', nameRu: 'Проверка: тарелка с орехами', nameEn: 'Verify: walnut plate',
-    descHy: 'CATALOG ստուգման ուտեստ՝ չստուգված ալերգենով բաղադրիչ։',
+    descHy: 'CATALOG ստուգման ուտեստ՝ ընդունված բաղադրիչով։',
     price: 2400, station: 'OTHER',
     attachments: [],
     recipe: [{ item: 'walnuts', baseQty: 30 }, { item: 'butter', baseQty: 10 }],
   },
   {
-    // MODIFIER adds an allergen: base rice (reviewed, no allergen) => complete=true, no
-    // allergens; selecting "add walnuts" draws walnuts => order rollup gains nuts AND
-    // complete=FALSE (walnuts unreviewed). Exercises the CATALOG-4 per-order-item path.
+    // MODIFIER draw: the base recipe is rice; selecting "add walnuts" draws walnuts
+    // too. Exercises the modifier-consumption path on a per-order-item basis.
     slug: 'verify-rice-bowl', category: 'mains',
     name: 'Ստուգում՝ բրնձով ափսե', nameRu: 'Проверка: рисовая тарелка', nameEn: 'Verify: rice bowl',
-    descHy: 'CATALOG ստուգման ուտեստ՝ ալերգեն ավելացնող հավելումով։',
+    descHy: 'CATALOG ստուգման ուտեստ՝ լրացուցիչ բաղադրիչ ավելացնող հավելումով։',
     price: 2600, station: 'KITCHEN',
     attachments: [{ group: 'addons' }],
     recipe: [{ item: 'rice', baseQty: 120 }],

@@ -32,7 +32,6 @@ export function CatalogManager() {
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
   const [status, setStatus] = useState<'active' | 'archived'>('active');
-  const [reviewed, setReviewed] = useState<'all' | 'reviewed' | 'unreviewed'>('all');
   const [categoryId, setCategoryId] = useState('');
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<CatalogItemVM | null>(null);
@@ -44,7 +43,7 @@ export function CatalogManager() {
   }, [search]);
   useEffect(() => {
     setPage(1);
-  }, [debounced, status, reviewed, categoryId]);
+  }, [debounced, status, categoryId]);
 
   const params = useMemo(
     () => ({
@@ -53,9 +52,8 @@ export function CatalogManager() {
       q: debounced || undefined,
       categoryId: categoryId || undefined,
       includeArchived: status === 'archived' ? true : undefined,
-      reviewed: reviewed === 'all' ? undefined : reviewed,
     }),
-    [page, debounced, categoryId, status, reviewed],
+    [page, debounced, categoryId, status],
   );
 
   const { items, pagination, isLoading, isError, isFetching } = useCatalogList(params);
@@ -137,16 +135,6 @@ export function CatalogManager() {
           <option value="active">{t('active')}</option>
           <option value="archived">{t('archived')}</option>
         </select>
-        <select
-          className={`${inputClass} w-auto`}
-          value={reviewed}
-          onChange={(e) => setReviewed(e.target.value as 'all' | 'reviewed' | 'unreviewed')}
-          aria-label={t('filterReviewed')}
-        >
-          <option value="all">{t('reviewedAll')}</option>
-          <option value="unreviewed">{t('reviewedPending')}</option>
-          <option value="reviewed">{t('reviewedDone')}</option>
-        </select>
       </div>
 
       {isLoading ? (
@@ -166,7 +154,6 @@ export function CatalogManager() {
               <tr>
                 <th className="px-4 py-2">{t('name')}</th>
                 <th className="px-4 py-2">{t('category')}</th>
-                <th className="px-4 py-2">{t('allergens')}</th>
                 <th className="px-4 py-2">{t('status')}</th>
                 <th className="px-4 py-2" />
               </tr>
@@ -184,19 +171,6 @@ export function CatalogManager() {
                     <div className="text-xs text-gray-400">{item.slug}</div>
                   </td>
                   <td className="px-4 py-2 text-gray-600">{categoryName(item.categoryId)}</td>
-                  <td className="px-4 py-2">
-                    <div className="flex flex-wrap gap-1">
-                      {item.allergenSlugs.length === 0 ? (
-                        <span className="text-gray-400">—</span>
-                      ) : (
-                        item.allergenSlugs.map((s) => (
-                          <Badge key={s} tone="amber">
-                            {s}
-                          </Badge>
-                        ))
-                      )}
-                    </div>
-                  </td>
                   <td className="px-4 py-2">
                     {item.status === CatalogItemResponseStatus.ACTIVE ? (
                       <Badge tone="green">{t('active')}</Badge>

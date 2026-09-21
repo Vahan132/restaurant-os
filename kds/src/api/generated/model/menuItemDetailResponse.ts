@@ -32,7 +32,7 @@ export interface MenuItemDetailResponse {
   prepTimeMinutes: number | null;
   status: MenuItemDetailResponseStatus;
   availability: MenuItemDetailResponseAvailability;
-  /** Hides the customer ingredient list, not the allergen summary. */
+  /** Hides the customer ingredient list. */
   hideRecipe: boolean;
   /**
    * ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified).

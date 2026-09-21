@@ -36,6 +36,21 @@ export interface TimeSeriesBucket {
 export interface PaymentMethodRow {
   method: string;
   amount: number;
+  /** Number of ACTIVE payments recorded with this method. */
+  paymentCount: number;
+}
+
+/**
+ * One branch's payment-method breakdown for a single business day — the cashier
+ * shift report. Same basis as the restaurant-wide report (ACTIVE payments on
+ * orders CLOSED in the window), narrowed to one branch.
+ */
+export interface BranchPaymentMethodsData {
+  rows: PaymentMethodRow[];
+  totalAmount: number;
+  paymentCount: number;
+  /** Closed orders at this branch in the window that carry at least one payment. */
+  orderCount: number;
 }
 export interface WaiterRow {
   waiterId: string;
@@ -95,6 +110,12 @@ export interface ReportsQuery {
     timeZone: string,
   ): Promise<TimeSeriesBucket[]>;
   salesByPaymentMethod(restaurantId: string, from: Date, to: Date): Promise<PaymentMethodRow[]>;
+  branchPaymentMethods(
+    restaurantId: string,
+    branchId: string,
+    from: Date,
+    to: Date,
+  ): Promise<BranchPaymentMethodsData>;
   salesByWaiter(restaurantId: string, from: Date, to: Date): Promise<WaiterRow[]>;
   salesByTable(restaurantId: string, from: Date, to: Date): Promise<TableRow[]>;
   salesByItem(restaurantId: string, from: Date, to: Date): Promise<ItemRow[]>;

@@ -10,8 +10,6 @@ export interface CatalogItemListFilter {
   categoryId?: string;
   /** Restrict to a status (the use-case passes ACTIVE unless includeArchived). */
   status?: CatalogItemStatus;
-  /** Allergen-review queue: true = reviewed, false = pending, undefined = all. */
-  reviewed?: boolean;
 }
 
 export interface CatalogItemListResult {
@@ -21,8 +19,8 @@ export interface CatalogItemListResult {
 
 /**
  * Write + admin-read repository for the platform CatalogItem aggregate. Platform-
- * owned reference data — NOT tenant-scoped. This port touches CatalogItem (+ its
- * allergen join) ONLY; it never reads or writes tenant inventory (ADR §4 boundary).
+ * owned reference data — NOT tenant-scoped. This port touches CatalogItem ONLY;
+ * it never reads or writes tenant inventory (ADR §4 boundary).
  */
 export interface CatalogItemRepository {
   create(item: CatalogItem): Promise<void>;
@@ -39,8 +37,7 @@ export interface CatalogItemRepository {
 
   /**
    * Persist a bulk import in a SINGLE transaction: every `create` is inserted and
-   * every `update` is updated (allergen join fully replaced to match each item's
-   * tag set). All-or-nothing — a failure rolls the whole batch back.
+   * every `update` is updated. All-or-nothing — a failure rolls the whole batch back.
    */
   saveAll(creates: readonly CatalogItem[], updates: readonly CatalogItem[]): Promise<void>;
 }

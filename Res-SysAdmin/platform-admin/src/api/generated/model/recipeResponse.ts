@@ -10,7 +10,6 @@ import type { ModifierConsumptionResponse } from './modifierConsumptionResponse'
 import type { RecipeWarningResponse } from './recipeWarningResponse';
 import type { CustomerIngredientResponse } from './customerIngredientResponse';
 import type { OperationalIngredientResponse } from './operationalIngredientResponse';
-import type { DishAllergensResponse } from './dishAllergensResponse';
 
 export interface RecipeResponse {
   id: string;
@@ -24,7 +23,7 @@ export interface RecipeResponse {
   /** Forward-looking estimate (§3); NOT actual COGS. */
   estimatedUnitCost_amount: number;
   warnings: RecipeWarningResponse[];
-  /** Hides the customer ingredient list, never the allergens (ADR §9). */
+  /** Hides the customer ingredient list (ADR §9). */
   hideRecipe: boolean;
   /**
    * Localized ingredient names, no quantities. null when hideRecipe.
@@ -32,5 +31,4 @@ export interface RecipeResponse {
    */
   customerIngredients: CustomerIngredientResponse[] | null;
   operationalIngredients: OperationalIngredientResponse[];
-  allergens: DishAllergensResponse;
 }

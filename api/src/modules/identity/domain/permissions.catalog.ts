@@ -66,6 +66,12 @@ export const PERMISSIONS = {
   //   RESTAURANT-WIDE — a user's PIN works at any POS/KDS in the restaurant, so
   //   it is checked against the role snapshot, not branch-resolved.
   STAFF_PIN_MANAGE: 'staff.pin.manage',
+  // Cashier shift report: payment-method totals for the caller's ACTIVE branch,
+  // for one business day. BRANCH-SCOPED — checked against the caller's EFFECTIVE
+  // permissions at the active branch (X-Branch-Id), so it can be handed to floor
+  // staff without exposing the restaurant-wide REPORTS_VIEW endpoints. Granted to
+  // CASHIER by default, and to OWNER/MANAGER via ALL_PERMISSIONS.
+  REPORTS_SHIFT_VIEW: 'reports:shift:view',
   // Historical / external sales import (5A): upload a CSV of non-fiscal,
   // reports-only sales and view import batches. RESTAURANT-WIDE (checked against
   // the JWT permission snapshot); per-row branch reach is still enforced against
@@ -154,6 +160,7 @@ export const SYSTEM_ROLE_PERMISSIONS: Record<SystemRoleCode, PermissionKey[]> = 
     PERMISSIONS.PAYMENT_PROCESS,
     PERMISSIONS.DISCOUNT_APPLY,
     PERMISSIONS.TABLE_STATUS_UPDATE,
+    PERMISSIONS.REPORTS_SHIFT_VIEW,
   ],
   KITCHEN_STAFF: [PERMISSIONS.KDS_ACCESS],
   // 7A: Chef / Sous-Chef run production from the KDS. They get KDS access, read

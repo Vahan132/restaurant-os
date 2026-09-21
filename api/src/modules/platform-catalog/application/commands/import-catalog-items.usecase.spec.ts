@@ -2,7 +2,6 @@ import 'reflect-metadata';
 import { CatalogItem } from '../../domain/entities/catalog-item';
 import { CatalogItemRepository } from '../../domain/repositories/catalog-item.repository';
 import {
-  AllergenView,
   CatalogCategoryView,
   CatalogTaxonomyReader,
 } from '../../domain/repositories/catalog-taxonomy.reader';
@@ -12,7 +11,7 @@ import { ImportCatalogItemsUseCase } from './import-catalog-items.usecase';
 // Deliberately retains a legacy `adgCode` column (dropped from the contract in
 // ADGCODE-CLEANUP-1) to prove old import files still parse — the unknown column is
 // ignored and the remaining columns resolve by header name, not position.
-const HEADER = 'slug,nameHy,nameRu,nameEn,category,adgCode,allergens,allergensReviewed,status';
+const HEADER = 'slug,nameHy,nameRu,nameEn,category,adgCode,status';
 const csv = (...rows: string[]): string => [HEADER, ...rows].join('\n');
 
 /** In-memory repository fake capturing saveAll calls. */
@@ -68,24 +67,9 @@ const category = (slug: string, id: string): CatalogCategoryView => ({
   labelEn: slug,
   position: 0,
 });
-const allergen = (slug: string): AllergenView => ({
-  id: `al-${slug}`,
-  slug,
-  labelHy: slug,
-  labelRu: slug,
-  labelEn: slug,
-  position: 0,
-});
-
 class FakeTaxonomy implements CatalogTaxonomyReader {
   async listCategories(): Promise<CatalogCategoryView[]> {
     return [category('produce', 'cat-produce'), category('dairy', 'cat-dairy')];
-  }
-  async listAllergens(): Promise<AllergenView[]> {
-    return [allergen('gluten'), allergen('milk'), allergen('eggs')];
-  }
-  async findUnknownAllergenSlugs(): Promise<string[]> {
-    return [];
   }
   async categoryExists(): Promise<boolean> {
     return true;
@@ -116,7 +100,6 @@ const seededItem = (over: Partial<Parameters<typeof CatalogItem.create>[0]> = {}
     nameRu: 'b',
     nameEn: 'Old',
     categoryId: null,
-    allergenSlugs: [],
     ...over,
   });
 
@@ -125,22 +108,20 @@ describe('ImportCatalogItemsUseCase', () => {
     const { useCase, repo } = makeUseCase();
     const result = await useCase.execute({
       mode: 'APPLY',
-      csv: csv('tomato,Ա,Б,Tomato,produce,,gluten|milk,true,ACTIVE'),
+      csv: csv('tomato,Ա,Б,Tomato,produce,,ACTIVE'),
     });
     expect(result.applied).toBe(true);
     expect(result.summary.toCreate).toBe(1);
     expect(result.rows[0].action).toBe('CREATE');
     const saved = repo.store.get('tomato');
     expect(saved?.categoryId).toBe('cat-produce');
-    expect(saved?.allergenSlugs).toEqual(['gluten', 'milk']);
-    expect(saved?.allergensReviewed).toBe(true);
   });
 
   it('updates an existing item on OVERWRITE', async () => {
     const { useCase, repo } = makeUseCase([seededItem()]);
     const result = await useCase.execute({
       mode: 'APPLY',
-      csv: csv('tomato,Ա,Б,Tomato,produce,,,false,ACTIVE'),
+      csv: csv('tomato,Ա,Б,Tomato,produce,,ACTIVE'),
     });
     expect(result.rows[0].action).toBe('UPDATE');
     expect(result.applied).toBe(true);
@@ -154,12 +135,11 @@ describe('ImportCatalogItemsUseCase', () => {
       nameRu: 'Б',
       nameEn: 'Tomato',
       categoryId: 'cat-produce',
-      allergenSlugs: ['milk', 'gluten'],
     });
     const { useCase, repo } = makeUseCase([seed]);
     const result = await useCase.execute({
       mode: 'APPLY',
-      csv: csv('tomato,Ա,Б,Tomato,produce,,gluten|milk,false,ACTIVE'),
+      csv: csv('tomato,Ա,Б,Tomato,produce,,ACTIVE'),
     });
     expect(result.rows[0].action).toBe('UNCHANGED');
     expect(result.summary.unchanged).toBe(1);
@@ -172,7 +152,7 @@ describe('ImportCatalogItemsUseCase', () => {
     const result = await useCase.execute({
       mode: 'DRY_RUN',
       conflictStrategy: 'SKIP',
-      csv: csv('tomato,Ա,Б,New,produce,,,false,ACTIVE'),
+      csv: csv('tomato,Ա,Б,New,produce,,ACTIVE'),
     });
     expect(result.rows[0].action).toBe('SKIP');
     expect(result.summary.skipped).toBe(1);
@@ -182,7 +162,7 @@ describe('ImportCatalogItemsUseCase', () => {
     const { useCase, repo } = makeUseCase();
     const result = await useCase.execute({
       mode: 'DRY_RUN',
-      csv: csv('basil,Ա,Б,Basil,produce,,,,'),
+      csv: csv('basil,Ա,Б,Basil,produce,,'),
     });
     expect(result.applied).toBe(false);
     expect(result.rows[0].action).toBe('CREATE');
@@ -193,7 +173,7 @@ describe('ImportCatalogItemsUseCase', () => {
     const { useCase, repo } = makeUseCase();
     const result = await useCase.execute({
       mode: 'APPLY',
-      csv: csv('kiwi,Ա,Б,Kiwi,nope,,,,'),
+      csv: csv('kiwi,Ա,Б,Kiwi,nope,,'),
     });
     expect(result.rows[0].action).toBe('ERROR');
     expect(result.rows[0].messages[0].code).toBe('UNKNOWN_CATEGORY');
@@ -201,21 +181,11 @@ describe('ImportCatalogItemsUseCase', () => {
     expect(repo.saveAllCalls).toBe(0);
   });
 
-  it('reports UNKNOWN_ALLERGEN', async () => {
-    const { useCase } = makeUseCase();
-    const result = await useCase.execute({
-      mode: 'DRY_RUN',
-      csv: csv('kiwi,Ա,Б,Kiwi,,,peanut,,'),
-    });
-    expect(result.rows[0].action).toBe('ERROR');
-    expect(result.rows[0].messages.some((m) => m.code === 'UNKNOWN_ALLERGEN')).toBe(true);
-  });
-
   it('flags every DUPLICATE_SLUG_IN_FILE occurrence', async () => {
     const { useCase } = makeUseCase();
     const result = await useCase.execute({
       mode: 'DRY_RUN',
-      csv: csv('dup,Ա,Б,One,,,,,', 'dup,Ա,Б,Two,,,,,'),
+      csv: csv('dup,Ա,Б,One,,,', 'dup,Ա,Б,Two,,,'),
     });
     expect(result.summary.errors).toBe(2);
     expect(
@@ -227,7 +197,7 @@ describe('ImportCatalogItemsUseCase', () => {
     const { useCase, repo } = makeUseCase();
     const result = await useCase.execute({
       mode: 'APPLY',
-      csv: csv('good,Ա,Б,Good,produce,,,,', 'bad,,,,,,,,'),
+      csv: csv('good,Ա,Б,Good,produce,,', 'bad,,,,,,'),
     });
     expect(result.applied).toBe(false);
     expect(repo.saveAllCalls).toBe(0);
@@ -247,17 +217,17 @@ describe('ImportCatalogItemsUseCase', () => {
     // New canonical header — no adgCode column at all.
     const newContract = await useCase.execute({
       mode: 'APPLY',
-      csv: 'slug,nameHy,nameRu,nameEn,category,allergens,allergensReviewed,status\ntomato,Ա,Б,Tomato,produce,gluten|milk,true,ACTIVE',
+      csv: 'slug,nameHy,nameRu,nameEn,category,status\ntomato,Ա,Б,Tomato,produce,ACTIVE',
     });
     expect(newContract.applied).toBe(true);
     expect(newContract.rows[0].action).toBe('CREATE');
-    expect(repo.store.get('tomato')?.allergenSlugs).toEqual(['gluten', 'milk']);
+    expect(repo.store.get('tomato')?.categoryId).toBe('cat-produce');
 
     // Legacy header still carrying adgCode — the unknown column is ignored, the
     // remaining columns resolve by name so the import succeeds unchanged.
     const legacy = await makeUseCase().useCase.execute({
       mode: 'DRY_RUN',
-      csv: 'slug,nameHy,nameRu,nameEn,category,adgCode,allergens,allergensReviewed,status\nbasil,Ա,Б,Basil,produce,01,gluten,true,ACTIVE',
+      csv: 'slug,nameHy,nameRu,nameEn,category,adgCode,status\nbasil,Ա,Б,Basil,produce,01,ACTIVE',
     });
     expect(legacy.rows[0].action).toBe('CREATE');
     expect(legacy.rows[0].messages).toHaveLength(0);

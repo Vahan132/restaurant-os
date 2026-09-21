@@ -16,8 +16,6 @@ const BROWSE_SELECT = {
   nameEn: true,
   categoryId: true,
   status: true,
-  allergensReviewed: true,
-  allergens: { select: { allergen: { select: { slug: true } } } },
   category: { select: { id: true, slug: true, labelHy: true, labelRu: true, labelEn: true } },
 } as const;
 
@@ -36,8 +34,6 @@ function toView(r: BrowseRow): CatalogBrowseView {
           name: { hy: r.category.labelHy, ru: r.category.labelRu, en: r.category.labelEn },
         }
       : null,
-    allergenSlugs: r.allergens.map((a) => a.allergen.slug).sort(),
-    allergensReviewed: r.allergensReviewed,
     status:
       r.status === PrismaCatalogItemStatus.ARCHIVED
         ? CatalogItemStatus.ARCHIVED

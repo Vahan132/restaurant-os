@@ -32,7 +32,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 /**
- * @summary List the allergen + category taxonomy for the picker.
+ * @summary List the category taxonomy for the picker.
  */
 export const platformCatalogTaxonomyControllerGet = (
 
@@ -103,7 +103,7 @@ export function usePlatformCatalogTaxonomyControllerGet<TData = Awaited<ReturnTy
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary List the allergen + category taxonomy for the picker.
+ * @summary List the category taxonomy for the picker.
  */
 
 export function usePlatformCatalogTaxonomyControllerGet<TData = Awaited<ReturnType<typeof platformCatalogTaxonomyControllerGet>>, TError = unknown>(

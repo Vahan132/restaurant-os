@@ -112,9 +112,6 @@ export function RecipeCostPanel({
   const setMapping = (i: number, patch: Partial<MappingState>) =>
     setMappings((rows) => rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
-  // CATALOG-3: EU-14 allergen slugs are localized via the inventory.allergen.<slug> messages.
-  const allergenLabel = (slug: string) => t(`allergen.${slug}`);
-
   const onToggleHideRecipe = async (next: boolean) => {
     setHideRecipe(next); // optimistic
     try {
@@ -220,30 +217,6 @@ export function RecipeCostPanel({
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* CATALOG-3: computed allergen rollup (read-only for owners; tagging is support-side). */}
-      {recipe && (
-        <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-gray-700">{t('allergensTitle')}</h4>
-          {recipe.allergens.slugs.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {recipe.allergens.slugs.map((slug) => (
-                <Badge key={slug} tone="amber">
-                  {allergenLabel(slug)}
-                </Badge>
-              ))}
-            </div>
-          ) : recipe.allergens.complete ? (
-            <p className="text-xs text-gray-500">{t('allergensNone')}</p>
-          ) : null}
-          {/* Honest unverified state — never suppressed, never implies completeness. */}
-          {!recipe.allergens.complete && (
-            <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800">
-              <span>{t('allergensUnverified')}</span>
-            </div>
-          )}
         </div>
       )}
 

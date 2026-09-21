@@ -27,8 +27,6 @@ export interface CatalogBrowseView {
   name: CatalogBrowseName;
   categoryId: string | null;
   category: CatalogBrowseCategory | null;
-  allergenSlugs: string[];
-  allergensReviewed: boolean;
   status: CatalogItemStatus;
 }
 

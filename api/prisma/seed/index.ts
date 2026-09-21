@@ -126,10 +126,8 @@ async function report(
     restaurantAttributes: await prisma.restaurantAttribute.count({ where: { restaurantId: rid } }),
     listedBranches: await prisma.branch.count({ where: { ...w, listedInConsumerApp: true } }),
     // CATALOG-1 platform catalog (global reference data) + adoption links
-    allergens: await prisma.allergen.count(),
     catalogCategories: await prisma.catalogCategory.count(),
     catalogItems: await prisma.catalogItem.count(),
-    catalogItemAllergens: await prisma.catalogItemAllergen.count(),
     adoptedInventoryItems: await prisma.inventoryItem.count({
       where: { ...w, catalogItemId: { not: null } },
     }),

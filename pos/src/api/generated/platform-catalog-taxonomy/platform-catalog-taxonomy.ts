@@ -25,7 +25,7 @@ import { apiRequest } from '../../mutator';
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
- * @summary List the allergen + category taxonomy for the picker.
+ * @summary List the category taxonomy for the picker.
  */
 export const platformCatalogTaxonomyControllerGet = (
   options?: SecondParameter<typeof apiRequest>,
@@ -135,7 +135,7 @@ export function usePlatformCatalogTaxonomyControllerGet<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData> };
 /**
- * @summary List the allergen + category taxonomy for the picker.
+ * @summary List the category taxonomy for the picker.
  */
 
 export function usePlatformCatalogTaxonomyControllerGet<

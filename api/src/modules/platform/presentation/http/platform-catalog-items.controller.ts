@@ -50,7 +50,6 @@ export class PlatformCatalogItemsController {
       q: query.q,
       categoryId: query.categoryId,
       includeArchived: query.includeArchived,
-      reviewed: query.reviewed,
     });
     return { data: result.data.map(CatalogItemResponse.from), pagination: result.pagination };
   }
@@ -72,8 +71,6 @@ export class PlatformCatalogItemsController {
       nameRu: dto.nameRu,
       nameEn: dto.nameEn,
       categoryId: dto.categoryId ?? null,
-      allergenSlugs: dto.allergenSlugs ?? [],
-      allergensReviewed: dto.allergensReviewed ?? false,
     });
     return CatalogItemResponse.from(item);
   }
@@ -105,8 +102,6 @@ export class PlatformCatalogItemsController {
       nameRu: dto.nameRu,
       nameEn: dto.nameEn,
       categoryId: dto.categoryId,
-      allergenSlugs: dto.allergenSlugs,
-      allergensReviewed: dto.allergensReviewed,
     });
     return CatalogItemResponse.from(item);
   }

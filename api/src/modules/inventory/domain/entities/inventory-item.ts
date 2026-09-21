@@ -28,7 +28,7 @@ export interface InventoryItemProps {
   /**
    * CATALOG-1: the platform CatalogItem this item was adopted from (plain scalar,
    * no FK — ADR §4). null = a custom/uncatalogued item; set = catalog-sourced, so
-   * allergens resolve by reference. Set once at adopt; never mutated.
+   * catalog values resolve by reference. Set once at adopt; never mutated.
    */
   catalogItemId: string | null;
   status: InventoryItemStatus;

@@ -1,6 +1,10 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useQueryClient } from '@tanstack/react-query';
+import { getAuthControllerMeQueryKey } from '@/api/generated/auth/auth';
 import { useRestaurantControllerProfile } from '@/api/generated/restaurant/restaurant';
 import { useAuthMe } from '@/lib/useAuthMe';
 import { useAuthStore } from '@/stores/auth';
@@ -11,10 +15,22 @@ import { HubStatusBadge } from './HubStatusBadge';
 import { OrderRequestsBell } from '@/components/requests/OrderRequestsBell';
 import { BranchMenu } from '@/components/branch/BranchMenu';
 import { EndpointSettings } from '@/components/settings/EndpointSettings';
+import { StaffPickerLogin } from '@/components/auth/StaffPickerLogin';
+import { Can, PERMISSIONS } from '@/lib/permissions';
 
 /**
  * POS top bar (workflow-driven shell — NOT an admin sidebar):
- * restaurant name, current user, language switcher, connection dot, logout.
+ * restaurant name, current user, language switcher, connection dot, change
+ * account, logout.
+ *
+ * Handover ("Change account") opens the staff picker + 6-digit PIN pad as an
+ * overlay rather than signing out, so the terminal keeps its branch and the
+ * waiter stays on the screen they were on. The incoming user's effective
+ * permissions come from GET /auth/me, which is cached, so that entry is REMOVED
+ * on a successful swap rather than just invalidated: invalidation keeps serving
+ * the outgoing user's payload until the refetch lands, which on an offline-
+ * capable terminal may be never. Everything else is invalidated so the new
+ * user's menu, orders and tables refetch.
  */
 export function TopBar() {
   const t = useTranslations('common');
@@ -23,8 +39,17 @@ export function TopBar() {
   const clear = useAuthStore((s) => s.clear);
   const { connected, online } = useRealtime();
   const { isHub } = useHubStatus();
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const [switching, setSwitching] = useState(false);
 
   const live = connected && online;
+
+  function onSwitched() {
+    setSwitching(false);
+    queryClient.removeQueries({ queryKey: getAuthControllerMeQueryKey() });
+    void queryClient.invalidateQueries();
+  }
 
   function logout() {
     clear();
@@ -56,8 +81,24 @@ export function TopBar() {
           </span>
         ) : null}
         <OrderRequestsBell />
+        <Can perform={PERMISSIONS.REPORTS_SHIFT_VIEW}>
+          <button
+            type="button"
+            onClick={() => router.push('/reports')}
+            className="min-h-tap select-none rounded-xl border border-gray-300 bg-white px-5 text-base font-semibold text-gray-700 active:scale-95"
+          >
+            {t('shiftReport')}
+          </button>
+        </Can>
         <EndpointSettings />
         <LanguageSwitcher />
+        <button
+          type="button"
+          onClick={() => setSwitching(true)}
+          className="min-h-tap select-none rounded-xl border border-gray-300 bg-white px-5 text-base font-semibold text-gray-700 active:scale-95"
+        >
+          {t('switchUser')}
+        </button>
         <button
           type="button"
           onClick={logout}
@@ -66,6 +107,12 @@ export function TopBar() {
           {t('signOut')}
         </button>
       </div>
+
+      {switching && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-gray-100">
+          <StaffPickerLogin onSwitched={onSwitched} onCancel={() => setSwitching(false)} />
+        </div>
+      )}
     </header>
   );
 }

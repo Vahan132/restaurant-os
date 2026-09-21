@@ -5,17 +5,6 @@ import {
   ItemResolutionRow,
 } from '../../application/ports/item-resolution.reader';
 
-/** Coerce InventoryItem.allergenOverride (Json?) to string[] | null (CATALOG-1). */
-function toAllergenOverride(value: unknown): string[] | null {
-  if (value === null || value === undefined) {
-    return null; // null = defer to the catalog (distinct from an empty override)
-  }
-  if (Array.isArray(value)) {
-    return value.filter((s): s is string => typeof s === 'string');
-  }
-  return null;
-}
-
 /**
  * Reads InventoryItem resolution inputs + display fields by id (CATALOG-3).
  * Tenant-scoped via restaurantId + branchId; excludes soft-deleted items.
@@ -41,7 +30,6 @@ export class PrismaItemResolutionReader implements ItemResolutionReader {
         name: true,
         baseUnit: true,
         catalogItemId: true,
-        allergenOverride: true,
       },
     });
     for (const r of rows) {
@@ -50,7 +38,6 @@ export class PrismaItemResolutionReader implements ItemResolutionReader {
         name: r.name,
         baseUnit: r.baseUnit,
         catalogItemId: r.catalogItemId ?? null,
-        allergenOverride: toAllergenOverride(r.allergenOverride),
       });
     }
     return out;

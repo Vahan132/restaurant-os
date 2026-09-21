@@ -5,7 +5,7 @@
  *   item → each process that OUTPUTS it → that process's INPUT items → recurse
  *        → … → leaves (items no process produces, i.e. RAW / bought-in).
  *
- * This is the sanctioned walk CATALOG-3's allergen flatten consumes. It carries a
+ * This is the sanctioned walk CATALOG-3's component flatten consumes. It carries a
  * `visited` set and refuses to re-enter a node, so it ALWAYS terminates — even if
  * the stored graph contains a cycle that arrived via a path that skipped the
  * write-guard (a migration or a manual DB edit). The write-guard is the
