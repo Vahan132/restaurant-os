@@ -22,7 +22,13 @@ export class RecipeMapper {
       deletedAt: r.deletedAt,
       lines: r.lines.map(
         (l) =>
-          new RecipeLine({ id: l.id, branchId: l.branchId, itemId: l.itemId, baseQty: l.baseQty }),
+          new RecipeLine({
+            id: l.id,
+            branchId: l.branchId,
+            itemId: l.itemId,
+            baseQty: l.baseQty,
+            netQty: l.netQty,
+          }),
       ),
       modifierConsumptions: r.modifierConsumptions.map(
         (m) =>
@@ -62,6 +68,7 @@ export class RecipeMapper {
       branchId: l.branchId,
       itemId: l.itemId,
       baseQty: l.baseQty,
+      netQty: l.netQty,
     }));
   }
 

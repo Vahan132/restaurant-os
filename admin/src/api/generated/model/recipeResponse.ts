@@ -8,6 +8,8 @@
 import type { CustomerIngredientResponse } from './customerIngredientResponse';
 import type { ModifierConsumptionResponse } from './modifierConsumptionResponse';
 import type { OperationalIngredientResponse } from './operationalIngredientResponse';
+import type { RecipeCostChangeResponse } from './recipeCostChangeResponse';
+import type { RecipeLineCostResponse } from './recipeLineCostResponse';
 import type { RecipeLineResponse } from './recipeLineResponse';
 import type { RecipeWarningResponse } from './recipeWarningResponse';
 
@@ -23,6 +25,10 @@ export interface RecipeResponse {
   /** Forward-looking estimate (§3); NOT actual COGS. */
   estimatedUnitCost_amount: number;
   warnings: RecipeWarningResponse[];
+  /** COST-FIFO-1 per-line costing. */
+  lineCosts: RecipeLineCostResponse[];
+  /** COST-FIFO-1: recent dish cost-price changes, newest first. */
+  costHistory: RecipeCostChangeResponse[];
   /** Hides the customer ingredient list (ADR §9). */
   hideRecipe: boolean;
   /**

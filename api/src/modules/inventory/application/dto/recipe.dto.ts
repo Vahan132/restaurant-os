@@ -20,10 +20,28 @@ export class RecipeLineDto {
   @MinLength(1)
   itemId!: string;
 
-  @ApiProperty({ description: 'Consumed per 1 unit of the dish (base unit).', minimum: 1 })
+  @ApiProperty({
+    description:
+      'BRUTTO: gross quantity taken from stock per 1 unit of the dish (base unit). ' +
+      'This is what is deducted from inventory and used for food cost.',
+    minimum: 1,
+  })
   @IsInt()
   @Min(1)
   baseQty!: number;
+
+  @ApiPropertyOptional({
+    description:
+      'NETTO: quantity left after cleaning/trimming that ends up in the dish (base unit). ' +
+      'Must be <= baseQty. Omit/null when there is no loss (netto == brutto).',
+    minimum: 1,
+    nullable: true,
+    type: Number,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  netQty?: number | null;
 }
 
 export class ModifierConsumptionDto {

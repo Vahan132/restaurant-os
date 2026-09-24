@@ -26,6 +26,8 @@ import type {
 
 import type {
   AccountControllerHistoryParams,
+  AccountOverviewResponse,
+  AccountSubscriptionDetailResponse,
   BillingResponse,
   ChangePlanDto,
   SubscriptionHistoryResponse,
@@ -50,7 +52,7 @@ export const accountControllerAccount = (
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<AccountOverviewResponse>(
       {url: `/account`, method: 'GET', signal
     },
       options);
@@ -205,7 +207,7 @@ export const accountControllerSubscription = (
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<AccountSubscriptionDetailResponse>(
       {url: `/account/subscription`, method: 'GET', signal
     },
       options);
@@ -297,7 +299,7 @@ export const accountControllerChange = (
 ) => {
 
 
-      return customInstance<void>(
+      return customInstance<AccountSubscriptionDetailResponse>(
       {url: `/account/subscription/change-plan`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: changePlanDto, signal

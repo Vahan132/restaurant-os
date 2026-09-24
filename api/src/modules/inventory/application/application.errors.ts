@@ -78,6 +78,13 @@ export const RecipeNotFound = () =>
 export const MenuItemNotFoundForRecipe = () =>
   new NotFoundException({ code: 'MENU_ITEM_NOT_FOUND', message: 'Menu item not found.' });
 
+/** BRUTTO-1: a recipe line's netto may not exceed its brutto. */
+export const RecipeNetExceedsGross = () =>
+  new BadRequestException({
+    code: 'RECIPE_NET_EXCEEDS_GROSS',
+    message: 'A recipe line netto quantity cannot be greater than its brutto quantity.',
+  });
+
 export const ModifierOptionNotFound = () =>
   new NotFoundException({
     code: 'MODIFIER_OPTION_NOT_FOUND',

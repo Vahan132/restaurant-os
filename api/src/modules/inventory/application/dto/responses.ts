@@ -9,7 +9,7 @@ import { Supplier } from '../../domain/entities/supplier';
 import { StockConsumptionResult } from '../../domain/ports/stock-consumption.port';
 import { StockRow } from '../ports/inventory-stock.reader';
 
-class AlternateUnitView {
+export class AlternateUnitView {
   @ApiProperty() name!: string;
   @ApiProperty() factor!: number;
 }
@@ -58,6 +58,20 @@ export class InventoryItemResponse {
   @ApiProperty({
     nullable: true,
     type: String,
+    description:
+      'COST-FIFO-1: unit cost (MICRO, BigInt as string) of the batch currently being ' +
+      'consumed (next FIFO/FEFO layer). Drives dish cost price.',
+  })
+  currentUnitCostMicro!: string | null;
+  @ApiProperty({
+    nullable: true,
+    type: Number,
+    description: 'BRUTTO-1: default cleaning/trim loss in basis points (2000 = 20%).',
+  })
+  cleaningLossBps!: number | null;
+  @ApiProperty({
+    nullable: true,
+    type: String,
     description: '6C: per-item consumption location (null => branch default Main Storage).',
   })
   consumptionLocationId!: string | null;
@@ -87,6 +101,9 @@ export class InventoryItemResponse {
       trackExpiry: i.trackExpiry,
       lowStockThresholdBase: i.lowStockThresholdBase,
       lastUnitCostMicro: i.lastUnitCostMicro === null ? null : i.lastUnitCostMicro.toString(),
+      currentUnitCostMicro:
+        i.currentUnitCostMicro === null ? null : i.currentUnitCostMicro.toString(),
+      cleaningLossBps: i.cleaningLossBps,
       consumptionLocationId: i.consumptionLocationId,
       catalogItemId: i.catalogItemId,
       status: i.status,
@@ -252,9 +269,17 @@ export class StockMovementResponse {
 
 export class StockRowResponse {
   @ApiProperty() itemId!: string;
-  @ApiProperty({ nullable: true, type: String, description: 'Local name; null when adopted (use catalogName).' })
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'Local name; null when adopted (use catalogName).',
+  })
   name!: string | null;
-  @ApiProperty({ nullable: true, type: CatalogNameView, description: 'Live catalog name {hy,ru,en} when adopted.' })
+  @ApiProperty({
+    nullable: true,
+    type: CatalogNameView,
+    description: 'Live catalog name {hy,ru,en} when adopted.',
+  })
   catalogName!: CatalogLocalizedName | null;
   @ApiProperty({ nullable: true, type: String }) sku!: string | null;
   @ApiProperty({ nullable: true, type: String }) categoryId!: string | null;

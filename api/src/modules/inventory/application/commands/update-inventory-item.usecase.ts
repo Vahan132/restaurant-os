@@ -29,6 +29,7 @@ export interface UpdateInventoryItemInput {
   alternateUnits?: ReadonlyArray<{ name: string; factor: number }>;
   trackExpiry?: boolean;
   lowStockThresholdBase?: number | null;
+  cleaningLossBps?: number | null;
 }
 
 /** Update editable catalog fields (incl. kind). Whitelist respected by the DTO. */
@@ -85,6 +86,7 @@ export class UpdateInventoryItemUseCase implements UseCase<
       alternateUnits: input.alternateUnits,
       trackExpiry: input.trackExpiry,
       lowStockThresholdBase: input.lowStockThresholdBase,
+      cleaningLossBps: input.cleaningLossBps,
     });
     await this.items.update(item);
     return item;

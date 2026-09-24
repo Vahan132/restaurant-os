@@ -1,12 +1,18 @@
 import { AggregateRoot } from '../../../../shared/domain/aggregate-root';
 import { RecipeCreatedEvent } from '../events/inventory-events';
 
-/** One ingredient line: an inventory item consumed per 1 unit of the dish. */
+/**
+ * One ingredient line: an inventory item consumed per 1 unit of the dish.
+ * BRUTTO-1: `baseQty` is the BRUTTO (gross) quantity taken from stock — what
+ * consumption deducts and food cost uses. `netQty` is the NETTO quantity left
+ * after cleaning/trimming (what ends up in the dish); null = no loss.
+ */
 export interface RecipeLineProps {
   id: string;
   branchId: string;
   itemId: string;
   baseQty: number;
+  netQty?: number | null;
 }
 
 export class RecipeLine {
@@ -22,6 +28,19 @@ export class RecipeLine {
   }
   get baseQty(): number {
     return this.props.baseQty;
+  }
+  /** BRUTTO-1: netto per dish (null = same as brutto). */
+  get netQty(): number | null {
+    return this.props.netQty ?? null;
+  }
+  /** BRUTTO-1: netto, falling back to brutto when no loss is recorded. */
+  get effectiveNetQty(): number {
+    return this.props.netQty ?? this.props.baseQty;
+  }
+  /** BRUTTO-1: cleaning/trim loss in basis points ((brutto - netto) / brutto). */
+  get lossBps(): number {
+    if (this.props.baseQty <= 0) return 0;
+    return Math.round(((this.props.baseQty - this.effectiveNetQty) * 10000) / this.props.baseQty);
   }
 }
 

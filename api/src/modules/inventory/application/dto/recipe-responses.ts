@@ -1,12 +1,26 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Recipe } from '../../domain/entities/recipe';
-import { RecipeDetail, RecipeWarning } from '../services/recipe-detail.assembler';
+import { RecipeCostChangeView } from '../ports/cost-history.reader';
+import { MenuCostingRow } from '../queries/get-menu-costing.usecase';
+import { RecipeDetail, RecipeLineCost, RecipeWarning } from '../services/recipe-detail.assembler';
 import { DishProjection } from '../services/dish-projection.resolver';
 
 export class RecipeLineResponse {
   @ApiProperty() id!: string;
   @ApiProperty() itemId!: string;
-  @ApiProperty() baseQty!: number;
+  @ApiProperty({ description: 'BRUTTO per dish (deducted from stock, used for cost).' })
+  baseQty!: number;
+  @ApiProperty({
+    nullable: true,
+    type: Number,
+    description: 'NETTO per dish after cleaning/trimming; null = same as brutto.',
+  })
+  netQty!: number | null;
+  @ApiProperty({ description: 'Cleaning/trim loss in basis points ((brutto-netto)/brutto).' })
+  lossBps!: number;
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  @ApiProperty({ description: 'Brutto x current batch unit cost (minor units, estimate).' })
+  lineCost_amount!: number;
 }
 
 export class ModifierConsumptionResponse {
@@ -18,7 +32,11 @@ export class ModifierConsumptionResponse {
 
 export class RecipeWarningCounterpart {
   @ApiProperty() itemId!: string;
-  @ApiProperty({ nullable: true, type: String, description: 'Live catalog name (adopted) or local name; null if unresolvable.' })
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'Live catalog name (adopted) or local name; null if unresolvable.',
+  })
   name!: string | null;
 }
 
@@ -46,6 +64,61 @@ export class OperationalIngredientResponse {
   unit!: string;
 }
 
+/** COST-FIFO-1: one dish cost-price change (newest first in RecipeResponse). */
+export class RecipeCostChangeResponse {
+  @ApiProperty() id!: string;
+  @ApiProperty() recipeId!: string;
+  @ApiProperty() menuItemId!: string;
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  @ApiProperty({ nullable: true, type: Number }) oldCost_amount!: number | null;
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  @ApiProperty() newCost_amount!: number;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'Ingredient whose new batch price caused the change.',
+  })
+  causeItemId!: string | null;
+  @ApiProperty() occurredAt!: string;
+
+  static from(c: RecipeCostChangeView): RecipeCostChangeResponse {
+    return {
+      id: c.id,
+      recipeId: c.recipeId,
+      menuItemId: c.menuItemId,
+      oldCost_amount: c.oldCostAmount,
+      newCost_amount: c.newCostAmount,
+      causeItemId: c.causeItemId,
+      occurredAt: c.occurredAt.toISOString(),
+    };
+  }
+}
+
+/** COST-FIFO-1: how a recipe line is costed right now. */
+export class RecipeLineCostResponse {
+  @ApiProperty() lineId!: string;
+  @ApiProperty() itemId!: string;
+  @ApiProperty({ description: 'Current batch unit cost per base unit, MICRO (BigInt string).' })
+  unitCostMicro!: string;
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  @ApiProperty({ description: 'Brutto x unit cost, minor units.' }) cost_amount!: number;
+  @ApiProperty({ enum: ['BATCH', 'LAST_KNOWN', 'NONE'] }) source!: string;
+  @ApiProperty({ nullable: true, type: String }) supplierId!: string | null;
+  @ApiProperty({ nullable: true, type: String }) batchReceivedAt!: string | null;
+
+  static from(l: RecipeLineCost): RecipeLineCostResponse {
+    return {
+      lineId: l.lineId,
+      itemId: l.itemId,
+      unitCostMicro: l.unitCostMicro.toString(),
+      cost_amount: l.costAmount,
+      source: l.source,
+      supplierId: l.supplierId,
+      batchReceivedAt: l.batchReceivedAt ? l.batchReceivedAt.toISOString() : null,
+    };
+  }
+}
+
 /** Full recipe view: lines + modifier consumptions + estimate + warnings (§3,§6). */
 export class RecipeResponse {
   @ApiProperty() id!: string;
@@ -60,6 +133,13 @@ export class RecipeResponse {
   @ApiProperty({ description: 'Forward-looking estimate (§3); NOT actual COGS.' })
   estimatedUnitCost_amount!: number;
   @ApiProperty({ type: [RecipeWarningResponse] }) warnings!: RecipeWarningResponse[];
+  @ApiProperty({ type: [RecipeLineCostResponse], description: 'COST-FIFO-1 per-line costing.' })
+  lineCosts!: RecipeLineCostResponse[];
+  @ApiProperty({
+    type: [RecipeCostChangeResponse],
+    description: 'COST-FIFO-1: recent dish cost-price changes, newest first.',
+  })
+  costHistory!: RecipeCostChangeResponse[];
 
   // ── CATALOG-3: hideRecipe + dual projections ────────────────────────────────
   @ApiProperty({ description: 'Hides the customer ingredient list (ADR §9).' })
@@ -75,8 +155,13 @@ export class RecipeResponse {
 
   static from(detail: RecipeDetail): RecipeResponse {
     const p: DishProjection = detail.projection;
+    const base = RecipeResponse.base(detail.recipe);
+    const costByLine = new Map(detail.lineCosts.map((c) => [c.lineId, c.costAmount]));
     return {
-      ...RecipeResponse.base(detail.recipe),
+      ...base,
+      lines: base.lines.map((l) => ({ ...l, lineCost_amount: costByLine.get(l.id) ?? 0 })),
+      lineCosts: detail.lineCosts.map(RecipeLineCostResponse.from),
+      costHistory: detail.costHistory.map(RecipeCostChangeResponse.from),
       estimatedUnitCost_amount: detail.estimatedUnitCostAmount,
       warnings: detail.warnings.map(RecipeWarningResponse.from),
       hideRecipe: p.hideRecipe,
@@ -91,6 +176,8 @@ export class RecipeResponse {
     RecipeResponse,
     | 'estimatedUnitCost_amount'
     | 'warnings'
+    | 'lineCosts'
+    | 'costHistory'
     | 'hideRecipe'
     | 'customerIngredients'
     | 'operationalIngredients'
@@ -101,7 +188,14 @@ export class RecipeResponse {
       branchId: r.branchId,
       menuItemId: r.menuItemId,
       note: r.note,
-      lines: r.lines.map((l) => ({ id: l.id, itemId: l.itemId, baseQty: l.baseQty })),
+      lines: r.lines.map((l) => ({
+        id: l.id,
+        itemId: l.itemId,
+        baseQty: l.baseQty,
+        netQty: l.netQty,
+        lossBps: l.lossBps,
+        lineCost_amount: 0,
+      })),
       modifierConsumptions: r.modifierConsumptions.map((m) => ({
         id: m.id,
         modifierOptionId: m.modifierOptionId,
@@ -129,4 +223,31 @@ export class RecipeListItemResponse {
       lineCount: r.lines.length,
     };
   }
+}
+
+/** COST-FIFO-1: one row of the menu costing list. */
+export class MenuCostingRowResponse {
+  @ApiProperty() recipeId!: string;
+  @ApiProperty() menuItemId!: string;
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  @ApiProperty({ description: 'Live dish cost price (brutto x current batch cost).' })
+  cost_amount!: number;
+  @ApiProperty() hasUncostedIngredient!: boolean;
+  @ApiProperty({ type: RecipeCostChangeResponse, nullable: true })
+  lastChange!: RecipeCostChangeResponse | null;
+
+  static from(r: MenuCostingRow): MenuCostingRowResponse {
+    return {
+      recipeId: r.recipeId,
+      menuItemId: r.menuItemId,
+      cost_amount: r.costAmount,
+      hasUncostedIngredient: r.hasUncostedIngredient,
+      lastChange: r.lastChange ? RecipeCostChangeResponse.from(r.lastChange) : null,
+    };
+  }
+}
+
+export class RecalculateCostsResponse {
+  @ApiProperty() changedItems!: number;
+  @ApiProperty() changedDishes!: number;
 }

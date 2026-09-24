@@ -23,4 +23,10 @@ export interface CreateInventoryItemDto {
      * @minimum 0
      */
   lowStockThresholdBase?: number;
+  /**
+     * BRUTTO-1: default cleaning/trim loss in basis points (2000 = 20%). Prefills a recipe line brutto from netto.
+     * @minimum 0
+     * @maximum 9999
+     */
+  cleaningLossBps?: number;
 }

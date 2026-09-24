@@ -7074,6 +7074,66 @@
         ]
       }
     },
+    "/inventory/recipes/costing": {
+      "get": {
+        "operationId": "RecipesController_costing",
+        "summary": "COST-FIFO-1: live dish cost price per recipe (brutto x the batch currently being consumed) + the last cost-price change.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MenuCostingRowResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "inventory-recipes"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/recipes/costing/recalculate": {
+      "post": {
+        "operationId": "RecipesController_recalculateCosts",
+        "summary": "COST-FIFO-1: re-evaluate every ingredient batch cost + dish cost in the branch.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecalculateCostsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:recipe:manage permission."
+          }
+        },
+        "tags": [
+          "inventory-recipes"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
     "/inventory/recipes/{id}": {
       "get": {
         "operationId": "RecipesController_get",
@@ -8364,6 +8424,59 @@
         },
         "tags": [
           "inventory-reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/inventory/daily-report": {
+      "get": {
+        "operationId": "DailyInventoryReportController_get",
+        "summary": "End-of-day inventory report: per item opening, received, sold, produced, used, wasted, count variance, adjustments, closing (qty + value) and the day's ingredient + dish cost-price changes. Closed days are served from a frozen nightly snapshot.",
+        "parameters": [
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "description": "Business day YYYY-MM-DD in the restaurant timezone. Defaults to today.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "refresh",
+            "required": false,
+            "in": "query",
+            "description": "Re-freeze a closed day from the ledger instead of serving its snapshot.",
+            "schema": {
+              "enum": [
+                "true",
+                "false"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyInventoryReportResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:read."
+          }
+        },
+        "tags": [
+          "inventory-daily-report"
         ],
         "security": [
           {
@@ -10349,6 +10462,46 @@
           },
           "403": {
             "description": "Missing REPORTS_VIEW permission."
+          }
+        },
+        "tags": [
+          "reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/reports/pos/payment-methods": {
+      "get": {
+        "operationId": "PosReportsController_getPaymentMethods",
+        "summary": "Payment-method totals for the active branch's business day (cashier shift report).",
+        "parameters": [
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "description": "Business day (YYYY-MM-DD, restaurant tz). Defaults to today there.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BranchPaymentMethodsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing reports:shift:view permission at this branch."
           }
         },
         "tags": [
@@ -19071,6 +19224,16 @@
             "nullable": true,
             "description": "Last unit cost at MICRO precision (BigInt as string)."
           },
+          "currentUnitCostMicro": {
+            "type": "string",
+            "nullable": true,
+            "description": "COST-FIFO-1: unit cost (MICRO, BigInt as string) of the batch currently being consumed (next FIFO/FEFO layer). Drives dish cost price."
+          },
+          "cleaningLossBps": {
+            "type": "number",
+            "nullable": true,
+            "description": "BRUTTO-1: default cleaning/trim loss in basis points (2000 = 20%)."
+          },
           "consumptionLocationId": {
             "type": "string",
             "nullable": true,
@@ -19103,6 +19266,8 @@
           "trackExpiry",
           "lowStockThresholdBase",
           "lastUnitCostMicro",
+          "currentUnitCostMicro",
+          "cleaningLossBps",
           "consumptionLocationId",
           "catalogItemId",
           "status"
@@ -19169,6 +19334,12 @@
             "type": "number",
             "minimum": 0,
             "description": "Low-stock threshold in base units."
+          },
+          "cleaningLossBps": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9999,
+            "description": "BRUTTO-1: default cleaning/trim loss in basis points (2000 = 20%). Prefills a recipe line brutto from netto."
           }
         },
         "required": [
@@ -19241,6 +19412,13 @@
           "lowStockThresholdBase": {
             "type": "number",
             "minimum": 0
+          },
+          "cleaningLossBps": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9999,
+            "nullable": true,
+            "description": "BRUTTO-1: default cleaning/trim loss in basis points; null clears it."
           }
         }
       },
@@ -20378,6 +20556,92 @@
           "lineCount"
         ]
       },
+      "RecipeCostChangeResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "recipeId": {
+            "type": "string"
+          },
+          "menuItemId": {
+            "type": "string"
+          },
+          "oldCost_amount": {
+            "type": "number",
+            "nullable": true
+          },
+          "newCost_amount": {
+            "type": "number"
+          },
+          "causeItemId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Ingredient whose new batch price caused the change."
+          },
+          "occurredAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "recipeId",
+          "menuItemId",
+          "oldCost_amount",
+          "newCost_amount",
+          "causeItemId",
+          "occurredAt"
+        ]
+      },
+      "MenuCostingRowResponse": {
+        "type": "object",
+        "properties": {
+          "recipeId": {
+            "type": "string"
+          },
+          "menuItemId": {
+            "type": "string"
+          },
+          "cost_amount": {
+            "type": "number",
+            "description": "Live dish cost price (brutto x current batch cost)."
+          },
+          "hasUncostedIngredient": {
+            "type": "boolean"
+          },
+          "lastChange": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RecipeCostChangeResponse"
+              }
+            ]
+          }
+        },
+        "required": [
+          "recipeId",
+          "menuItemId",
+          "cost_amount",
+          "hasUncostedIngredient",
+          "lastChange"
+        ]
+      },
+      "RecalculateCostsResponse": {
+        "type": "object",
+        "properties": {
+          "changedItems": {
+            "type": "number"
+          },
+          "changedDishes": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "changedItems",
+          "changedDishes"
+        ]
+      },
       "RecipeLineResponse": {
         "type": "object",
         "properties": {
@@ -20388,13 +20652,30 @@
             "type": "string"
           },
           "baseQty": {
-            "type": "number"
+            "type": "number",
+            "description": "BRUTTO per dish (deducted from stock, used for cost)."
+          },
+          "netQty": {
+            "type": "number",
+            "nullable": true,
+            "description": "NETTO per dish after cleaning/trimming; null = same as brutto."
+          },
+          "lossBps": {
+            "type": "number",
+            "description": "Cleaning/trim loss in basis points ((brutto-netto)/brutto)."
+          },
+          "lineCost_amount": {
+            "type": "number",
+            "description": "Brutto x current batch unit cost (minor units, estimate)."
           }
         },
         "required": [
           "id",
           "itemId",
-          "baseQty"
+          "baseQty",
+          "netQty",
+          "lossBps",
+          "lineCost_amount"
         ]
       },
       "ModifierConsumptionResponse": {
@@ -20461,6 +20742,50 @@
           "itemId",
           "type",
           "counterparts"
+        ]
+      },
+      "RecipeLineCostResponse": {
+        "type": "object",
+        "properties": {
+          "lineId": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "string"
+          },
+          "unitCostMicro": {
+            "type": "string",
+            "description": "Current batch unit cost per base unit, MICRO (BigInt string)."
+          },
+          "cost_amount": {
+            "type": "number",
+            "description": "Brutto x unit cost, minor units."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "BATCH",
+              "LAST_KNOWN",
+              "NONE"
+            ]
+          },
+          "supplierId": {
+            "type": "string",
+            "nullable": true
+          },
+          "batchReceivedAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "lineId",
+          "itemId",
+          "unitCostMicro",
+          "cost_amount",
+          "source",
+          "supplierId",
+          "batchReceivedAt"
         ]
       },
       "CustomerIngredientResponse": {
@@ -20539,6 +20864,20 @@
               "$ref": "#/components/schemas/RecipeWarningResponse"
             }
           },
+          "lineCosts": {
+            "description": "COST-FIFO-1 per-line costing.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecipeLineCostResponse"
+            }
+          },
+          "costHistory": {
+            "description": "COST-FIFO-1: recent dish cost-price changes, newest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecipeCostChangeResponse"
+            }
+          },
           "hideRecipe": {
             "type": "boolean",
             "description": "Hides the customer ingredient list (ADR §9)."
@@ -20568,6 +20907,8 @@
           "modifierConsumptions",
           "estimatedUnitCost_amount",
           "warnings",
+          "lineCosts",
+          "costHistory",
           "hideRecipe",
           "customerIngredients",
           "operationalIngredients"
@@ -20582,8 +20923,14 @@
           },
           "baseQty": {
             "type": "number",
-            "description": "Consumed per 1 unit of the dish (base unit).",
+            "description": "BRUTTO: gross quantity taken from stock per 1 unit of the dish (base unit). This is what is deducted from inventory and used for food cost.",
             "minimum": 1
+          },
+          "netQty": {
+            "type": "number",
+            "description": "NETTO: quantity left after cleaning/trimming that ends up in the dish (base unit). Must be <= baseQty. Omit/null when there is no loss (netto == brutto).",
+            "minimum": 1,
+            "nullable": true
           }
         },
         "required": [
@@ -21433,6 +21780,349 @@
           "byLocation",
           "byBranch",
           "totalValuation_amount"
+        ]
+      },
+      "DailyTotalsView": {
+        "type": "object",
+        "properties": {
+          "openingValue": {
+            "type": "number"
+          },
+          "receivedValue": {
+            "type": "number"
+          },
+          "soldValue": {
+            "type": "number"
+          },
+          "producedValue": {
+            "type": "number"
+          },
+          "usedInProductionValue": {
+            "type": "number"
+          },
+          "wastedValue": {
+            "type": "number"
+          },
+          "countVarianceValue": {
+            "type": "number"
+          },
+          "adjustedValue": {
+            "type": "number"
+          },
+          "closingValue": {
+            "type": "number"
+          },
+          "itemsMoved": {
+            "type": "number"
+          },
+          "negativeItems": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "openingValue",
+          "receivedValue",
+          "soldValue",
+          "producedValue",
+          "usedInProductionValue",
+          "wastedValue",
+          "countVarianceValue",
+          "adjustedValue",
+          "closingValue",
+          "itemsMoved",
+          "negativeItems"
+        ]
+      },
+      "QtyValueView": {
+        "type": "object",
+        "properties": {
+          "qty": {
+            "type": "number",
+            "description": "Base units, signed as it affects on-hand."
+          },
+          "value": {
+            "type": "number",
+            "description": "Minor units, signed."
+          }
+        },
+        "required": [
+          "qty",
+          "value"
+        ]
+      },
+      "DailyItemRowView": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "catalogName": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CatalogNameView"
+              }
+            ]
+          },
+          "baseUnit": {
+            "type": "string",
+            "enum": [
+              "GRAM",
+              "MILLILITER",
+              "PIECE"
+            ]
+          },
+          "alternateUnits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlternateUnitView"
+            }
+          },
+          "categoryName": {
+            "type": "string",
+            "nullable": true
+          },
+          "opening": {
+            "$ref": "#/components/schemas/QtyValueView"
+          },
+          "received": {
+            "$ref": "#/components/schemas/QtyValueView"
+          },
+          "sold": {
+            "description": "Sold via dishes, net of voids.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QtyValueView"
+              }
+            ]
+          },
+          "produced": {
+            "$ref": "#/components/schemas/QtyValueView"
+          },
+          "usedInProduction": {
+            "$ref": "#/components/schemas/QtyValueView"
+          },
+          "wasted": {
+            "$ref": "#/components/schemas/QtyValueView"
+          },
+          "countVariance": {
+            "description": "Physical count corrections (inconsistency).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QtyValueView"
+              }
+            ]
+          },
+          "adjusted": {
+            "$ref": "#/components/schemas/QtyValueView"
+          },
+          "transferred": {
+            "$ref": "#/components/schemas/QtyValueView"
+          },
+          "closing": {
+            "$ref": "#/components/schemas/QtyValueView"
+          },
+          "currentUnitCostMicro": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "itemId",
+          "name",
+          "catalogName",
+          "baseUnit",
+          "alternateUnits",
+          "categoryName",
+          "opening",
+          "received",
+          "sold",
+          "produced",
+          "usedInProduction",
+          "wasted",
+          "countVariance",
+          "adjusted",
+          "transferred",
+          "closing",
+          "currentUnitCostMicro"
+        ]
+      },
+      "DailyItemCostChangeView": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "catalogName": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CatalogNameView"
+              }
+            ]
+          },
+          "baseUnit": {
+            "type": "string",
+            "enum": [
+              "GRAM",
+              "MILLILITER",
+              "PIECE"
+            ]
+          },
+          "oldUnitCostMicro": {
+            "type": "string",
+            "nullable": true
+          },
+          "newUnitCostMicro": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "itemId",
+          "name",
+          "catalogName",
+          "baseUnit",
+          "oldUnitCostMicro",
+          "newUnitCostMicro",
+          "supplierName",
+          "trigger",
+          "occurredAt"
+        ]
+      },
+      "DailyDishCostChangeView": {
+        "type": "object",
+        "properties": {
+          "recipeId": {
+            "type": "string"
+          },
+          "menuItemId": {
+            "type": "string"
+          },
+          "menuItemName": {
+            "type": "string",
+            "nullable": true
+          },
+          "oldCostAmount": {
+            "type": "number",
+            "nullable": true
+          },
+          "newCostAmount": {
+            "type": "number"
+          },
+          "causeItemId": {
+            "type": "string",
+            "nullable": true
+          },
+          "causeItemName": {
+            "type": "string",
+            "nullable": true
+          },
+          "causeCatalogName": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CatalogNameView"
+              }
+            ]
+          },
+          "occurredAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "recipeId",
+          "menuItemId",
+          "menuItemName",
+          "oldCostAmount",
+          "newCostAmount",
+          "causeItemId",
+          "causeItemName",
+          "causeCatalogName",
+          "occurredAt"
+        ]
+      },
+      "DailyInventoryReportResponse": {
+        "type": "object",
+        "properties": {
+          "branchId": {
+            "type": "string"
+          },
+          "businessDate": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string"
+          },
+          "frozen": {
+            "type": "boolean",
+            "description": "Served from the frozen end-of-day snapshot."
+          },
+          "inProgress": {
+            "type": "boolean",
+            "description": "The business day is still running."
+          },
+          "totals": {
+            "$ref": "#/components/schemas/DailyTotalsView"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyItemRowView"
+            }
+          },
+          "itemCostChanges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyItemCostChangeView"
+            }
+          },
+          "dishCostChanges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyDishCostChangeView"
+            }
+          }
+        },
+        "required": [
+          "branchId",
+          "businessDate",
+          "timezone",
+          "from",
+          "to",
+          "generatedAt",
+          "frozen",
+          "inProgress",
+          "totals",
+          "items",
+          "itemCostChanges",
+          "dishCostChanges"
         ]
       },
       "GoogleSignInDto": {
@@ -22512,11 +23202,16 @@
           },
           "amount": {
             "type": "number"
+          },
+          "paymentCount": {
+            "type": "number",
+            "description": "Number of ACTIVE payments recorded with this method."
           }
         },
         "required": [
           "method",
-          "amount"
+          "amount",
+          "paymentCount"
         ]
       },
       "WaiterRowResponse": {
@@ -22703,6 +23398,42 @@
         "required": [
           "cancelledOrders",
           "cancelledItems"
+        ]
+      },
+      "BranchPaymentMethodsResponse": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Business day reported on (YYYY-MM-DD, restaurant tz)."
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentMethodResponse"
+            }
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "paymentCount": {
+            "type": "number"
+          },
+          "orderCount": {
+            "type": "number",
+            "description": "Closed orders in the day that carry at least one payment."
+          }
+        },
+        "required": [
+          "date",
+          "branchId",
+          "rows",
+          "totalAmount",
+          "paymentCount",
+          "orderCount"
         ]
       },
       "RowResultResponse": {

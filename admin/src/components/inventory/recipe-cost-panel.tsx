@@ -27,6 +27,7 @@ import {
   useRecipeForMenuItem,
   useRecipesInvalidation,
 } from '@/lib/inventory/use-recipe-data';
+import { BASE_UNIT_ABBR, formatNumber, type BaseUnit } from '@/lib/inventory/units';
 import { formatMoney } from '@/lib/money';
 import { toast } from '@/stores/toast';
 import { Badge } from '@/components/ui/badge';
@@ -60,7 +61,7 @@ export function RecipeCostPanel({
 
   const [started, setStarted] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-  const [lines, setLines] = useState<RecipeLineState[]>([{ itemId: '', baseQty: '' }]);
+  const [lines, setLines] = useState<RecipeLineState[]>([{ itemId: '', baseQty: '', netQty: '' }]);
   const [mappings, setMappings] = useState<MappingState[]>([]);
   const [warnings, setWarnings] = useState<RecipeWarningResponse[]>([]);
   const [hideRecipe, setHideRecipe] = useState(false);
@@ -75,8 +76,12 @@ export function RecipeCostPanel({
     if (hydrated || !recipe) return;
     setLines(
       recipe.lines.length
-        ? recipe.lines.map((l) => ({ itemId: l.itemId, baseQty: String(l.baseQty) }))
-        : [{ itemId: '', baseQty: '' }],
+        ? recipe.lines.map((l) => ({
+            itemId: l.itemId,
+            baseQty: String(l.baseQty),
+            netQty: l.netQty != null ? String(l.netQty) : '',
+          }))
+        : [{ itemId: '', baseQty: '', netQty: '' }],
     );
     setMappings(
       recipe.modifierConsumptions.map((m) => ({
@@ -96,6 +101,22 @@ export function RecipeCostPanel({
     for (const i of items) m.set(i.id, i);
     return m;
   }, [items]);
+
+  // BRUTTO-1: portion totals per base unit (brutto taken from stock vs netto in the dish).
+  const portion = useMemo(() => {
+    const acc = new Map<string, { gross: number; net: number }>();
+    for (const l of lines) {
+      const it = itemById.get(l.itemId);
+      const g = Number(l.baseQty);
+      if (!it || !Number.isFinite(g) || g <= 0) continue;
+      const n = l.netQty.trim() === '' ? g : Number(l.netQty);
+      const e = acc.get(it.baseUnit) ?? { gross: 0, net: 0 };
+      e.gross += g;
+      e.net += Number.isFinite(n) ? n : g;
+      acc.set(it.baseUnit, e);
+    }
+    return [...acc.entries()];
+  }, [lines, itemById]);
 
   // Live (client-side) estimated cost preview from current lines.
   const livePreview = useMemo(
@@ -128,7 +149,18 @@ export function RecipeCostPanel({
     const linesDto: RecipeLineDto[] = [];
     for (const l of lines) {
       const q = Number(l.baseQty);
-      if (l.itemId && Number.isFinite(q) && q > 0) linesDto.push({ itemId: l.itemId, baseQty: q });
+      if (!l.itemId || !Number.isFinite(q) || q <= 0) continue;
+      const dto: RecipeLineDto = { itemId: l.itemId, baseQty: Math.round(q) };
+      if (l.netQty.trim() !== '') {
+        const n = Number(l.netQty);
+        // BRUTTO-1: netto must be a positive whole base unit and never above brutto.
+        if (!Number.isFinite(n) || n <= 0 || n > q) {
+          toast.error(t('rlNetTooBig'));
+          return;
+        }
+        if (Math.round(n) !== Math.round(q)) dto.netQty = Math.round(n);
+      }
+      linesDto.push(dto);
     }
     const mappingsDto: ModifierConsumptionDto[] = [];
     for (const m of mappings) {
@@ -228,7 +260,7 @@ export function RecipeCostPanel({
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => setLines((r) => [...r, { itemId: '', baseQty: '' }])}
+              onClick={() => setLines((r) => [...r, { itemId: '', baseQty: '', netQty: '' }])}
             >
               + {t('rlAddLine')}
             </Button>
@@ -246,6 +278,8 @@ export function RecipeCostPanel({
               setLines((r) => (r.length === 1 ? r : r.filter((_, idx) => idx !== i)))
             }
             onSwitch={(cid) => setLine(i, { itemId: cid })}
+            unitCost={unitCost}
+            currency={currency}
           />
         ))}
       </div>
@@ -344,7 +378,54 @@ export function RecipeCostPanel({
             <span>{formatMoney(livePreview, currency)}</span>
           </div>
         )}
+        {portion.length > 0 && (
+          <div className="mt-2 space-y-0.5 border-t border-gray-200 pt-2 text-xs text-gray-600">
+            {portion.map(([u, v]) => (
+              <div key={u} className="flex justify-between">
+                <span>{t('portionTotals', { unit: BASE_UNIT_ABBR[u as BaseUnit] ?? u })}</span>
+                <span>
+                  {t('portionBruttoNetto', {
+                    gross: formatNumber(v.gross),
+                    net: formatNumber(v.net),
+                    unit: BASE_UNIT_ABBR[u as BaseUnit] ?? u,
+                  })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="mt-2 text-[11px] text-gray-400">{t('estUnitCostHint')}</p>
       </div>
+
+      {/* COST-FIFO-1: dish cost-price history (new supplier batches starting to be used). */}
+      {recipe && (recipe.costHistory ?? []).length > 0 && (
+        <div className="rounded-md border border-gray-200 p-3 text-sm">
+          <h4 className="text-sm font-semibold text-gray-700">{t('costHistoryTitle')}</h4>
+          <ul className="mt-2 space-y-1 text-xs">
+            {(recipe.costHistory ?? []).map((c) => {
+              const up = c.oldCost_amount != null && c.newCost_amount > c.oldCost_amount;
+              const cause = c.causeItemId ? itemById.get(c.causeItemId) : undefined;
+              return (
+                <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="text-gray-500">
+                    {new Date(c.occurredAt).toLocaleString(locale)}
+                    {cause && (
+                      <span className="text-gray-400">
+                        {' '}
+                        · {t('costChangeCause', { name: itemDisplayName(cause, locale) })}
+                      </span>
+                    )}
+                  </span>
+                  <span className={up ? 'text-red-600' : 'text-green-700'}>
+                    {c.oldCost_amount != null ? formatMoney(c.oldCost_amount, currency) : '—'} →{' '}
+                    {formatMoney(c.newCost_amount, currency)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
 
       {/* CATALOG-3: hideRecipe toggle + what-customers-see preview. */}

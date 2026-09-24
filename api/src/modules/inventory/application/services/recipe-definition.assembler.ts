@@ -11,11 +11,15 @@ import {
   InventoryItemNotFound,
   MenuItemNotFoundForRecipe,
   ModifierOptionNotFound,
+  RecipeNetExceedsGross,
 } from '../application.errors';
 
 export interface RawRecipeLine {
   itemId: string;
+  /** BRUTTO (deducted from stock). */
   baseQty: number;
+  /** BRUTTO-1: NETTO in the dish; null/undefined = no loss. */
+  netQty?: number | null;
 }
 export interface RawModifierConsumption {
   modifierOptionId: string;
@@ -56,6 +60,13 @@ export class RecipeDefinitionAssembler {
     lines: RawRecipeLine[],
     modifierConsumptions: RawModifierConsumption[],
   ): Promise<{ lines: RecipeLine[]; modifierConsumptions: ModifierConsumption[] }> {
+    // BRUTTO-1: netto can never exceed brutto (a cleaned pepper weighs less, never more).
+    for (const l of lines) {
+      if (l.netQty != null && l.netQty > l.baseQty) {
+        throw RecipeNetExceedsGross();
+      }
+    }
+
     // Every referenced inventory item must live in the same active branch (§5):
     // load branch-agnostically so we can detect a cross-branch reference.
     const itemIds = [...new Set([...lines, ...modifierConsumptions].map((x) => x.itemId))];
@@ -92,6 +103,8 @@ export class RecipeDefinitionAssembler {
             branchId,
             itemId: l.itemId,
             baseQty: l.baseQty,
+            // Store null when netto == brutto (no loss) to keep rows clean.
+            netQty: l.netQty != null && l.netQty !== l.baseQty ? l.netQty : null,
           }),
       ),
       modifierConsumptions: modifierConsumptions.map(

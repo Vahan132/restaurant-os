@@ -38,6 +38,16 @@ export interface InventoryItemResponse {
      */
   lastUnitCostMicro: string | null;
   /**
+     * COST-FIFO-1: unit cost (MICRO, BigInt as string) of the batch currently being consumed (next FIFO/FEFO layer). Drives dish cost price.
+     * @nullable
+     */
+  currentUnitCostMicro: string | null;
+  /**
+     * BRUTTO-1: default cleaning/trim loss in basis points (2000 = 20%).
+     * @nullable
+     */
+  cleaningLossBps: number | null;
+  /**
      * 6C: per-item consumption location (null => branch default Main Storage).
      * @nullable
      */

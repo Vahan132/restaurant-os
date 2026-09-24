@@ -29,6 +29,7 @@ export interface CreateInventoryItemInput {
   alternateUnits?: ReadonlyArray<{ name: string; factor: number }>;
   trackExpiry?: boolean;
   lowStockThresholdBase?: number | null;
+  cleaningLossBps?: number | null;
   actorUserId: string;
 }
 
@@ -77,6 +78,7 @@ export class CreateInventoryItemUseCase implements UseCase<
       alternateUnits: input.alternateUnits, // domain validates each factor
       trackExpiry: input.trackExpiry,
       lowStockThresholdBase: input.lowStockThresholdBase ?? null,
+      cleaningLossBps: input.cleaningLossBps ?? null,
       actorUserId: input.actorUserId,
     });
     await this.items.create(item);

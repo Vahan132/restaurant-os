@@ -16,7 +16,8 @@ import {
   useRunsInvalidation,
   useUnitCostMap,
 } from '@/lib/inventory/use-process-data';
-import { BASE_UNIT_ABBR, formatNumber, type BaseUnit } from '@/lib/inventory/units';
+import { ProcessCalculationPanel } from '@/components/inventory/process-calculation-panel';
+import { formatNumber } from '@/lib/inventory/units';
 import { formatMoney } from '@/lib/money';
 import { useRestaurant } from '@/lib/restaurant/use-restaurant';
 import { toast } from '@/stores/toast';
@@ -47,7 +48,6 @@ export function RunProductionModal({
     const it = itemById.get(id);
     return it ? itemDisplayName(it, locale) : id;
   };
-  const itemUnit = (id: string) => abbr(itemById.get(id)?.baseUnit ?? '');
   const invalidateInventory = useInventoryInvalidation();
   const invalidateRuns = useRunsInvalidation();
 
@@ -60,16 +60,6 @@ export function RunProductionModal({
   const submitting = run.isPending;
 
   const mult = Math.max(1, Math.floor(Number(multiplier) || 1));
-  const abbr = (u: string) => BASE_UNIT_ABBR[u as BaseUnit] ?? u;
-
-  const estTotal = useMemo(() => {
-    if (!process) return 0;
-    const inputs = process.inputs.reduce(
-      (s, i) => s + i.baseQty * mult * unitCost(i.itemId),
-      0,
-    );
-    return inputs + process.processingCost_amount;
-  }, [process, mult, unitCost]);
 
   const expiryOutputs = useMemo(
     () => (process?.outputs ?? []).filter((o) => itemById.get(o.itemId)?.trackExpiry),
@@ -174,39 +164,21 @@ export function RunProductionModal({
             </div>
           )}
 
-          {/* Live preview */}
-          <div className="rounded-md bg-gray-50 p-3 text-sm">
-            <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
-              {t('runConsumes')}
-            </span>
-            <ul className="mt-1 space-y-0.5">
-              {process.inputs.map((i) => (
-                <li key={i.itemId} className="flex justify-between text-gray-600">
-                  <span>{itemName(i.itemId)}</span>
-                  <span>
-                    {formatNumber(i.baseQty * mult)} {itemUnit(i.itemId)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <span className="mt-2 block text-xs font-medium uppercase tracking-wide text-gray-500">
-              {t('runProduces')}
-            </span>
-            <ul className="mt-1 space-y-0.5">
-              {process.outputs.map((o) => (
-                <li key={o.itemId} className="flex justify-between text-gray-600">
-                  <span>{itemName(o.itemId)}</span>
-                  <span>
-                    {formatNumber(o.baseQty * mult)} {itemUnit(o.itemId)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-2 flex justify-between border-t border-gray-200 pt-2 font-medium text-gray-800">
-              <span>{t('runEstTotal')}</span>
-              <span>{formatMoney(estTotal, currency)}</span>
-            </div>
-          </div>
+          {/* Live preview: exactly what this run consumes/produces and how it is costed. */}
+          <ProcessCalculationPanel
+            inputs={process.inputs.map((i) => ({ itemId: i.itemId, baseQty: i.baseQty }))}
+            outputs={process.outputs.map((o) => ({
+              itemId: o.itemId,
+              baseQty: o.baseQty,
+              isPrimary: o.isPrimary,
+              costShareBps: o.costShareBps ?? null,
+            }))}
+            processingCost={process.processingCost_amount}
+            multiplier={mult}
+            itemById={itemById}
+            unitCost={unitCost}
+            currency={currency}
+          />
         </div>
       )}
     </Modal>

@@ -23,6 +23,14 @@ export interface InventoryItemProps {
   trackExpiry: boolean;
   lowStockThresholdBase: number | null;
   lastUnitCostMicro: bigint | null;
+  /**
+   * COST-FIFO-1: MICRO unit cost of the batch currently being consumed. Read-only
+   * on the aggregate — maintained by ItemCostTracker directly (never persisted
+   * from here). Optional so older fixtures stay valid.
+   */
+  currentUnitCostMicro?: bigint | null;
+  /** BRUTTO-1: default cleaning/trim loss in bps (prefills recipe brutto from netto). */
+  cleaningLossBps?: number | null;
   /** 6C: per-item consumption location (null => branch default Main Storage). */
   consumptionLocationId: string | null;
   /**
@@ -50,6 +58,8 @@ export interface CreateInventoryItemInput {
   alternateUnits?: ReadonlyArray<{ name: string; factor: number }>;
   trackExpiry?: boolean;
   lowStockThresholdBase?: number | null;
+  /** BRUTTO-1: default cleaning/trim loss in basis points (0..9999). */
+  cleaningLossBps?: number | null;
   /** CATALOG-1: set when adopting from the platform catalog; default null. */
   catalogItemId?: string | null;
   actorUserId?: string | null;
@@ -78,6 +88,8 @@ export class InventoryItem extends AggregateRoot<string> {
       trackExpiry: input.trackExpiry ?? false,
       lowStockThresholdBase: input.lowStockThresholdBase ?? null,
       lastUnitCostMicro: null,
+      currentUnitCostMicro: null,
+      cleaningLossBps: input.cleaningLossBps ?? null,
       consumptionLocationId: null,
       catalogItemId: input.catalogItemId ?? null,
       status: InventoryItemStatus.ACTIVE,
@@ -133,6 +145,12 @@ export class InventoryItem extends AggregateRoot<string> {
   }
   get lastUnitCostMicro(): bigint | null {
     return this.props.lastUnitCostMicro;
+  }
+  get currentUnitCostMicro(): bigint | null {
+    return this.props.currentUnitCostMicro ?? null;
+  }
+  get cleaningLossBps(): number | null {
+    return this.props.cleaningLossBps ?? null;
   }
   get consumptionLocationId(): string | null {
     return this.props.consumptionLocationId;
@@ -202,6 +220,7 @@ export class InventoryItem extends AggregateRoot<string> {
     alternateUnits?: ReadonlyArray<{ name: string; factor: number }>;
     trackExpiry?: boolean;
     lowStockThresholdBase?: number | null;
+    cleaningLossBps?: number | null;
     status?: InventoryItemStatus;
   }): void {
     if (input.name !== undefined) this.props.name = input.name;
@@ -213,6 +232,7 @@ export class InventoryItem extends AggregateRoot<string> {
     if (input.trackExpiry !== undefined) this.props.trackExpiry = input.trackExpiry;
     if (input.lowStockThresholdBase !== undefined)
       this.props.lowStockThresholdBase = input.lowStockThresholdBase;
+    if (input.cleaningLossBps !== undefined) this.props.cleaningLossBps = input.cleaningLossBps;
     if (input.status !== undefined) this.props.status = input.status;
     this.touch();
   }

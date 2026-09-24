@@ -26,6 +26,8 @@ import type {
 
 import type {
   CreateRecipeDto,
+  MenuCostingRowResponse,
+  RecalculateCostsResponse,
   RecipeListItemResponse,
   RecipeResponse,
   RecipesControllerCreateParams,
@@ -199,6 +201,159 @@ export const useRecipesControllerCreate = <TError = void,
         TContext
       > => {
       return useMutation(getRecipesControllerCreateMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary COST-FIFO-1: live dish cost price per recipe (brutto x the batch currently being consumed) + the last cost-price change.
+ */
+export const recipesControllerCosting = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<MenuCostingRowResponse[]>(
+      {url: `/inventory/recipes/costing`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getRecipesControllerCostingQueryKey = () => {
+    return [
+    `/inventory/recipes/costing`
+    ] as const;
+    }
+
+
+export const getRecipesControllerCostingQueryOptions = <TData = Awaited<ReturnType<typeof recipesControllerCosting>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerCosting>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRecipesControllerCostingQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof recipesControllerCosting>>> = ({ signal }) => recipesControllerCosting(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof recipesControllerCosting>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type RecipesControllerCostingQueryResult = NonNullable<Awaited<ReturnType<typeof recipesControllerCosting>>>
+export type RecipesControllerCostingQueryError = unknown
+
+
+export function useRecipesControllerCosting<TData = Awaited<ReturnType<typeof recipesControllerCosting>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerCosting>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof recipesControllerCosting>>,
+          TError,
+          Awaited<ReturnType<typeof recipesControllerCosting>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRecipesControllerCosting<TData = Awaited<ReturnType<typeof recipesControllerCosting>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerCosting>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof recipesControllerCosting>>,
+          TError,
+          Awaited<ReturnType<typeof recipesControllerCosting>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRecipesControllerCosting<TData = Awaited<ReturnType<typeof recipesControllerCosting>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerCosting>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary COST-FIFO-1: live dish cost price per recipe (brutto x the batch currently being consumed) + the last cost-price change.
+ */
+
+export function useRecipesControllerCosting<TData = Awaited<ReturnType<typeof recipesControllerCosting>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof recipesControllerCosting>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRecipesControllerCostingQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * @summary COST-FIFO-1: re-evaluate every ingredient batch cost + dish cost in the branch.
+ */
+export const recipesControllerRecalculateCosts = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<RecalculateCostsResponse>(
+      {url: `/inventory/recipes/costing/recalculate`, method: 'POST', signal
+    },
+      options);
+    }
+
+
+
+export const getRecipesControllerRecalculateCostsMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recipesControllerRecalculateCosts>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof recipesControllerRecalculateCosts>>, TError,void, TContext> => {
+
+const mutationKey = ['recipesControllerRecalculateCosts'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recipesControllerRecalculateCosts>>, void> = () => {
+
+
+          return  recipesControllerRecalculateCosts(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecipesControllerRecalculateCostsMutationResult = NonNullable<Awaited<ReturnType<typeof recipesControllerRecalculateCosts>>>
+
+    export type RecipesControllerRecalculateCostsMutationError = void
+
+    /**
+ * @summary COST-FIFO-1: re-evaluate every ingredient batch cost + dish cost in the branch.
+ */
+export const useRecipesControllerRecalculateCosts = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recipesControllerRecalculateCosts>>, TError,void, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof recipesControllerRecalculateCosts>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRecipesControllerRecalculateCostsMutationOptions(options), queryClient);
     }
     /**
  * @summary Get a recipe with lines, modifier consumptions, estimate, warnings, projections.

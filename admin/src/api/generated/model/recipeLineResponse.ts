@@ -9,5 +9,15 @@
 export interface RecipeLineResponse {
   id: string;
   itemId: string;
+  /** BRUTTO per dish (deducted from stock, used for cost). */
   baseQty: number;
+  /**
+     * NETTO per dish after cleaning/trimming; null = same as brutto.
+     * @nullable
+     */
+  netQty: number | null;
+  /** Cleaning/trim loss in basis points ((brutto-netto)/brutto). */
+  lossBps: number;
+  /** Brutto x current batch unit cost (minor units, estimate). */
+  lineCost_amount: number;
 }

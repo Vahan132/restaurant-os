@@ -1,10 +1,11 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
 import { DomainEventPublisher } from '../../../../shared/infrastructure/events/domain-event-publisher';
 import { ID_GENERATOR, IdGenerator } from '../../../identity/application/ports/id-generator';
 import { Recipe } from '../../domain/entities/recipe';
 import { RECIPE_REPOSITORY, RecipeRepository } from '../../domain/repositories/recipe.repository';
 import { NoRestaurantInScope, RecipeAlreadyExists } from '../application.errors';
+import { ITEM_COST_TRACKER, ItemCostTracker } from '../ports/item-cost-tracker';
 import { RecipeDetail, RecipeDetailAssembler } from '../services/recipe-detail.assembler';
 import {
   RawModifierConsumption,
@@ -34,6 +35,7 @@ export class CreateRecipeUseCase implements UseCase<CreateRecipeInput, RecipeDet
     private readonly detail: RecipeDetailAssembler,
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
     private readonly events: DomainEventPublisher,
+    @Optional() @Inject(ITEM_COST_TRACKER) private readonly costTracker?: ItemCostTracker,
   ) {}
 
   async execute(input: CreateRecipeInput): Promise<RecipeDetail> {
@@ -66,6 +68,11 @@ export class CreateRecipeUseCase implements UseCase<CreateRecipeInput, RecipeDet
     });
     await this.recipes.create(recipe);
     await this.events.publishFromAggregate(recipe);
-    return this.detail.assemble(recipe, input.locale ?? 'en');
+    const detail = await this.detail.assemble(recipe, input.locale ?? 'en');
+    // COST-FIFO-1: an edited recipe resets the dish cost baseline (not a price change).
+    await this.costTracker
+      ?.setRecipeBaseline(recipe.restaurantId, recipe.id, detail.estimatedUnitCostAmount)
+      .catch(() => undefined);
+    return detail;
   }
 }

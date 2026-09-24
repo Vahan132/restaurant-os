@@ -21,24 +21,32 @@ import type {
   ProcessRunsControllerListParams,
 } from '@/api/generated/model';
 import { normalizeList } from '@/lib/normalize-list';
-import { usePaginatedStock } from '@/lib/inventory/use-inventory-data';
+import { useItemsForSelect, usePaginatedStock } from '@/lib/inventory/use-inventory-data';
 
 /**
- * Current unit cost (minor currency units per base unit) per item, derived from
- * the stock view's valuation / on-hand. Used only for the informational batch
- * and run cost previews — the authoritative cost is computed by the backend on
- * run (FIFO/FEFO). Returns 0 for items with no on-hand stock.
+ * Current unit cost (minor currency units per base unit) per item.
+ *
+ * COST-FIFO-1: prefers the item's `currentUnitCostMicro` — the price of the batch
+ * CURRENTLY being consumed (next FIFO/FEFO lot), which is what the backend uses
+ * for dish cost price — and falls back to the stock view's average valuation /
+ * on-hand. Informational previews only; the authoritative cost is computed by
+ * the backend on run/serve. Returns 0 for items with no known cost.
  */
 export function useUnitCostMap() {
-  const { rows, isLoading } = usePaginatedStock({ limit: 100 });
+  const { rows, isLoading: stockLoading } = usePaginatedStock({ limit: 100 });
+  const { items, isLoading: itemsLoading } = useItemsForSelect();
   const unitCost = useMemo(() => {
     const map = new Map<string, number>();
     for (const r of rows) {
       map.set(r.itemId, r.onHandBase > 0 ? r.valuation_amount / r.onHandBase : 0);
     }
+    for (const i of items) {
+      const micro = i.currentUnitCostMicro != null ? Number(i.currentUnitCostMicro) : 0;
+      if (micro > 0) map.set(i.id, micro / 1_000_000);
+    }
     return (itemId: string) => map.get(itemId) ?? 0;
-  }, [rows]);
-  return { unitCost, isLoading };
+  }, [rows, items]);
+  return { unitCost, isLoading: stockLoading || itemsLoading };
 }
 
 /** Paginated process definitions (filter: search). */
@@ -59,10 +67,7 @@ export function useProcessesForSelect() {
     { limit: 100 },
     { query: { placeholderData: keepPreviousData } },
   );
-  const { items } = useMemo(
-    () => normalizeList<ProcessResponse>(query.data),
-    [query.data],
-  );
+  const { items } = useMemo(() => normalizeList<ProcessResponse>(query.data), [query.data]);
   return { ...query, processes: items };
 }
 

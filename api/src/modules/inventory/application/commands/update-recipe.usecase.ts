@@ -1,7 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
 import { RECIPE_REPOSITORY, RecipeRepository } from '../../domain/repositories/recipe.repository';
 import { NoRestaurantInScope, RecipeNotFound } from '../application.errors';
+import { ITEM_COST_TRACKER, ItemCostTracker } from '../ports/item-cost-tracker';
 import { RecipeDetail, RecipeDetailAssembler } from '../services/recipe-detail.assembler';
 import {
   RawModifierConsumption,
@@ -28,6 +29,7 @@ export class UpdateRecipeUseCase implements UseCase<UpdateRecipeInput, RecipeDet
     @Inject(RECIPE_REPOSITORY) private readonly recipes: RecipeRepository,
     private readonly definition: RecipeDefinitionAssembler,
     private readonly detail: RecipeDetailAssembler,
+    @Optional() @Inject(ITEM_COST_TRACKER) private readonly costTracker?: ItemCostTracker,
   ) {}
 
   async execute(input: UpdateRecipeInput): Promise<RecipeDetail> {
@@ -44,7 +46,8 @@ export class UpdateRecipeUseCase implements UseCase<UpdateRecipeInput, RecipeDet
         ? await this.definition.build(
             input.restaurantId,
             input.branchId,
-            input.lines ?? recipe.lines.map((l) => ({ itemId: l.itemId, baseQty: l.baseQty })),
+            input.lines ??
+              recipe.lines.map((l) => ({ itemId: l.itemId, baseQty: l.baseQty, netQty: l.netQty })),
             input.modifierConsumptions ??
               recipe.modifierConsumptions.map((m) => ({
                 modifierOptionId: m.modifierOptionId,
@@ -60,6 +63,11 @@ export class UpdateRecipeUseCase implements UseCase<UpdateRecipeInput, RecipeDet
       modifierConsumptions: rebuilt?.modifierConsumptions,
     });
     await this.recipes.update(recipe);
-    return this.detail.assemble(recipe, input.locale ?? 'en');
+    const detail = await this.detail.assemble(recipe, input.locale ?? 'en');
+    // COST-FIFO-1: an edited recipe resets the dish cost baseline (not a price change).
+    await this.costTracker
+      ?.setRecipeBaseline(recipe.restaurantId, recipe.id, detail.estimatedUnitCostAmount)
+      .catch(() => undefined);
+    return detail;
   }
 }

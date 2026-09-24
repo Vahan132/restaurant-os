@@ -10,8 +10,14 @@ export interface RecipeLineDto {
   /** Inventory item id (RAW or PROCESSED). */
   itemId: string;
   /**
-     * Consumed per 1 unit of the dish (base unit).
+     * BRUTTO: gross quantity taken from stock per 1 unit of the dish (base unit). This is what is deducted from inventory and used for food cost.
      * @minimum 1
      */
   baseQty: number;
+  /**
+     * NETTO: quantity left after cleaning/trimming that ends up in the dish (base unit). Must be <= baseQty. Omit/null when there is no loss (netto == brutto).
+     * @minimum 1
+     * @nullable
+     */
+  netQty?: number | null;
 }

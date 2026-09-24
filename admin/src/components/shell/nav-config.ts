@@ -59,6 +59,7 @@ export const NAV_ITEMS: NavItem[] = [
     ],
     children: [
       { key: 'invStock', href: '/inventory/stock' },
+      { key: 'invDaily', href: '/inventory/daily-report' },
       { key: 'invReports', href: '/inventory/reports' },
       { key: 'invItems', href: '/inventory/items' },
       { key: 'invReceipts', href: '/inventory/goods-receipts' },

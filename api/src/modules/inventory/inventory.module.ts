@@ -138,6 +138,25 @@ import { PrismaProcessRunDetailReader } from './infrastructure/persistence/prism
 import { PrismaRecipeRepository } from './infrastructure/persistence/prisma-recipe.repository';
 import { PrismaMenuItemLookup } from './infrastructure/persistence/prisma-menu-item.lookup';
 import { PrismaItemUnitCostReader } from './infrastructure/persistence/prisma-item-unit-cost.reader';
+// COST-FIFO-1 / DAILY-INV-1
+import { ITEM_COST_TRACKER } from './application/ports/item-cost-tracker';
+import { COST_HISTORY_READER } from './application/ports/cost-history.reader';
+import { DAILY_INVENTORY_SOURCE } from './application/ports/daily-inventory.source';
+import { PrismaItemCostTracker } from './infrastructure/persistence/prisma-item-cost-tracker';
+import { PrismaCostHistoryReader } from './infrastructure/persistence/prisma-cost-history.reader';
+import { PrismaDailyInventorySource } from './infrastructure/persistence/prisma-daily-inventory.source';
+import { CostTrackingInventoryLedgerGateway } from './infrastructure/persistence/cost-tracking-ledger.gateway';
+import {
+  GetMenuCostingUseCase,
+  RecalculateCostsUseCase,
+} from './application/queries/get-menu-costing.usecase';
+import {
+  CloseInventoryDayUseCase,
+  GetDailyInventoryReportUseCase,
+} from './application/queries/get-daily-inventory-report.usecase';
+import { DailyInventoryReportService } from './application/services/daily-inventory-report.service';
+import { DailyInventoryScheduler } from './application/schedule/daily-inventory.scheduler';
+import { DailyInventoryReportController } from './presentation/http/daily-inventory-report.controller';
 import { PrismaWriteOffRepository } from './infrastructure/persistence/prisma-write-off.repository';
 import { PrismaWriteOffSummaryReader } from './infrastructure/persistence/prisma-write-off-summary.reader';
 import { PrismaInventoryLocationRepository } from './infrastructure/persistence/prisma-inventory-location.repository';
@@ -191,6 +210,7 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     LowStockAlertsController,
     InventoryTransfersController,
     InventoryReportsController,
+    DailyInventoryReportController,
   ],
   providers: [
     // items
@@ -289,7 +309,19 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     { provide: GOODS_RECEIPT_REPOSITORY, useClass: PrismaGoodsReceiptRepository },
     { provide: STOCK_LAYER_REPOSITORY, useClass: PrismaStockLayerRepository },
     { provide: STOCK_MOVEMENT_REPOSITORY, useClass: PrismaStockMovementRepository },
-    { provide: INVENTORY_LEDGER_GATEWAY, useClass: PrismaInventoryLedgerGateway },
+    // COST-FIFO-1: every ledger write goes through the cost-tracking decorator.
+    PrismaInventoryLedgerGateway,
+    { provide: INVENTORY_LEDGER_GATEWAY, useClass: CostTrackingInventoryLedgerGateway },
+    { provide: ITEM_COST_TRACKER, useClass: PrismaItemCostTracker },
+    { provide: COST_HISTORY_READER, useClass: PrismaCostHistoryReader },
+    { provide: DAILY_INVENTORY_SOURCE, useClass: PrismaDailyInventorySource },
+    GetMenuCostingUseCase,
+    RecalculateCostsUseCase,
+    // end-of-day inventory report (DAILY-INV-1)
+    DailyInventoryReportService,
+    GetDailyInventoryReportUseCase,
+    CloseInventoryDayUseCase,
+    DailyInventoryScheduler,
     { provide: INVENTORY_STOCK_READER, useClass: PrismaInventoryStockReader },
     { provide: STOCK_CONSUMPTION_PORT, useClass: InventoryConsumptionService },
     { provide: PROCESS_REPOSITORY, useClass: PrismaProcessRepository },
@@ -304,7 +336,10 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     { provide: WRITE_OFF_REPOSITORY, useClass: PrismaWriteOffRepository },
     { provide: WRITE_OFF_SUMMARY_READER, useClass: PrismaWriteOffSummaryReader },
     { provide: INVENTORY_LOCATION_REPOSITORY, useClass: PrismaInventoryLocationRepository },
-    { provide: BRANCH_INVENTORY_POLICY_REPOSITORY, useClass: PrismaBranchInventoryPolicyRepository },
+    {
+      provide: BRANCH_INVENTORY_POLICY_REPOSITORY,
+      useClass: PrismaBranchInventoryPolicyRepository,
+    },
     { provide: STOCK_ON_HAND_READER, useClass: PrismaStockOnHandReader },
     { provide: LOW_STOCK_ALERT_READER, useClass: PrismaLowStockAlertReader },
     { provide: INVENTORY_TRANSFER_REPOSITORY, useClass: PrismaInventoryTransferRepository },

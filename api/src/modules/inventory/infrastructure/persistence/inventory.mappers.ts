@@ -51,6 +51,8 @@ export class InventoryItemMapper {
       trackExpiry: r.trackExpiry,
       lowStockThresholdBase: r.lowStockThresholdBase,
       lastUnitCostMicro: r.lastUnitCostMicro,
+      currentUnitCostMicro: r.currentUnitCostMicro,
+      cleaningLossBps: r.cleaningLossBps,
       consumptionLocationId: r.consumptionLocationId,
       catalogItemId: r.catalogItemId,
       status: r.status as InventoryItemStatus,
@@ -73,6 +75,7 @@ export class InventoryItemMapper {
       alternateUnits: i.alternateUnits.map((a) => ({ name: a.name, factor: a.factor })),
       trackExpiry: i.trackExpiry,
       lowStockThresholdBase: i.lowStockThresholdBase,
+      cleaningLossBps: i.cleaningLossBps,
       lastUnitCostMicro: i.lastUnitCostMicro,
       consumptionLocationId: i.consumptionLocationId,
       catalogItemId: i.catalogItemId,
@@ -93,6 +96,7 @@ export class InventoryItemMapper {
       alternateUnits: i.alternateUnits.map((a) => ({ name: a.name, factor: a.factor })),
       trackExpiry: i.trackExpiry,
       lowStockThresholdBase: i.lowStockThresholdBase,
+      cleaningLossBps: i.cleaningLossBps,
       lastUnitCostMicro: i.lastUnitCostMicro,
       consumptionLocationId: i.consumptionLocationId,
       status: i.status as InventoryItemStatus,
@@ -253,9 +257,7 @@ export class BranchInventoryPolicyMapper {
 }
 
 export class InventoryTransferMapper {
-  static toDomain(
-    r: PrismaTransfer & { slices?: PrismaTransferSlice[] },
-  ): InventoryTransfer {
+  static toDomain(r: PrismaTransfer & { slices?: PrismaTransferSlice[] }): InventoryTransfer {
     return InventoryTransfer.reconstitute(r.id, {
       restaurantId: r.restaurantId,
       branchId: r.branchId,

@@ -1388,6 +1388,14 @@ model InventoryItem {
   trackExpiry           Boolean             @default(false)
   lowStockThresholdBase Int?
   lastUnitCostMicro     BigInt?             @map("last_unit_cost_micro")
+  // COST-FIFO-1: MICRO unit cost of the batch CURRENTLY being consumed (the next
+  // FIFO/FEFO open layer). Maintained by ItemCostTracker after every ledger write;
+  // drives the dish cost price. Changes (e.g. a new supplier price starting to be
+  // used) are logged in inventory_item_cost_changes. Null = no stock/cost yet.
+  currentUnitCostMicro  BigInt?             @map("current_unit_cost_micro")
+  // BRUTTO-1: default cleaning/trim loss in basis points (2000 = 20%). Only
+  // prefills a recipe line's brutto from its netto; stock always deducts brutto.
+  cleaningLossBps       Int?
   // 6C: the location this item is depleted from on serve (per item, per branch).
   // Null => resolve to the branch's default Main Storage (the resolver helper).
   consumptionLocationId String?
@@ -1997,6 +2005,11 @@ model Recipe {
   branchId     String
   menuItemId   String
   note         String?
+  // COST-FIFO-1: last computed dish cost price (minor units) from the current
+  // batch cost of each ingredient (brutto x currentUnitCostMicro). Refreshed by
+  // ItemCostTracker whenever an ingredient's current batch cost changes.
+  costAmount    Int?      @map("cost_amount")
+  costUpdatedAt DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
@@ -2017,7 +2030,12 @@ model RecipeLine {
   recipeId String
   branchId String
   itemId   String
+  // BRUTTO-1: baseQty is the BRUTTO (gross) quantity taken from stock per dish —
+  // it is what consumption deducts and what food cost uses. netQty is the NETTO
+  // (after cleaning/trimming) quantity that actually ends up in the dish; null =
+  // no loss (netto == brutto). Invariant: 0 < netQty <= baseQty.
   baseQty  Int
+  netQty   Int?
 
   recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
@@ -2479,4 +2497,66 @@ model FiscalDepartment {
   @@unique([fiscalConfigId, dep])
   @@index([fiscalConfigId])
   @@map("fiscal_departments")
+}
+
+// ── COST-FIFO-1: cost price history ─────────────────────────────────────────
+// One row each time an item's CURRENT batch cost changes (a new supplier batch
+// at a different price starts being consumed, first stock arrives, ...).
+model InventoryItemCostChange {
+  id               String   @id @default(cuid())
+  restaurantId     String
+  branchId         String
+  itemId           String
+  oldUnitCostMicro BigInt?  @map("old_unit_cost_micro")
+  newUnitCostMicro BigInt   @map("new_unit_cost_micro")
+  // The batch (stock layer) now being consumed, and its supplier when known.
+  layerId          String?
+  supplierId       String?
+  // What caused the switch: RECEIPT | CONSUMPTION | PROCESS_RUN | TRANSFER |
+  // ADJUSTMENT | COUNT | REVERSAL | RECONCILE.
+  trigger          String
+  occurredAt       DateTime
+  createdAt        DateTime @default(now())
+
+  @@index([restaurantId, branchId, occurredAt], map: "inv_item_cost_change_scope_idx")
+  @@index([itemId, occurredAt])
+  @@map("inventory_item_cost_changes")
+}
+
+// One row each time a dish's cost price changes because an ingredient's current
+// batch cost changed (causeItemId) — the dish cost-price history.
+model RecipeCostChange {
+  id            String   @id @default(cuid())
+  restaurantId  String
+  branchId      String
+  recipeId      String
+  menuItemId    String
+  oldCostAmount Int?     @map("old_cost_amount")
+  newCostAmount Int      @map("new_cost_amount")
+  causeItemId   String?
+  occurredAt    DateTime
+  createdAt     DateTime @default(now())
+
+  @@index([restaurantId, branchId, occurredAt], map: "inv_recipe_cost_change_scope_idx")
+  @@index([recipeId, occurredAt])
+  @@map("inventory_recipe_cost_changes")
+}
+
+// ── DAILY-INV-1: end-of-day inventory report snapshot ───────────────────────
+// Frozen per (branch, business day in the restaurant timezone) by the nightly
+// job so a closed day never shifts; the payload is the DailyInventoryReport JSON.
+model InventoryDailyReport {
+  id           String   @id @default(cuid())
+  restaurantId String
+  branchId     String
+  businessDate String
+  timezone     String
+  payload      Json
+  generatedAt  DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([branchId, businessDate], map: "inv_daily_report_branch_date_key")
+  @@index([restaurantId, branchId, businessDate])
+  @@map("inventory_daily_reports")
 }

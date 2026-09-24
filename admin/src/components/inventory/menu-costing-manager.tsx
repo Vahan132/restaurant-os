@@ -1,17 +1,31 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useItemsControllerList } from '@/api/generated/menu-items/menu-items';
-import type { ItemsControllerListParams, MenuItemResponse } from '@/api/generated/model';
+import {
+  useRecipesControllerCosting,
+  useRecipesControllerRecalculateCosts,
+} from '@/api/generated/inventory-recipes/inventory-recipes';
+import type {
+  ItemsControllerListParams,
+  MenuCostingRowResponse,
+  MenuItemResponse,
+} from '@/api/generated/model';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { inputClass } from '@/components/ui/form';
 import { Toggle } from '@/components/ui/toggle';
 import { Pagination } from '@/components/inventory/shared';
-import { useRecipesList } from '@/lib/inventory/use-recipe-data';
+import { getErrorMessage } from '@/lib/api-error';
+import { usePermission } from '@/lib/auth/use-permission';
+import { itemDisplayName } from '@/lib/inventory/display-name';
+import { useItemsForSelect } from '@/lib/inventory/use-inventory-data';
+import { useRecipesInvalidation } from '@/lib/inventory/use-recipe-data';
+import { PERMISSIONS } from '@/lib/permissions';
+import { toast } from '@/stores/toast';
 import { normalizeList } from '@/lib/normalize-list';
 import { formatMoney } from '@/lib/money';
 import { useRestaurant } from '@/lib/restaurant/use-restaurant';
@@ -25,6 +39,7 @@ type HasRecipe = 'any' | 'yes' | 'no';
 export function MenuCostingManager() {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const { data: restaurant } = useRestaurant();
   const currency = restaurant?.currency ?? 'USD';
 
@@ -50,28 +65,46 @@ export function MenuCostingManager() {
     [itemsQuery.data],
   );
 
-  // Recipe estimate map (menuItemId -> estimatedUnitCost).
-  const { recipes } = useRecipesList({ limit: 100 });
-  const costByItem = useMemo(() => {
-    const m = new Map<string, number | null>();
-    // RecipeListItemResponse no longer carries the cost estimate; track recipe
-    // existence here (cost/margin require the full recipe and are shown there).
-    for (const r of recipes) m.set(r.menuItemId, null);
+  // COST-FIFO-1: live dish cost price per menu item (brutto x the batch each
+  // ingredient is currently consumed from) + the last logged cost-price change.
+  const costingQuery = useRecipesControllerCosting();
+  const costingByItem = useMemo(() => {
+    const m = new Map<string, MenuCostingRowResponse>();
+    for (const r of normalizeList<MenuCostingRowResponse>(costingQuery.data).items) {
+      m.set(r.menuItemId, r);
+    }
     return m;
-  }, [recipes]);
+  }, [costingQuery.data]);
+  const { items: invItems } = useItemsForSelect();
+  const invItemById = useMemo(() => new Map(invItems.map((i) => [i.id, i])), [invItems]);
+  const canManage = usePermission(PERMISSIONS.INVENTORY_RECIPE_MANAGE);
+  const recalc = useRecipesControllerRecalculateCosts();
+  const invalidateRecipes = useRecipesInvalidation();
+  const onRecalculate = async () => {
+    try {
+      const r = await recalc.mutateAsync();
+      await invalidateRecipes();
+      toast.success(
+        t('recalcDone', { items: r?.changedItems ?? 0, dishes: r?.changedDishes ?? 0 }),
+      );
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
 
   const rows = useMemo(
     () =>
       items.map((item) => {
-        const hasRec = costByItem.has(item.id);
-        const cost = hasRec ? (costByItem.get(item.id) ?? null) : null;
+        const costing = costingByItem.get(item.id);
+        const hasRec = !!costing;
+        const cost = costing ? costing.cost_amount : null;
         const price = item.priceAmount;
         const hasPrice = price > 0;
         const margin = cost != null && hasPrice ? price - cost : null;
         const marginPct = margin != null && price > 0 ? (margin / price) * 100 : null;
-        return { item, hasRec, cost, price, hasPrice, margin, marginPct };
+        return { item, hasRec, cost, price, hasPrice, margin, marginPct, costing };
       }),
-    [items, costByItem],
+    [items, costingByItem],
   );
 
   const filtered = useMemo(
@@ -89,7 +122,10 @@ export function MenuCostingManager() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold text-gray-900">{t('costingTitle')}</h1>
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-900">{t('costingTitle')}</h1>
+        <p className="mt-1 text-sm text-gray-500">{t('costingFifoHint')}</p>
+      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <input
@@ -116,6 +152,17 @@ export function MenuCostingManager() {
         <div className="w-44">
           <Toggle label={t('filterLowMargin')} checked={lowMargin} onChange={setLowMargin} />
         </div>
+        {canManage && (
+          <Button
+            size="sm"
+            variant="secondary"
+            className="ml-auto"
+            onClick={onRecalculate}
+            disabled={recalc.isPending}
+          >
+            {t('recalcCosts')}
+          </Button>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -137,6 +184,7 @@ export function MenuCostingManager() {
                 <th className="px-4 py-2 font-medium">{t('colEstCost')}</th>
                 <th className="px-4 py-2 font-medium">{t('colSellPrice')}</th>
                 <th className="px-4 py-2 font-medium">{t('colMargin')}</th>
+                <th className="px-4 py-2 font-medium">{t('colLastCostChange')}</th>
                 <th className="px-4 py-2 font-medium">{t('colFlags')}</th>
                 <th className="px-4 py-2" />
               </tr>
@@ -163,8 +211,42 @@ export function MenuCostingManager() {
                       '—'
                     )}
                   </td>
+                  <td className="px-4 py-2 text-xs">
+                    {r.costing?.lastChange ? (
+                      <div>
+                        <span
+                          className={
+                            r.costing.lastChange.oldCost_amount != null &&
+                            r.costing.lastChange.newCost_amount >
+                              r.costing.lastChange.oldCost_amount
+                              ? 'text-red-600'
+                              : 'text-green-700'
+                          }
+                        >
+                          {r.costing.lastChange.oldCost_amount != null
+                            ? formatMoney(r.costing.lastChange.oldCost_amount, currency)
+                            : '—'}{' '}
+                          → {formatMoney(r.costing.lastChange.newCost_amount, currency)}
+                        </span>
+                        <span className="block text-gray-400">
+                          {new Date(r.costing.lastChange.occurredAt).toLocaleDateString()}
+                          {r.costing.lastChange.causeItemId &&
+                            invItemById.get(r.costing.lastChange.causeItemId) &&
+                            ` · ${itemDisplayName(
+                              invItemById.get(r.costing.lastChange.causeItemId)!,
+                              locale,
+                            )}`}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2">
                     <div className="flex flex-wrap gap-1">
+                      {r.costing?.hasUncostedIngredient && (
+                        <Badge tone="amber">{t('uncostedFlag')}</Badge>
+                      )}
                       {!r.hasRec && <Badge tone="amber">{t('noRecipeFlag')}</Badge>}
                       {!r.hasPrice && <Badge tone="red">{t('noPriceFlag')}</Badge>}
                     </div>

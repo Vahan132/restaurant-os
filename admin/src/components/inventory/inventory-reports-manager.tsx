@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
+import { DailyInventoryReport } from '@/components/inventory/daily-inventory-report';
 import { LowStockReport } from '@/components/inventory/low-stock-report';
 import { MovementsReport } from '@/components/inventory/movements-report';
 import { StockOnHandReport } from '@/components/inventory/stock-on-hand-report';
@@ -10,12 +11,12 @@ import { ValuationReport } from '@/components/inventory/valuation-report';
 import { usePermission } from '@/lib/auth/use-permission';
 import { PERMISSIONS } from '@/lib/permissions';
 
-type Tab = 'onHand' | 'valuation' | 'lowStock' | 'movements';
+type Tab = 'daily' | 'onHand' | 'valuation' | 'lowStock' | 'movements';
 
 export function InventoryReportsManager() {
   const t = useTranslations('inventory');
   const canView = usePermission(PERMISSIONS.INVENTORY_READ);
-  const [tab, setTab] = useState<Tab>('onHand');
+  const [tab, setTab] = useState<Tab>('daily');
 
   if (!canView) {
     return (
@@ -29,6 +30,7 @@ export function InventoryReportsManager() {
   }
 
   const tabs: { key: Tab; label: string }[] = [
+    { key: 'daily', label: t('repTabDaily') },
     { key: 'onHand', label: t('repTabOnHand') },
     { key: 'valuation', label: t('repTabValuation') },
     { key: 'lowStock', label: t('repTabLowStock') },
@@ -56,6 +58,7 @@ export function InventoryReportsManager() {
         ))}
       </div>
 
+      {tab === 'daily' && <DailyInventoryReport />}
       {tab === 'onHand' && <StockOnHandReport />}
       {tab === 'valuation' && <ValuationReport />}
       {tab === 'lowStock' && <LowStockReport />}

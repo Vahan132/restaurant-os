@@ -21,11 +21,13 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BranchPaymentMethodsResponse,
   CancellationsResponse,
   DashboardResponse,
   DiscountsResponse,
   ItemRowResponse,
   PaymentMethodResponse,
+  PosReportsControllerGetPaymentMethodsParams,
   ReportsControllerGetByItemParams,
   ReportsControllerGetByPaymentMethodParams,
   ReportsControllerGetByTableParams,
@@ -872,6 +874,99 @@ export function useReportsControllerGetCancellations<TData = Awaited<ReturnType<
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getReportsControllerGetCancellationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * @summary Payment-method totals for the active branch's business day (cashier shift report).
+ */
+export const posReportsControllerGetPaymentMethods = (
+    params?: PosReportsControllerGetPaymentMethodsParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<BranchPaymentMethodsResponse>(
+      {url: `/reports/pos/payment-methods`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getPosReportsControllerGetPaymentMethodsQueryKey = (params?: PosReportsControllerGetPaymentMethodsParams,) => {
+    return [
+    `/reports/pos/payment-methods`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getPosReportsControllerGetPaymentMethodsQueryOptions = <TData = Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError = void>(params?: PosReportsControllerGetPaymentMethodsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPosReportsControllerGetPaymentMethodsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>> = ({ signal }) => posReportsControllerGetPaymentMethods(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PosReportsControllerGetPaymentMethodsQueryResult = NonNullable<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>>
+export type PosReportsControllerGetPaymentMethodsQueryError = void
+
+
+export function usePosReportsControllerGetPaymentMethods<TData = Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError = void>(
+ params: undefined |  PosReportsControllerGetPaymentMethodsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>,
+          TError,
+          Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePosReportsControllerGetPaymentMethods<TData = Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError = void>(
+ params?: PosReportsControllerGetPaymentMethodsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>,
+          TError,
+          Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePosReportsControllerGetPaymentMethods<TData = Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError = void>(
+ params?: PosReportsControllerGetPaymentMethodsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Payment-method totals for the active branch's business day (cashier shift report).
+ */
+
+export function usePosReportsControllerGetPaymentMethods<TData = Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError = void>(
+ params?: PosReportsControllerGetPaymentMethodsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPosReportsControllerGetPaymentMethodsQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

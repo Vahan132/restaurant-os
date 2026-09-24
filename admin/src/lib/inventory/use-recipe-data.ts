@@ -9,6 +9,7 @@ import {
   useRecipesControllerGet,
   getRecipesControllerListQueryKey,
   getRecipesControllerGetQueryKey,
+  getRecipesControllerCostingQueryKey,
 } from '@/api/generated/inventory-recipes/inventory-recipes';
 import { useRelatedItemsControllerRelated } from '@/api/generated/inventory-items/inventory-items';
 import type {
@@ -77,6 +78,8 @@ export function useRecipesInvalidation() {
         qc.invalidateQueries({
           queryKey: getRecipesControllerListQueryKey().slice(0, 1),
         }),
+        // COST-FIFO-1: dish cost prices on Menu costing.
+        qc.invalidateQueries({ queryKey: getRecipesControllerCostingQueryKey() }),
         recipeId
           ? qc.invalidateQueries({
               queryKey: getRecipesControllerGetQueryKey(recipeId),

@@ -24,7 +24,16 @@ import {
   ListRecipesQuery,
   UpdateRecipeDto,
 } from '../../application/dto/recipe.dto';
-import { RecipeListItemResponse, RecipeResponse } from '../../application/dto/recipe-responses';
+import {
+  MenuCostingRowResponse,
+  RecalculateCostsResponse,
+  RecipeListItemResponse,
+  RecipeResponse,
+} from '../../application/dto/recipe-responses';
+import {
+  GetMenuCostingUseCase,
+  RecalculateCostsUseCase,
+} from '../../application/queries/get-menu-costing.usecase';
 import { GetRecipeUseCase } from '../../application/queries/get-recipe.usecase';
 import { toLocale } from '../../application/services/dish-projection.resolver';
 import { ListRecipesUseCase } from '../../application/queries/list-recipes.usecase';
@@ -43,6 +52,8 @@ export class RecipesController {
     private readonly createRecipe: CreateRecipeUseCase,
     private readonly updateRecipe: UpdateRecipeUseCase,
     private readonly deleteRecipe: DeleteRecipeUseCase,
+    private readonly menuCosting: GetMenuCostingUseCase,
+    private readonly recalculate: RecalculateCostsUseCase,
   ) {}
 
   @Get()
@@ -65,11 +76,43 @@ export class RecipesController {
     return { data: page.data.map(RecipeListItemResponse.from), pagination: page.pagination };
   }
 
-  @Get(':id')
+  // Declared BEFORE ':id' so "costing" is not captured as a recipe id.
+  @Get('costing')
   @RequirePermissions(READ)
   @ApiOperation({
     summary:
-      'Get a recipe with lines, modifier consumptions, estimate, warnings, projections.',
+      'COST-FIFO-1: live dish cost price per recipe (brutto x the batch currently being ' +
+      'consumed) + the last cost-price change.',
+  })
+  @ApiOkResponse({ type: [MenuCostingRowResponse] })
+  async costing(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+  ): Promise<MenuCostingRowResponse[]> {
+    const rows = await this.menuCosting.execute({ restaurantId: tenant.restaurantId, branchId });
+    return rows.map(MenuCostingRowResponse.from);
+  }
+
+  @Post('costing/recalculate')
+  @HttpCode(200)
+  @RequirePermissions(MANAGE)
+  @ApiForbiddenResponse({ description: 'Missing inventory:recipe:manage permission.' })
+  @ApiOperation({
+    summary: 'COST-FIFO-1: re-evaluate every ingredient batch cost + dish cost in the branch.',
+  })
+  @ApiOkResponse({ type: RecalculateCostsResponse })
+  async recalculateCosts(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+  ): Promise<RecalculateCostsResponse> {
+    const r = await this.recalculate.execute({ restaurantId: tenant.restaurantId, branchId });
+    return { changedItems: r.changedItemIds.length, changedDishes: r.changedRecipeIds.length };
+  }
+
+  @Get(':id')
+  @RequirePermissions(READ)
+  @ApiOperation({
+    summary: 'Get a recipe with lines, modifier consumptions, estimate, warnings, projections.',
   })
   @ApiQuery({ name: 'locale', required: false, enum: ['hy', 'ru', 'en'] })
   @ApiOkResponse({ type: RecipeResponse })
@@ -106,7 +149,11 @@ export class RecipesController {
       branchId,
       menuItemId: dto.menuItemId,
       note: dto.note ?? null,
-      lines: dto.lines.map((l) => ({ itemId: l.itemId, baseQty: l.baseQty })),
+      lines: dto.lines.map((l) => ({
+        itemId: l.itemId,
+        baseQty: l.baseQty,
+        netQty: l.netQty ?? null,
+      })),
       modifierConsumptions: (dto.modifierConsumptions ?? []).map((m) => ({
         modifierOptionId: m.modifierOptionId,
         itemId: m.itemId,
@@ -136,7 +183,11 @@ export class RecipesController {
       branchId,
       recipeId: id,
       note: dto.note,
-      lines: dto.lines?.map((l) => ({ itemId: l.itemId, baseQty: l.baseQty })),
+      lines: dto.lines?.map((l) => ({
+        itemId: l.itemId,
+        baseQty: l.baseQty,
+        netQty: l.netQty ?? null,
+      })),
       modifierConsumptions: dto.modifierConsumptions?.map((m) => ({
         modifierOptionId: m.modifierOptionId,
         itemId: m.itemId,

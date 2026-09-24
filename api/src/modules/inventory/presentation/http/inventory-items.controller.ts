@@ -135,6 +135,7 @@ export class InventoryItemsController {
       alternateUnits: dto.alternateUnits,
       trackExpiry: dto.trackExpiry,
       lowStockThresholdBase: dto.lowStockThresholdBase ?? null,
+      cleaningLossBps: dto.cleaningLossBps ?? null,
       actorUserId: actor.sub,
     });
     return this.toResponse(item);
@@ -186,6 +187,7 @@ export class InventoryItemsController {
       alternateUnits: dto.alternateUnits,
       trackExpiry: dto.trackExpiry,
       lowStockThresholdBase: dto.lowStockThresholdBase,
+      cleaningLossBps: dto.cleaningLossBps,
     });
     return this.toResponse(item);
   }

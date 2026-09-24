@@ -28,26 +28,31 @@ import {
   useProcessesInvalidation,
   useUnitCostMap,
 } from '@/lib/inventory/use-process-data';
-import { BASE_UNIT_ABBR, type BaseUnit } from '@/lib/inventory/units';
+import { ProcessCalculationPanel } from '@/components/inventory/process-calculation-panel';
+import { factorForUnit, unitOptions } from '@/lib/inventory/units';
 import { formatMoney, minorToInput, toMinor } from '@/lib/money';
 import { useRestaurant } from '@/lib/restaurant/use-restaurant';
 import { toast } from '@/stores/toast';
 
+/** `baseQty` holds the quantity as typed, in `unit` ('' = the item's base unit). */
 interface InputRow {
   itemId: string;
   baseQty: string;
+  unit: string;
 }
 interface OutputRow {
   itemId: string;
   baseQty: string;
+  unit: string;
   isPrimary: boolean;
   costShare: string;
 }
 
-const emptyInput = (): InputRow => ({ itemId: '', baseQty: '' });
+const emptyInput = (): InputRow => ({ itemId: '', baseQty: '', unit: '' });
 const emptyOutput = (): OutputRow => ({
   itemId: '',
   baseQty: '',
+  unit: '',
   isPrimary: false,
   costShare: '',
 });
@@ -88,7 +93,7 @@ export function ProcessFormDrawer({
     setNote(existing.note ?? '');
     setInputs(
       existing.inputs.length
-        ? existing.inputs.map((i) => ({ itemId: i.itemId, baseQty: String(i.baseQty) }))
+        ? existing.inputs.map((i) => ({ itemId: i.itemId, baseQty: String(i.baseQty), unit: '' }))
         : [emptyInput()],
     );
     setOutputs(
@@ -96,6 +101,7 @@ export function ProcessFormDrawer({
         ? existing.outputs.map((o) => ({
             itemId: o.itemId,
             baseQty: String(o.baseQty),
+            unit: '',
             isPrimary: o.isPrimary,
             costShare: o.costShareBps != null ? String(o.costShareBps) : '',
           }))
@@ -115,9 +121,17 @@ export function ProcessFormDrawer({
   const update = useProcessesControllerUpdate();
   const submitting = create.isPending || update.isPending;
 
-  const unitLabel = (itemId: string) => {
+  /** Unit choices for a row: the item's base unit + its alternate units (kg, L, box…). */
+  const unitChoices = (itemId: string) => {
     const it = itemById.get(itemId);
-    return it ? (BASE_UNIT_ABBR[it.baseUnit as BaseUnit] ?? it.baseUnit) : '';
+    return it ? unitOptions(it.baseUnit, it.alternateUnits) : [];
+  };
+  /** Typed qty converted to the item's base unit (NaN when not a number). */
+  const toBase = (itemId: string, qty: string, unit: string): number => {
+    const it = itemById.get(itemId);
+    const q = Number(qty);
+    if (!it || qty.trim() === '' || !Number.isFinite(q)) return NaN;
+    return q * factorForUnit(unit || it.baseUnit, it.baseUnit, it.alternateUnits);
   };
 
   // --- repeatable row helpers ---
@@ -130,25 +144,42 @@ export function ProcessFormDrawer({
 
   // --- cost previews (informational) ---
   const processingMinor = toMinor(processingCost, currency) ?? 0;
-  const inputsCost = useMemo(
+
+  // Live "how it's calculated" model, in base units (matches backend rules).
+  const calcInputs = useMemo(
     () =>
-      inputs.reduce((sum, r) => {
-        const q = Number(r.baseQty);
-        return sum + (Number.isFinite(q) ? q * unitCost(r.itemId) : 0);
-      }, 0),
-    [inputs, unitCost],
+      inputs.map((r) => {
+        const b = toBase(r.itemId, r.baseQty, r.unit);
+        return { itemId: r.itemId, baseQty: Number.isFinite(b) ? b : 0 };
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [inputs, itemById],
   );
-  const estBatchCost = inputsCost + processingMinor;
+  const calcOutputs = useMemo(
+    () =>
+      outputs.map((o) => {
+        const b = toBase(o.itemId, o.baseQty, o.unit);
+        return {
+          itemId: o.itemId,
+          baseQty: Number.isFinite(b) ? b : 0,
+          isPrimary: o.isPrimary,
+          costShareBps: o.costShare.trim() === '' ? null : Number(o.costShare),
+        };
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [outputs, itemById],
+  );
+  const estBatchCost =
+    calcInputs.reduce((s, i) => s + i.baseQty * unitCost(i.itemId), 0) + processingMinor;
 
   /** Allocation of estimated total across outputs (matches backend rules). */
   const allocation = useMemo(() => {
-    const shares = outputs.map((o) => (o.costShare.trim() === '' ? null : Number(o.costShare)));
-    const allShared = shares.length > 0 && shares.every((s) => s != null);
-    return outputs.map((o, i) => {
-      if (allShared) return (estBatchCost * (shares[i] as number)) / 10000;
+    const allShared = calcOutputs.length > 0 && calcOutputs.every((o) => o.costShareBps != null);
+    return calcOutputs.map((o) => {
+      if (allShared) return (estBatchCost * (o.costShareBps as number)) / 10000;
       return o.isPrimary ? estBatchCost : 0;
     });
-  }, [outputs, estBatchCost]);
+  }, [calcOutputs, estBatchCost]);
 
   const validate = (): {
     ok: boolean;
@@ -159,9 +190,14 @@ export function ProcessFormDrawer({
 
     const inputsDto: ProcessInputDto[] = [];
     for (const r of inputs) {
-      const q = Number(r.baseQty);
+      const q = toBase(r.itemId, r.baseQty, r.unit);
       if (!r.itemId || !Number.isFinite(q) || q <= 0) continue;
-      inputsDto.push({ itemId: r.itemId, baseQty: q });
+      // Quantities are stored as whole base units (g / ml / pc).
+      if (!Number.isInteger(Math.round(q * 1e6) / 1e6)) {
+        errs.push(t('calcQtyNotInteger'));
+        continue;
+      }
+      inputsDto.push({ itemId: r.itemId, baseQty: Math.round(q) });
     }
     if (inputsDto.length === 0) errs.push(t('needInput'));
 
@@ -169,9 +205,13 @@ export function ProcessFormDrawer({
     const outputsDto: ProcessOutputDto[] = [];
     let badOutput = false;
     for (const o of filledOut) {
-      const q = Number(o.baseQty);
+      const q = toBase(o.itemId, o.baseQty, o.unit);
       if (!o.itemId || !Number.isFinite(q) || q <= 0) {
         badOutput = true;
+        continue;
+      }
+      if (!Number.isInteger(Math.round(q * 1e6) / 1e6)) {
+        errs.push(t('calcQtyNotInteger'));
         continue;
       }
       // Outputs must be PROCESSED.
@@ -180,7 +220,11 @@ export function ProcessFormDrawer({
         errs.push(t('outputsMustBeProcessed'));
         continue;
       }
-      const dto: ProcessOutputDto = { itemId: o.itemId, baseQty: q, isPrimary: o.isPrimary };
+      const dto: ProcessOutputDto = {
+        itemId: o.itemId,
+        baseQty: Math.round(q),
+        isPrimary: o.isPrimary,
+      };
       if (o.costShare.trim() !== '') dto.costShareBps = Number(o.costShare);
       outputsDto.push(dto);
     }
@@ -304,7 +348,7 @@ export function ProcessFormDrawer({
                   <select
                     className={inputClass}
                     value={row.itemId}
-                    onChange={(e) => setInput(i, { itemId: e.target.value })}
+                    onChange={(e) => setInput(i, { itemId: e.target.value, unit: '' })}
                   >
                     <option value="">{t('pSelectItem')}</option>
                     {allItems.map((it) => (
@@ -314,7 +358,7 @@ export function ProcessFormDrawer({
                     ))}
                   </select>
                 </div>
-                <div className="w-40">
+                <div className="w-48">
                   <div className="flex items-center gap-1">
                     <input
                       type="number"
@@ -325,7 +369,11 @@ export function ProcessFormDrawer({
                       value={row.baseQty}
                       onChange={(e) => setInput(i, { baseQty: e.target.value })}
                     />
-                    <span className="text-xs text-gray-500">{unitLabel(row.itemId)}</span>
+                    <UnitSelect
+                      options={unitChoices(row.itemId)}
+                      value={row.unit}
+                      onChange={(unit) => setInput(i, { unit })}
+                    />
                   </div>
                 </div>
                 <Button
@@ -354,7 +402,7 @@ export function ProcessFormDrawer({
                     <select
                       className={inputClass}
                       value={row.itemId}
-                      onChange={(e) => setOutput(i, { itemId: e.target.value })}
+                      onChange={(e) => setOutput(i, { itemId: e.target.value, unit: '' })}
                     >
                       <option value="">{t('pSelectItem')}</option>
                       {processedItems.map((it) => (
@@ -364,7 +412,7 @@ export function ProcessFormDrawer({
                       ))}
                     </select>
                   </div>
-                  <div className="w-40">
+                  <div className="w-48">
                     <div className="flex items-center gap-1">
                       <input
                         type="number"
@@ -375,7 +423,11 @@ export function ProcessFormDrawer({
                         value={row.baseQty}
                         onChange={(e) => setOutput(i, { baseQty: e.target.value })}
                       />
-                      <span className="text-xs text-gray-500">{unitLabel(row.itemId)}</span>
+                      <UnitSelect
+                        options={unitChoices(row.itemId)}
+                        value={row.unit}
+                        onChange={(unit) => setOutput(i, { unit })}
+                      />
                     </div>
                   </div>
                   <Button
@@ -415,36 +467,15 @@ export function ProcessFormDrawer({
             ))}
           </div>
 
-          {/* Cost allocation + estimated batch cost helpers */}
-          <div className="rounded-md bg-gray-50 p-3 text-sm">
-            <div className="flex justify-between">
-              <span className="font-medium text-gray-700">{t('estBatchCost')}</span>
-              <span className="text-gray-900">{formatMoney(estBatchCost, currency)}</span>
-            </div>
-            <p className="mt-1 text-xs text-gray-500">{t('estBatchCostHint')}</p>
-            <div className="mt-2 border-t border-gray-200 pt-2">
-              <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                {t('costAllocation')}
-              </span>
-              <ul className="mt-1 space-y-0.5">
-                {outputs.map((o, i) => {
-                  const it = o.itemId ? itemById.get(o.itemId) : null;
-                  if (!it) return null;
-                  return (
-                    <li key={i} className="flex justify-between text-gray-600">
-                      <span>
-                        {itemDisplayName(it, locale)}
-                        {o.isPrimary && o.costShare.trim() === '' && (
-                          <span className="text-gray-400"> · {t('allocPrimaryRemainder')}</span>
-                        )}
-                      </span>
-                      <span>{formatMoney(allocation[i] ?? 0, currency)}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </div>
+          {/* How the ins and outs are calculated (conversions, yield, unit cost). */}
+          <ProcessCalculationPanel
+            inputs={calcInputs}
+            outputs={calcOutputs}
+            processingCost={processingMinor}
+            itemById={itemById}
+            unitCost={unitCost}
+            currency={currency}
+          />
 
           {errors.length > 0 && (
             <div className="space-y-1">
@@ -458,5 +489,36 @@ export function ProcessFormDrawer({
         </div>
       )}
     </Drawer>
+  );
+}
+
+/** Compact unit picker (base unit + alternates); a plain label when there is only one. */
+function UnitSelect({
+  options,
+  value,
+  onChange,
+}: {
+  options: Array<{ value: string; label: string; isBase: boolean }>;
+  value: string;
+  onChange: (unit: string) => void;
+}) {
+  const first = options[0];
+  if (!first) return <span className="w-12" />;
+  if (options.length === 1) {
+    return <span className="w-12 text-xs text-gray-500">{first.label}</span>;
+  }
+  const current = value || first.value;
+  return (
+    <select
+      className="w-16 rounded-md border border-gray-300 bg-white px-1 py-1.5 text-xs text-gray-700"
+      value={current}
+      onChange={(e) => onChange(e.target.value === first.value ? '' : e.target.value)}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
   );
 }

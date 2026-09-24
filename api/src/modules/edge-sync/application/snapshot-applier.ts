@@ -156,12 +156,19 @@ export class SnapshotApplier {
         });
         await forEachSeq(s.catalog.branchInventoryPolicies, (r) => {
           const data = r as unknown as Prisma.BranchInventoryPolicyUncheckedCreateInput;
-          return tx.branchInventoryPolicy.upsert({ where: { id: r.id }, create: data, update: data });
+          return tx.branchInventoryPolicy.upsert({
+            where: { id: r.id },
+            create: data,
+            update: data,
+          });
         });
         await forEachSeq(s.catalog.inventoryItems, (r) => {
           const data = {
             ...r,
             lastUnitCostMicro: r.lastUnitCostMicro == null ? null : BigInt(r.lastUnitCostMicro),
+            // COST-FIFO-1: BigInt travels as a string in the JSON snapshot.
+            currentUnitCostMicro:
+              r.currentUnitCostMicro == null ? null : BigInt(r.currentUnitCostMicro),
           } as unknown as Prisma.InventoryItemUncheckedCreateInput;
           return tx.inventoryItem.upsert({ where: { id: r.id }, create: data, update: data });
         });
@@ -210,7 +217,9 @@ export class SnapshotApplier {
 
         // ── fiscal config (read-only on the edge; bytea base64 -> Buffer) ──────
         await forEachSeq(s.fiscal.fiscalConfigs, (r) => {
-          const data = fiscalConfigFromWire(r) as unknown as Prisma.FiscalConfigUncheckedCreateInput;
+          const data = fiscalConfigFromWire(
+            r,
+          ) as unknown as Prisma.FiscalConfigUncheckedCreateInput;
           return tx.fiscalConfig.upsert({ where: { id: r.id }, create: data, update: data });
         });
         await forEachSeq(s.fiscal.fiscalDepartments, (r) => {
@@ -355,6 +364,9 @@ export class SnapshotApplier {
           const data = {
             ...r,
             lastUnitCostMicro: r.lastUnitCostMicro == null ? null : BigInt(r.lastUnitCostMicro),
+            // COST-FIFO-1: BigInt travels as a string in the JSON snapshot.
+            currentUnitCostMicro:
+              r.currentUnitCostMicro == null ? null : BigInt(r.currentUnitCostMicro),
           } as unknown as Prisma.InventoryItemUncheckedCreateInput;
           return tx.inventoryItem.upsert({ where: { id: r.id }, create: data, update: data });
         });
@@ -421,7 +433,9 @@ export class SnapshotApplier {
         // departments have no updatedAt, so ship+reconcile the FULL set per changed
         // config (replace-by-parent, like recipe lines). Bytea base64 -> Buffer.
         await forEachSeq(ch.fiscalConfigs, (r) => {
-          const data = fiscalConfigFromWire(r) as unknown as Prisma.FiscalConfigUncheckedCreateInput;
+          const data = fiscalConfigFromWire(
+            r,
+          ) as unknown as Prisma.FiscalConfigUncheckedCreateInput;
           return tx.fiscalConfig.upsert({ where: { id: r.id }, create: data, update: data });
         });
         const departmentsByConfig = groupByKey(ch.fiscalDepartments, (d) => d.fiscalConfigId);

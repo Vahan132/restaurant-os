@@ -9,4 +9,6 @@
 export interface PaymentMethodResponse {
   method: string;
   amount: number;
+  /** Number of ACTIVE payments recorded with this method. */
+  paymentCount: number;
 }

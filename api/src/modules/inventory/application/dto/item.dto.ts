@@ -72,6 +72,19 @@ export class CreateInventoryItemDto {
   @IsInt()
   @Min(0)
   lowStockThresholdBase?: number;
+
+  @ApiPropertyOptional({
+    minimum: 0,
+    maximum: 9999,
+    description:
+      'BRUTTO-1: default cleaning/trim loss in basis points (2000 = 20%). Prefills a ' +
+      'recipe line brutto from netto.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(9999)
+  cleaningLossBps?: number;
 }
 
 /** CATALOG-1: adopt a platform catalog item into this branch's inventory. */
@@ -144,6 +157,19 @@ export class UpdateInventoryItemDto {
   @IsInt()
   @Min(0)
   lowStockThresholdBase?: number;
+
+  @ApiPropertyOptional({
+    minimum: 0,
+    maximum: 9999,
+    nullable: true,
+    type: Number,
+    description: 'BRUTTO-1: default cleaning/trim loss in basis points; null clears it.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(9999)
+  cleaningLossBps?: number | null;
 }
 
 export class ListInventoryItemsQuery {

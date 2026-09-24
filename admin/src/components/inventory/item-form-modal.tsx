@@ -59,10 +59,14 @@ export function ItemFormModal({
   const [threshold, setThreshold] = useState(
     item?.lowStockThresholdBase != null ? String(item.lowStockThresholdBase) : '',
   );
+  // BRUTTO-1: default cleaning/trim loss, edited as a percent (stored as bps).
+  const [cleaningLoss, setCleaningLoss] = useState(
+    item?.cleaningLossBps != null ? String(item.cleaningLossBps / 100) : '',
+  );
   const [alts, setAlts] = useState<AltRow[]>(
     item?.alternateUnits?.map((u) => ({ name: u.name, factor: String(u.factor) })) ?? [],
   );
-  const [errors, setErrors] = useState<{ name?: string; alts?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; alts?: string; loss?: string }>({});
 
   const create = useInventoryItemsControllerCreate();
   const update = useInventoryItemsControllerUpdate();
@@ -90,6 +94,10 @@ export function ItemFormModal({
       }
       parsed.push({ name: row.name.trim(), factor });
     }
+    if (cleaningLoss.trim() !== '') {
+      const pct = Number(cleaningLoss);
+      if (!Number.isFinite(pct) || pct < 0 || pct >= 100) next.loss = t('validCleaningLoss');
+    }
     setErrors(next);
     return { ok: Object.keys(next).length === 0, alternateUnits: parsed };
   };
@@ -99,6 +107,8 @@ export function ItemFormModal({
     if (!ok) return;
 
     const thresholdNum = threshold.trim() === '' ? undefined : Number(threshold);
+    const lossBps =
+      cleaningLoss.trim() === '' ? null : Math.round(Number(cleaningLoss) * 100);
 
     try {
       if (isEdit && item) {
@@ -109,6 +119,7 @@ export function ItemFormModal({
           kind: kind as UpdateInventoryItemDto['kind'],
           trackExpiry,
           lowStockThresholdBase: thresholdNum,
+          cleaningLossBps: lossBps,
           alternateUnits,
         };
         await update.mutateAsync({ id: item.id, data });
@@ -123,6 +134,7 @@ export function ItemFormModal({
           baseUnit: baseUnit as CreateInventoryItemDto['baseUnit'],
           trackExpiry,
           lowStockThresholdBase: thresholdNum,
+          cleaningLossBps: lossBps ?? undefined,
           alternateUnits,
         };
         await create.mutateAsync({ data });
@@ -207,15 +219,30 @@ export function ItemFormModal({
           </Field>
         </div>
 
-        <Field label={t('fThreshold')}>
-          <input
-            type="number"
-            min={0}
-            className={inputClass}
-            value={threshold}
-            onChange={(e) => setThreshold(e.target.value)}
-          />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t('fThreshold')}>
+            <input
+              type="number"
+              min={0}
+              className={inputClass}
+              value={threshold}
+              onChange={(e) => setThreshold(e.target.value)}
+            />
+          </Field>
+          <Field label={t('fCleaningLoss')} error={errors.loss}>
+            <input
+              type="number"
+              min={0}
+              max={99}
+              step="any"
+              placeholder="0"
+              className={inputClass}
+              value={cleaningLoss}
+              onChange={(e) => setCleaningLoss(e.target.value)}
+            />
+            <span className="mt-1 block text-xs text-gray-500">{t('fCleaningLossHint')}</span>
+          </Field>
+        </div>
 
         <Toggle
           label={t('fTrackExpiry')}

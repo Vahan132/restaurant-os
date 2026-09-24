@@ -17,4 +17,11 @@ export interface UpdateInventoryItemDto {
   trackExpiry?: boolean;
   /** @minimum 0 */
   lowStockThresholdBase?: number;
+  /**
+     * BRUTTO-1: default cleaning/trim loss in basis points; null clears it.
+     * @minimum 0
+     * @maximum 9999
+     * @nullable
+     */
+  cleaningLossBps?: number | null;
 }
