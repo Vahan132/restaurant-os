@@ -12,7 +12,9 @@ type Tab = 'users' | 'roles';
 
 export function UsersManager() {
   const t = useTranslations('users');
-  const canUsers = usePermission(PERMISSIONS.USER_MANAGE, 'restaurant');
+  const canManageUsers = usePermission(PERMISSIONS.USER_MANAGE, 'restaurant');
+  const canViewUsers = usePermission(PERMISSIONS.USER_VIEW, 'restaurant');
+  const canUsers = canManageUsers || canViewUsers;
   const canRoles = usePermission(PERMISSIONS.ROLE_MANAGE, 'restaurant');
 
   const available: { key: Tab; label: string }[] = [

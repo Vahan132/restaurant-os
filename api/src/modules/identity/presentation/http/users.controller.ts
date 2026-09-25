@@ -68,6 +68,9 @@ export class UsersController {
   }
 
   @Get()
+  // IIKO-PERM-1: read-only staff access (iiko B_VE). Overrides the class-level
+  // USER_MANAGE requirement for this read.
+  @RequirePermissions(PERMISSIONS.USER_VIEW)
   @ApiOperation({ summary: 'List users (paginated, tenant-scoped).' })
   @ApiOkResponse({ type: [UserResponse] })
   async list(
@@ -85,6 +88,9 @@ export class UsersController {
   }
 
   @Get(':id')
+  // IIKO-PERM-1: read-only staff access (iiko B_VE). Overrides the class-level
+  // USER_MANAGE requirement for this read.
+  @RequirePermissions(PERMISSIONS.USER_VIEW)
   @ApiOperation({ summary: 'Get a user by id.' })
   @ApiOkResponse({ type: UserResponse })
   async get(

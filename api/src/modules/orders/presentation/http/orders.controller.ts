@@ -23,6 +23,7 @@ import { Paginated } from '../../../../shared/application/pagination';
 import { ActiveBranchId } from '../../../../shared/auth/active-branch.decorator';
 import { BranchScoped } from '../../../../shared/auth/branch-scoped.decorator';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
+import { OwnOrderOrEditOthers } from './order-ownership.guard';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
 import { CurrentUser } from '../../../../shared/tenancy/current-user.decorator';
@@ -169,6 +170,7 @@ export class OrdersController {
 
   @Patch(':id')
   @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
   @ApiOperation({ summary: 'Update order note.' })
   @ApiOkResponse({ type: OrderResponse })
@@ -189,6 +191,7 @@ export class OrdersController {
 
   @Post(':id/items')
   @RequirePermissions(P.ORDER_CREATE)
+  @OwnOrderOrEditOthers()
   @ApiForbiddenResponse({ description: 'Missing ORDER_CREATE permission.' })
   @ApiOperation({ summary: 'Add an item to an order.' })
   @ApiCreatedResponse({ type: OrderResponse })
@@ -212,6 +215,7 @@ export class OrdersController {
 
   @Patch(':id/items/:itemId')
   @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
   @ApiOperation({ summary: 'Edit a NEW item (before send-to-kitchen).' })
   @ApiOkResponse({ type: OrderResponse })
@@ -236,6 +240,7 @@ export class OrdersController {
 
   @Delete(':id/items/:itemId')
   @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
   @ApiOperation({ summary: 'Remove a NEW item (before send-to-kitchen).' })
@@ -257,6 +262,7 @@ export class OrdersController {
 
   @Post(':id/send-to-kitchen')
   @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
   @ApiOperation({ summary: 'Send NEW items to the kitchen.' })
@@ -276,6 +282,7 @@ export class OrdersController {
 
   @Post(':id/discount')
   @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({
     description:
@@ -316,6 +323,7 @@ export class OrdersController {
 
   @Delete(':id/discount')
   @RequirePermissions(P.DISCOUNT_APPLY)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing DISCOUNT_APPLY permission.' })
   @ApiOperation({ summary: 'Remove the discount.' })
@@ -335,6 +343,7 @@ export class OrdersController {
 
   @Post(':id/items/:itemId/cancel')
   @RequirePermissions(P.ORDER_CANCEL)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing ORDER_CANCEL permission.' })
   @ApiOperation({ summary: 'Cancel a single item (reason required).' })
@@ -362,6 +371,7 @@ export class OrdersController {
 
   @Post(':id/cancel')
   @RequirePermissions(P.ORDER_CANCEL)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing ORDER_CANCEL permission.' })
   @ApiOperation({ summary: 'Cancel the order (reason required); releases the table (auto mode).' })
@@ -386,9 +396,10 @@ export class OrdersController {
   }
 
   @Post(':id/move-table')
-  @RequirePermissions(P.ORDER_EDIT)
+  @RequirePermissions(P.ORDER_MOVE_TABLE)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
-  @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
+  @ApiForbiddenResponse({ description: 'Missing order:move_table permission.' })
   @ApiOperation({ summary: 'Move the order to another table.' })
   @ApiOkResponse({ type: OrderResponse })
   async move(
@@ -408,6 +419,7 @@ export class OrdersController {
 
   @Post(':id/serve')
   @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
   @ApiOperation({ summary: 'Mark the order as SERVED.' })
@@ -427,6 +439,7 @@ export class OrdersController {
 
   @Post(':id/payments')
   @RequirePermissions(P.PAYMENT_PROCESS)
+  @OwnOrderOrEditOthers()
   @HttpCode(201)
   @ApiForbiddenResponse({ description: 'Missing PAYMENT_PROCESS permission.' })
   @ApiOperation({ summary: 'Record a manual payment (partial/multiple allowed).' })
@@ -455,9 +468,13 @@ export class OrdersController {
   }
 
   @Post(':id/payments/:paymentId/void')
-  @RequirePermissions(P.PAYMENT_PROCESS)
+  @RequirePermissions(P.PAYMENT_VOID)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
-  @ApiForbiddenResponse({ description: 'Missing PAYMENT_PROCESS permission.' })
+  @ApiForbiddenResponse({
+    description:
+      'Missing payment:void permission, or the order belongs to another waiter (order:edit_others).',
+  })
   @ApiOperation({ summary: 'Void an active payment.' })
   @ApiOkResponse({ type: OrderResponse })
   async voidOrderPayment(
@@ -481,6 +498,7 @@ export class OrdersController {
 
   @Post(':id/close')
   @RequirePermissions(P.PAYMENT_PROCESS)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing PAYMENT_PROCESS permission.' })
   @ApiOperation({ summary: 'Close a fully-paid order; table -> CLEANING (auto mode, last check).' })
@@ -502,6 +520,7 @@ export class OrdersController {
 
   @Post(':id/split-even')
   @RequirePermissions(P.PAYMENT_PROCESS)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing PAYMENT_PROCESS permission.' })
   @ApiOperation({ summary: 'Even-split calculator (shares sum exactly to total). Stateless.' })
@@ -522,6 +541,7 @@ export class OrdersController {
 
   @Post(':id/split-items')
   @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @HttpCode(201)
   @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
   @ApiOperation({ summary: 'Move items to a new linked child check (shares the table).' })
@@ -556,9 +576,10 @@ export class OrdersController {
   }
 
   @Post(':id/fiscalize')
-  @RequirePermissions(P.PAYMENT_PROCESS)
+  @RequirePermissions(P.FISCAL_RECEIPT_PRINT)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
-  @ApiForbiddenResponse({ description: 'Missing PAYMENT_PROCESS permission.' })
+  @ApiForbiddenResponse({ description: 'Missing fiscal:receipt:print permission.' })
   @ApiOperation({
     summary:
       'FISCAL-EDGE-4: manually fiscalize a paid dine-in order (MANUAL mode or retry). Hub-only.',
@@ -578,8 +599,8 @@ export class OrdersController {
   }
 
   @Get(':id/fiscal-receipt')
-  @RequirePermissions(P.PAYMENT_PROCESS)
-  @ApiForbiddenResponse({ description: 'Missing PAYMENT_PROCESS permission.' })
+  @RequirePermissions(P.FISCAL_RECEIPT_PRINT)
+  @ApiForbiddenResponse({ description: 'Missing fiscal:receipt:print permission.' })
   @ApiOperation({
     summary:
       'FISCAL-EDGE-4: stored fiscal receipt data (number/QR/receiptId) for reprint — no device call.',

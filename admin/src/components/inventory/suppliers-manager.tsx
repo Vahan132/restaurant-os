@@ -23,7 +23,7 @@ const PAGE_SIZE = 20;
 export function SuppliersManager() {
   const t = useTranslations('inventory');
   const tc = useTranslations('common');
-  const canManage = usePermission(PERMISSIONS.INVENTORY_ITEM_MANAGE);
+  const canManage = usePermission(PERMISSIONS.INVENTORY_SUPPLIER_MANAGE);
   const invalidate = useSuppliersInvalidation();
   const { ask, dialog } = useConfirm();
 

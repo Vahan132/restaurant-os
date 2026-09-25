@@ -39,6 +39,8 @@ export function UsersTab() {
   const currentUser = useCurrentUser();
   // Staff PIN management (3B) is branch-scoped: gate on the active branch.
   const canManagePins = usePermission(PERMISSIONS.STAFF_PIN_MANAGE);
+  // IIKO-PERM-1: user:view sees the list; editing still needs USER_MANAGE.
+  const canManageUsers = usePermission(PERMISSIONS.USER_MANAGE, 'restaurant');
 
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -115,17 +117,19 @@ export function UsersTab() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <div className="ml-auto">
-          <Button
-            variant="primary"
-            onClick={() => {
-              setEditingUser(null);
-              setFormOpen(true);
-            }}
-          >
-            + {t('addUser')}
-          </Button>
-        </div>
+        {canManageUsers && (
+          <div className="ml-auto">
+            <Button
+              variant="primary"
+              onClick={() => {
+                setEditingUser(null);
+                setFormOpen(true);
+              }}
+            >
+              + {t('addUser')}
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -174,25 +178,29 @@ export function UsersTab() {
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex justify-end gap-1">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            setEditingUser(user);
-                            setFormOpen(true);
-                          }}
-                        >
-                          {tc('edit')}
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setResetUser(user)}>
-                          {t('resetPassword')}
-                        </Button>
+                        {canManageUsers && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => {
+                                setEditingUser(user);
+                                setFormOpen(true);
+                              }}
+                            >
+                              {tc('edit')}
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setResetUser(user)}>
+                              {t('resetPassword')}
+                            </Button>
+                          </>
+                        )}
                         {canManagePins && (
                           <Button size="sm" variant="ghost" onClick={() => setPinUser(user)}>
                             {t('pin.action')}
                           </Button>
                         )}
-                        {blocked ? (
+                        {!canManageUsers ? null : blocked ? (
                           <Button size="sm" variant="ghost" onClick={() => onUnblock(user)}>
                             {t('unblock')}
                           </Button>

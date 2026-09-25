@@ -55,9 +55,9 @@ export function AuditFilters({
   // the user can actually see are offered.
   const { accessibleBranches } = useBranchContext();
 
-  // Employee options come from the user directory, gated on USER_MANAGE so we
+  // Employee options come from the user directory, gated on user:view so we
   // never fire a request the caller isn't allowed to make.
-  const canListUsers = usePermission(PERMISSIONS.USER_MANAGE, 'restaurant');
+  const canListUsers = usePermission(PERMISSIONS.USER_VIEW, 'restaurant');
   const usersQuery = useUsersControllerList(
     { page: 1, limit: 100 },
     { query: { enabled: canListUsers, placeholderData: keepPreviousData } },

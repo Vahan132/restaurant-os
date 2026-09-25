@@ -717,6 +717,50 @@
       "label": "Import sales",
       "desc": "Upload historical sales files and view import batches"
     },
+    "order:edit_others": {
+      "label": "Edit other waiters' orders",
+      "desc": "Edit, pay or cancel orders that belong to another waiter"
+    },
+    "order:move_table": {
+      "label": "Move order to another table",
+      "desc": "Transfer an open order to a different table"
+    },
+    "payment:void": {
+      "label": "Void payments",
+      "desc": "Void (refund) a payment already recorded on an order"
+    },
+    "fiscal:receipt:print": {
+      "label": "Print fiscal receipts",
+      "desc": "Fiscalize an order and view its fiscal (HDM) receipt"
+    },
+    "menu:stop_list": {
+      "label": "Manage stop-list",
+      "desc": "Mark menu items available or unavailable"
+    },
+    "reports:profit:view": {
+      "label": "View profit & loss",
+      "desc": "Open the profit report and its Excel export"
+    },
+    "finance:expense:read": {
+      "label": "View expenses",
+      "desc": "See the branch's operating expenses"
+    },
+    "finance:expense:manage": {
+      "label": "Record expenses",
+      "desc": "Add and edit operating expenses and categories"
+    },
+    "finance:expense:delete": {
+      "label": "Delete expenses",
+      "desc": "Delete operating expenses and categories"
+    },
+    "user:view": {
+      "label": "View staff",
+      "desc": "See the staff list without editing it"
+    },
+    "inventory:supplier:manage": {
+      "label": "Manage suppliers",
+      "desc": "Create, edit and delete suppliers"
+    },
     "device": {
       "enroll": {
         "label": "Enroll devices",

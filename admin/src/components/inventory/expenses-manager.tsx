@@ -303,8 +303,8 @@ export function ExpensesManager() {
   const currency = restaurant?.currency ?? 'USD';
   const timeZone =
     restaurant?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  const canWrite = usePermission(PERMISSIONS.INVENTORY_WRITEOFF_CREATE);
-  const canDelete = usePermission(PERMISSIONS.INVENTORY_WRITEOFF_VOID);
+  const canWrite = usePermission(PERMISSIONS.EXPENSE_MANAGE);
+  const canDelete = usePermission(PERMISSIONS.EXPENSE_DELETE);
 
   const month = presetRange('month', timeZone);
   const [from, setFrom] = useState('');

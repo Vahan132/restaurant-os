@@ -19,6 +19,15 @@ export const PERMISSIONS = {
   DASHBOARD_VIEW: 'DASHBOARD_VIEW',
   /** Branch-scoped cashier shift report (payment-method totals for a day). */
   REPORTS_SHIFT_VIEW: 'reports:shift:view',
+  // IIKO-PERM-1 finer rights (mirror api permissions.catalog.ts).
+  /** Edit/pay/cancel another waiter's order (iiko F_AOT). Enforced server-side. */
+  ORDER_EDIT_OTHERS: 'order:edit_others',
+  /** Move an order to another table (iiko F_CMP). */
+  ORDER_MOVE_TABLE: 'order:move_table',
+  /** Void a recorded payment (iiko F_STRN). */
+  PAYMENT_VOID: 'payment:void',
+  /** Fiscalize / view the fiscal receipt (iiko F_FRC). */
+  FISCAL_RECEIPT_PRINT: 'fiscal:receipt:print',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

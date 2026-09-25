@@ -28,7 +28,8 @@ import { SupplierResponse } from '../../application/dto/responses';
 import { ListSuppliersUseCase } from '../../application/queries/list-suppliers.usecase';
 
 const READ = PERMISSIONS.INVENTORY_READ;
-const MANAGE = PERMISSIONS.INVENTORY_ITEM_MANAGE;
+// IIKO-PERM-1: suppliers have their own right (iiko B_CTR / B_SUPP).
+const MANAGE = PERMISSIONS.INVENTORY_SUPPLIER_MANAGE;
 
 @ApiTags('inventory-suppliers')
 @ApiBearerAuth('access-token')
@@ -62,7 +63,7 @@ export class InventorySuppliersController {
 
   @Post()
   @RequirePermissions(MANAGE)
-  @ApiForbiddenResponse({ description: 'Missing inventory:item:manage permission.' })
+  @ApiForbiddenResponse({ description: 'Missing inventory:supplier:manage permission.' })
   @ApiOperation({ summary: 'Create a supplier.' })
   @ApiCreatedResponse({ type: SupplierResponse })
   async create(
@@ -82,7 +83,7 @@ export class InventorySuppliersController {
 
   @Patch(':id')
   @RequirePermissions(MANAGE)
-  @ApiForbiddenResponse({ description: 'Missing inventory:item:manage permission.' })
+  @ApiForbiddenResponse({ description: 'Missing inventory:supplier:manage permission.' })
   @ApiOperation({ summary: 'Update a supplier.' })
   @ApiOkResponse({ type: SupplierResponse })
   async update(
@@ -105,7 +106,7 @@ export class InventorySuppliersController {
   @Delete(':id')
   @RequirePermissions(MANAGE)
   @HttpCode(200)
-  @ApiForbiddenResponse({ description: 'Missing inventory:item:manage permission.' })
+  @ApiForbiddenResponse({ description: 'Missing inventory:supplier:manage permission.' })
   @ApiOperation({ summary: 'Soft-delete a supplier.' })
   @ApiOkResponse({ schema: { example: { success: true } } })
   async remove(

@@ -26,7 +26,7 @@ export function FiscalControl({ order }: { order: OrderResponse }) {
   if (status == null) return null;
 
   return (
-    <Can perform={PERMISSIONS.PAYMENT_PROCESS}>
+    <Can perform={PERMISSIONS.FISCAL_RECEIPT_PRINT}>
       <FiscalControlInner order={order} />
     </Can>
   );

@@ -236,7 +236,7 @@ export function useOrderActions(
 
   const moveTable = useCallback(
     async (tableId: string) => {
-      if (!canEdit) {
+      if (!can(PERMISSIONS.ORDER_MOVE_TABLE)) {
         toast.error(t('notAllowed'), t('editDisabled'));
         return;
       }
@@ -253,7 +253,7 @@ export function useOrderActions(
         refetch();
       }
     },
-    [canEdit, moveM, orderId, writeOrder, invalidateFloor, refetch, t],
+    [can, moveM, orderId, writeOrder, invalidateFloor, refetch, t],
   );
 
   const markServed = useCallback(async () => {

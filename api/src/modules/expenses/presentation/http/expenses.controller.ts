@@ -24,11 +24,12 @@ import {
 } from '../../application/dto/expense.dto';
 import { ExpensesService } from '../../application/expenses.service';
 
-// Expenses live next to write-offs in the admin, so they reuse its permissions:
-// read = inventory:read, add/edit = writeoff:create, delete = writeoff:void.
-const READ = PERMISSIONS.INVENTORY_READ;
-const WRITE = PERMISSIONS.INVENTORY_WRITEOFF_CREATE;
-const REMOVE = PERMISSIONS.INVENTORY_WRITEOFF_VOID;
+// IIKO-PERM-1: expenses have their own finance rights (iiko B_FIN / B_ECB).
+// The migration grants them to every role that held the inventory rights they
+// previously reused (inventory:read / writeoff:create / writeoff:void).
+const READ = PERMISSIONS.EXPENSE_READ;
+const WRITE = PERMISSIONS.EXPENSE_MANAGE;
+const REMOVE = PERMISSIONS.EXPENSE_DELETE;
 
 /** EXPENSES-1: non-stock operating expenses of the active branch. */
 @ApiTags('expenses')
@@ -40,7 +41,7 @@ export class ExpensesController {
 
   @Get()
   @RequirePermissions(READ)
-  @ApiForbiddenResponse({ description: 'Missing inventory:read.' })
+  @ApiForbiddenResponse({ description: 'Missing finance:expense:read.' })
   @ApiOperation({ summary: 'Expenses of the active branch in a date range (newest first).' })
   @ApiOkResponse({ type: [ExpenseResponse] })
   list(
@@ -53,7 +54,7 @@ export class ExpensesController {
 
   @Post()
   @RequirePermissions(WRITE)
-  @ApiForbiddenResponse({ description: 'Missing inventory:writeoff:create.' })
+  @ApiForbiddenResponse({ description: 'Missing finance:expense:manage.' })
   @ApiOperation({ summary: 'Record an expense (e.g. a chair, monthly printer paper).' })
   @ApiCreatedResponse({ type: ExpenseResponse })
   create(
@@ -67,7 +68,7 @@ export class ExpensesController {
 
   @Patch(':id')
   @RequirePermissions(WRITE)
-  @ApiForbiddenResponse({ description: 'Missing inventory:writeoff:create.' })
+  @ApiForbiddenResponse({ description: 'Missing finance:expense:manage.' })
   @ApiOperation({ summary: 'Edit an expense.' })
   @ApiOkResponse({ type: ExpenseResponse })
   update(
@@ -88,7 +89,7 @@ export class ExpensesController {
   @Delete(':id')
   @RequirePermissions(REMOVE)
   @HttpCode(200)
-  @ApiForbiddenResponse({ description: 'Missing inventory:writeoff:void.' })
+  @ApiForbiddenResponse({ description: 'Missing finance:expense:delete.' })
   @ApiOperation({ summary: 'Delete an expense (soft delete).' })
   @ApiOkResponse({ schema: { example: { success: true } } })
   async remove(
@@ -111,7 +112,7 @@ export class ExpenseCategoriesController {
 
   @Get()
   @RequirePermissions(READ)
-  @ApiForbiddenResponse({ description: 'Missing inventory:read.' })
+  @ApiForbiddenResponse({ description: 'Missing finance:expense:read.' })
   @ApiOperation({ summary: 'Expense categories of the active branch.' })
   @ApiOkResponse({ type: [ExpenseCategoryResponse] })
   list(
@@ -123,7 +124,7 @@ export class ExpenseCategoriesController {
 
   @Post()
   @RequirePermissions(WRITE)
-  @ApiForbiddenResponse({ description: 'Missing inventory:writeoff:create.' })
+  @ApiForbiddenResponse({ description: 'Missing finance:expense:manage.' })
   @ApiOperation({ summary: 'Create an expense category.' })
   @ApiCreatedResponse({ type: ExpenseCategoryResponse })
   create(
@@ -136,7 +137,7 @@ export class ExpenseCategoriesController {
 
   @Patch(':id')
   @RequirePermissions(WRITE)
-  @ApiForbiddenResponse({ description: 'Missing inventory:writeoff:create.' })
+  @ApiForbiddenResponse({ description: 'Missing finance:expense:manage.' })
   @ApiOperation({ summary: 'Rename an expense category.' })
   @ApiOkResponse({ type: ExpenseCategoryResponse })
   rename(
@@ -155,7 +156,7 @@ export class ExpenseCategoriesController {
   @Delete(':id')
   @RequirePermissions(REMOVE)
   @HttpCode(200)
-  @ApiForbiddenResponse({ description: 'Missing inventory:writeoff:void.' })
+  @ApiForbiddenResponse({ description: 'Missing finance:expense:delete.' })
   @ApiOperation({ summary: 'Delete an expense category (its expenses become uncategorised).' })
   @ApiOkResponse({ schema: { example: { success: true } } })
   async remove(

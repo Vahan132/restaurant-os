@@ -52,7 +52,9 @@ function loadView(): View {
 function FullExportButton() {
   const t = useTranslations('reports');
   const exporter = useReportExport();
-  if (!exporter) return null;
+  // The full export is the profit & loss workbook (IIKO-PERM-1: reports:profit:view).
+  const canProfit = usePermission(PERMISSIONS.REPORTS_PROFIT_VIEW);
+  if (!exporter || !canProfit) return null;
   return (
     <Button
       variant="primary"
@@ -76,6 +78,7 @@ export function ReportsView() {
   const t = useTranslations('reports');
   const ti = useTranslations('salesImport');
   const canView = usePermission(PERMISSIONS.REPORTS_VIEW);
+  const canProfit = usePermission(PERMISSIONS.REPORTS_PROFIT_VIEW);
   const { data: restaurant } = useRestaurant();
   const currency = restaurant?.currency ?? 'USD';
   const timezone =
@@ -103,7 +106,11 @@ export function ReportsView() {
     }
   };
   // "Imported" only exists while imported sales are included.
-  const activeView: View = view === 'imported' && !includeImported ? 'products' : view;
+  // "Profit" needs reports:profit:view (iiko B_VPLR).
+  const activeView: View =
+    (view === 'imported' && !includeImported) || (view === 'profit' && !canProfit)
+      ? 'products'
+      : view;
 
   if (!canView) {
     return (
@@ -117,7 +124,9 @@ export function ReportsView() {
   }
 
   const { from, to } = range;
-  const views = VIEWS.filter((v) => v !== 'imported' || includeImported);
+  const views = VIEWS.filter(
+    (v) => (v !== 'imported' || includeImported) && (v !== 'profit' || canProfit),
+  );
 
   return (
     <ReportExportProvider from={from} to={to} currency={currency}>

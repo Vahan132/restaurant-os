@@ -49,6 +49,8 @@ import { ListMenuItemsUseCase } from '../../application/queries/list-menu-items.
 
 const MENU_MANAGE = PERMISSIONS.MENU_MANAGE;
 const MENU_ITEM_SET_PRICE = PERMISSIONS.MENU_ITEM_SET_PRICE;
+// IIKO-PERM-1: stop-list (availability) toggling is its own right (iiko F_EM).
+const MENU_STOP_LIST = PERMISSIONS.MENU_STOP_LIST;
 
 @ApiTags('menu-items')
 @ApiBearerAuth('access-token')
@@ -210,8 +212,8 @@ export class ItemsController {
   }
 
   @Patch(':id/availability')
-  @RequirePermissions(MENU_MANAGE)
-  @ApiForbiddenResponse({ description: 'Missing MENU_MANAGE permission.' })
+  @RequirePermissions(MENU_STOP_LIST)
+  @ApiForbiddenResponse({ description: 'Missing menu:stop_list permission.' })
   @ApiOperation({ summary: 'Toggle item availability (shown but disabled when UNAVAILABLE).' })
   @ApiOkResponse({ type: MenuItemResponse })
   async availability(

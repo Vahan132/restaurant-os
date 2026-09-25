@@ -72,8 +72,8 @@ export class ReportExportController {
   }
 
   @Get('profit')
-  @RequirePermissions(PERMISSIONS.REPORTS_VIEW)
-  @ApiForbiddenResponse({ description: 'Missing REPORTS_VIEW permission.' })
+  @RequirePermissions(PERMISSIONS.REPORTS_PROFIT_VIEW)
+  @ApiForbiddenResponse({ description: 'Missing reports:profit:view permission.' })
   @ApiOperation({
     summary: 'Period P&L: revenue, cost price of sold items, write-offs, expenses, net profit.',
   })
@@ -87,8 +87,8 @@ export class ReportExportController {
   }
 
   @Get('profit/export')
-  @RequirePermissions(PERMISSIONS.REPORTS_VIEW)
-  @ApiForbiddenResponse({ description: 'Missing REPORTS_VIEW permission.' })
+  @RequirePermissions(PERMISSIONS.REPORTS_PROFIT_VIEW)
+  @ApiForbiddenResponse({ description: 'Missing reports:profit:view permission.' })
   @ApiOperation({
     summary:
       'Full Excel for a period: profit summary, sales by product with cost price / gross ' +

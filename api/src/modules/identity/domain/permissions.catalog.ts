@@ -79,6 +79,37 @@ export const PERMISSIONS = {
   // (they hold ALL_PERMISSIONS); existing roles are backfilled by the 5A migration.
   // Reading the imported-sales ANALYTICS reuses REPORTS_VIEW.
   SALES_IMPORT_MANAGE: 'sales:import:manage',
+  // ── iiko parity (IIKO-PERM-1) ─────────────────────────────────────────────
+  // Finer-grained capabilities modelled on iikoOffice/iikoChain role rights. Each
+  // one SPLITS an existing, broader permission; the IIKO-PERM-1 migration grants
+  // it to every role that already held the parent, so nothing changes for
+  // existing staff until an admin removes it from a role. The iiko right code is
+  // noted per key (see docs/iiko-permissions-gap.md).
+  // - Edit/pay/cancel an order that belongs to ANOTHER waiter (iiko F_AOT). A
+  //   caller without it may only mutate orders where they are the waiter (or the
+  //   order has no waiter, e.g. QR orders). BRANCH-SCOPED.
+  ORDER_EDIT_OTHERS: 'order:edit_others',
+  // - Move an order to another table (iiko F_CMP / F_MPR). Parent: ORDER_EDIT.
+  ORDER_MOVE_TABLE: 'order:move_table',
+  // - Void a recorded payment (iiko F_STRN refund / F_CCB). Parent: PAYMENT_PROCESS.
+  PAYMENT_VOID: 'payment:void',
+  // - Print / fetch the fiscal (HDM) receipt (iiko F_FRC / F_FISC_BP).
+  //   Parent: PAYMENT_PROCESS.
+  FISCAL_RECEIPT_PRINT: 'fiscal:receipt:print',
+  // - Put menu items on / off the stop-list (availability) without full menu
+  //   editing (iiko F_EM). Parent: MENU_MANAGE; also granted to CHEF/SOUS_CHEF.
+  MENU_STOP_LIST: 'menu:stop_list',
+  // - View the profit & loss report + its export (iiko B_VPLR). Parent: REPORTS_VIEW.
+  REPORTS_PROFIT_VIEW: 'reports:profit:view',
+  // - Operating expenses (iiko B_FIN / B_ECB). Previously reused inventory rights;
+  //   parents: inventory:read / inventory:writeoff:create / inventory:writeoff:void.
+  EXPENSE_READ: 'finance:expense:read',
+  EXPENSE_MANAGE: 'finance:expense:manage',
+  EXPENSE_DELETE: 'finance:expense:delete',
+  // - View the staff list without editing it (iiko B_VE vs B_EE). Parent: USER_MANAGE.
+  USER_VIEW: 'user:view',
+  // - Create/edit/delete suppliers (iiko B_CTR / B_SUPP). Parent: inventory:item:manage.
+  INVENTORY_SUPPLIER_MANAGE: 'inventory:supplier:manage',
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -153,6 +184,9 @@ export const SYSTEM_ROLE_PERMISSIONS: Record<SystemRoleCode, PermissionKey[]> = 
     PERMISSIONS.ORDER_CREATE,
     PERMISSIONS.ORDER_EDIT,
     PERMISSIONS.TABLE_STATUS_UPDATE,
+    // IIKO-PERM-1 splits of ORDER_EDIT — kept so waiters behave as before.
+    PERMISSIONS.ORDER_EDIT_OTHERS,
+    PERMISSIONS.ORDER_MOVE_TABLE,
   ],
   CASHIER: [
     PERMISSIONS.DASHBOARD_VIEW,
@@ -161,6 +195,12 @@ export const SYSTEM_ROLE_PERMISSIONS: Record<SystemRoleCode, PermissionKey[]> = 
     PERMISSIONS.DISCOUNT_APPLY,
     PERMISSIONS.TABLE_STATUS_UPDATE,
     PERMISSIONS.REPORTS_SHIFT_VIEW,
+    // IIKO-PERM-1 splits of ORDER_EDIT / PAYMENT_PROCESS — kept so cashiers
+    // behave as before.
+    PERMISSIONS.ORDER_EDIT_OTHERS,
+    PERMISSIONS.ORDER_MOVE_TABLE,
+    PERMISSIONS.PAYMENT_VOID,
+    PERMISSIONS.FISCAL_RECEIPT_PRINT,
   ],
   KITCHEN_STAFF: [PERMISSIONS.KDS_ACCESS],
   // 7A: Chef / Sous-Chef run production from the KDS. They get KDS access, read
@@ -171,11 +211,15 @@ export const SYSTEM_ROLE_PERMISSIONS: Record<SystemRoleCode, PermissionKey[]> = 
     PERMISSIONS.KDS_ACCESS,
     PERMISSIONS.INVENTORY_READ,
     PERMISSIONS.INVENTORY_PROCESS_RUN,
+    // IIKO-PERM-1: the kitchen maintains the stop-list (iiko F_EM).
+    PERMISSIONS.MENU_STOP_LIST,
   ],
   SOUS_CHEF: [
     PERMISSIONS.KDS_ACCESS,
     PERMISSIONS.INVENTORY_READ,
     PERMISSIONS.INVENTORY_PROCESS_RUN,
+    // IIKO-PERM-1: the kitchen maintains the stop-list (iiko F_EM).
+    PERMISSIONS.MENU_STOP_LIST,
   ],
   RECEPTIONIST: [
     PERMISSIONS.DASHBOARD_VIEW,

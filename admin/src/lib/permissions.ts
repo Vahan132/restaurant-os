@@ -32,6 +32,18 @@ export const PERMISSIONS = {
   DEVICE_ENROLL: 'device.enroll',
   STAFF_PIN_MANAGE: 'staff.pin.manage',
   SALES_IMPORT_MANAGE: 'sales:import:manage',
+  // IIKO-PERM-1 (mirrors api permissions.catalog.ts)
+  ORDER_EDIT_OTHERS: 'order:edit_others',
+  ORDER_MOVE_TABLE: 'order:move_table',
+  PAYMENT_VOID: 'payment:void',
+  FISCAL_RECEIPT_PRINT: 'fiscal:receipt:print',
+  MENU_STOP_LIST: 'menu:stop_list',
+  REPORTS_PROFIT_VIEW: 'reports:profit:view',
+  EXPENSE_READ: 'finance:expense:read',
+  EXPENSE_MANAGE: 'finance:expense:manage',
+  EXPENSE_DELETE: 'finance:expense:delete',
+  USER_VIEW: 'user:view',
+  INVENTORY_SUPPLIER_MANAGE: 'inventory:supplier:manage',
 } as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

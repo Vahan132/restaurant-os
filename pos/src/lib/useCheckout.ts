@@ -82,7 +82,7 @@ export function useCheckout(orderId: string) {
 
   const voidPayment = useCallback(
     async (paymentId: string) => {
-      if (!can(PERMISSIONS.PAYMENT_PROCESS)) {
+      if (!can(PERMISSIONS.PAYMENT_VOID)) {
         toast.error(t('notAllowed'), t('noPermissionPay'));
         return;
       }
@@ -169,6 +169,7 @@ export function useCheckout(orderId: string) {
     justClosed,
     // gating
     canPay: can(PERMISSIONS.PAYMENT_PROCESS),
+    canVoid: can(PERMISSIONS.PAYMENT_VOID),
     canSplitItems: can(PERMISSIONS.ORDER_EDIT),
     // busy
     paying: addPaymentM.isPending,

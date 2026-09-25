@@ -19,7 +19,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'menu',
     href: '/menu',
-    anyOf: [PERMISSIONS.MENU_MANAGE],
+    anyOf: [PERMISSIONS.MENU_MANAGE, PERMISSIONS.MENU_STOP_LIST],
     children: [
       { key: 'menuItems', href: '/menu' },
       { key: 'menuModifierGroups', href: '/menu/modifier-groups' },
@@ -56,6 +56,8 @@ export const NAV_ITEMS: NavItem[] = [
       PERMISSIONS.INVENTORY_PROCESS_RUN,
       PERMISSIONS.INVENTORY_WRITEOFF_CREATE,
       PERMISSIONS.INVENTORY_WRITEOFF_VOID,
+      PERMISSIONS.EXPENSE_READ,
+      PERMISSIONS.INVENTORY_SUPPLIER_MANAGE,
     ],
     children: [
       { key: 'invStock', href: '/inventory/stock' },
@@ -107,7 +109,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     key: 'users',
     href: '/users',
-    anyOf: [PERMISSIONS.USER_MANAGE, PERMISSIONS.ROLE_MANAGE],
+    anyOf: [PERMISSIONS.USER_MANAGE, PERMISSIONS.USER_VIEW, PERMISSIONS.ROLE_MANAGE],
     scope: 'restaurant',
   },
   {

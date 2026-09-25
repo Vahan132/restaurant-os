@@ -44,7 +44,7 @@ export function useFiscal(orderId: string) {
   );
 
   const fiscalize = useCallback(async () => {
-    if (!can(PERMISSIONS.PAYMENT_PROCESS)) {
+    if (!can(PERMISSIONS.FISCAL_RECEIPT_PRINT)) {
       toast.error(t('notAllowed'), t('noPermission'));
       return;
     }
@@ -77,6 +77,6 @@ export function useFiscal(orderId: string) {
   return {
     fiscalize,
     fiscalizing: fiscalizeM.isPending,
-    canFiscalize: can(PERMISSIONS.PAYMENT_PROCESS),
+    canFiscalize: can(PERMISSIONS.FISCAL_RECEIPT_PRINT),
   };
 }

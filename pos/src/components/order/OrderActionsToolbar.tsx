@@ -37,7 +37,7 @@ export function OrderActionsToolbar({ order, actions }: OrderActionsToolbarProps
         />
       </Can>
 
-      <Can perform={PERMISSIONS.ORDER_EDIT}>
+      <Can perform={PERMISSIONS.ORDER_MOVE_TABLE}>
         <ToolbarButton label={t('moveTable')} disabled={actions.moving} onClick={() => setSheet('move')} />
       </Can>
 

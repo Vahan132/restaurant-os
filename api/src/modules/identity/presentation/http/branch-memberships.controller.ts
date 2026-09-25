@@ -39,6 +39,9 @@ export class BranchMembershipsController {
   ) {}
 
   @Get(':id/branch-memberships')
+  // IIKO-PERM-1: read-only staff access (iiko B_VE). Overrides the class-level
+  // USER_MANAGE requirement for this read.
+  @RequirePermissions(PERMISSIONS.USER_VIEW)
   @ApiOperation({ summary: "List a user's branch memberships." })
   @ApiOkResponse({ type: [BranchMembershipResponse] })
   async list(

@@ -101,6 +101,7 @@ export function CheckoutScreen({ orderId }: { orderId: string }) {
             <BillSummary
               order={order}
               canPay={checkout.canPay}
+              canVoid={checkout.canVoid}
               voiding={checkout.voiding}
               onVoid={(paymentId) => checkout.voidPayment(paymentId)}
             />
