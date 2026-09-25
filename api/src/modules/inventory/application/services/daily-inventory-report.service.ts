@@ -93,7 +93,10 @@ export interface DailyDishCostChange {
 
 export interface DailyInventoryReport {
   branchId: string;
+  /** First business day of the report (the only day for a daily report). */
   businessDate: string;
+  /** Last business day (inclusive). Equals businessDate for a single day. */
+  endDate: string;
   timezone: string;
   from: string;
   to: string;
@@ -179,7 +182,24 @@ export class DailyInventoryReportService {
     timezone: string,
     now: Date = new Date(),
   ): Promise<DailyInventoryReport> {
-    const { start, end } = zonedDayRange(businessDate, timezone);
+    return this.buildRange(restaurantId, branchId, businessDate, businessDate, timezone, now);
+  }
+
+  /**
+   * Same report over several business days [fromDate .. toDate] (inclusive):
+   * opening = balance at the start of fromDate, movements summed over the whole
+   * range, closing = balance at the end of toDate.
+   */
+  async buildRange(
+    restaurantId: string,
+    branchId: string,
+    businessDate: string,
+    endDate: string,
+    timezone: string,
+    now: Date = new Date(),
+  ): Promise<DailyInventoryReport> {
+    const start = zonedDayRange(businessDate, timezone).start;
+    const end = zonedDayRange(endDate, timezone).end;
     const [openingBuckets, dayBuckets, itemChanges, dishChanges] = await Promise.all([
       this.source.ledgerBuckets(restaurantId, branchId, null, start),
       this.source.ledgerBuckets(restaurantId, branchId, start, end),
@@ -301,6 +321,7 @@ export class DailyInventoryReportService {
     return {
       branchId,
       businessDate,
+      endDate,
       timezone,
       from: start.toISOString(),
       to: end.toISOString(),

@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { RedisIoAdapter } from './modules/realtime/infrastructure/redis-io.adapter';
 import { AppConfig } from './shared/infrastructure/config/env.schema';
@@ -11,7 +12,9 @@ import { ResponseEnvelopeInterceptor } from './shared/presentation/interceptors/
 import { setupSwagger } from './shared/presentation/swagger';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: false });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: false });
+  // REPORT-XLSX-1: report exports POST the rendered table (can exceed the 100kb default).
+  app.useBodyParser('json', { limit: '5mb' });
   const logger = new Logger('Bootstrap');
   const config = app.get(ConfigService<AppConfig, true>);
 

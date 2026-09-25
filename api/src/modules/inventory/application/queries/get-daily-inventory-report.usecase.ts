@@ -9,6 +9,14 @@ import {
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+const MAX_RANGE_DAYS = 366;
+
+/** Whole calendar days from a to b (YYYY-MM-DD). */
+function daysBetween(a: string, b: string): number {
+  const ms = Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`);
+  return Math.round(ms / 86_400_000);
+}
+
 /** YYYY-MM-DD minus one calendar day (pure date arithmetic, tz-independent). */
 export function previousDate(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -34,16 +42,52 @@ export class GetDailyInventoryReportUseCase {
     restaurantId: string | null;
     branchId: string;
     date?: string;
+    /** Range mode: [from .. to] inclusive business days. */
+    from?: string;
+    to?: string;
     refresh?: boolean;
   }): Promise<DailyInventoryReport> {
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    if (input.date && !DATE_RE.test(input.date)) {
-      throw new BadRequestException({ code: 'INVALID_DATE', message: 'date must be YYYY-MM-DD.' });
+    for (const d of [input.date, input.from, input.to]) {
+      if (d && !DATE_RE.test(d)) {
+        throw new BadRequestException({
+          code: 'INVALID_DATE',
+          message: 'Dates must be YYYY-MM-DD.',
+        });
+      }
     }
     const timezone = await this.source.restaurantTimezone(input.restaurantId);
     const today = this.builder.todayFor(timezone);
+
+    if (input.from) {
+      const to = input.to ?? input.from;
+      if (to < input.from) {
+        throw new BadRequestException({
+          code: 'INVALID_DATE_RANGE',
+          message: '`to` must be on or after `from`.',
+        });
+      }
+      if (daysBetween(input.from, to) > MAX_RANGE_DAYS) {
+        throw new BadRequestException({
+          code: 'DATE_RANGE_TOO_LONG',
+          message: `The range may span at most ${MAX_RANGE_DAYS} days.`,
+        });
+      }
+      if (to !== input.from) {
+        // Multi-day ranges are always computed live from the append-only ledger.
+        return this.builder.buildRange(
+          input.restaurantId,
+          input.branchId,
+          input.from,
+          to,
+          timezone,
+        );
+      }
+      return this.execute({ ...input, date: input.from, from: undefined, to: undefined });
+    }
+
     const date = input.date ?? today;
 
     if (date >= today) {
@@ -52,7 +96,9 @@ export class GetDailyInventoryReportUseCase {
     if (!input.refresh) {
       const snap = await this.source.findSnapshot(input.branchId, date);
       if (snap) {
-        return { ...(snap as DailyInventoryReport), frozen: true };
+        const frozen = snap as DailyInventoryReport;
+        // Snapshots frozen before range support have no endDate.
+        return { ...frozen, endDate: frozen.endDate ?? date, frozen: true };
       }
     }
     const report = await this.builder.build(input.restaurantId, input.branchId, date, timezone);

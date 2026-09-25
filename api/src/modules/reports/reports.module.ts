@@ -11,6 +11,8 @@ import { GetSalesByItemUseCase } from './application/queries/get-sales-by-item.u
 import { GetDiscountsReportUseCase } from './application/queries/get-discounts-report.usecase';
 import { GetCancellationsReportUseCase } from './application/queries/get-cancellations-report.usecase';
 import { PrismaReportsQueryService } from './infrastructure/prisma-reports-query.service';
+import { ProfitReportService } from './infrastructure/profit-report.service';
+import { ReportExportController } from './presentation/http/report-export.controller';
 import { PosReportsController } from './presentation/http/pos-reports.controller';
 import { ReportsController } from './presentation/http/reports.controller';
 
@@ -20,7 +22,7 @@ import { ReportsController } from './presentation/http/reports.controller';
  * All figures computed on-the-fly from CLOSED orders; bucketed in restaurant tz.
  */
 @Module({
-  controllers: [ReportsController, PosReportsController],
+  controllers: [ReportsController, PosReportsController, ReportExportController],
   providers: [
     GetDashboardUseCase,
     GetSalesSummaryUseCase,
@@ -32,6 +34,7 @@ import { ReportsController } from './presentation/http/reports.controller';
     GetSalesByItemUseCase,
     GetDiscountsReportUseCase,
     GetCancellationsReportUseCase,
+    ProfitReportService,
     { provide: REPORTS_QUERY, useClass: PrismaReportsQueryService },
   ],
 })

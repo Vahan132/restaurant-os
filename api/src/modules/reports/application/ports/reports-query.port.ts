@@ -67,8 +67,21 @@ export interface TableRow {
 export interface ItemRow {
   menuItemId: string;
   name: string;
+  /** Menu category (the "Group" column of the sales report). */
+  categoryId: string | null;
+  categoryName: string | null;
   quantity: number;
   revenueAmount: number;
+  /**
+   * Cost price of what was sold (minor units): the FIFO cost actually deducted
+   * from stock for these order lines (net of reversals). Lines with no stock
+   * movement fall back to the dish's current recipe cost x qty.
+   */
+  costAmount: number;
+  /** revenue - cost. */
+  grossProfitAmount: number;
+  /** True when part of the cost came from the recipe estimate (no ledger cost). */
+  costEstimated: boolean;
 }
 export interface DiscountsData {
   totalDiscountAmount: number;

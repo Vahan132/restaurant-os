@@ -8435,13 +8435,31 @@
     "/inventory/daily-report": {
       "get": {
         "operationId": "DailyInventoryReportController_get",
-        "summary": "End-of-day inventory report: per item opening, received, sold, produced, used, wasted, count variance, adjustments, closing (qty + value) and the day's ingredient + dish cost-price changes. Closed days are served from a frozen nightly snapshot.",
+        "summary": "End-of-day inventory report: per item opening, received, sold, produced, used, wasted, count variance, adjustments, closing (qty + value) and the day's ingredient + dish cost-price changes. Closed days are served from a frozen nightly snapshot. Pass from/to for a multi-day range (computed live).",
         "parameters": [
           {
             "name": "date",
             "required": false,
             "in": "query",
             "description": "Business day YYYY-MM-DD in the restaurant timezone. Defaults to today.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "Range start YYYY-MM-DD (inclusive). Overrides `date` when given.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Range end YYYY-MM-DD (inclusive). Defaults to `from`.",
             "schema": {
               "type": "string"
             }
@@ -10514,6 +10532,211 @@
         ]
       }
     },
+    "/reports/export/xlsx": {
+      "post": {
+        "operationId": "ReportExportController_exportTable",
+        "summary": "Render an on-screen report table (already visible to the caller) into the standard Excel layout. Money cells are MAJOR units.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportTableDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "XLSX workbook."
+          }
+        },
+        "tags": [
+          "reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/reports/profit": {
+      "get": {
+        "operationId": "ReportExportController_getProfit",
+        "summary": "Period P&L: revenue, cost price of sold items, write-offs, expenses, net profit.",
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "From date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lang",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "ru",
+              "enum": [
+                "hy",
+                "ru",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfitTotalsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing REPORTS_VIEW permission."
+          }
+        },
+        "tags": [
+          "reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/reports/profit/export": {
+      "get": {
+        "operationId": "ReportExportController_exportProfit",
+        "summary": "Full Excel for a period: profit summary, sales by product with cost price / gross profit / markup, write-offs and expenses.",
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "From date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lang",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "ru",
+              "enum": [
+                "hy",
+                "ru",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "XLSX workbook."
+          },
+          "403": {
+            "description": "Missing REPORTS_VIEW permission."
+          }
+        },
+        "tags": [
+          "reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/reports/sales/by-item/export": {
+      "get": {
+        "operationId": "ReportExportController_exportByItem",
+        "summary": "Sales by product (with cost price) as Excel.",
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "From date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lang",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "ru",
+              "enum": [
+                "hy",
+                "ru",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "XLSX workbook."
+          },
+          "403": {
+            "description": "Missing REPORTS_VIEW permission."
+          }
+        },
+        "tags": [
+          "reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
     "/sales-import": {
       "post": {
         "operationId": "SalesImportController_upload",
@@ -11576,6 +11799,352 @@
         },
         "tags": [
           "order-requests"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/expenses": {
+      "get": {
+        "operationId": "ExpensesController_list",
+        "summary": "Expenses of the active branch in a date range (newest first).",
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "From date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "Only this category (\"none\" = uncategorised).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExpenseResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:read."
+          }
+        },
+        "tags": [
+          "expenses"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "ExpensesController_create",
+        "summary": "Record an expense (e.g. a chair, monthly printer paper).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExpenseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:writeoff:create."
+          }
+        },
+        "tags": [
+          "expenses"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/expenses/{id}": {
+      "patch": {
+        "operationId": "ExpensesController_update",
+        "summary": "Edit an expense.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateExpenseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:writeoff:create."
+          }
+        },
+        "tags": [
+          "expenses"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "ExpensesController_remove",
+        "summary": "Delete an expense (soft delete).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:writeoff:void."
+          }
+        },
+        "tags": [
+          "expenses"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/expense-categories": {
+      "get": {
+        "operationId": "ExpenseCategoriesController_list",
+        "summary": "Expense categories of the active branch.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExpenseCategoryResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:read."
+          }
+        },
+        "tags": [
+          "expense-categories"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "ExpenseCategoriesController_create",
+        "summary": "Create an expense category.",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseCategoryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:writeoff:create."
+          }
+        },
+        "tags": [
+          "expense-categories"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
+    "/expense-categories/{id}": {
+      "patch": {
+        "operationId": "ExpenseCategoriesController_rename",
+        "summary": "Rename an expense category.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseCategoryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:writeoff:create."
+          }
+        },
+        "tags": [
+          "expense-categories"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "ExpenseCategoriesController_remove",
+        "summary": "Delete an expense category (its expenses become uncategorised).",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing inventory:writeoff:void."
+          }
+        },
+        "tags": [
+          "expense-categories"
         ],
         "security": [
           {
@@ -22066,7 +22635,12 @@
             "type": "string"
           },
           "businessDate": {
-            "type": "string"
+            "type": "string",
+            "description": "First business day of the report."
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Last business day (inclusive); = businessDate for one day."
           },
           "timezone": {
             "type": "string"
@@ -22113,6 +22687,7 @@
         "required": [
           "branchId",
           "businessDate",
+          "endDate",
           "timezone",
           "from",
           "to",
@@ -23272,18 +23847,43 @@
           "name": {
             "type": "string"
           },
+          "categoryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryName": {
+            "type": "string",
+            "nullable": true
+          },
           "quantity": {
             "type": "number"
           },
           "revenueAmount": {
             "type": "number"
+          },
+          "costAmount": {
+            "type": "number",
+            "description": "Cost price of the sold quantity (minor units)."
+          },
+          "grossProfitAmount": {
+            "type": "number",
+            "description": "revenue - cost (minor units)."
+          },
+          "costEstimated": {
+            "type": "boolean",
+            "description": "Part of the cost is a recipe estimate (no stock movement)."
           }
         },
         "required": [
           "menuItemId",
           "name",
+          "categoryId",
+          "categoryName",
           "quantity",
-          "revenueAmount"
+          "revenueAmount",
+          "costAmount",
+          "grossProfitAmount",
+          "costEstimated"
         ]
       },
       "DiscountOrderResponse": {
@@ -23434,6 +24034,165 @@
           "totalAmount",
           "paymentCount",
           "orderCount"
+        ]
+      },
+      "ExportColumnDto": {
+        "type": "object",
+        "properties": {
+          "header": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "text",
+              "int",
+              "qty",
+              "money",
+              "percent",
+              "date"
+            ]
+          },
+          "width": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "header",
+          "kind"
+        ]
+      },
+      "ExportRowDto": {
+        "type": "object",
+        "properties": {
+          "cells": {
+            "type": "array",
+            "description": "Cell values in column order (string, number or null). Money in MAJOR units.",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "group",
+              "subtotal",
+              "total"
+            ]
+          }
+        },
+        "required": [
+          "cells"
+        ]
+      },
+      "ExportSheetDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "infoLines": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportColumnDto"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportRowDto"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "columns",
+          "rows"
+        ]
+      },
+      "ExportTableDto": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "description": "Download file name (without extension)."
+          },
+          "moneyDecimals": {
+            "type": "number",
+            "description": "Money fraction digits (AMD/USD/RUB = 2 per Intl)."
+          },
+          "warehousesLabel": {
+            "type": "string",
+            "description": "When set (e.g. \"Склад(ы)\"), a \"<label>: <active warehouse names>\" line is added under each sheet title."
+          },
+          "sheets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportSheetDto"
+            }
+          }
+        },
+        "required": [
+          "sheets"
+        ]
+      },
+      "ProfitTotalsResponse": {
+        "type": "object",
+        "properties": {
+          "salesAmount": {
+            "type": "number",
+            "description": "Sum of sold lines before order discounts."
+          },
+          "discountAmount": {
+            "type": "number"
+          },
+          "revenueAmount": {
+            "type": "number",
+            "description": "Closed orders total."
+          },
+          "costAmount": {
+            "type": "number",
+            "description": "Cost price of sold items (FIFO)."
+          },
+          "grossProfitAmount": {
+            "type": "number"
+          },
+          "writeOffAmount": {
+            "type": "number"
+          },
+          "expenseAmount": {
+            "type": "number"
+          },
+          "netProfitAmount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "salesAmount",
+          "discountAmount",
+          "revenueAmount",
+          "costAmount",
+          "grossProfitAmount",
+          "writeOffAmount",
+          "expenseAmount",
+          "netProfitAmount"
         ]
       },
       "RowResultResponse": {
@@ -24246,6 +25005,147 @@
             "type": "string"
           }
         }
+      },
+      "ExpenseResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Integer minor units."
+          },
+          "occurredAt": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryName": {
+            "type": "string",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdByUserId": {
+            "type": "string"
+          },
+          "createdByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "branchId",
+          "description",
+          "amount",
+          "occurredAt",
+          "categoryId",
+          "categoryName",
+          "note",
+          "createdByUserId",
+          "createdByName",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateExpenseDto": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "What was bought / paid, e.g. \"Chair\", \"Printer paper (monthly)\"."
+          },
+          "amount": {
+            "type": "number",
+            "description": "Amount in integer MINOR units of the restaurant currency."
+          },
+          "occurredAt": {
+            "type": "string",
+            "description": "When it was spent (ISO). Defaults to now."
+          },
+          "categoryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "description",
+          "amount"
+        ]
+      },
+      "UpdateExpenseDto": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "occurredAt": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ExpenseCategoryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "expenseCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "expenseCount"
+        ]
+      },
+      "ExpenseCategoryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
       },
       "ImportBodyDto": {
         "type": "object",

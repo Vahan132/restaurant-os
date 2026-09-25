@@ -15,6 +15,7 @@ import { Pagination, formatDateTime } from '@/components/inventory/shared';
 import { ReasonBadge, useLineSummary } from '@/components/inventory/writeoff-shared';
 import { WriteOffFormDrawer } from '@/components/inventory/writeoff-form-drawer';
 import { WriteOffDetailDrawer } from '@/components/inventory/writeoff-detail-drawer';
+import { ExpensesManager } from '@/components/inventory/expenses-manager';
 import { WasteSummary } from '@/components/inventory/waste-summary';
 import { usePermission } from '@/lib/auth/use-permission';
 import { usePaginatedWriteOffs } from '@/lib/inventory/use-writeoff-data';
@@ -24,7 +25,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 
 const PAGE_SIZE = 20;
 const REASONS = Object.values(WriteOffsControllerListReason);
-type Tab = 'list' | 'summary';
+type Tab = 'list' | 'summary' | 'expenses';
 
 export function WriteOffsManager() {
   const t = useTranslations('inventory');
@@ -44,6 +45,11 @@ export function WriteOffsManager() {
   const [detailId, setDetailId] = useState<string | null>(null);
 
   useEffect(() => setPage(1), [reason, kind, from, to]);
+  // Deep link from the profit report: /inventory/write-offs?tab=expenses
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('tab');
+    if (wanted === 'expenses' || wanted === 'summary') setTab(wanted);
+  }, []);
 
   const params = useMemo<WriteOffsControllerListParams>(
     () => ({
@@ -63,6 +69,7 @@ export function WriteOffsManager() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'list', label: t('woTab') },
     { key: 'summary', label: t('woSummaryTab') },
+    { key: 'expenses', label: t('expTab') },
   ];
 
   return (
@@ -95,6 +102,8 @@ export function WriteOffsManager() {
 
       {tab === 'summary' ? (
         <WasteSummary />
+      ) : tab === 'expenses' ? (
+        <ExpensesManager />
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-2">

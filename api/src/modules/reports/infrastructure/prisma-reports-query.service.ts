@@ -267,20 +267,98 @@ export class PrismaReportsQueryService implements ReportsQuery {
       closed.map((o) => o.id),
       true,
     );
-    const agg = new Map<string, { name: string; quantity: number; revenueAmount: number }>();
+    const ledgerCost = await this.orderLineCosts(
+      restaurantId,
+      items.map((i) => i.id),
+    );
+    const agg = new Map<
+      string,
+      {
+        name: string;
+        quantity: number;
+        revenueAmount: number;
+        costAmount: number;
+        missingQty: number;
+      }
+    >();
     for (const it of items) {
       const cur = agg.get(it.menuItemId) ?? {
         name: it.nameSnapshot,
         quantity: 0,
         revenueAmount: 0,
+        costAmount: 0,
+        missingQty: 0,
       };
       cur.quantity += it.quantity;
       cur.revenueAmount += it.lineTotalAmount;
+      const cost = ledgerCost.get(it.id);
+      if (cost === undefined) cur.missingQty += it.quantity;
+      else cur.costAmount += cost;
       agg.set(it.menuItemId, cur);
     }
+
+    const menuItemIds = [...agg.keys()];
+    const [menuItems, recipes] = await Promise.all([
+      menuItemIds.length
+        ? this.prisma.menuItem.findMany({
+            where: { id: { in: menuItemIds } },
+            select: { id: true, categoryId: true, category: { select: { name: true } } },
+          })
+        : Promise.resolve([]),
+      menuItemIds.length
+        ? this.prisma.recipe.findMany({
+            where: { restaurantId, menuItemId: { in: menuItemIds }, deletedAt: null },
+            select: { menuItemId: true, costAmount: true },
+          })
+        : Promise.resolve([]),
+    ]);
+    const menuById = new Map(menuItems.map((m) => [m.id, m]));
+    const recipeCost = new Map(recipes.map((r) => [r.menuItemId, r.costAmount]));
+
     return [...agg.entries()]
-      .map(([menuItemId, v]) => ({ menuItemId, ...v }))
+      .map(([menuItemId, v]) => {
+        const menu = menuById.get(menuItemId);
+        const perUnit = recipeCost.get(menuItemId) ?? null;
+        const estimated = v.missingQty > 0 && perUnit !== null && perUnit > 0;
+        const costAmount = v.costAmount + (estimated ? perUnit! * v.missingQty : 0);
+        return {
+          menuItemId,
+          name: v.name,
+          categoryId: menu?.categoryId ?? null,
+          categoryName: menu?.category?.name ?? null,
+          quantity: v.quantity,
+          revenueAmount: v.revenueAmount,
+          costAmount,
+          grossProfitAmount: v.revenueAmount - costAmount,
+          costEstimated: estimated,
+        };
+      })
       .sort((a, b) => b.revenueAmount - a.revenueAmount);
+  }
+
+  /**
+   * Actual cost price per order line from the stock ledger: every movement keyed
+   * refType=ORDER_LINE / refId=orderItemId (consumption is negative, reversals
+   * positive), so cost = -sum. Lines that never touched stock are absent.
+   */
+  private async orderLineCosts(
+    restaurantId: string,
+    orderItemIds: string[],
+  ): Promise<Map<string, number>> {
+    const out = new Map<string, number>();
+    const CHUNK = 5000;
+    for (let i = 0; i < orderItemIds.length; i += CHUNK) {
+      const ids = orderItemIds.slice(i, i + CHUNK);
+      const rows = await this.prisma.stockMovement.groupBy({
+        by: ['refId'],
+        where: { restaurantId, refType: 'ORDER_LINE', refId: { in: ids } },
+        _sum: { costAmount: true },
+      });
+      for (const r of rows) {
+        if (r.refId) out.set(r.refId, -(r._sum.costAmount ?? 0));
+      }
+    }
+    return out;
   }
 
   async discounts(restaurantId: string, from: Date, to: Date): Promise<DiscountsData> {

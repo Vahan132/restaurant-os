@@ -64,8 +64,15 @@ export class TableRowResponse {
 export class ItemRowResponse {
   @ApiProperty() menuItemId!: string;
   @ApiProperty() name!: string;
+  @ApiProperty({ type: String, nullable: true }) categoryId!: string | null;
+  @ApiProperty({ type: String, nullable: true }) categoryName!: string | null;
   @ApiProperty() quantity!: number;
   @ApiProperty() revenueAmount!: number;
+  @ApiProperty({ description: 'Cost price of the sold quantity (minor units).' })
+  costAmount!: number;
+  @ApiProperty({ description: 'revenue - cost (minor units).' }) grossProfitAmount!: number;
+  @ApiProperty({ description: 'Part of the cost is a recipe estimate (no stock movement).' })
+  costEstimated!: boolean;
 }
 export class DiscountOrderResponse {
   @ApiProperty() orderId!: string;
@@ -93,4 +100,16 @@ export class CancelledItemResponse {
 export class CancellationsResponse {
   @ApiProperty({ type: [CancelledOrderResponse] }) cancelledOrders!: CancelledOrderResponse[];
   @ApiProperty({ type: [CancelledItemResponse] }) cancelledItems!: CancelledItemResponse[];
+}
+
+/** PROFIT-XLSX-1: period P&L totals (minor units). */
+export class ProfitTotalsResponse {
+  @ApiProperty({ description: 'Sum of sold lines before order discounts.' }) salesAmount!: number;
+  @ApiProperty() discountAmount!: number;
+  @ApiProperty({ description: 'Closed orders total.' }) revenueAmount!: number;
+  @ApiProperty({ description: 'Cost price of sold items (FIFO).' }) costAmount!: number;
+  @ApiProperty() grossProfitAmount!: number;
+  @ApiProperty() writeOffAmount!: number;
+  @ApiProperty() expenseAmount!: number;
+  @ApiProperty() netProfitAmount!: number;
 }

@@ -12,6 +12,20 @@ export class DailyInventoryReportQuery {
   date?: string;
 
   @ApiPropertyOptional({
+    description: 'Range start YYYY-MM-DD (inclusive). Overrides `date` when given.',
+  })
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  from?: string;
+
+  @ApiPropertyOptional({
+    description: 'Range end YYYY-MM-DD (inclusive). Defaults to `from`.',
+  })
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  to?: string;
+
+  @ApiPropertyOptional({
     enum: ['true', 'false'],
     description: 'Re-freeze a closed day from the ledger instead of serving its snapshot.',
   })
@@ -88,7 +102,9 @@ export class DailyDishCostChangeView {
 
 export class DailyInventoryReportResponse {
   @ApiProperty() branchId!: string;
-  @ApiProperty() businessDate!: string;
+  @ApiProperty({ description: 'First business day of the report.' }) businessDate!: string;
+  @ApiProperty({ description: 'Last business day (inclusive); = businessDate for one day.' })
+  endDate!: string;
   @ApiProperty() timezone!: string;
   @ApiProperty() from!: string;
   @ApiProperty() to!: string;

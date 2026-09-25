@@ -33,7 +33,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 /**
- * @summary End-of-day inventory report: per item opening, received, sold, produced, used, wasted, count variance, adjustments, closing (qty + value) and the day's ingredient + dish cost-price changes. Closed days are served from a frozen nightly snapshot.
+ * @summary End-of-day inventory report: per item opening, received, sold, produced, used, wasted, count variance, adjustments, closing (qty + value) and the day's ingredient + dish cost-price changes. Closed days are served from a frozen nightly snapshot. Pass from/to for a multi-day range (computed live).
  */
 export const dailyInventoryReportControllerGet = (
     params?: DailyInventoryReportControllerGetParams,
@@ -105,7 +105,7 @@ export function useDailyInventoryReportControllerGet<TData = Awaited<ReturnType<
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary End-of-day inventory report: per item opening, received, sold, produced, used, wasted, count variance, adjustments, closing (qty + value) and the day's ingredient + dish cost-price changes. Closed days are served from a frozen nightly snapshot.
+ * @summary End-of-day inventory report: per item opening, received, sold, produced, used, wasted, count variance, adjustments, closing (qty + value) and the day's ingredient + dish cost-price changes. Closed days are served from a frozen nightly snapshot. Pass from/to for a multi-day range (computed live).
  */
 
 export function useDailyInventoryReportControllerGet<TData = Awaited<ReturnType<typeof dailyInventoryReportControllerGet>>, TError = void>(

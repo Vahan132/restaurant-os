@@ -2560,3 +2560,45 @@ model InventoryDailyReport {
   @@index([restaurantId, branchId, businessDate])
   @@map("inventory_daily_reports")
 }
+
+// ── EXPENSES-1: non-stock operating expenses (a chair, monthly paper, repairs…) ──
+// Managed by the admin next to inventory write-offs. They never touch stock; they
+// only feed the period profit report (revenue − cost price − write-offs − expenses).
+// Branch-scoped like every operational entity; amounts are integer MINOR units.
+model ExpenseCategory {
+  id           String    @id @default(cuid())
+  restaurantId String
+  branchId     String
+  name         String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  expenses Expense[]
+
+  @@index([restaurantId, branchId])
+  @@map("expense_categories")
+}
+
+model Expense {
+  id              String    @id @default(cuid())
+  restaurantId    String
+  branchId        String
+  categoryId      String?
+  description     String
+  amount          Int       @map("amount")
+  occurredAt      DateTime
+  note            String?
+  createdByUserId String
+  updatedByUserId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  category ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([restaurantId, occurredAt])
+  @@index([restaurantId, branchId, occurredAt])
+  @@index([categoryId])
+  @@map("expenses")
+}

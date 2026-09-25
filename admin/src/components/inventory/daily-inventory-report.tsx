@@ -21,8 +21,15 @@ import {
   largestAlternate,
   type BaseUnit,
 } from '@/lib/inventory/units';
+import { getErrorMessage } from '@/lib/api-error';
 import { formatMoney } from '@/lib/money';
+import {
+  downloadXlsxTables,
+  fmtReportDate,
+  type XlsxColumn,
+} from '@/lib/reports/xlsx-export';
 import { useRestaurant } from '@/lib/restaurant/use-restaurant';
+import { toast } from '@/stores/toast';
 
 const abbr = (u: string) => BASE_UNIT_ABBR[u as BaseUnit] ?? u;
 
@@ -87,22 +94,36 @@ export function DailyInventoryReport() {
   const currency = restaurant?.currency ?? 'USD';
 
   const [date, setDate] = useState<string>('');
+  /** Range end ('' = single day). */
+  const [endDate, setEndDate] = useState<string>('');
+  const [exporting, setExporting] = useState(false);
   const [search, setSearch] = useState('');
   const [movedOnly, setMovedOnly] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const isRange = Boolean(date && endDate && endDate !== date);
   const params = useMemo(
-    () => ({
-      ...(date ? { date } : {}),
-      ...(refreshKey > 0 ? { refresh: 'true' as const } : {}),
-    }),
-    [date, refreshKey],
+    () =>
+      isRange
+        ? { from: date, to: endDate }
+        : {
+            ...(date ? { date } : {}),
+            ...(refreshKey > 0 ? { refresh: 'true' as const } : {}),
+          },
+    [date, endDate, isRange, refreshKey],
   );
   const query = useDailyInventoryReportControllerGet(params, {
     query: { placeholderData: keepPreviousData },
   });
   const report = query.data as DailyInventoryReportResponse | undefined;
   const shownDate = date || report?.businessDate || '';
+  const shownEnd = endDate || shownDate;
+  const shift = (days: number) => {
+    if (!shownDate) return;
+    setRefreshKey(0);
+    setDate(shiftDate(shownDate, days));
+    if (endDate) setEndDate(shiftDate(shownEnd, days));
+  };
 
   const name = (r: { name: string | null; catalogName: DailyItemRowView['catalogName'] }) =>
     itemDisplayName({ name: r.name, catalogName: r.catalogName ?? null }, locale);
@@ -132,36 +153,118 @@ export function DailyInventoryReport() {
   const tot = report?.totals;
   const money = (v: number) => formatMoney(v, currency);
 
+  const onExport = async () => {
+    if (!report) return;
+    const from = report.businessDate;
+    const to = report.endDate ?? report.businessDate;
+    const columns: XlsxColumn<DailyItemRowView>[] = [
+      { header: t('dailyXlsxGroup'), kind: 'text', width: 22, value: (r) => r.categoryName ?? '' },
+      { header: t('repItemCol'), kind: 'text', width: 34, value: (r) => name(r) },
+      { header: t('dailyXlsxUnit'), kind: 'text', width: 8, value: (r) => abbr(r.baseUnit) },
+      { header: t('dailyOpening'), kind: 'qty', value: (r) => r.opening.qty },
+      { header: t('dailyXlsxOpeningValue'), kind: 'money', value: (r) => r.opening.value },
+      { header: t('dailyReceived'), kind: 'qty', value: (r) => r.received.qty },
+      { header: t('dailyProduced'), kind: 'qty', value: (r) => r.produced.qty },
+      { header: t('dailySold'), kind: 'qty', value: (r) => -r.sold.qty },
+      { header: t('dailyXlsxSoldValue'), kind: 'money', value: (r) => -r.sold.value },
+      { header: t('dailyUsedInProduction'), kind: 'qty', value: (r) => -r.usedInProduction.qty },
+      { header: t('dailyWasted'), kind: 'qty', value: (r) => -r.wasted.qty },
+      { header: t('dailyXlsxWastedValue'), kind: 'money', value: (r) => -r.wasted.value },
+      { header: t('dailyCountVariance'), kind: 'qty', value: (r) => r.countVariance.qty },
+      {
+        header: t('dailyAdjusted'),
+        kind: 'qty',
+        value: (r) => r.adjusted.qty + r.transferred.qty,
+      },
+      { header: t('dailyClosing'), kind: 'qty', value: (r) => r.closing.qty },
+      { header: t('dailyClosingValue'), kind: 'money', value: (r) => r.closing.value },
+    ];
+    const tt = report.totals;
+    setExporting(true);
+    try {
+      await downloadXlsxTables(
+        `inventory_${from}_${to}`,
+        currency,
+        [
+          {
+            sheetName: t('dailyXlsxSheet'),
+            title: t('dailyXlsxTitle', { from: fmtReportDate(from), to: fmtReportDate(to) }),
+            infoLines: [
+              t('dailyXlsxPeriod', { from: fmtReportDate(from), to: fmtReportDate(to) }),
+            ],
+            columns,
+            rows,
+            totalRow: [
+              t('dailyXlsxTotal'),
+              null,
+              null,
+              null,
+              tt.openingValue,
+              null,
+              null,
+              null,
+              -tt.soldValue,
+              null,
+              null,
+              -tt.wastedValue,
+              null,
+              null,
+              null,
+              tt.closingValue,
+            ],
+          },
+        ],
+        { warehousesLabel: t('dailyXlsxWarehouses') },
+      );
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-4 print:space-y-2">
       <div className="flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-3 print:hidden">
         <div className="flex items-end gap-1">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => shownDate && setDate(shiftDate(shownDate, -1))}
-          >
+          <Button size="sm" variant="secondary" onClick={() => shift(-1)}>
             ‹
           </Button>
           <label className="text-xs text-gray-600">
-            <span className="mr-1 block">{t('dailyDate')}</span>
+            <span className="mr-1 block">{t('dailyFrom')}</span>
             <input
               type="date"
               className={`${inputClass} w-auto`}
               value={shownDate}
+              max={endDate || undefined}
               onChange={(e) => {
                 setRefreshKey(0);
                 setDate(e.target.value);
               }}
             />
           </label>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => shownDate && setDate(shiftDate(shownDate, 1))}
-          >
+          <label className="text-xs text-gray-600">
+            <span className="mr-1 block">{t('dailyTo')}</span>
+            <input
+              type="date"
+              className={`${inputClass} w-auto`}
+              value={shownEnd}
+              min={shownDate || undefined}
+              onChange={(e) => {
+                setRefreshKey(0);
+                if (!date && shownDate) setDate(shownDate);
+                setEndDate(e.target.value);
+              }}
+            />
+          </label>
+          <Button size="sm" variant="secondary" onClick={() => shift(1)}>
             ›
           </Button>
+          {isRange && (
+            <Button size="sm" variant="ghost" onClick={() => setEndDate('')}>
+              {t('dailySingleDay')}
+            </Button>
+          )}
         </div>
         <input
           className={`${inputClass} max-w-xs`}
@@ -173,7 +276,15 @@ export function DailyInventoryReport() {
           <Toggle label={t('dailyMovedOnly')} checked={movedOnly} onChange={setMovedOnly} />
         </div>
         <div className="ml-auto flex gap-2">
-          {report && !report.inProgress && (
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={!report || exporting}
+            onClick={() => void onExport()}
+          >
+            {t('dailyExportXlsx')}
+          </Button>
+          {report && !report.inProgress && !isRange && (
             <Button
               size="sm"
               variant="secondary"
@@ -203,7 +314,12 @@ export function DailyInventoryReport() {
         <>
           <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
             <span className="font-medium text-gray-900">
-              {t('dailyHeading', { date: report.businessDate })}
+              {(report.endDate ?? report.businessDate) !== report.businessDate
+                ? t('dailyHeadingRange', {
+                    from: report.businessDate,
+                    to: report.endDate ?? report.businessDate,
+                  })
+                : t('dailyHeading', { date: report.businessDate })}
             </span>
             {report.inProgress ? (
               <Badge tone="blue">{t('dailyInProgress')}</Badge>

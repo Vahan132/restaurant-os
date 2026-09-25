@@ -33,7 +33,8 @@ export class DailyInventoryReportController {
     summary:
       'End-of-day inventory report: per item opening, received, sold, produced, used, ' +
       "wasted, count variance, adjustments, closing (qty + value) and the day's ingredient " +
-      '+ dish cost-price changes. Closed days are served from a frozen nightly snapshot.',
+      '+ dish cost-price changes. Closed days are served from a frozen nightly snapshot. ' +
+      'Pass from/to for a multi-day range (computed live).',
   })
   @ApiOkResponse({ type: DailyInventoryReportResponse })
   async get(
@@ -45,6 +46,8 @@ export class DailyInventoryReportController {
       restaurantId: tenant.restaurantId,
       branchId,
       date: q.date,
+      from: q.from,
+      to: q.to,
       refresh: q.refresh === 'true',
     });
   }

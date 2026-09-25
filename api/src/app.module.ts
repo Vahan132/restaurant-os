@@ -22,6 +22,7 @@ import { TablesModule } from './modules/tables/tables.module';
 import { TableSessionsModule } from './modules/table-sessions/table-sessions.module';
 import { FiscalizationModule } from './modules/fiscalization/fiscalization.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { ExpensesModule } from './modules/expenses/expenses.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { PlatformCatalogModule } from './modules/platform-catalog/platform-catalog.module';
 import { EdgeRegistryModule } from './modules/edge-registry/edge-registry.module';
@@ -106,6 +107,7 @@ const edgeOnlyModules = IS_EDGE ? [EdgeSyncModule] : [];
     StorefrontModule,
     OrderRequestsModule,
     InventoryModule,
+    ExpensesModule,
     CatalogModule,
     PlatformCatalogModule,
     RealtimeModule,

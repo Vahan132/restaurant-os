@@ -12,7 +12,10 @@ import type { DailyTotalsView } from './dailyTotalsView';
 
 export interface DailyInventoryReportResponse {
   branchId: string;
+  /** First business day of the report. */
   businessDate: string;
+  /** Last business day (inclusive); = businessDate for one day. */
+  endDate: string;
   timezone: string;
   from: string;
   to: string;

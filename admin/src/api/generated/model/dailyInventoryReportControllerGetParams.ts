@@ -13,6 +13,14 @@ export type DailyInventoryReportControllerGetParams = {
  */
 date?: string;
 /**
+ * Range start YYYY-MM-DD (inclusive). Overrides `date` when given.
+ */
+from?: string;
+/**
+ * Range end YYYY-MM-DD (inclusive). Defaults to `from`.
+ */
+to?: string;
+/**
  * Re-freeze a closed day from the ledger instead of serving its snapshot.
  */
 refresh?: DailyInventoryReportControllerGetRefresh;
