@@ -22,6 +22,12 @@ export async function resetSeedOwned(prisma: PrismaService): Promise<void> {
 
   // ── Inventory ledger + projections + catalog (no FK cascade) ───────────────
   await prisma.lowStockAlert.deleteMany({ where });
+  // SEED-2 additions (plain restaurantId scalars, no cascade).
+  await prisma.inventoryDailyReport.deleteMany({ where });
+  await prisma.inventoryItemCostChange.deleteMany({ where });
+  await prisma.recipeCostChange.deleteMany({ where });
+  await prisma.expense.deleteMany({ where });
+  await prisma.expenseCategory.deleteMany({ where });
   await prisma.stockOnHand.deleteMany({ where });
   await prisma.stockMovement.deleteMany({ where });
   await prisma.stockLayer.deleteMany({ where });

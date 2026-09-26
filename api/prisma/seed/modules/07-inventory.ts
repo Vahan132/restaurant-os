@@ -17,6 +17,7 @@ import type { BranchKey } from '../data/iam';
 import { ITEMS } from '../data/inventory';
 import type { LocationKey } from '../data/inventory';
 import { seedId } from '../ids';
+import { openingBalanceAt } from '../history-clock';
 
 const BRANCH_KEYS: BranchKey[] = ['flagship', 'second'];
 const LOCATIONS: LocationKey[] = ['KITCHEN', 'BAR', 'MAIN_STORAGE'];
@@ -25,7 +26,8 @@ export async function seedInventory(ctx: SeedContext, state: SeedState): Promise
   const { prisma, uc } = ctx;
   const rid = RESTAURANT.id;
   const ownerId = state.userIdBySlug['owner'];
-  const receivedAt = new Date();
+  // SEED-2: backdated to the morning before the history window (phase 15).
+  const receivedAt = openingBalanceAt();
 
   for (const bk of BRANCH_KEYS) {
     const branchId = BRANCHES[bk].id;

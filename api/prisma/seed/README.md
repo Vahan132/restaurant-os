@@ -93,3 +93,31 @@ Files: `ids.ts`, `context.ts`, `reset.ts`, `state.ts`, `index.ts`,
 
 The seed prints entity counts, stock-movement counts by type, and inventory
 valuation (received vs on-hand) at the end.
+
+## SEED-2 — operating history for reports (phase 15)
+
+`modules/15-history.ts` + `history-clock.ts` add a multi-day history so every
+report (Products, Profit, Summary, Payment methods, Waiters, Tables, Discounts,
+Cancellations, Imported sales, End-of-day inventory, Write-offs, Expenses) has
+data across a date range.
+
+- **Window**: the `SEED_HISTORY_DAYS` business days before today (default **45**;
+  `SEED_HISTORY_DAYS=0` disables the phase and restores SEED-1 behaviour).
+  Today stays covered by phase 11. Opening balances (phase 07) are now received
+  at 08:00 on the day before the window, so the ledger is chronological.
+- **Per day, per branch** (real use-cases): top-up goods receipts from 3 seeded
+  suppliers (items below 60% of par; unit cost drifts ±8% → FIFO cost history),
+  flagship production runs (marinade daily, tomato sauce every other day),
+  8–25 orders (Fri/Sat busier) 11:00–23:00 on random tables / takeaway with
+  random modifiers, 3–4 waiters, cash / card / bank transfer / other / split
+  payments, ~13% discounted (percent + fixed), ~10% with a voided line, ~4%
+  cancelled orders; write-offs (spoilage, staff meal dish, breakage, expired
+  marinade); expenses in 5 categories (utilities on the 1st, supplies weekly…).
+- **Backdating**: order use-cases stamp "now", so each finished order is moved
+  onto its day (order createdAt/closedAt, items, payments, ORDER_LINE movements
+  + reversals). Cost-change rows are moved to the day's end. Frozen
+  `inventory_daily_reports` are deleted at the end so every day rebuilds from the
+  final ledger.
+- **Imported sales**: one COMPLETED batch covering the 14 days before the window.
+- Deterministic PRNG → same history on every run (relative to today). Expect a
+  few minutes of runtime for the default 45 days.

@@ -30,6 +30,7 @@ import { seedOrders } from './modules/11-orders';
 import { seedConsumer } from './modules/12-consumer';
 import { seedConsumerIdentity } from './modules/13-consumer-identity';
 import { seedPlatformCatalog } from './modules/14-platform-catalog';
+import { seedHistory } from './modules/15-history';
 
 /* eslint-disable no-console */
 export async function main(): Promise<void> {
@@ -54,6 +55,9 @@ export async function main(): Promise<void> {
       // adopted items exist; global reference data is idempotent by upsert.
       ['14 platform-catalog', () => seedPlatformCatalog(ctx, state)],
       ['10 reservations', () => seedReservations(ctx, state)],
+      // SEED-2: multi-day history (receipts, runs, orders, write-offs, expenses)
+      // BEFORE today's orders (11) so the ledger stays chronological.
+      ['15 history', () => seedHistory(ctx, state)],
       ['11 orders', () => seedOrders(ctx, state)],
       ['12 consumer', () => seedConsumer(ctx, state)],
       ['13 consumer-identity', () => seedConsumerIdentity(ctx, state)],
@@ -119,6 +123,10 @@ async function report(
     orders: await prisma.order.count({ where: w }),
     orderItems: await prisma.orderItem.count({ where: w }),
     payments: await prisma.payment.count({ where: w }),
+    writeOffs: await prisma.writeOff.count({ where: w }),
+    goodsReceipts: await prisma.goodsReceipt.count({ where: w }),
+    expenses: await prisma.expense.count({ where: w }),
+    importedSales: await prisma.importedSale.count({ where: w }),
     // CX-1 consumer discovery
     attributeCategories: await prisma.attributeCategory.count(),
     attributeValues: await prisma.attributeValue.count(),

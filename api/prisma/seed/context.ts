@@ -32,6 +32,7 @@ import { InventoryLocationProvisioner } from '../../src/modules/inventory/applic
 import { CreateGoodsReceiptUseCase } from '../../src/modules/inventory/application/commands/create-goods-receipt.usecase';
 import { CreateProcessUseCase } from '../../src/modules/inventory/application/commands/create-process.usecase';
 import { RunProcessUseCase } from '../../src/modules/inventory/application/commands/run-process.usecase';
+import { CreateWriteOffUseCase } from '../../src/modules/inventory/application/commands/create-write-off.usecase';
 
 import { UpdateRestaurantMarketingProfileUseCase } from '../../src/modules/consumer/application/commands/update-restaurant-marketing-profile.usecase';
 import { SetRestaurantAttributesUseCase } from '../../src/modules/consumer/application/commands/set-restaurant-attributes.usecase';
@@ -54,6 +55,8 @@ import { MarkOrderServedUseCase } from '../../src/modules/orders/application/com
 import { RecordPaymentUseCase } from '../../src/modules/orders/application/commands/record-payment.usecase';
 import { CloseOrderUseCase } from '../../src/modules/orders/application/commands/close-order.usecase';
 import { CancelOrderUseCase } from '../../src/modules/orders/application/commands/cancel-order.usecase';
+import { CancelOrderItemUseCase } from '../../src/modules/orders/application/commands/cancel-order-item.usecase';
+import { ApplyDiscountUseCase } from '../../src/modules/orders/application/commands/apply-discount.usecase';
 
 export interface SeedUseCases {
   keyProvider: RestaurantKeyProvider;
@@ -71,6 +74,10 @@ export interface SeedUseCases {
   recordPayment: RecordPaymentUseCase;
   closeOrder: CloseOrderUseCase;
   cancelOrder: CancelOrderUseCase;
+  // SEED-2 history (phase 15).
+  cancelOrderItem: CancelOrderItemUseCase;
+  applyDiscount: ApplyDiscountUseCase;
+  createWriteOff: CreateWriteOffUseCase;
   // CX-1 consumer discovery (write use-cases exercised by phase 12).
   updateMarketingProfile: UpdateRestaurantMarketingProfileUseCase;
   setRestaurantAttributes: SetRestaurantAttributesUseCase;
@@ -121,6 +128,9 @@ export async function bootstrapSeedContext(): Promise<SeedContext> {
     recordPayment: get<RecordPaymentUseCase>(RecordPaymentUseCase),
     closeOrder: get<CloseOrderUseCase>(CloseOrderUseCase),
     cancelOrder: get<CancelOrderUseCase>(CancelOrderUseCase),
+    cancelOrderItem: get<CancelOrderItemUseCase>(CancelOrderItemUseCase),
+    applyDiscount: get<ApplyDiscountUseCase>(ApplyDiscountUseCase),
+    createWriteOff: get<CreateWriteOffUseCase>(CreateWriteOffUseCase),
     updateMarketingProfile: get<UpdateRestaurantMarketingProfileUseCase>(
       UpdateRestaurantMarketingProfileUseCase,
     ),
