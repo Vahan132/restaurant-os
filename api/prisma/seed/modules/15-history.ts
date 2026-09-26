@@ -367,7 +367,9 @@ async function ordersForDay(
           actorUserId: managerId,
         });
       }
-      if (rng() < 0.13) {
+      // Discount only on bills big enough that it can never zero the total
+      // (a zero-total order can't be paid, so it can't be closed).
+      if (rng() < 0.13 && order.totalAmount >= 5000) {
         const percent = rng() < 0.65;
         await uc.applyDiscount.execute({
           restaurantId: rid,
@@ -385,13 +387,27 @@ async function ordersForDay(
         branchId,
         orderId: order.id,
       });
-      await pay(ctx, rng, bk, order.id, served.totalAmount, cashierId);
-      await uc.closeOrder.execute({
-        restaurantId: rid,
-        branchId,
-        orderId: order.id,
-        actorUserId: cashierId,
-      });
+      if (served.totalAmount <= 0) {
+        // Safety net: nothing left to pay (e.g. every line voided) — the real
+        // flow cancels such a bill rather than closing it unpaid.
+        await uc.cancelOrder.execute({
+          restaurantId: rid,
+          branchId,
+          organizationId: ORG.id,
+          orderId: order.id,
+          reason: pick(rng, CANCEL_REASONS),
+          cancelledByUserId: managerId,
+        });
+        cancelledOrder = true;
+      } else {
+        await pay(ctx, rng, bk, order.id, served.totalAmount, cashierId);
+        await uc.closeOrder.execute({
+          restaurantId: rid,
+          branchId,
+          orderId: order.id,
+          actorUserId: cashierId,
+        });
+      }
     }
 
     await backdateOrder(ctx, order.id, openedAt, cancelledOrder, rng);
