@@ -17,4 +17,8 @@ from: string;
  */
 to: string;
 lang?: ReportExportControllerExportByItemLang;
+/**
+ * Only this branch. Omitted = every branch the caller may report on (all branches for the owner).
+ */
+branchId?: string;
 };

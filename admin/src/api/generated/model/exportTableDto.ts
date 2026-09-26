@@ -14,5 +14,9 @@ export interface ExportTableDto {
   moneyDecimals?: number;
   /** When set (e.g. "Склад(ы)"), a "<label>: <active warehouse names>" line is added under each sheet title. */
   warehousesLabel?: string;
+  /** Branch the on-screen table was filtered to (warehouses line + branch line). */
+  branchId?: string;
+  /** Label for the branch line, e.g. "Branch" (added when branchId is set). */
+  branchLabel?: string;
   sheets: ExportSheetDto[];
 }

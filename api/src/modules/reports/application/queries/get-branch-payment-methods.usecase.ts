@@ -1,11 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
 import { NoRestaurantInScope } from '../application.errors';
-import {
-  BranchPaymentMethodsData,
-  REPORTS_QUERY,
-  ReportsQuery,
-} from '../ports/reports-query.port';
+import { BranchPaymentMethodsData, REPORTS_QUERY, ReportsQuery } from '../ports/reports-query.port';
 import { todayInTz, zonedDayRange } from '../report-time.util';
 
 export interface GetBranchPaymentMethodsInput {
@@ -32,9 +28,10 @@ export interface BranchPaymentMethodsResult extends BranchPaymentMethodsData {
  * "today" on a terminal in another timezone still means the restaurant's today.
  */
 @Injectable()
-export class GetBranchPaymentMethodsUseCase
-  implements UseCase<GetBranchPaymentMethodsInput, BranchPaymentMethodsResult>
-{
+export class GetBranchPaymentMethodsUseCase implements UseCase<
+  GetBranchPaymentMethodsInput,
+  BranchPaymentMethodsResult
+> {
   constructor(@Inject(REPORTS_QUERY) private readonly q: ReportsQuery) {}
 
   async execute(input: GetBranchPaymentMethodsInput): Promise<BranchPaymentMethodsResult> {
@@ -44,12 +41,7 @@ export class GetBranchPaymentMethodsUseCase
     const tz = await this.q.timezone(input.restaurantId);
     const date = input.date ?? todayInTz(tz);
     const { start, end } = zonedDayRange(date, tz);
-    const data = await this.q.branchPaymentMethods(
-      input.restaurantId,
-      input.branchId,
-      start,
-      end,
-    );
+    const data = await this.q.branchPaymentMethods(input.restaurantId, input.branchId, start, end);
     return { ...data, date, branchId: input.branchId };
   }
 }

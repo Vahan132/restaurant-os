@@ -53,6 +53,8 @@ export interface ProfitReportData {
   to: string;
   restaurantName: string;
   currency: string;
+  /** Selected branch (null = all branches in the caller's reach). */
+  branchName: string | null;
   locations: string[];
   totals: ProfitTotals;
   products: ItemRow[];
@@ -71,6 +73,7 @@ const L: Record<ReportLang, Dict> = {
     expenseTitle: 'Расходы с {from} по {to}',
     period: 'За период: с {from} по {to}',
     warehouses: 'Склад(ы): {list}',
+    branch: 'Филиал: {name}',
     sheetSummary: 'Прибыль',
     sheetSales: 'Продажи',
     sheetWriteOffs: 'Списания',
@@ -124,6 +127,7 @@ const L: Record<ReportLang, Dict> = {
     expenseTitle: 'Expenses from {from} to {to}',
     period: 'Period: from {from} to {to}',
     warehouses: 'Warehouse(s): {list}',
+    branch: 'Branch: {name}',
     sheetSummary: 'Profit',
     sheetSales: 'Sales',
     sheetWriteOffs: 'Write-offs',
@@ -177,6 +181,7 @@ const L: Record<ReportLang, Dict> = {
     expenseTitle: 'Ծախսեր {from} – {to}',
     period: 'Ժամանակահատված՝ {from} – {to}',
     warehouses: 'Պահեստ(ներ)՝ {list}',
+    branch: 'Մասնաճյուղ՝ {name}',
     sheetSummary: 'Շահույթ',
     sheetSales: 'Վաճառք',
     sheetWriteOffs: 'Դուրսգրումներ',
@@ -235,7 +240,7 @@ const ratio = (num: number, den: number): number | null => (den !== 0 ? num / de
 /**
  * PROFIT-XLSX-1: period profit picture — sales by product with FIFO cost price,
  * write-offs, and non-stock expenses — plus its iiko-style Excel rendering.
- * Restaurant-wide like the rest of the sales reports (CLOSED orders by closedAt).
+ * CLOSED orders by closedAt; optionally narrowed to access-checked branches (BR-REPORTS-1).
  */
 @Injectable()
 export class ProfitReportService {
@@ -249,6 +254,8 @@ export class ProfitReportService {
     from: string,
     to: string,
     lang: ReportLang = 'ru',
+    /** BR-REPORTS-1: access-checked branch filter + label (omitted = restaurant-wide). */
+    branches?: { ids: string[]; name: string | null },
   ): Promise<ProfitReportData> {
     if (!restaurantId) throw NoRestaurantInScope();
     const restaurant = await this.prisma.restaurant.findFirst({
@@ -257,13 +264,14 @@ export class ProfitReportService {
     });
     const tz = restaurant?.timezone ?? 'UTC';
     const { start, end } = inclusiveDayRange(from, to, tz);
+    const branchIds = branches?.ids;
 
     const [products, summary, writeOffs, expenses, locations] = await Promise.all([
-      this.q.salesByItem(restaurantId, start, end),
-      this.q.salesSummary(restaurantId, start, end),
-      this.writeOffLines(restaurantId, start, end, lang),
-      this.expenseLines(restaurantId, start, end),
-      this.locationNames(restaurantId),
+      this.q.salesByItem(restaurantId, start, end, branchIds),
+      this.q.salesSummary(restaurantId, start, end, branchIds),
+      this.writeOffLines(restaurantId, start, end, lang, branchIds),
+      this.expenseLines(restaurantId, start, end, branchIds),
+      this.locationNames(restaurantId, branchIds),
     ]);
 
     const salesAmount = products.reduce((s, p) => s + p.revenueAmount, 0);
@@ -278,6 +286,7 @@ export class ProfitReportService {
       to,
       restaurantName: restaurant?.name ?? '',
       currency: restaurant?.currency ?? 'AMD',
+      branchName: branches?.name ?? null,
       locations,
       totals: {
         salesAmount,
@@ -295,9 +304,14 @@ export class ProfitReportService {
     };
   }
 
-  async locationNames(restaurantId: string): Promise<string[]> {
+  async locationNames(restaurantId: string, branchIds?: string[]): Promise<string[]> {
     const rows = await this.prisma.inventoryLocation.findMany({
-      where: { restaurantId, deletedAt: null, status: 'ACTIVE' },
+      where: {
+        restaurantId,
+        ...(branchIds ? { branchId: { in: branchIds } } : {}),
+        deletedAt: null,
+        status: 'ACTIVE',
+      },
       select: { name: true },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
     });
@@ -309,9 +323,15 @@ export class ProfitReportService {
     start: Date,
     end: Date,
     lang: ReportLang,
+    branchIds?: string[],
   ): Promise<ProfitWriteOffLine[]> {
     const writeOffs = await this.prisma.writeOff.findMany({
-      where: { restaurantId, voidedAt: null, occurredAt: { gte: start, lt: end } },
+      where: {
+        restaurantId,
+        ...(branchIds ? { branchId: { in: branchIds } } : {}),
+        voidedAt: null,
+        occurredAt: { gte: start, lt: end },
+      },
       include: { lines: true },
       orderBy: { occurredAt: 'asc' },
     });
@@ -394,9 +414,15 @@ export class ProfitReportService {
     restaurantId: string,
     start: Date,
     end: Date,
+    branchIds?: string[],
   ): Promise<ProfitExpenseLine[]> {
     const rows = await this.prisma.expense.findMany({
-      where: { restaurantId, deletedAt: null, occurredAt: { gte: start, lt: end } },
+      where: {
+        restaurantId,
+        ...(branchIds ? { branchId: { in: branchIds } } : {}),
+        deletedAt: null,
+        occurredAt: { gte: start, lt: end },
+      },
       include: { category: { select: { name: true } } },
       orderBy: { occurredAt: 'asc' },
     });
@@ -429,6 +455,7 @@ export class ProfitReportService {
     const vars = { from: formatReportDate(data.from), to: formatReportDate(data.to) };
     return [
       tr(lang, 'period', vars),
+      ...(data.branchName ? [tr(lang, 'branch', { name: data.branchName })] : []),
       tr(lang, 'warehouses', { list: data.locations.join(', ') || '—' }),
     ];
   }

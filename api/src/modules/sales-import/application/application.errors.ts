@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 
 /** No restaurant scope on the principal — imports are restaurant-scoped. */
 export const NoRestaurantInScope = () =>
@@ -34,6 +34,12 @@ export const ImportBatchNotFound = () =>
   });
 
 /** Date range filter where from > to. */
+export const BranchAccessForbidden = () =>
+  new ForbiddenException({
+    code: 'BRANCH_ACCESS_FORBIDDEN',
+    message: 'You do not have access to the requested branch.',
+  });
+
 export const InvalidDateRange = () =>
   new BadRequestException({
     code: 'INVALID_DATE_RANGE',

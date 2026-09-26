@@ -16,5 +16,9 @@ from?: string;
  * To date (YYYY-MM-DD, inclusive, restaurant tz).
  */
 to?: string;
+/**
+ * Only this branch (must be within the caller's reach). Omitted = all reachable.
+ */
+branchId?: string;
 groupBy?: SalesImportControllerTimeseriesGroupBy;
 };

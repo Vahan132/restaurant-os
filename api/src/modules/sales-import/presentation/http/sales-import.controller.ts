@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Post,
-  Query,
-  UploadedFile,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
@@ -156,6 +148,7 @@ export class SalesImportController {
       organizationId: tenant.organizationId,
       restaurantId: tenant.restaurantId,
       userId: user.sub,
+      branchId: q.branchId,
       from: q.from,
       to: q.to,
     };

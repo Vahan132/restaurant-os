@@ -841,6 +841,7 @@
       "title": "{title} с {from} по {to}",
       "period": "За период: с {from} по {to}",
       "warehouses": "Склад(ы)",
+      "branch": "Филиал",
       "total": "Итого"
     },
     "products": {

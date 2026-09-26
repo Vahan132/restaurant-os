@@ -4,7 +4,11 @@ import {
   BranchAccessResolver,
 } from '../../../../shared/auth/branch-access.resolver';
 import { BranchScope } from '../../domain/repositories/sales-import.repository';
-import { InvalidDateRange, NoRestaurantInScope } from '../application.errors';
+import {
+  BranchAccessForbidden,
+  InvalidDateRange,
+  NoRestaurantInScope,
+} from '../application.errors';
 import { inclusiveDayRange, todayInTz } from '../imported-report-time.util';
 import {
   IMPORTED_SALES_ANALYTICS_READER,
@@ -21,6 +25,8 @@ export interface AnalyticsRequest {
   organizationId: string;
   restaurantId: string | null;
   userId: string;
+  /** BR-REPORTS-1: optional single-branch filter (validated against reach). */
+  branchId?: string;
   from?: string;
   to?: string;
 }
@@ -49,12 +55,18 @@ export class ImportedSalesAnalyticsService {
       throw InvalidDateRange();
     }
     const restaurantId = req.restaurantId;
-    const scope: BranchScope = await resolveScope(
+    let scope: BranchScope = await resolveScope(
       this.branchAccess,
       req.organizationId,
       restaurantId,
       req.userId,
     );
+    if (req.branchId) {
+      if (!scope.all && !scope.branchIds.includes(req.branchId)) {
+        throw BranchAccessForbidden();
+      }
+      scope = { all: false, branchIds: [req.branchId] };
+    }
     const timeZone = await this.reader.timezone(restaurantId);
     // Historical data: default to an open-ended window (epoch → today).
     const from = req.from ?? '1970-01-01';

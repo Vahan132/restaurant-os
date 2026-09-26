@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, Matches, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Matches, Max, Min } from 'class-validator';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -31,6 +31,13 @@ export class ImportedSalesReportQuery {
   @IsOptional()
   @Matches(DATE, { message: 'to must be YYYY-MM-DD' })
   to?: string;
+
+  @ApiPropertyOptional({
+    description: "Only this branch (must be within the caller's reach). Omitted = all reachable.",
+  })
+  @IsOptional()
+  @IsString()
+  branchId?: string;
 }
 
 export class ImportedSalesTimeSeriesQuery extends ImportedSalesReportQuery {

@@ -32,6 +32,7 @@ import { InventoryLocationProvisioner } from '../../src/modules/inventory/applic
 import { CreateGoodsReceiptUseCase } from '../../src/modules/inventory/application/commands/create-goods-receipt.usecase';
 import { CreateProcessUseCase } from '../../src/modules/inventory/application/commands/create-process.usecase';
 import { RunProcessUseCase } from '../../src/modules/inventory/application/commands/run-process.usecase';
+import { TableStatusService } from '../../src/modules/tables/application/services/table-status.service';
 import { CreateWriteOffUseCase } from '../../src/modules/inventory/application/commands/create-write-off.usecase';
 
 import { UpdateRestaurantMarketingProfileUseCase } from '../../src/modules/consumer/application/commands/update-restaurant-marketing-profile.usecase';
@@ -78,6 +79,7 @@ export interface SeedUseCases {
   cancelOrderItem: CancelOrderItemUseCase;
   applyDiscount: ApplyDiscountUseCase;
   createWriteOff: CreateWriteOffUseCase;
+  tableStatus: TableStatusService;
   // CX-1 consumer discovery (write use-cases exercised by phase 12).
   updateMarketingProfile: UpdateRestaurantMarketingProfileUseCase;
   setRestaurantAttributes: SetRestaurantAttributesUseCase;
@@ -131,6 +133,7 @@ export async function bootstrapSeedContext(): Promise<SeedContext> {
     cancelOrderItem: get<CancelOrderItemUseCase>(CancelOrderItemUseCase),
     applyDiscount: get<ApplyDiscountUseCase>(ApplyDiscountUseCase),
     createWriteOff: get<CreateWriteOffUseCase>(CreateWriteOffUseCase),
+    tableStatus: get<TableStatusService>(TableStatusService),
     updateMarketingProfile: get<UpdateRestaurantMarketingProfileUseCase>(
       UpdateRestaurantMarketingProfileUseCase,
     ),

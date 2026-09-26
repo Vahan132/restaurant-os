@@ -96,6 +96,20 @@ export class ExportTableDto {
   @MaxLength(60)
   warehousesLabel?: string;
 
+  @ApiPropertyOptional({
+    description: 'Branch the on-screen table was filtered to (warehouses line + branch line).',
+  })
+  @IsOptional()
+  @IsString()
+  branchId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Label for the branch line, e.g. "Branch" (added when branchId is set).',
+  })
+  @IsOptional()
+  @IsString()
+  branchLabel?: string;
+
   @ApiProperty({ type: [ExportSheetDto] })
   @IsArray()
   @ArrayMaxSize(20)
@@ -118,6 +132,14 @@ export class ProfitExportQuery {
   @IsOptional()
   @IsIn(LANGS as unknown as string[])
   lang?: (typeof LANGS)[number];
+
+  @ApiPropertyOptional({
+    description:
+      'Only this branch. Omitted = every branch the caller may report on (all branches for the owner).',
+  })
+  @IsOptional()
+  @IsString()
+  branchId?: string;
 }
 
 export function safeFileName(raw: string | undefined, fallback: string): string {

@@ -18,6 +18,8 @@ interface ReportExportValue {
   to: string;
   currency: string;
   lang: ReportLang;
+  /** BR-REPORTS-1: report branch filter (undefined = all allowed branches). */
+  branchId?: string;
   /** "<title> from dd.mm.yyyy to dd.mm.yyyy". */
   titleFor: (title: string) => string;
   /** "Period: from … to …". */
@@ -40,11 +42,13 @@ export function ReportExportProvider({
   from,
   to,
   currency,
+  branchId,
   children,
 }: {
   from: string;
   to: string;
   currency: string;
+  branchId?: string;
   children: ReactNode;
 }) {
   const t = useTranslations('reports.xlsx');
@@ -69,6 +73,7 @@ export function ReportExportProvider({
       to,
       currency,
       lang: reportLang(locale),
+      branchId,
       titleFor: (title: string) => t('title', { title, ...vars }),
       periodLine: t('period', vars),
       busy,
@@ -77,10 +82,12 @@ export function ReportExportProvider({
         run(() =>
           downloadXlsxTables(`${fileName}_${from}_${to}`, currency, tables, {
             warehousesLabel: t('warehouses'),
+            branchId,
+            branchLabel: t('branch'),
           }),
         ),
     };
-  }, [from, to, currency, locale, busy, run, t]);
+  }, [from, to, currency, branchId, locale, busy, run, t]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

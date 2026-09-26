@@ -66,7 +66,7 @@ export async function downloadXlsxTables(
   currency: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tables: XlsxTable<any>[],
-  opts: { warehousesLabel?: string } = {},
+  opts: { warehousesLabel?: string; branchId?: string; branchLabel?: string } = {},
 ): Promise<void> {
   const decimals = currencyFractionDigits(currency);
   const divisor = 10 ** decimals;
@@ -75,6 +75,8 @@ export async function downloadXlsxTables(
       fileName,
       moneyDecimals: decimals,
       warehousesLabel: opts.warehousesLabel,
+      branchId: opts.branchId,
+      branchLabel: opts.branchLabel,
       sheets: tables.map((tbl) => {
         const rows = tbl.rows.map((r) => ({
           cells: toCells(r, tbl.columns, divisor),
@@ -103,17 +105,27 @@ export async function downloadXlsxTables(
   downloadBlob(`${fileName}.xlsx`, blob);
 }
 
-export async function downloadProfitXlsx(from: string, to: string, lang: ReportLang) {
+export async function downloadProfitXlsx(
+  from: string,
+  to: string,
+  lang: ReportLang,
+  branchId?: string,
+) {
   const blob = (await reportExportControllerExportProfit(
-    { from, to, lang },
+    { from, to, lang, branchId },
     { responseType: 'blob' },
   )) as unknown as Blob;
   downloadBlob(`profit_${from}_${to}.xlsx`, blob);
 }
 
-export async function downloadSalesByItemXlsx(from: string, to: string, lang: ReportLang) {
+export async function downloadSalesByItemXlsx(
+  from: string,
+  to: string,
+  lang: ReportLang,
+  branchId?: string,
+) {
   const blob = (await reportExportControllerExportByItem(
-    { from, to, lang },
+    { from, to, lang, branchId },
     { responseType: 'blob' },
   )) as unknown as Blob;
   downloadBlob(`sales_${from}_${to}.xlsx`, blob);

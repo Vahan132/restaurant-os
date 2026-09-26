@@ -504,6 +504,7 @@ export * from './reorderEntryDto';
 export * from './reorderFloorsDto';
 export * from './reorderModifierOptionsDto';
 export * from './reorderPhotosDto';
+export * from './reportBranchResponse';
 export * from './reportExportControllerExportByItemLang';
 export * from './reportExportControllerExportByItemParams';
 export * from './reportExportControllerExportProfitLang';

@@ -1001,6 +1001,7 @@
       "title": "{title} from {from} to {to}",
       "period": "Period: from {from} to {to}",
       "warehouses": "Warehouse(s)",
+      "branch": "Branch",
       "total": "Total"
     },
     "products": {

@@ -83,12 +83,20 @@ const CANCEL_REASONS = [
 
 type Rng = () => number;
 const pick = <T>(rng: Rng, arr: readonly T[]): T => arr[Math.floor(rng() * arr.length)];
-const between = (rng: Rng, lo: number, hi: number): number => lo + Math.floor(rng() * (hi - lo + 1));
+const between = (rng: Rng, lo: number, hi: number): number =>
+  lo + Math.floor(rng() * (hi - lo + 1));
 
 // Sellable dishes (the verify-* dishes are QA fixtures, not menu items).
 const SELLABLE = DISHES.filter((d) => !d.slug.startsWith('verify-'));
 // Popularity weights: grill + drinks sell most.
-const WEIGHT: Record<string, number> = { grill: 5, drinks: 6, salads: 3, soups: 2, mains: 3, desserts: 2 };
+const WEIGHT: Record<string, number> = {
+  grill: 5,
+  drinks: 6,
+  salads: 3,
+  soups: 2,
+  mains: 3,
+  desserts: 2,
+};
 const WEIGHTED: DishSeed[] = SELLABLE.flatMap((d) => Array(WEIGHT[d.category] ?? 1).fill(d));
 
 export async function seedHistory(ctx: SeedContext, state: SeedState): Promise<void> {
@@ -102,7 +110,10 @@ export async function seedHistory(ctx: SeedContext, state: SeedState): Promise<v
   const days = historyDays();
 
   // ── Inert config: suppliers + expense categories per branch ────────────────
-  const supplierIds: Record<BranchKey, Record<LocationKey, string>> = { flagship: {}, second: {} } as never;
+  const supplierIds: Record<BranchKey, Record<LocationKey, string>> = {
+    flagship: {},
+    second: {},
+  } as never;
   const expenseCatIds: Record<BranchKey, Record<string, string>> = { flagship: {}, second: {} };
   for (const bk of BRANCH_KEYS) {
     const branchId = BRANCHES[bk].id;
@@ -222,7 +233,12 @@ async function restock(
 }
 
 // ── Production (flagship): marinade daily, tomato sauce every other day ──────
-async function productionRuns(ctx: SeedContext, state: SeedState, day: LocalDay, di: number): Promise<void> {
+async function productionRuns(
+  ctx: SeedContext,
+  state: SeedState,
+  day: LocalDay,
+  di: number,
+): Promise<void> {
   const { uc } = ctx;
   const branchId = BRANCHES.flagship.id;
   const actorUserId = state.userIdBySlug['chef'] ?? state.userIdBySlug['owner'];
@@ -253,7 +269,8 @@ function modifierSelection(rng: Rng, state: SeedState, bk: BranchKey, dish: Dish
   const ids: string[] = [];
   for (const att of dish.attachments) {
     const group = MODIFIER_GROUPS.find((g) => g.key === att.group)!;
-    const required = group.required || (att as { requiredOverride?: boolean }).requiredOverride === true;
+    const required =
+      group.required || (att as { requiredOverride?: boolean }).requiredOverride === true;
     if (!required && rng() < 0.5) {
       continue;
     }
@@ -288,16 +305,22 @@ async function ordersForDay(
   }).sort((a, b) => a - b);
 
   for (const startMin of starts) {
-    const openedAt = localTime(day, Math.floor(startMin / 60), Math.floor(startMin % 60), between(rng, 0, 59));
+    const openedAt = localTime(
+      day,
+      Math.floor(startMin / 60),
+      Math.floor(startMin % 60),
+      between(rng, 0, 59),
+    );
     const dineIn = tables.length > 0 && rng() < 0.72;
     const waiterId = state.userIdBySlug[pick(rng, WAITERS[bk])];
 
+    const tableId = dineIn ? pick(rng, tables) : null;
     let order = await uc.createOrder.execute({
       restaurantId: rid,
       branchId,
       waiterId,
       type: dineIn ? OrderType.DINE_IN : OrderType.TAKEAWAY,
-      tableId: dineIn ? pick(rng, tables) : null,
+      tableId,
     });
 
     const lineCount = between(rng, 1, dineIn ? 5 : 3);
@@ -357,12 +380,22 @@ async function ordersForDay(
           actorUserId: managerId,
         });
       }
-      const served = await uc.markOrderServed.execute({ restaurantId: rid, branchId, orderId: order.id });
+      const served = await uc.markOrderServed.execute({
+        restaurantId: rid,
+        branchId,
+        orderId: order.id,
+      });
       await pay(ctx, rng, bk, order.id, served.totalAmount, cashierId);
-      await uc.closeOrder.execute({ restaurantId: rid, branchId, orderId: order.id, actorUserId: cashierId });
+      await uc.closeOrder.execute({
+        restaurantId: rid,
+        branchId,
+        orderId: order.id,
+        actorUserId: cashierId,
+      });
     }
 
     await backdateOrder(ctx, order.id, openedAt, cancelledOrder, rng);
+    await freeTable(ctx, tableId);
   }
   return n;
 }
@@ -376,7 +409,12 @@ async function pay(
   cashierId: string,
 ): Promise<void> {
   const { uc } = ctx;
-  const base = { restaurantId: RESTAURANT.id, branchId: BRANCHES[bk].id, orderId, processedByUserId: cashierId };
+  const base = {
+    restaurantId: RESTAURANT.id,
+    branchId: BRANCHES[bk].id,
+    orderId,
+    processedByUserId: cashierId,
+  };
   if (total <= 0) {
     return;
   }
@@ -384,7 +422,12 @@ async function pay(
   if (r < 0.07 && total > 2000) {
     // Split: part card, rest cash.
     const card = Math.round((total * between(rng, 30, 70)) / 100);
-    await uc.recordPayment.execute({ ...base, method: PaymentMethod.CARD, amount: card, tenderedAmount: card });
+    await uc.recordPayment.execute({
+      ...base,
+      method: PaymentMethod.CARD,
+      amount: card,
+      tenderedAmount: card,
+    });
     const rest = total - card;
     await uc.recordPayment.execute({
       ...base,
@@ -395,9 +438,33 @@ async function pay(
     return;
   }
   const method =
-    r < 0.52 ? PaymentMethod.CASH : r < 0.9 ? PaymentMethod.CARD : r < 0.97 ? PaymentMethod.BANK_TRANSFER : PaymentMethod.OTHER;
+    r < 0.52
+      ? PaymentMethod.CASH
+      : r < 0.9
+        ? PaymentMethod.CARD
+        : r < 0.97
+          ? PaymentMethod.BANK_TRANSFER
+          : PaymentMethod.OTHER;
   const tendered = method === PaymentMethod.CASH ? Math.ceil(total / 1000) * 1000 : total;
   await uc.recordPayment.execute({ ...base, method, amount: total, tenderedAmount: tendered });
+}
+
+/**
+ * Closing a bill moves its table to CLEANING (auto table-status mode); staff then
+ * mark it AVAILABLE. Do that here through the real TableStatusService so the next
+ * order can take the same table (CLEANING -> OCCUPIED is not a valid transition).
+ */
+async function freeTable(ctx: SeedContext, tableId: string | null): Promise<void> {
+  if (!tableId) {
+    return;
+  }
+  const t = await ctx.prisma.restaurantTable.findUnique({
+    where: { id: tableId },
+    select: { status: true },
+  });
+  if (t && (t.status === 'CLEANING' || t.status === 'OCCUPIED')) {
+    await ctx.uc.tableStatus.markAvailable(RESTAURANT.id, tableId);
+  }
 }
 
 /** Move one finished order (and everything it wrote) onto its business day. */
@@ -432,13 +499,25 @@ async function backdateOrder(
       where: { id: orderId, fiscalizedAt: { not: null } },
       data: { fiscalizedAt: closedAt },
     }),
-    prisma.orderItem.updateMany({ where: { orderId }, data: { createdAt: openedAt, updatedAt: closedAt } }),
-    prisma.orderItem.updateMany({ where: { orderId, sentToKitchenAt: { not: null } }, data: { sentToKitchenAt: sentAt } }),
-    prisma.orderItem.updateMany({ where: { orderId, preparingAt: { not: null } }, data: { preparingAt: prepAt } }),
+    prisma.orderItem.updateMany({
+      where: { orderId },
+      data: { createdAt: openedAt, updatedAt: closedAt },
+    }),
+    prisma.orderItem.updateMany({
+      where: { orderId, sentToKitchenAt: { not: null } },
+      data: { sentToKitchenAt: sentAt },
+    }),
+    prisma.orderItem.updateMany({
+      where: { orderId, preparingAt: { not: null } },
+      data: { preparingAt: prepAt },
+    }),
     prisma.orderItem.updateMany({ where: { orderId, readyAt: { not: null } }, data: { readyAt } }),
     prisma.payment.updateMany({
       where: { orderId },
-      data: { createdAt: new Date(closedAt.getTime() - MIN), updatedAt: new Date(closedAt.getTime() - MIN) },
+      data: {
+        createdAt: new Date(closedAt.getTime() - MIN),
+        updatedAt: new Date(closedAt.getTime() - MIN),
+      },
     }),
     prisma.stockMovement.updateMany({
       where: { refType: ORDER_LINE, refId: { in: itemIds }, type: 'CONSUMPTION_OUT' },
@@ -472,7 +551,12 @@ async function writeOffs(
   };
   const item = (slug: string, qty: number) => {
     const it = ITEMS.find((i) => i.slug === slug)!;
-    return { kind: WriteOffLineKind.ITEM as const, itemId: state.itemIds[bk][slug], unit: it.baseUnit, qty };
+    return {
+      kind: WriteOffLineKind.ITEM as const,
+      itemId: state.itemIds[bk][slug],
+      unit: it.baseUnit,
+      qty,
+    };
   };
 
   // Spoilage of perishables every 4th day.
@@ -482,18 +566,33 @@ async function writeOffs(
       reason: WriteOffReason.SPOILAGE,
       note: 'Փչացած բանջարեղեն',
       occurredAt: localTime(day, 22, 40),
-      lines: [item('tomato', between(rng, 3, 12) * 100), item(pick(rng, ['cucumber', 'parsley', 'cilantro', 'bell-pepper']), between(rng, 2, 8) * 100)],
+      lines: [
+        item('tomato', between(rng, 3, 12) * 100),
+        item(
+          pick(rng, ['cucumber', 'parsley', 'cilantro', 'bell-pepper']),
+          between(rng, 2, 8) * 100,
+        ),
+      ],
     });
   }
   // Staff meal every 3rd day (dish write-off).
   if (di % 3 === 0) {
-    const dish = pick(rng, SELLABLE.filter((d) => d.category === 'mains' || d.category === 'soups'));
+    const dish = pick(
+      rng,
+      SELLABLE.filter((d) => d.category === 'mains' || d.category === 'soups'),
+    );
     await uc.createWriteOff.execute({
       ...base,
       reason: WriteOffReason.STAFF_MEAL,
       note: 'Աշխատակազմի ճաշ',
       occurredAt: localTime(day, 16, 0),
-      lines: [{ kind: WriteOffLineKind.DISH, menuItemId: state.dishIds[bk][dish.slug], units: between(rng, 2, 4) }],
+      lines: [
+        {
+          kind: WriteOffLineKind.DISH,
+          menuItemId: state.dishIds[bk][dish.slug],
+          units: between(rng, 2, 4),
+        },
+      ],
     });
   }
   // Occasional breakage / waste.
@@ -503,7 +602,9 @@ async function writeOffs(
       reason: WriteOffReason.BREAKAGE,
       note: 'Կոտրված շիշ',
       occurredAt: localTime(day, 21, 15),
-      lines: [item(pick(rng, ['areni-red-wine', 'cola', 'mineral-water']), pick(rng, [330, 500, 750]))],
+      lines: [
+        item(pick(rng, ['areni-red-wine', 'cola', 'mineral-water']), pick(rng, [330, 500, 750])),
+      ],
     });
   }
   if (bk === 'flagship' && di % 6 === 2) {
@@ -531,24 +632,54 @@ async function expenses(
   const rows: Array<{ cat: string | null; description: string; amount: number; hour: number }> = [];
   const scale = bk === 'flagship' ? 1 : 0.6;
   if (day.d === 1 || di === 0) {
-    rows.push({ cat: 'utilities', description: 'Էլեկտրաէներգիա', amount: Math.round(185000 * scale), hour: 12 });
-    rows.push({ cat: 'utilities', description: 'Գազ', amount: Math.round(96000 * scale), hour: 12 });
+    rows.push({
+      cat: 'utilities',
+      description: 'Էլեկտրաէներգիա',
+      amount: Math.round(185000 * scale),
+      hour: 12,
+    });
+    rows.push({
+      cat: 'utilities',
+      description: 'Գազ',
+      amount: Math.round(96000 * scale),
+      hour: 12,
+    });
     rows.push({ cat: 'utilities', description: 'Ինտերնետ', amount: 15000, hour: 12 });
   }
   if (di % 7 === 3) {
-    rows.push({ cat: 'supplies', description: 'Անձեռոցիկներ և լվացող միջոցներ', amount: between(rng, 18, 45) * 1000, hour: 11 });
+    rows.push({
+      cat: 'supplies',
+      description: 'Անձեռոցիկներ և լվացող միջոցներ',
+      amount: between(rng, 18, 45) * 1000,
+      hour: 11,
+    });
   }
   if (di % 10 === 6) {
-    rows.push({ cat: 'transport', description: 'Առաքման վառելիք', amount: between(rng, 8, 20) * 1000, hour: 15 });
+    rows.push({
+      cat: 'transport',
+      description: 'Առաքման վառելիք',
+      amount: between(rng, 8, 20) * 1000,
+      hour: 15,
+    });
   }
   if (rng() < 0.06) {
-    rows.push({ cat: 'repairs', description: pick(rng, ['Սառնարանի վերանորոգում', 'Մանղալի սպասարկում', 'Աթոռ']), amount: between(rng, 15, 90) * 1000, hour: 14 });
+    rows.push({
+      cat: 'repairs',
+      description: pick(rng, ['Սառնարանի վերանորոգում', 'Մանղալի սպասարկում', 'Աթոռ']),
+      amount: between(rng, 15, 90) * 1000,
+      hour: 14,
+    });
   }
   if (bk === 'flagship' && di % 14 === 8) {
     rows.push({ cat: 'marketing', description: 'Instagram գովազդ', amount: 50000, hour: 10 });
   }
   if (rng() < 0.04) {
-    rows.push({ cat: null, description: 'Այլ մանր ծախս', amount: between(rng, 2, 9) * 1000, hour: 18 });
+    rows.push({
+      cat: null,
+      description: 'Այլ մանր ծախս',
+      amount: between(rng, 2, 9) * 1000,
+      hour: 18,
+    });
   }
   for (const r of rows) {
     const occurredAt = localTime(day, r.hour, between(rng, 0, 59));
@@ -570,7 +701,12 @@ async function expenses(
 }
 
 // ── Imported sales (legacy POS, the 14 days before the window) ───────────────
-async function importedSales(ctx: SeedContext, state: SeedState, ownerId: string, rng: Rng): Promise<void> {
+async function importedSales(
+  ctx: SeedContext,
+  state: SeedState,
+  ownerId: string,
+  rng: Rng,
+): Promise<void> {
   const { prisma } = ctx;
   const rid = RESTAURANT.id;
   const batchId = seedId('import-batch:legacy-pos');

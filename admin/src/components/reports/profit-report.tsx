@@ -40,7 +40,7 @@ export function ProfitReport({
   const t = useTranslations('reports.profit');
   const exporter = useReportExport();
   const q = useReportExportControllerGetProfit(
-    { from, to },
+    { from, to, branchId: exporter?.branchId },
     { query: { enabled: Boolean(from && to) } },
   );
   const totals = q.data as ProfitTotalsResponse | undefined;
@@ -67,7 +67,9 @@ export function ProfitReport({
           <Button
             variant="primary"
             disabled={!exporter || exporter.busy}
-            onClick={() => exporter?.run(() => downloadProfitXlsx(from, to, exporter.lang))}
+            onClick={() =>
+              exporter?.run(() => downloadProfitXlsx(from, to, exporter.lang, exporter.branchId))
+            }
           >
             {t('download')}
           </Button>

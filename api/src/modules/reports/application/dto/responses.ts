@@ -113,3 +113,11 @@ export class ProfitTotalsResponse {
   @ApiProperty() expenseAmount!: number;
   @ApiProperty() netProfitAmount!: number;
 }
+
+/** BR-REPORTS-1: a branch the caller may pick in the report branch filter. */
+export class ReportBranchResponse {
+  @ApiProperty() id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty({ description: 'Caller also holds reports:profit:view here.' })
+  canViewProfit!: boolean;
+}

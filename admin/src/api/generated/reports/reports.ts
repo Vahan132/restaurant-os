@@ -34,6 +34,7 @@ import type {
   PaymentMethodResponse,
   PosReportsControllerGetPaymentMethodsParams,
   ProfitTotalsResponse,
+  ReportBranchResponse,
   ReportExportControllerExportByItemParams,
   ReportExportControllerExportProfitParams,
   ReportExportControllerGetProfitParams,
@@ -55,6 +56,98 @@ import { customInstance } from '../../mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+
+
+/**
+ * @summary Branches the caller may filter reports by (owner: every branch; others: branches where they hold reports:view).
+ */
+export const reportsControllerGetBranches = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<ReportBranchResponse[]>(
+      {url: `/reports/branches`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getReportsControllerGetBranchesQueryKey = () => {
+    return [
+    `/reports/branches`
+    ] as const;
+    }
+
+
+export const getReportsControllerGetBranchesQueryOptions = <TData = Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError = void>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReportsControllerGetBranchesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportsControllerGetBranches>>> = ({ signal }) => reportsControllerGetBranches(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReportsControllerGetBranchesQueryResult = NonNullable<Awaited<ReturnType<typeof reportsControllerGetBranches>>>
+export type ReportsControllerGetBranchesQueryError = void
+
+
+export function useReportsControllerGetBranches<TData = Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError = void>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reportsControllerGetBranches>>,
+          TError,
+          Awaited<ReturnType<typeof reportsControllerGetBranches>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReportsControllerGetBranches<TData = Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reportsControllerGetBranches>>,
+          TError,
+          Awaited<ReturnType<typeof reportsControllerGetBranches>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReportsControllerGetBranches<TData = Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Branches the caller may filter reports by (owner: every branch; others: branches where they hold reports:view).
+ */
+
+export function useReportsControllerGetBranches<TData = Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReportsControllerGetBranchesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
 
 
 

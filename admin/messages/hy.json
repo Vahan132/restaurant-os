@@ -841,6 +841,7 @@
       "title": "{title} {from} – {to}",
       "period": "Ժամանակահատված՝ {from} – {to}",
       "warehouses": "Պահեստ(ներ)",
+      "branch": "Մասնաճյուղ",
       "total": "Ընդամենը"
     },
     "products": {

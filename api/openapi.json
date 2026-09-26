@@ -2480,7 +2480,7 @@
             }
           },
           "403": {
-            "description": "Missing MENU_MANAGE permission."
+            "description": "Missing menu:stop_list permission."
           }
         },
         "tags": [
@@ -4554,7 +4554,7 @@
             }
           },
           "403": {
-            "description": "Missing ORDER_EDIT permission."
+            "description": "Missing order:move_table permission."
           }
         },
         "tags": [
@@ -4699,7 +4699,7 @@
             }
           },
           "403": {
-            "description": "Missing PAYMENT_PROCESS permission."
+            "description": "Missing payment:void permission, or the order belongs to another waiter (order:edit_others)."
           }
         },
         "tags": [
@@ -4911,7 +4911,7 @@
             }
           },
           "403": {
-            "description": "Missing PAYMENT_PROCESS permission."
+            "description": "Missing fiscal:receipt:print permission."
           }
         },
         "tags": [
@@ -4950,7 +4950,7 @@
             }
           },
           "403": {
-            "description": "Missing PAYMENT_PROCESS permission."
+            "description": "Missing fiscal:receipt:print permission."
           }
         },
         "tags": [
@@ -6038,7 +6038,7 @@
             }
           },
           "403": {
-            "description": "Missing inventory:item:manage permission."
+            "description": "Missing inventory:supplier:manage permission."
           }
         },
         "tags": [
@@ -6087,7 +6087,7 @@
             }
           },
           "403": {
-            "description": "Missing inventory:item:manage permission."
+            "description": "Missing inventory:supplier:manage permission."
           }
         },
         "tags": [
@@ -6126,7 +6126,7 @@
             }
           },
           "403": {
-            "description": "Missing inventory:item:manage permission."
+            "description": "Missing inventory:supplier:manage permission."
           }
         },
         "tags": [
@@ -10041,6 +10041,39 @@
         ]
       }
     },
+    "/reports/branches": {
+      "get": {
+        "operationId": "ReportsController_getBranches",
+        "summary": "Branches the caller may filter reports by (owner: every branch; others: branches where they hold reports:view).",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReportBranchResponse"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Missing REPORTS_VIEW permission."
+          }
+        },
+        "tags": [
+          "reports"
+        ],
+        "security": [
+          {
+            "access-token": []
+          }
+        ]
+      }
+    },
     "/reports/dashboard": {
       "get": {
         "operationId": "ReportsController_getDashboard",
@@ -10093,6 +10126,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch. Omitted = every branch the caller may report on (all branches for the owner).",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -10139,6 +10181,15 @@
             "required": true,
             "in": "query",
             "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch. Omitted = every branch the caller may report on (all branches for the owner).",
             "schema": {
               "type": "string"
             }
@@ -10208,6 +10259,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch. Omitted = every branch the caller may report on (all branches for the owner).",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -10257,6 +10317,15 @@
             "required": true,
             "in": "query",
             "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch. Omitted = every branch the caller may report on (all branches for the owner).",
             "schema": {
               "type": "string"
             }
@@ -10312,6 +10381,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch. Omitted = every branch the caller may report on (all branches for the owner).",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -10361,6 +10439,15 @@
             "required": true,
             "in": "query",
             "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch. Omitted = every branch the caller may report on (all branches for the owner).",
             "schema": {
               "type": "string"
             }
@@ -10416,6 +10503,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch. Omitted = every branch the caller may report on (all branches for the owner).",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -10462,6 +10558,15 @@
             "required": true,
             "in": "query",
             "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch. Omitted = every branch the caller may report on (all branches for the owner).",
             "schema": {
               "type": "string"
             }
@@ -10598,6 +10703,15 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch. Omitted = every branch the caller may report on (all branches for the owner).",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -10612,7 +10726,7 @@
             }
           },
           "403": {
-            "description": "Missing REPORTS_VIEW permission."
+            "description": "Missing reports:profit:view permission."
           }
         },
         "tags": [
@@ -10661,6 +10775,15 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch. Omitted = every branch the caller may report on (all branches for the owner).",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -10668,7 +10791,7 @@
             "description": "XLSX workbook."
           },
           "403": {
-            "description": "Missing REPORTS_VIEW permission."
+            "description": "Missing reports:profit:view permission."
           }
         },
         "tags": [
@@ -10715,6 +10838,15 @@
                 "ru",
                 "en"
               ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch. Omitted = every branch the caller may report on (all branches for the owner).",
+            "schema": {
               "type": "string"
             }
           }
@@ -10882,6 +11014,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch (must be within the caller's reach). Omitted = all reachable.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -10928,6 +11069,15 @@
             "required": false,
             "in": "query",
             "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch (must be within the caller's reach). Omitted = all reachable.",
             "schema": {
               "type": "string"
             }
@@ -10980,6 +11130,15 @@
             "required": false,
             "in": "query",
             "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch (must be within the caller's reach). Omitted = all reachable.",
             "schema": {
               "type": "string"
             }
@@ -11046,6 +11205,15 @@
             "required": false,
             "in": "query",
             "description": "To date (YYYY-MM-DD, inclusive, restaurant tz).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this branch (must be within the caller's reach). Omitted = all reachable.",
             "schema": {
               "type": "string"
             }
@@ -11855,7 +12023,7 @@
             }
           },
           "403": {
-            "description": "Missing inventory:read."
+            "description": "Missing finance:expense:read."
           }
         },
         "tags": [
@@ -11893,7 +12061,7 @@
             }
           },
           "403": {
-            "description": "Missing inventory:writeoff:create."
+            "description": "Missing finance:expense:manage."
           }
         },
         "tags": [
@@ -11942,7 +12110,7 @@
             }
           },
           "403": {
-            "description": "Missing inventory:writeoff:create."
+            "description": "Missing finance:expense:manage."
           }
         },
         "tags": [
@@ -11981,7 +12149,7 @@
             }
           },
           "403": {
-            "description": "Missing inventory:writeoff:void."
+            "description": "Missing finance:expense:delete."
           }
         },
         "tags": [
@@ -12014,7 +12182,7 @@
             }
           },
           "403": {
-            "description": "Missing inventory:read."
+            "description": "Missing finance:expense:read."
           }
         },
         "tags": [
@@ -12052,7 +12220,7 @@
             }
           },
           "403": {
-            "description": "Missing inventory:writeoff:create."
+            "description": "Missing finance:expense:manage."
           }
         },
         "tags": [
@@ -12101,7 +12269,7 @@
             }
           },
           "403": {
-            "description": "Missing inventory:writeoff:create."
+            "description": "Missing finance:expense:manage."
           }
         },
         "tags": [
@@ -12140,7 +12308,7 @@
             }
           },
           "403": {
-            "description": "Missing inventory:writeoff:void."
+            "description": "Missing finance:expense:delete."
           }
         },
         "tags": [
@@ -23635,6 +23803,26 @@
           "items"
         ]
       },
+      "ReportBranchResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "canViewProfit": {
+            "type": "boolean",
+            "description": "Caller also holds reports:profit:view here."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "canViewProfit"
+        ]
+      },
       "TopItemResponse": {
         "type": "object",
         "properties": {
@@ -24141,6 +24329,14 @@
           "warehousesLabel": {
             "type": "string",
             "description": "When set (e.g. \"Склад(ы)\"), a \"<label>: <active warehouse names>\" line is added under each sheet title."
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Branch the on-screen table was filtered to (warehouses line + branch line)."
+          },
+          "branchLabel": {
+            "type": "string",
+            "description": "Label for the branch line, e.g. \"Branch\" (added when branchId is set)."
           },
           "sheets": {
             "type": "array",

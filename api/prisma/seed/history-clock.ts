@@ -43,7 +43,14 @@ function tzOffsetMs(at: Date, tz: string): number {
     second: '2-digit',
   }).formatToParts(at);
   const get = (t: string): number => Number(parts.find((p) => p.type === t)!.value);
-  const asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+  const asUtc = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour'),
+    get('minute'),
+    get('second'),
+  );
   return asUtc - Math.floor(at.getTime() / 1000) * 1000;
 }
 
