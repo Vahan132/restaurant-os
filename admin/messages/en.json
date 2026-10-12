@@ -2203,5 +2203,9 @@
     "healthNotChecked": "Not checked yet",
     "healthDevice": "Physical device",
     "healthNote": "The cloud can't reach the on-site HDM directly, so it can't confirm the device is powered on or reachable — only that it's configured. Use the on-site hub for live device status."
+  },
+  "edge": {
+    "offlineBanner": "Offline — managing {branch} on the local hub. Operational actions only; structural and cross-branch changes are available online.",
+    "offlineBannerNoBranch": "Offline — running on the local hub. Operational actions only."
   }
 }

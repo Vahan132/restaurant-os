@@ -87,6 +87,46 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # ── EDGE-OFFLINE-UI — build & publish the hub reverse-proxy image ────────────
+  # nginx with the LAN /res/* routing baked in (api/edge-proxy/). PUBLIC + multi-
+  # arch so any hub pulls it with no creds. Tagged like the api image (edge-v* +
+  # latest), so docker-compose.edge.yml references it via EDGE_IMAGE_TAG.
+  # One-time: flip the restaurant-os-edge-proxy GHCR package to Public after the
+  # first publish (same as restaurant-os-edge).
+  build-proxy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compute image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/vahan132/restaurant-os-edge-proxy
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
+      - name: Build and push (multi-arch)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api/edge-proxy
+          file: ./api/edge-proxy/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
   # ── EDGE-PKG-4 — cut the release notes (changelog only) ──────────────────────
   # Runs only on a real `edge-v*` tag (never the dispatch dry-run). Records a
   # GitHub Release purely for the changelog. It attaches NO installer assets: the

@@ -130,3 +130,19 @@ export const NAV_ITEMS: NavItem[] = [
     scope: 'restaurant',
   },
 ];
+
+/**
+ * Nav keys visible when the admin runs against an EDGE hub (offline / local).
+ * Operational-only: dashboard, live orders, tables, reservations, menu
+ * availability/86'ing, and (read-only) reports. Everything else — menu
+ * STRUCTURE, inventory, users/roles, devices, settings, cross-branch and
+ * platform — is cloud-only and hidden here (and bounced by the shell guard).
+ */
+export const EDGE_ALLOWED_NAV_KEYS: ReadonlySet<string> = new Set([
+  'dashboard',
+  'orders',
+  'tables',
+  'reservations',
+  'menu',
+  'reports',
+]);

@@ -4,7 +4,8 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { NAV_ITEMS } from '@/components/shell/nav-config';
+import { NAV_ITEMS, EDGE_ALLOWED_NAV_KEYS } from '@/components/shell/nav-config';
+import { useEdgeMode } from '@/lib/edge/use-edge-mode';
 import { useAnyPermission } from '@/lib/auth/use-permission';
 
 function NavLink({
@@ -55,6 +56,9 @@ function GatedNavLink({ item }: { item: (typeof NAV_ITEMS)[number] }) {
 
 export function Sidebar() {
   const t = useTranslations('common');
+  // On an EDGE hub, show only the operational-only surface.
+  const { isEdge } = useEdgeMode();
+  const items = NAV_ITEMS.filter((item) => !isEdge || EDGE_ALLOWED_NAV_KEYS.has(item.key));
 
   return (
     <aside className="hidden h-screen w-60 shrink-0 flex-col border-r border-gray-200 bg-white md:flex">
@@ -62,7 +66,7 @@ export function Sidebar() {
         {t('appName')}
       </div>
       <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3">
-        {NAV_ITEMS.map((item) => (
+        {items.map((item) => (
           <GatedNavLink key={item.href} item={item} />
         ))}
       </nav>

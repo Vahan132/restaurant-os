@@ -22,11 +22,25 @@ import { persist, createJSONStorage } from 'zustand/middleware';
  */
 
 /** Cloud defaults, sourced from env (the previous static config). */
-export const CLOUD_API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
-export const CLOUD_SOCKET_BASE_URL =
-  process.env.NEXT_PUBLIC_SOCKET_BASE_URL ?? CLOUD_API_BASE_URL;
-export const CLOUD_SOCKET_PATH = process.env.NEXT_PUBLIC_SOCKET_PATH || undefined;
+const ENV_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+export const CLOUD_API_BASE_URL = ENV_API_BASE
+  ? ENV_API_BASE.replace(/\/$/, '')
+  : process.env.NODE_ENV === 'production'
+    ? '/res/api' // SAME ORIGIN: one build serves cloud AND hub (both expose /res/api)
+    : 'http://localhost:3001';
+const ENV_SOCKET_BASE = process.env.NEXT_PUBLIC_SOCKET_BASE_URL?.trim();
+export const CLOUD_SOCKET_BASE_URL = ENV_SOCKET_BASE
+  ? ENV_SOCKET_BASE.replace(/\/$/, '')
+  : process.env.NODE_ENV === 'production'
+    ? '' // SAME ORIGIN (socket.io uses window.location); do NOT reuse the API path
+    : 'http://localhost:3001';
+const ENV_SOCKET_PATH = process.env.NEXT_PUBLIC_SOCKET_PATH;
+export const CLOUD_SOCKET_PATH =
+  ENV_SOCKET_PATH !== undefined
+    ? ENV_SOCKET_PATH || undefined
+    : process.env.NODE_ENV === 'production'
+      ? '/res/socket.io' // reverse-proxied path on both cloud and hub nginx
+      : undefined;
 
 export type ApiTarget = 'cloud' | 'hub';
 

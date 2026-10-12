@@ -2203,5 +2203,9 @@
     "healthNotChecked": "Not checked yet",
     "healthDevice": "Physical device",
     "healthNote": "The cloud can't reach the on-site HDM directly, so it can't confirm the device is powered on or reachable — only that it's configured. Use the on-site hub for live device status."
+  },
+  "edge": {
+    "offlineBanner": "Առանց ինտերնետի — {branch} մասնաճյուղը կառավարվում է տեղական հանգույցով։ Հասանելի են միայն գործառնական գործողությունները. կառուցվածքային և միջմասնաճյուղային փոփոխությունները՝ առցանց։",
+    "offlineBannerNoBranch": "Առանց ինտերնետի — աշխատանքը տեղական հանգույցով։ Հասանելի են միայն գործառնական գործողությունները։"
   }
 }

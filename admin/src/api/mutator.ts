@@ -10,8 +10,20 @@ import { useAuthStore } from '@/stores/auth';
 import { usePlatformAuthStore } from '@/stores/platform-auth';
 import { readPersistedTokens, withRefreshLock } from './refresh-lock';
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
+// API base URL.
+//  - An explicit NEXT_PUBLIC_API_BASE_URL always wins (cross-origin dev, or a
+//    pinned absolute URL).
+//  - Otherwise PRODUCTION defaults to a SAME-ORIGIN relative path (`/res/api`),
+//    so ONE build runs unchanged on the cloud AND on an on-prem hub: both serve
+//    the admin app and the API under the same host via `/res/*`. The hub's LAN
+//    IP differs per install, so nothing host-specific may be baked in.
+//  - `next dev` falls back to the local API on :3001.
+const ENV_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+export const API_BASE_URL = ENV_API_BASE
+  ? ENV_API_BASE.replace(/\/$/, '')
+  : process.env.NODE_ENV === 'production'
+    ? '/res/api'
+    : 'http://localhost:3001';
 
 /** Normalized error shape surfaced to the app (from backend `{ error: {...} }`). */
 export interface ApiError {
