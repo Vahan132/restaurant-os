@@ -25,6 +25,13 @@ COPY . .
 RUN pnpm prisma:generate \
   && pnpm build
 
+# Fail the build LOUDLY if the compile didn't emit the file the runtime starts
+# (dist/main.js). edge-v0.1.3 shipped WITHOUT it — `pnpm build` exited 0 but no
+# main.js was emitted — producing an image that crash-loops at runtime with
+# "Cannot find module '/app/dist/main.js'". This guard turns that into a failed
+# image build instead of a broken published image.
+RUN test -f dist/main.js || { echo "BUILD ERROR: 'pnpm build' did not emit dist/main.js"; echo "dist/ contents:"; ls -laR dist; exit 1; }
+
 # 2) Runtime — carry the full install (incl. Prisma CLI + ts-node) so the edge
 # entrypoint can migrate + optionally seed, then run the compiled app.
 FROM node:20-bookworm-slim AS runtime
