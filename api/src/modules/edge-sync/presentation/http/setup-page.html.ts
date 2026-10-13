@@ -56,6 +56,7 @@ export const SETUP_PAGE_HTML = `<!doctype html>
   .btn[disabled] { opacity: .55; cursor: default; }
   .btn.secondary { background: #fff; color: var(--err); border: 2px solid var(--err); margin-top: 12px; }
   .btn.ghost { background: transparent; color: var(--muted); border: none; font-weight: 600; min-height: 0; padding: 12px; }
+  .resetbar { text-align: center; margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); }
   details { margin-top: 16px; }
   summary { cursor: pointer; color: var(--muted); font-size: 14px; }
   details input { margin-top: 10px; font-size: 16px; letter-spacing: normal; text-transform: none; text-align: left; }
@@ -82,6 +83,7 @@ export const SETUP_PAGE_HTML = `<!doctype html>
   <main class="card" role="main">
     <div class="langbar" id="langbar"></div>
     <div id="view"></div>
+    <div class="resetbar"><button id="resetBtn" class="btn ghost" type="button"></button></div>
   </main>
 
 <script>
@@ -118,7 +120,12 @@ export const SETUP_PAGE_HTML = `<!doctype html>
       errNotReady: 'Setup isn\\'t ready on the server yet — please contact support.',
       errGeneric: 'Something went wrong. Please try again.',
       errThrottled: 'Too many attempts — please wait a moment and try again.',
-      retry: 'Try again'
+      retry: 'Try again',
+      resetBtn: 'Reset this device',
+      resetTitle: 'Reset this device?',
+      resetWarn: 'This clears saved data on THIS device only — sign-in, the device link, and the cached app version. Use it after an update if the apps act oddly. Your data on the server is not affected.',
+      resetYes: 'Yes, reset',
+      resetting: 'Resetting…'
     },
     hy: {
       code: 'hy', name: 'ՀԱ',
@@ -149,7 +156,12 @@ export const SETUP_PAGE_HTML = `<!doctype html>
       errNotReady: 'Սերվերը դեռ պատրաստ չէ — կապվեք աջակցման հետ։',
       errGeneric: 'Ներում առաջացավ։ Փորձեք կրկին։',
       errThrottled: 'Չափազանց շատ փորձեր — սպասեք մի պահ և կրկին փորձեք։',
-      retry: 'Փորձել կրկին'
+      retry: 'Փորձել կրկին',
+      resetBtn: 'Վերակայել այս սարքը',
+      resetTitle: 'Վերակայե՞լ այս սարքը',
+      resetWarn: 'Սա մաքրում է միայն ԱՅՍ սարքի պահված տվյալները՝ մուտքը, սարքի կապը և պահված տարբերակը։ Օգտագործեք թարմացումից հետո, եթե հավելվածները սխալ են աշխատում։ Սերվերի տվյալները չեն ազդվում։',
+      resetYes: 'Այո, վերակայել',
+      resetting: 'Վերակայում…'
     },
     ru: {
       code: 'ru', name: 'РУ',
@@ -180,7 +192,12 @@ export const SETUP_PAGE_HTML = `<!doctype html>
       errNotReady: 'Сервер ещё не готов — обратитесь в поддержку.',
       errGeneric: 'Что-то пошло не так. Повторите.',
       errThrottled: 'Слишком много попыток — подождите немного и повторите.',
-      retry: 'Повторить'
+      retry: 'Повторить',
+      resetBtn: 'Сбросить это устройство',
+      resetTitle: 'Сбросить это устройство?',
+      resetWarn: 'Это очистит сохранённые данные только НА ЭТОМ устройстве — вход, привязку устройства и кэш версии. Используйте после обновления, если приложения работают неправильно. Данные на сервере не затрагиваются.',
+      resetYes: 'Да, сбросить',
+      resetting: 'Сброс…'
     }
   };
 
@@ -214,6 +231,7 @@ export const SETUP_PAGE_HTML = `<!doctype html>
       b.onclick = function () { lang = l; renderLangbar(); rerender(); };
       langbar.appendChild(b);
     });
+    renderFooter();
   }
 
   var current = { name: 'loading', data: null };
@@ -346,6 +364,62 @@ export const SETUP_PAGE_HTML = `<!doctype html>
     }, 2000);
   }
 
+  function renderFooter() {
+    var b = document.getElementById('resetBtn');
+    if (b) b.textContent = t('resetBtn');
+  }
+
+  function confirmReset() {
+    view.innerHTML =
+      '<h1>' + esc(t('resetTitle')) + '</h1>' +
+      '<div class="msg err">' + esc(t('resetWarn')) + '</div>' +
+      '<button id="resetGo" class="btn secondary">' + esc(t('resetYes')) + '</button>' +
+      '<button id="resetCancel" class="btn ghost">' + esc(t('cancel')) + '</button>';
+    document.getElementById('resetCancel').onclick = function () { loadStatus(); };
+    document.getElementById('resetGo').onclick = doReset;
+  }
+
+  function finishReset() {
+    setTimeout(function () { location.href = '/res/pos'; }, 300);
+  }
+
+  function doReset() {
+    view.innerHTML =
+      '<div class="center"><div class="spinner"></div>' +
+      '<p class="lead">' + esc(t('resetting')) + '</p></div>';
+    try { localStorage.clear(); } catch (e) {}
+    try { sessionStorage.clear(); } catch (e) {}
+    var tasks = [];
+    try {
+      if (indexedDB && indexedDB.databases) {
+        tasks.push(indexedDB.databases().then(function (dbs) {
+          (dbs || []).forEach(function (d) {
+            if (d && d.name) { try { indexedDB.deleteDatabase(d.name); } catch (e) {} }
+          });
+        }).catch(function () {}));
+      } else if (typeof indexedDB !== 'undefined') {
+        ['pos-device', 'kds-device'].forEach(function (n) {
+          try { indexedDB.deleteDatabase(n); } catch (e) {}
+        });
+      }
+    } catch (e) {}
+    try {
+      if (window.caches && caches.keys) {
+        tasks.push(caches.keys().then(function (ks) {
+          return Promise.all((ks || []).map(function (k) { return caches.delete(k); }));
+        }).catch(function () {}));
+      }
+    } catch (e) {}
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        tasks.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+          return Promise.all((regs || []).map(function (r) { return r.unregister(); }));
+        }).catch(function () {}));
+      }
+    } catch (e) {}
+    Promise.all(tasks).then(finishReset, finishReset);
+  }
+
   function loadStatus() {
     render('loading', null);
     fetch('/setup/status', { cache: 'no-store' })
@@ -359,6 +433,8 @@ export const SETUP_PAGE_HTML = `<!doctype html>
       .catch(function () { render('setup', null); });
   }
 
+  var resetBtnEl = document.getElementById('resetBtn');
+  if (resetBtnEl) resetBtnEl.onclick = confirmReset;
   renderLangbar();
   loadStatus();
 })();
