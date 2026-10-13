@@ -47,8 +47,9 @@ export class CloudPairClient {
     return Boolean(this.cloudUrl);
   }
 
-  async pair(code: string): Promise<CloudPairResult> {
-    if (!this.cloudUrl) {
+  async pair(code: string, overrideUrl?: string): Promise<CloudPairResult> {
+    const effectiveUrl = (overrideUrl && overrideUrl.trim()) || this.cloudUrl;
+    if (!effectiveUrl) {
       throw new CloudPairError(
         'The cloud URL is not configured on this hub (CLOUD_URL).',
         false,
@@ -56,7 +57,7 @@ export class CloudPairClient {
         null,
       );
     }
-    const base = this.cloudUrl.replace(/\/+$/, '');
+    const base = effectiveUrl.replace(/\/+$/, '');
 
     let res: Awaited<ReturnType<typeof fetch>>;
     try {

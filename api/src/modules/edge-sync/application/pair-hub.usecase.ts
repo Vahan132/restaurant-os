@@ -1,9 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { UseCase } from '../../../shared/application/use-case';
+import { AppConfig } from '../../../shared/infrastructure/config/env.schema';
 import { CloudPairClient, CloudPairError, CloudPairResult } from './cloud-pair.client';
 import { EdgeIdentityStore } from './edge-identity.store';
 import {
   SetupCloudUnreachable,
+  SetupCloudUrlMissing,
   SetupInvalidCode,
   SetupKekUnavailable,
   SetupPairingFailed,
@@ -13,6 +16,8 @@ import { HUB_RESTART, HubRestart } from './hub-restart.port';
 
 export interface PairHubInput {
   pairingCode: string;
+  /** Optional cloud server address to pair against and persist for later sync. */
+  cloudUrl?: string;
   /** Optional network hint (advisory; real network config is OS-level). */
   network?: Record<string, unknown>;
 }
@@ -37,18 +42,28 @@ export class PairHubUseCase implements UseCase<PairHubInput, PairHubResult> {
     private readonly cloud: CloudPairClient,
     private readonly identity: EdgeIdentityStore,
     @Inject(HUB_RESTART) private readonly restart: HubRestart,
+    private readonly config: ConfigService<AppConfig, true>,
   ) {}
 
   async execute(input: PairHubInput): Promise<PairHubResult> {
+    // The server address the operator entered on the setup page wins; otherwise
+    // fall back to any CLOUD_URL baked into the hub image/env.
+    const effectiveCloudUrl =
+      (input.cloudUrl && input.cloudUrl.trim()) ||
+      this.config.get('CLOUD_URL', { infer: true }) ||
+      undefined;
+
     let result: CloudPairResult;
     try {
-      result = await this.cloud.pair(input.pairingCode.trim());
+      result = await this.cloud.pair(input.pairingCode.trim(), effectiveCloudUrl);
     } catch (err) {
       throw this.mapError(err);
     }
 
-    // Persist the full identity (ids + token + KEK) to the durable local file the
-    // entrypoint sources on boot. Overwrites any prior identity (re-pair).
+    // Persist the full identity (ids + token + KEK + server address) to the durable
+    // local file the entrypoint sources on boot. Overwrites any prior identity
+    // (re-pair). Persisting CLOUD_URL means later snapshot/resync use it with no
+    // hand-edited env.
     this.identity.write({
       organizationId: result.organizationId,
       restaurantId: result.restaurantId,
@@ -56,6 +71,7 @@ export class PairHubUseCase implements UseCase<PairHubInput, PairHubResult> {
       nodeId: result.nodeId,
       nodeToken: result.nodeToken,
       fiscalKek: result.fiscalKek,
+      cloudUrl: effectiveCloudUrl,
     });
 
     // Restart so the persisted identity is loaded (setup mode → operational).
@@ -67,6 +83,9 @@ export class PairHubUseCase implements UseCase<PairHubInput, PairHubResult> {
 
   private mapError(err: unknown): Error {
     if (err instanceof CloudPairError) {
+      if (err.apiCode === 'CLOUD_URL_NOT_CONFIGURED') {
+        return SetupCloudUrlMissing();
+      }
       if (!err.reachable) {
         return SetupCloudUnreachable();
       }

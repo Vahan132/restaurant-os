@@ -2001,7 +2001,21 @@
     "validation": {
       "branchRequired": "Pick a branch.",
       "nameRequired": "Name is required."
-    }
+    },
+    "generatePairingCode": "Generate pairing code",
+    "genTitle": "Generate a pairing code",
+    "genIntro": "Pick the branch this hub will serve. You’ll get a code to enter on the hub — no developer needed.",
+    "genSubmit": "Generate code",
+    "codeResultTitle": "Pairing code",
+    "codeIntro": "Enter these on the hub to connect it. The code is single-use and expires soon.",
+    "codeLabel": "Pairing code",
+    "codeExpires": "Expires {time} · one-time use",
+    "serverAddrLabel": "Server address",
+    "serverAddrHint": "Type this on the hub’s setup screen as the server address.",
+    "instructionsTitle": "How to connect the hub",
+    "pairStep1": "On the hub device, open its setup page (http://<hub address>/setup) in a browser.",
+    "pairStep2": "Enter the server address shown above.",
+    "pairStep3": "Enter the pairing code and tap Connect."
   },
   "consumerListing": {
     "title": "Consumer Listing",

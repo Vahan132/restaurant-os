@@ -19,6 +19,16 @@ export const SetupCloudUnreachable = () =>
     HttpStatus.BAD_GATEWAY,
   );
 
+/** No cloud server address was provided or baked in — the hub cannot pair yet. */
+export const SetupCloudUrlMissing = () =>
+  new HttpException(
+    {
+      code: 'CLOUD_URL_NOT_CONFIGURED',
+      message: 'Enter the server address from your dashboard, then try again.',
+    },
+    HttpStatus.BAD_REQUEST,
+  );
+
 /** The cloud has no master KEK, so it cannot issue this hub's fiscal key. */
 export const SetupKekUnavailable = () =>
   new HttpException(

@@ -14,6 +14,8 @@ export interface PersistedEdgeIdentity {
   nodeToken: string;
   /** Per-hub fiscal KEK, 64 hex chars (→ FISCAL_MASTER_KEK, verbatim). */
   fiscalKek: string;
+  /** Cloud server address (→ CLOUD_URL) so snapshot/resync work after restart. */
+  cloudUrl?: string;
 }
 
 /**
@@ -41,15 +43,20 @@ export class EdgeIdentityStore {
 
   /** Persist (overwrite) the paired identity as a 0600 env file. Never logs contents. */
   write(identity: PersistedEdgeIdentity): void {
-    const body =
-      [
-        `EDGE_ORG_ID=${identity.organizationId}`,
-        `EDGE_RESTAURANT_ID=${identity.restaurantId}`,
-        `EDGE_BRANCH_ID=${identity.branchId}`,
-        `EDGE_NODE_ID=${identity.nodeId}`,
-        `EDGE_NODE_TOKEN=${identity.nodeToken}`,
-        `FISCAL_MASTER_KEK=${identity.fiscalKek}`,
-      ].join('\n') + '\n';
+    const lines = [
+      `EDGE_ORG_ID=${identity.organizationId}`,
+      `EDGE_RESTAURANT_ID=${identity.restaurantId}`,
+      `EDGE_BRANCH_ID=${identity.branchId}`,
+      `EDGE_NODE_ID=${identity.nodeId}`,
+      `EDGE_NODE_TOKEN=${identity.nodeToken}`,
+      `FISCAL_MASTER_KEK=${identity.fiscalKek}`,
+    ];
+    if (identity.cloudUrl) {
+      // Single-quote so any query-string metacharacters survive `set -a` sourcing;
+      // strip single quotes defensively (URLs never contain them).
+      lines.push(`CLOUD_URL='${identity.cloudUrl.replace(/'/g, '')}'`);
+    }
+    const body = lines.join('\n') + '\n';
     mkdirSync(dirname(this.path), { recursive: true });
     // Owner read/write only. Overwrites any prior identity (re-pair rotation).
     writeFileSync(this.path, body, { mode: 0o600 });

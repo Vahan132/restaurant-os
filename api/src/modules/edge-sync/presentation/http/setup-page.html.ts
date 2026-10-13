@@ -59,6 +59,8 @@ export const SETUP_PAGE_HTML = `<!doctype html>
   details { margin-top: 16px; }
   summary { cursor: pointer; color: var(--muted); font-size: 14px; }
   details input { margin-top: 10px; font-size: 16px; letter-spacing: normal; text-transform: none; text-align: left; }
+  input.plain { font-size: 16px; letter-spacing: normal; text-transform: none; text-align: left; }
+  .hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
   .msg { margin-top: 16px; padding: 14px 16px; border-radius: 12px; font-size: 15px; line-height: 1.45; }
   .msg.err { background: #fef2f2; color: var(--err); border: 1px solid #fecaca; }
   .center { text-align: center; }
@@ -93,6 +95,10 @@ export const SETUP_PAGE_HTML = `<!doctype html>
       setupLead: 'Enter the pairing code from your dashboard to connect this location.',
       codeLabel: 'Pairing code',
       codePlaceholder: 'e.g. K7M2QP9X',
+      serverLabel: 'Server address',
+      serverPlaceholder: 'https://your-server-address',
+      serverHint: 'From your dashboard: tap "Generate pairing code".',
+      errNoServer: 'Enter the server address from your dashboard.',
       pair: 'Connect',
       pairing: 'Connecting…',
       advanced: 'Advanced network (optional)',
@@ -120,6 +126,10 @@ export const SETUP_PAGE_HTML = `<!doctype html>
       setupLead: 'Մուտքագրեք ձեր վահանակից զույգակցման կոդը՝ այս կետը միացնելու համար։',
       codeLabel: 'Զույգակցման կոդ',
       codePlaceholder: 'օր.՝ K7M2QP9X',
+      serverLabel: 'Սերվերի հասցե',
+      serverPlaceholder: 'https://ձեր-սերվերը',
+      serverHint: 'Ձեր վահանակից՝ սեղմեք «Ստեղծել զույգակցման կոդ»։',
+      errNoServer: 'Մուտքագրեք սերվերի հասցեն ձեր վահանակից։',
       pair: 'Միացնել',
       pairing: 'Միացում՜',
       advanced: 'Ցանցի կարգավորում (ըստ ցանկության)',
@@ -147,6 +157,10 @@ export const SETUP_PAGE_HTML = `<!doctype html>
       setupLead: 'Введите код сопряжения из панели, чтобы подключить эту точку.',
       codeLabel: 'Код сопряжения',
       codePlaceholder: 'напр. K7M2QP9X',
+      serverLabel: 'Адрес сервера',
+      serverPlaceholder: 'https://адрес-сервера',
+      serverHint: 'Из панели: нажмите «Создать код сопряжения».',
+      errNoServer: 'Введите адрес сервера из панели.',
       pair: 'Подключить',
       pairing: 'Подключение…',
       advanced: 'Сеть (необязательно)',
@@ -181,6 +195,7 @@ export const SETUP_PAGE_HTML = `<!doctype html>
   var view = document.getElementById('view');
   var langbar = document.getElementById('langbar');
   var lastBranch = null;
+  var lastCloud = null;
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -216,6 +231,9 @@ export const SETUP_PAGE_HTML = `<!doctype html>
     view.innerHTML =
       '<h1>' + esc(t('setupTitle')) + '</h1>' +
       '<p class="lead">' + esc(t('setupLead')) + '</p>' +
+      '<label for="server">' + esc(t('serverLabel')) + '</label>' +
+      '<input id="server" class="plain" type="text" autocomplete="off" spellcheck="false" placeholder="' + esc(t('serverPlaceholder')) + '" value="' + esc(lastCloud || '') + '" />' +
+      '<p class="hint">' + esc(t('serverHint')) + '</p>' +
       '<label for="code">' + esc(t('codeLabel')) + '</label>' +
       '<input id="code" type="text" autocomplete="one-time-code" autocapitalize="characters" ' +
       'spellcheck="false" placeholder="' + esc(t('codePlaceholder')) + '" />' +
@@ -224,7 +242,8 @@ export const SETUP_PAGE_HTML = `<!doctype html>
       (errKey ? '<div class="msg err" role="alert">' + esc(t(errKey)) + '</div>' : '') +
       '<button id="pairBtn" class="btn">' + esc(t('pair')) + '</button>';
     var input = document.getElementById('code');
-    input.focus();
+    var serverEl = document.getElementById('server');
+    if (serverEl && !serverEl.value) serverEl.focus(); else input.focus();
     document.getElementById('pairBtn').onclick = doPair;
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') doPair(); });
   }
@@ -262,6 +281,7 @@ export const SETUP_PAGE_HTML = `<!doctype html>
 
   function errKeyFor(code) {
     if (code === 'INVALID_PAIRING_CODE') return 'errInvalid';
+    if (code === 'CLOUD_URL_NOT_CONFIGURED') return 'errNoServer';
     if (code === 'CLOUD_UNREACHABLE') return 'errUnreachable';
     if (code === 'PAIRING_KEK_UNAVAILABLE') return 'errNotReady';
     if (code === 'RATE_LIMITED') return 'errThrottled';
@@ -273,11 +293,15 @@ export const SETUP_PAGE_HTML = `<!doctype html>
     var input = document.getElementById('code');
     if (!btn || !input) return;
     var code = normalizeCode(input.value);
+    var serverEl = document.getElementById('server');
+    var server = serverEl ? serverEl.value.trim() : '';
+    if (!server) { lastCloud = ''; render('setup', 'errNoServer'); return; }
+    lastCloud = server;
     if (!code) { input.focus(); return; }
     var net = document.getElementById('net');
     btn.disabled = true;
     btn.textContent = t('pairing');
-    var body = { pairingCode: code };
+    var body = { pairingCode: code, cloudUrl: server };
     if (net && net.value.trim()) body.network = { notes: net.value.trim() };
 
     fetch('/setup/pair', {
@@ -328,6 +352,7 @@ export const SETUP_PAGE_HTML = `<!doctype html>
       .then(function (r) { return r.json(); })
       .then(function (s) {
         lastBranch = (s && s.branchId) || lastBranch;
+        lastCloud = (s && s.cloudUrl) || lastCloud;
         if (s && s.paired) render('connected', s);
         else render('setup', null);
       })

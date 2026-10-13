@@ -10,6 +10,7 @@ import type {
 } from '@/api/generated/model';
 import { Can } from '@/components/auth/can';
 import { HubTokenModal } from '@/components/hubs/hub-token-modal';
+import { PairingCodeModal } from '@/components/hubs/pairing-code-modal';
 import { RegisterHubModal } from '@/components/hubs/register-hub-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ export function HubsManager() {
   const revoke = useEdgeNodesControllerRevokeNode();
 
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [pairOpen, setPairOpen] = useState(false);
   const [tokenResult, setTokenResult] = useState<RegisterEdgeNodeResponse | null>(
     null,
   );
@@ -77,9 +79,14 @@ export function HubsManager() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">{t('title')}</h1>
         <Can permission={PERMISSIONS.EDGE_MANAGE} scope="restaurant">
-          <Button variant="primary" onClick={() => setRegisterOpen(true)}>
-            + {t('registerHub')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setRegisterOpen(true)}>
+              {t('registerHub')}
+            </Button>
+            <Button variant="primary" onClick={() => setPairOpen(true)}>
+              + {t('generatePairingCode')}
+            </Button>
+          </div>
         </Can>
       </div>
 
@@ -211,6 +218,15 @@ export function HubsManager() {
           onRegistered={(result) => {
             setRegisterOpen(false);
             setTokenResult(result);
+            void invalidate();
+          }}
+        />
+      )}
+
+      {pairOpen && (
+        <PairingCodeModal
+          onClose={() => {
+            setPairOpen(false);
             void invalidate();
           }}
         />

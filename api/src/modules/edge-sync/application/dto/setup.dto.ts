@@ -11,6 +11,17 @@ export class PairSetupDto {
 
   @ApiPropertyOptional({
     description:
+      'Cloud server address the hub should pair against and remember, e.g. ' +
+      'https://your-server/res/api. Optional when the hub image already has one baked in.',
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(2048)
+  cloudUrl?: string;
+
+  @ApiPropertyOptional({
+    description:
       'Optional network hint (advisory only — real network config is OS-level; the ' +
       'hub defaults to DHCP). Ignored by the backend in EDGE-SETUP-3A.',
     type: Object,
@@ -30,6 +41,10 @@ export class SetupStatusResponse {
   nodeId!: string | null;
   @ApiProperty({ nullable: true, type: String, description: 'The served branch id (null if unpaired).' })
   branchId!: string | null;
+  @ApiProperty({ nullable: true, type: String, description: 'The cloud server address configured on this hub (null if unset).' })
+  cloudUrl!: string | null;
+  @ApiProperty({ description: 'True when a cloud server address is already configured (baked-in or persisted).' })
+  cloudConfigured!: boolean;
 }
 
 /** POST /setup/pair response — never includes the token or KEK. */

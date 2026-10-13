@@ -3,6 +3,8 @@ import { CloudPairClient, CloudPairError, CloudPairResult } from './cloud-pair.c
 import { EdgeIdentityStore, PersistedEdgeIdentity } from './edge-identity.store';
 import { HubRestart } from './hub-restart.port';
 import { PairHubUseCase } from './pair-hub.usecase';
+import { ConfigService } from '@nestjs/config';
+import { AppConfig } from '../../../shared/infrastructure/config/env.schema';
 
 const RESULT: CloudPairResult = {
   nodeId: 'node-1',
@@ -35,7 +37,13 @@ function build(pair: (code: string) => Promise<CloudPairResult>): {
   const cloud = { pair } as unknown as CloudPairClient;
   const store = new FakeStore();
   const restart = new FakeRestart();
-  const uc = new PairHubUseCase(cloud, store as unknown as EdgeIdentityStore, restart);
+  const config = { get: () => undefined } as unknown as ConfigService<AppConfig, true>;
+  const uc = new PairHubUseCase(
+    cloud,
+    store as unknown as EdgeIdentityStore,
+    restart,
+    config,
+  );
   return { uc, store, restart };
 }
 
