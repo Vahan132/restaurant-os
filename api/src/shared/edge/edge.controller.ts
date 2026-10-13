@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Query } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../auth/public.decorator';
@@ -57,10 +57,10 @@ export class EdgeController {
     private readonly edge: EdgeConfigService,
     private readonly prisma: PrismaService,
     private readonly gate: EdgeSyncGate,
-    config: ConfigService<AppConfig, true>,
+    private readonly config: ConfigService<AppConfig, true>,
   ) {
     this.reportedSchemaVersion =
-      config.get('EDGE_SCHEMA_VERSION', { infer: true }) ?? SCHEMA_VERSION;
+      this.config.get('EDGE_SCHEMA_VERSION', { infer: true }) ?? SCHEMA_VERSION;
   }
 
   @Get('info')
@@ -151,5 +151,30 @@ export class EdgeController {
       updateRequired: this.gate.isUpdateRequired,
       serverTime: new Date().toISOString(),
     };
+  }
+
+  /**
+   * EDGE-OFFLINE-UI: hand the served POS/KDS frontend the hub's baked device
+   * secret so it needs NO enrollment. EDGE-only (404 in CLOUD) and intended for
+   * same-LAN use behind the hub — the hub "vouches" for the devices it serves.
+   */
+  @Get('device-key')
+  @ApiOkResponse({ description: 'Baked hub device secret for a POS/KDS surface (EDGE only).' })
+  deviceKey(@Query('surface') surface?: string): { surface: 'POS' | 'KDS'; deviceSecret: string } {
+    if (!this.edge.isEdge) {
+      throw new NotFoundException({ code: 'NOT_EDGE', message: 'Not an edge hub.' });
+    }
+    const s: 'POS' | 'KDS' = (surface ?? 'POS').toUpperCase() === 'KDS' ? 'KDS' : 'POS';
+    const secret = this.config.get(
+      s === 'KDS' ? 'EDGE_KDS_DEVICE_SECRET' : 'EDGE_POS_DEVICE_SECRET',
+      { infer: true },
+    );
+    if (!secret) {
+      throw new NotFoundException({
+        code: 'NO_HUB_DEVICE',
+        message: 'No hub device configured for this surface.',
+      });
+    }
+    return { surface: s, deviceSecret: secret };
   }
 }

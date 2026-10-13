@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
+import { randomBytes } from 'node:crypto';
 import { ConfigService } from '@nestjs/config';
 import {
   ApiCreatedResponse,
@@ -26,6 +27,8 @@ import {
   RegisterEdgeNodeResponse,
 } from '../../application/dto/edge-node.dto';
 import { IssuePairingCodeDto, PairingCodeResponse } from '../../application/dto/pairing.dto';
+import { ProvisionHubDto, ProvisionHubResponse } from '../../application/dto/provision.dto';
+import { buildHubBundle } from '../../application/hub-bundle.builder';
 
 /**
  * Edge node registry — RESTAURANT-LEVEL admin surface (NOT @BranchScoped). Gated
@@ -69,6 +72,53 @@ export class EdgeNodesController {
       createdByUserId: user.sub,
     });
     return RegisterEdgeNodeResponse.fromNode(node, token, this.viewContext());
+  }
+
+  @Post('provision')
+  @ApiOperation({
+    summary:
+      'Provision a hub for a branch: register the node and return a ready-to-run ' +
+      'bundle (filled .env.edge + run scripts). Secrets are shown ONCE.',
+  })
+  @ApiCreatedResponse({ type: ProvisionHubResponse })
+  async provision(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: CurrentUserContext,
+    @Body() dto: ProvisionHubDto,
+  ): Promise<ProvisionHubResponse> {
+    const { node, token } = await this.register.execute({
+      organizationId: tenant.organizationId,
+      restaurantId: tenant.restaurantId,
+      branchId: dto.branchId,
+      name: dto.name,
+      createdByUserId: user.sub,
+    });
+    const secret = () => randomBytes(24).toString('hex');
+    const files = buildHubBundle({
+      organizationId: node.organizationId,
+      restaurantId: node.restaurantId,
+      branchId: node.branchId,
+      nodeId: node.id,
+      nodeToken: token,
+      cloudUrl: dto.cloudUrl?.trim() || undefined,
+      dbPassword: randomBytes(16).toString('hex'),
+      jwtAccess: secret(),
+      jwtRefresh: secret(),
+      platformAccess: secret(),
+      platformRefresh: secret(),
+      consumerAccess: secret(),
+      consumerRefresh: secret(),
+      posDeviceSecret: secret(),
+      kdsDeviceSecret: secret(),
+    });
+    const safe = dto.name.replace(/[^a-zA-Z0-9-_]+/g, '-').toLowerCase() || 'hub';
+    return {
+      nodeId: node.id,
+      branchId: node.branchId,
+      name: dto.name,
+      bundleName: `restaurant-os-hub-${safe}.zip`,
+      files,
+    };
   }
 
   @Post('pairing-code')

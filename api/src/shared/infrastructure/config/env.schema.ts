@@ -60,6 +60,20 @@ export const envSchema = z
       z.string().min(1).optional(),
     ),
 
+    // EDGE-OFFLINE-UI (hub-vouched devices): baked POS/KDS device secrets so the
+    // hub serves its frontends with NO per-browser enrollment. On boot the hub
+    // self-provisions one ACTIVE Device per surface (sha256 of these); GET
+    // /edge/device-key hands the secret to the served frontend. Blank-safe — when
+    // unset the hub falls back to normal per-device enrollment.
+    EDGE_POS_DEVICE_SECRET: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(16).optional(),
+    ),
+    EDGE_KDS_DEVICE_SECRET: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().min(16).optional(),
+    ),
+
     // Edge config sync (OFF-3): poll interval for the cloud→edge config pull.
     // Blank-safe; clamped to a sane minimum. Only used in EDGE mode.
     CONFIG_SYNC_INTERVAL_MS: z.preprocess(

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/lib/auth/store';
 import { useDeviceStore } from '@/lib/device/store';
+import { useEdgeAutoEnroll } from '@/lib/device/useEdgeAutoEnroll';
 import { DeviceEnrollment } from '@/components/DeviceEnrollment';
 import { StaffLogin } from '@/components/StaffLogin';
 
@@ -19,6 +20,10 @@ export default function LoginPage() {
   const authHydrated = useAuthStore((s) => s.hydrated);
   const deviceHydrated = useDeviceStore((s) => s.hydrated);
   const enrolled = useDeviceStore((s) => Boolean(s.secret));
+
+  // EDGE-OFFLINE-UI: on a hub, auto-adopt the hub's baked device (no enrollment).
+  const needDevice = deviceHydrated && authHydrated && !isAuthed && !enrolled;
+  const autoEnroll = useEdgeAutoEnroll(needDevice);
 
   // Already signed in (e.g. opened /login directly): go to the board.
   useEffect(() => {
@@ -41,7 +46,16 @@ export default function LoginPage() {
   // the staff picker (the manager session was already ended during enrollment),
   // so the callback need not navigate.
   if (!enrolled) {
-    return <DeviceEnrollment onEnrolled={() => undefined} />;
+    // Edge hub: while we adopt the baked device, show a loader; only fall back to
+    // manual enrollment when this is NOT a hub (or the hub has no baked device).
+    if (autoEnroll === 'manual') {
+      return <DeviceEnrollment onEnrolled={() => undefined} />;
+    }
+    return (
+      <div className="flex h-screen items-center justify-center text-kiosk-lg text-kiosk-muted">
+        …
+      </div>
+    );
   }
 
   return <StaffLogin onSuccess={goToBoard} />;

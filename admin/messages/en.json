@@ -1996,7 +1996,8 @@
     "pairingStep3": "Restart the hub — it will appear online here within a minute.",
     "toast": {
       "registered": "Hub registered.",
-      "revoked": "Hub revoked."
+      "revoked": "Hub revoked.",
+      "downloaded": "Hub package downloaded."
     },
     "validation": {
       "branchRequired": "Pick a branch.",
@@ -2015,7 +2016,15 @@
     "instructionsTitle": "How to connect the hub",
     "pairStep1": "On the hub device, open its setup page (http://<hub address>/setup) in a browser.",
     "pairStep2": "Enter the server address shown above.",
-    "pairStep3": "Enter the pairing code and tap Connect."
+    "pairStep3": "Enter the pairing code and tap Connect.",
+    "downloadPackage": "Download hub package",
+    "downloadTitle": "Download hub package",
+    "downloadIntro": "Pick the branch this hub serves. You’ll get a ready-to-run package — no codes, no setup, no file editing.",
+    "download": "Download",
+    "preparing": "Preparing…",
+    "dlStep1": "Unzip the downloaded file on the hub computer.",
+    "dlStep2": "Double-click run.cmd (Windows) or run.sh (Mac/Linux). Docker Desktop must be installed.",
+    "dlStep3": "Wait a few minutes on the first run, then open http://localhost/res/pos."
   },
   "consumerListing": {
     "title": "Consumer Listing",

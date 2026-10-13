@@ -7,6 +7,7 @@ import { useDevicesControllerEnroll } from '@/api/generated/devices/devices';
 import { EnrollDeviceDtoSurface } from '@/api/generated/model';
 import { useAuthStore } from '@/stores/auth';
 import { useDeviceSecret } from '@/lib/device/useDeviceSecret';
+import { useEdgeAutoEnroll } from '@/lib/device/useEdgeAutoEnroll';
 import type { ApiError } from '@/api/mutator';
 import { EndpointSettings } from '@/components/settings/EndpointSettings';
 
@@ -25,12 +26,21 @@ export function DeviceEnrollmentGate({ children }: { children: ReactNode }) {
   const t = useTranslations('enroll');
   const { hydrated, enrolled } = useDeviceSecret();
 
+  // EDGE-OFFLINE-UI: on a hub, adopt the hub's baked device (no enrollment). The
+  // hook no-ops on the cloud, so cloud terminals still enroll manually.
+  const autoEnroll = useEdgeAutoEnroll(hydrated && !enrolled);
+
   if (!hydrated) {
     return <EnrollFullScreen>{t('loading')}</EnrollFullScreen>;
   }
 
   if (!enrolled) {
-    return <EnrollDeviceScreen />;
+    // Only show manual enrollment once we know this is NOT a hub (or the hub has
+    // no baked device); while adopting the hub device, show the loading frame.
+    if (autoEnroll === 'manual') {
+      return <EnrollDeviceScreen />;
+    }
+    return <EnrollFullScreen>{t('loading')}</EnrollFullScreen>;
   }
 
   return <>{children}</>;

@@ -10,6 +10,7 @@ import type {
 } from '@/api/generated/model';
 import { Can } from '@/components/auth/can';
 import { HubTokenModal } from '@/components/hubs/hub-token-modal';
+import { DownloadHubModal } from '@/components/hubs/download-hub-modal';
 import { PairingCodeModal } from '@/components/hubs/pairing-code-modal';
 import { RegisterHubModal } from '@/components/hubs/register-hub-modal';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +45,7 @@ export function HubsManager() {
 
   const [registerOpen, setRegisterOpen] = useState(false);
   const [pairOpen, setPairOpen] = useState(false);
+  const [downloadOpen, setDownloadOpen] = useState(false);
   const [tokenResult, setTokenResult] = useState<RegisterEdgeNodeResponse | null>(
     null,
   );
@@ -80,11 +82,14 @@ export function HubsManager() {
         <h1 className="text-2xl font-semibold text-gray-900">{t('title')}</h1>
         <Can permission={PERMISSIONS.EDGE_MANAGE} scope="restaurant">
           <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={() => setRegisterOpen(true)}>
+            <Button variant="ghost" onClick={() => setRegisterOpen(true)}>
               {t('registerHub')}
             </Button>
-            <Button variant="primary" onClick={() => setPairOpen(true)}>
-              + {t('generatePairingCode')}
+            <Button variant="secondary" onClick={() => setPairOpen(true)}>
+              {t('generatePairingCode')}
+            </Button>
+            <Button variant="primary" onClick={() => setDownloadOpen(true)}>
+              + {t('downloadPackage')}
             </Button>
           </div>
         </Can>
@@ -227,6 +232,16 @@ export function HubsManager() {
         <PairingCodeModal
           onClose={() => {
             setPairOpen(false);
+            void invalidate();
+          }}
+        />
+      )}
+
+      {downloadOpen && (
+        <DownloadHubModal
+          onClose={() => setDownloadOpen(false)}
+          onDone={() => {
+            setDownloadOpen(false);
             void invalidate();
           }}
         />
