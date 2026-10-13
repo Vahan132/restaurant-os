@@ -1,0 +1,225 @@
+# ── DEPLOY-3/4 — build only CHANGED web images, retag the rest, auto-deploy ──────
+# Mirrors edge-image-old.yml conventions (GITHUB_TOKEN + packages: write, buildx, GHA
+# cache). Path-filtered (DEPLOY-4): only changed app folders rebuild; unchanged apps
+# get their `develop` manifest COPIED to the new sha- tag (server-side, no rebuild),
+# so IMAGE_TAG=sha-<commit> always addresses a COMPLETE, consistent six-image stack.
+#
+#   - trigger: push to `develop` (auto-deploy) or manual workflow_dispatch (builds all)
+#   - amd64-only; two tags per image: sha-<short> (immutable, rollback) + develop
+#   - images: ghcr.io/vahan132/restaurant-os-<app> for api/website/admin/pos/kds/customer
+#   - relative NEXT_PUBLIC_* baked HERE (CI), never on the droplet
+#
+# Shared-path rule: a change to THIS workflow rebuilds ALL apps. Root compose /
+# .env.example / proxy are runtime-only -> no rebuild, but every commit still retags
+# all six to its sha-. One-time: flip each new GHCR package to Public after first push.
+name: deploy-web
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: vahan132 # ghcr requires a lowercase owner; hardcoded so forks/renames are explicit
+
+jobs:
+  # ── Decide which apps changed. Outputs two JSON arrays: changed[] (build) and
+  #    unchanged[] (retag develop -> new sha). ──────────────────────────────────
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.decide.outputs.changed }}
+      unchanged: ${{ steps.decide.outputs.unchanged }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need history to diff against the push's "before" SHA
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR # for the :develop existence check below
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: decide
+        env:
+          APPS: 'api website admin pos kds customer'
+          BEFORE: ${{ github.event.before }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          force_all=0
+          base="${BEFORE:-}"
+          # workflow_dispatch / first push / force-push / missing base -> build all
+          if [ "$EVENT" = "workflow_dispatch" ]; then force_all=1; fi
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then force_all=1; fi
+          if [ "$force_all" = "0" ] && ! git cat-file -e "${base}^{commit}" 2>/dev/null; then force_all=1; fi
+          # shared build-logic change (this workflow) -> build all
+          if [ "$force_all" = "0" ]; then
+            if git diff --name-only "$base" "$GITHUB_SHA" | grep -qxE '\.github/workflows/deploy-web\.yml'; then
+              force_all=1
+            fi
+          fi
+
+          changed=(); unchanged=()
+          for app in $APPS; do
+            build=0
+            if [ "$force_all" = "1" ]; then
+              build=1
+            elif git diff --name-only "$base" "$GITHUB_SHA" | grep -qE "^${app}/"; then
+              build=1
+            fi
+            # no prior :develop image -> nothing to retag from -> must build
+            if [ "$build" = "0" ] && ! docker buildx imagetools inspect \
+                 "${REGISTRY}/${OWNER}/restaurant-os-${app}:develop" >/dev/null 2>&1; then
+              build=1
+            fi
+            if [ "$build" = "1" ]; then changed+=("$app"); else unchanged+=("$app"); fi
+          done
+
+          # Build JSON arrays with jq --args (robust when an array is EMPTY; the
+          # old `printf | grep -v '^$'` aborted under pipefail because grep exits 1
+          # on no match — which happens whenever all/none of the apps changed).
+          cj=$(jq -cn '$ARGS.positional' --args "${changed[@]}")
+          uj=$(jq -cn '$ARGS.positional' --args "${unchanged[@]}")
+          echo "changed=$cj"     >> "$GITHUB_OUTPUT"
+          echo "unchanged=$uj"   >> "$GITHUB_OUTPUT"
+          echo "force_all=$force_all changed=$cj unchanged=$uj"
+
+  # ── Build the changed apps (skipped entirely if none changed). ───────────────
+  build:
+    needs: detect
+    if: needs.detect.outputs.changed != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.detect.outputs.changed) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute per-app build-args
+        id: bargs
+        run: |
+          {
+            echo 'args<<__ARGS__'
+            case "${{ matrix.app }}" in
+              website)
+                echo 'NEXT_PUBLIC_API_BASE_URL=/res/api'
+                echo 'NEXT_PUBLIC_ADMIN_URL=/res/admin'
+                echo 'NEXT_PUBLIC_POS_URL=/res/pos'
+                echo 'NEXT_PUBLIC_KDS_URL=/res/kds'
+                echo 'NEXT_PUBLIC_CUSTOMER_URL_TEMPLATE=/res/m/{slug}?qr={qr}'
+                ;;
+              admin)
+                echo 'NEXT_PUBLIC_API_BASE_URL=/res/api'
+                echo 'NEXT_PUBLIC_SOCKET_BASE_URL='
+                echo 'NEXT_PUBLIC_SOCKET_PATH=/res/socket.io'
+                echo 'NEXT_PUBLIC_CUSTOMER_URL_TEMPLATE=/res/m/{slug}?qr={qr}'
+                ;;
+              pos|kds)
+                echo 'NEXT_PUBLIC_API_BASE_URL=/res/api'
+                echo 'NEXT_PUBLIC_SOCKET_BASE_URL='
+                echo 'NEXT_PUBLIC_SOCKET_PATH=/res/socket.io'
+                ;;
+              customer)
+                echo 'NEXT_PUBLIC_API_BASE_URL=/res/api'
+                ;;
+              api)
+                : # no build-args; env arrives at runtime
+                ;;
+            esac
+            echo '__ARGS__'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Compute image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/restaurant-os-${{ matrix.app }}
+          tags: |
+            type=raw,value=develop
+            type=sha,format=short,prefix=sha-
+
+      - name: Build and push (${{ matrix.app }}, amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.app }}
+          platforms: linux/amd64
+          push: true
+          build-args: ${{ steps.bargs.outputs.args }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+  # ── Retag unchanged apps: copy :develop -> :sha-<new> (manifest copy, no build). ─
+  retag:
+    needs: detect
+    if: needs.detect.outputs.unchanged != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.detect.outputs.unchanged) }}
+    steps:
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute sha tag
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/restaurant-os-${{ matrix.app }}
+          tags: type=sha,format=short,prefix=sha-
+
+      - name: Retag develop -> sha (server-side manifest copy)
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create \
+            -t ${{ steps.meta.outputs.tags }} \
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/restaurant-os-${{ matrix.app }}:develop
+
+  # ── Deploy: runs after build+retag (either may be skipped, neither may fail). ──
+  deploy:
+    needs: [detect, build, retag]
+    if: ${{ always() && needs.detect.result == 'success' && needs.build.result != 'failure' && needs.retag.result != 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to droplet over SSH
+        env:
+          SSH_KEY: ${{ secrets.DROPLET_SSH_KEY }}
+          SSH_HOST: ${{ secrets.DROPLET_HOST }}
+          SSH_USER: ${{ secrets.DROPLET_USER }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "$SSH_USER@$SSH_HOST" \
+            "cd ~/restaurant-os && git pull --ff-only && docker compose pull && docker compose up -d && { docker compose exec -T proxy nginx -s reload || docker compose restart proxy; } && docker compose ps"

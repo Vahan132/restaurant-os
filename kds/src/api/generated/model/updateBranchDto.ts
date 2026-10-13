@@ -5,7 +5,12 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateBranchDtoIpBindingMode } from './updateBranchDtoIpBindingMode';
 
 export interface UpdateBranchDto {
   name?: string;
+  /** 3A: STRICT enforces ipAllowlist on device-anchored logins; SOFT records + trusts. */
+  ipBindingMode?: UpdateBranchDtoIpBindingMode;
+  /** 3A: allowed source CIDRs (or bare IPs) evaluated under STRICT. */
+  ipAllowlist?: string[];
 }

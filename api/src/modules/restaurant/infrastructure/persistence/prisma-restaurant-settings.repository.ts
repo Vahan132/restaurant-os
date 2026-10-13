@@ -19,6 +19,7 @@ export class PrismaRestaurantSettingsRepository implements RestaurantSettingsRep
       where: { restaurantId: p.restaurantId },
       data: {
         logoUrl: p.logoUrl,
+        logoKey: p.logoKey,
         phone: p.phone,
         address: p.address,
         taxRateBps: p.taxRateBps,
@@ -34,6 +35,7 @@ export class PrismaRestaurantSettingsRepository implements RestaurantSettingsRep
         allowManualTableStatus: p.allowManualTableStatus,
         enableQrMenu: p.enableQrMenu,
         enableCustomerOrdering: p.enableCustomerOrdering,
+        allowUnanchoredAdminLogin: p.allowUnanchoredAdminLogin,
         updatedAt: p.updatedAt,
       },
     });
@@ -43,6 +45,7 @@ export class PrismaRestaurantSettingsRepository implements RestaurantSettingsRep
     return RestaurantSettings.reconstitute(r.id, {
       restaurantId: r.restaurantId,
       logoUrl: r.logoUrl,
+      logoKey: r.logoKey,
       phone: r.phone,
       address: r.address,
       taxRateBps: r.taxRateBps,
@@ -58,6 +61,7 @@ export class PrismaRestaurantSettingsRepository implements RestaurantSettingsRep
       allowManualTableStatus: r.allowManualTableStatus,
       enableQrMenu: r.enableQrMenu,
       enableCustomerOrdering: r.enableCustomerOrdering,
+      allowUnanchoredAdminLogin: r.allowUnanchoredAdminLogin,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     });

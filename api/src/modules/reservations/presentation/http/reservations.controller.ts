@@ -8,6 +8,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Paginated } from '../../../../shared/application/pagination';
+import { ActiveBranchId } from '../../../../shared/auth/active-branch.decorator';
+import { BranchScoped } from '../../../../shared/auth/branch-scoped.decorator';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
 import { CurrentUser } from '../../../../shared/tenancy/current-user.decorator';
@@ -40,6 +42,7 @@ const P = PERMISSIONS;
 
 @ApiTags('reservations')
 @ApiBearerAuth('access-token')
+@BranchScoped()
 @Controller('reservations')
 export class ReservationsController {
   constructor(
@@ -64,10 +67,12 @@ export class ReservationsController {
   @ApiOkResponse({ type: [ReservationResponse] })
   async list(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Query() query: ListReservationsQuery,
   ): Promise<Paginated<ReservationResponse>> {
     const page = await this.listReservations.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       date: query.date,
       status: query.status,
       tableId: query.tableId,
@@ -82,10 +87,12 @@ export class ReservationsController {
   @ApiOkResponse({ type: [TableAvailabilityResponse] })
   async availability(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Query() query: AvailabilityQuery,
   ): Promise<TableAvailabilityResponse[]> {
     return this.getAvailability.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       windowStart: new Date(query.windowStart),
       windowEnd: new Date(query.windowEnd),
     });
@@ -96,10 +103,12 @@ export class ReservationsController {
   @ApiOkResponse({ type: ReservationResponse })
   async get(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<ReservationResponse> {
     const r = await this.getReservation.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       reservationId: id,
     });
     return ReservationResponse.from(r);
@@ -113,12 +122,13 @@ export class ReservationsController {
   @ApiCreatedResponse({ type: ReservationResponse })
   async create(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Body() dto: CreateReservationDto,
   ): Promise<ReservationResponse> {
     const r = await this.createReservation.execute({
       restaurantId: tenant.restaurantId,
-      branchId: tenant.branchId ?? null,
+      branchId,
       createdByUserId: user.sub,
       customerName: dto.customerName,
       customerPhone: dto.customerPhone,
@@ -128,6 +138,7 @@ export class ReservationsController {
       durationMinutes: dto.durationMinutes,
       tableId: dto.tableId ?? null,
       notes: dto.notes ?? null,
+      customerNote: dto.customerNote ?? null,
       initialStatus: dto.status,
     });
     return ReservationResponse.from(r);
@@ -140,11 +151,13 @@ export class ReservationsController {
   @ApiOkResponse({ type: ReservationResponse })
   async update(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: UpdateReservationDto,
   ): Promise<ReservationResponse> {
     const r = await this.updateReservation.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       reservationId: id,
       customerName: dto.customerName,
       customerPhone: dto.customerPhone,
@@ -165,10 +178,12 @@ export class ReservationsController {
   @ApiOkResponse({ type: ReservationResponse })
   async confirm(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<ReservationResponse> {
     const r = await this.confirmReservation.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       reservationId: id,
     });
     return ReservationResponse.from(r);
@@ -182,11 +197,13 @@ export class ReservationsController {
   @ApiOkResponse({ type: ReservationResponse })
   async assign(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: AssignTableDto,
   ): Promise<ReservationResponse> {
     const r = await this.assignTable.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       reservationId: id,
       tableId: dto.tableId,
     });
@@ -201,10 +218,12 @@ export class ReservationsController {
   @ApiOkResponse({ type: ReservationResponse })
   async clear(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<ReservationResponse> {
     const r = await this.clearTable.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       reservationId: id,
     });
     return ReservationResponse.from(r);
@@ -218,10 +237,12 @@ export class ReservationsController {
   @ApiOkResponse({ type: ReservationResponse })
   async arrive(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<ReservationResponse> {
     const r = await this.markArrived.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       reservationId: id,
     });
     return ReservationResponse.from(r);
@@ -235,10 +256,12 @@ export class ReservationsController {
   @ApiOkResponse({ type: ReservationResponse })
   async seat(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<ReservationResponse> {
     const r = await this.markSeated.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       reservationId: id,
     });
     return ReservationResponse.from(r);
@@ -252,10 +275,12 @@ export class ReservationsController {
   @ApiOkResponse({ type: ReservationResponse })
   async complete(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<ReservationResponse> {
     const r = await this.completeReservation.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       reservationId: id,
     });
     return ReservationResponse.from(r);
@@ -269,11 +294,13 @@ export class ReservationsController {
   @ApiOkResponse({ type: ReservationResponse })
   async noShow(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
   ): Promise<ReservationResponse> {
     const r = await this.markNoShow.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       reservationId: id,
       actorUserId: user.sub,
     });
@@ -288,12 +315,14 @@ export class ReservationsController {
   @ApiOkResponse({ type: ReservationResponse })
   async cancel(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Body() dto: CancelReservationDto,
   ): Promise<ReservationResponse> {
     const r = await this.cancelReservation.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       reservationId: id,
       reason: dto.reason ?? null,
       actorUserId: user.sub,

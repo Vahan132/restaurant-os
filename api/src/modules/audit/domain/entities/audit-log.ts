@@ -3,9 +3,11 @@ import { AuditActorType } from '../enums';
 export interface AuditLogProps {
   organizationId: string | null;
   restaurantId: string | null;
+  branchId: string | null;
   actorType: AuditActorType;
   actorId: string | null;
   actorName: string | null;
+  actorRoleCode: string | null;
   action: string;
   entityType: string;
   entityId: string;
@@ -20,9 +22,11 @@ export interface CreateAuditLogInput {
   id: string;
   organizationId?: string | null;
   restaurantId?: string | null;
+  branchId?: string | null;
   actorType: AuditActorType;
   actorId?: string | null;
   actorName?: string | null;
+  actorRoleCode?: string | null;
   action: string;
   entityType: string;
   entityId: string;
@@ -43,9 +47,11 @@ export class AuditLog {
     return new AuditLog(input.id, {
       organizationId: input.organizationId ?? null,
       restaurantId: input.restaurantId ?? null,
+      branchId: input.branchId ?? null,
       actorType: input.actorType,
       actorId: input.actorId ?? null,
       actorName: input.actorName ?? null,
+      actorRoleCode: input.actorRoleCode ?? null,
       action: input.action,
       entityType: input.entityType,
       entityId: input.entityId,
@@ -70,6 +76,9 @@ export class AuditLog {
   get restaurantId(): string | null {
     return this.props.restaurantId;
   }
+  get branchId(): string | null {
+    return this.props.branchId;
+  }
   get actorType(): AuditActorType {
     return this.props.actorType;
   }
@@ -78,6 +87,9 @@ export class AuditLog {
   }
   get actorName(): string | null {
     return this.props.actorName;
+  }
+  get actorRoleCode(): string | null {
+    return this.props.actorRoleCode;
   }
   get action(): string {
     return this.props.action;

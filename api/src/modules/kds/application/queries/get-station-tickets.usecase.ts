@@ -12,6 +12,7 @@ const DEFAULT_DELAY_SECONDS = 900; // 15 min when the item has no prep-time esti
 
 export interface GetStationTicketsInput {
   restaurantId: string | null;
+  branchId: string;
   station: string;
 }
 
@@ -25,17 +26,25 @@ export class GetStationTicketsUseCase implements UseCase<
   GetStationTicketsInput,
   KdsTicketResponse[]
 > {
-  constructor(@Inject(STATION_TICKETS_READER) private readonly reader: StationTicketsReader) {}
+  constructor(
+    @Inject(STATION_TICKETS_READER) private readonly reader: StationTicketsReader,
+  ) {}
 
   async execute(input: GetStationTicketsInput): Promise<KdsTicketResponse[]> {
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
     const now = Date.now();
-    const tickets = await this.reader.getActiveTickets(input.restaurantId, input.station);
+    const tickets = await this.reader.getActiveTickets(
+      input.restaurantId,
+      input.branchId,
+      input.station,
+    );
 
     const mapped = tickets.map((t) => {
-      const items = t.items.map((i) => this.toItem(i, now)).sort((a, b) => a.sentMs - b.sentMs);
+      const items = t.items
+        .map((i) => this.toItem(i, now))
+        .sort((a, b) => a.sentMs - b.sentMs);
       return {
         ticket: {
           orderId: t.orderId,

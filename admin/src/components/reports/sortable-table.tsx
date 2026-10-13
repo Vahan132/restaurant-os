@@ -3,8 +3,10 @@
 import { useTranslations } from 'next-intl';
 import { useMemo, useState, type ReactNode } from 'react';
 
+import { useReportExport } from '@/components/reports/export-context';
 import { Button } from '@/components/ui/button';
 import { downloadCsv } from '@/lib/reports/csv';
+import type { XlsxKind } from '@/lib/reports/xlsx-export';
 
 export interface Column<T> {
   key: string;
@@ -12,6 +14,8 @@ export interface Column<T> {
   align?: 'left' | 'right';
   cell: (row: T) => ReactNode;
   csv: (row: T) => string | number;
+  /** Excel cell type; money values from `csv` are MINOR units. Defaults to text. */
+  kind?: XlsxKind;
   /** When provided, the column header is clickable to sort. */
   sort?: (row: T) => number | string;
 }
@@ -60,19 +64,42 @@ export function SortableTable<T>({
     }
   };
 
-  const onExport = () =>
-    downloadCsv(
-      csvName,
-      sorted,
-      columns.map((c) => ({ label: c.label, value: c.csv })),
-    );
+  const exporter = useReportExport();
+  const onExport = () => {
+    if (!exporter) {
+      downloadCsv(
+        csvName,
+        sorted,
+        columns.map((c) => ({ label: c.label, value: c.csv })),
+      );
+      return;
+    }
+    void exporter.exportTables(csvName, [
+      {
+        sheetName: title,
+        title: exporter.titleFor(title),
+        infoLines: [exporter.periodLine],
+        columns: columns.map((c) => ({
+          header: c.label,
+          kind: c.kind ?? 'text',
+          value: (r: T) => c.csv(r),
+        })),
+        rows: sorted,
+      },
+    ]);
+  };
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-5">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-        <Button size="sm" variant="secondary" onClick={onExport} disabled={rows.length === 0}>
-          {t('export')}
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={onExport}
+          disabled={rows.length === 0 || exporter?.busy}
+        >
+          {exporter ? t('exportXlsx') : t('export')}
         </Button>
       </div>
       {isLoading ? (

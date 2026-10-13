@@ -9,6 +9,7 @@ import { CategoryNotFound, NoRestaurantInScope } from '../application.errors';
 
 export interface ReorderCategoriesInput {
   restaurantId: string | null;
+  branchId: string;
   order: { id: string; displayOrder: number }[];
 }
 
@@ -25,7 +26,7 @@ export class ReorderCategoriesUseCase implements UseCase<ReorderCategoriesInput,
     }
     const updated: MenuCategory[] = [];
     for (const entry of input.order) {
-      const category = await this.categories.findById(input.restaurantId, entry.id);
+      const category = await this.categories.findById(input.restaurantId, input.branchId, entry.id);
       if (!category) {
         throw CategoryNotFound();
       }

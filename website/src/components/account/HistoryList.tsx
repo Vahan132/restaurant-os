@@ -37,16 +37,18 @@ export function HistoryList({ items }: { items: SubscriptionHistoryResponse[] })
       {items.map((item) => (
         <li
           key={item.id}
-          className="flex items-start gap-4 border-b border-line py-3.5 last:border-0"
+          className="flex items-start gap-3 border-b border-line py-3.5 last:border-0 sm:gap-4"
         >
           <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-terracotta/50" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-ink">{describe(item)}</p>
-            {item.reason ? <p className="text-xs text-muted">{item.reason}</p> : null}
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="text-xs text-muted">{formatDate(item.createdAt, locale)}</p>
-            <p className="text-2xs text-muted/80">{byType(item.changedByType)}</p>
+          <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-ink">{describe(item)}</p>
+              {item.reason ? <p className="text-xs text-muted">{item.reason}</p> : null}
+            </div>
+            <div className="shrink-0 sm:text-right">
+              <p className="text-xs text-muted">{formatDate(item.createdAt, locale)}</p>
+              <p className="text-2xs text-muted/80">{byType(item.changedByType)}</p>
+            </div>
           </div>
         </li>
       ))}

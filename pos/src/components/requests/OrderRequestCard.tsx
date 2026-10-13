@@ -31,7 +31,12 @@ export function OrderRequestCard({ request, busy, onConfirm, onReject }: OrderRe
   })();
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div
+      className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+      data-testid="request-card"
+      data-request-id={request.id}
+      data-table-name={request.tableName ?? ''}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-lg font-bold text-gray-900">
@@ -89,6 +94,7 @@ export function OrderRequestCard({ request, busy, onConfirm, onReject }: OrderRe
         <Can perform={PERMISSIONS.ORDER_CREATE}>
           <button
             type="button"
+            data-testid="request-confirm"
             onClick={() => onConfirm(request.id)}
             disabled={busy}
             className="h-14 flex-[2] select-none rounded-xl bg-emerald-600 text-lg font-bold text-white active:scale-[0.98] disabled:opacity-50"

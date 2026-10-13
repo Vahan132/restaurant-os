@@ -12,22 +12,22 @@ import { Steps, Step } from "@/components/docs/mdx/Steps";
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
     h1: (props: ComponentPropsWithoutRef<"h1">) => (
-      <h1 className="mb-5 mt-2 font-display text-4xl leading-tight sm:text-5xl" {...props} />
+      <h1 className="mb-5 mt-2 font-display text-2xl leading-[1.2] min-[400px]:text-3xl/[1.2] sm:text-4xl/[1.2] md:text-5xl/[1.2]" {...props} />
     ),
     h2: (props: ComponentPropsWithoutRef<"h2">) => (
       <h2
-        className="mt-14 scroll-mt-28 border-t border-line pt-10 font-display text-2xl sm:text-3xl"
+        className="mt-14 scroll-mt-28 border-t border-line pt-10 font-display text-xl leading-[1.2] sm:text-2xl/[1.2] md:text-3xl/[1.2]"
         {...props}
       />
     ),
     h3: (props: ComponentPropsWithoutRef<"h3">) => (
-      <h3 className="mt-9 scroll-mt-28 font-display text-xl sm:text-2xl" {...props} />
+      <h3 className="mt-9 scroll-mt-28 font-display text-lg leading-[1.2] sm:text-xl/[1.2] md:text-2xl/[1.2]" {...props} />
     ),
     h4: (props: ComponentPropsWithoutRef<"h4">) => (
-      <h4 className="mt-7 scroll-mt-28 font-sans text-lg font-semibold text-ink" {...props} />
+      <h4 className="mt-7 scroll-mt-28 font-sans text-base font-semibold text-ink sm:text-lg" {...props} />
     ),
     p: (props: ComponentPropsWithoutRef<"p">) => (
-      <p className="my-4 text-pretty leading-relaxed text-ink-soft" {...props} />
+      <p className="my-4 text-pretty break-words leading-relaxed text-ink-soft" {...props} />
     ),
     a: ({ href = "#", ...props }: ComponentPropsWithoutRef<"a">) => (
       <Link
@@ -60,7 +60,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     ),
     code: (props: ComponentPropsWithoutRef<"code">) => (
       <code
-        className="rounded-md border border-line bg-sand/70 px-1.5 py-0.5 font-mono text-[0.85em] text-terracotta-ink"
+        className="break-words rounded-md border border-line bg-sand/70 px-1.5 py-0.5 font-mono text-[0.85em] text-terracotta-ink"
         {...props}
       />
     ),

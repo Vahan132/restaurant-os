@@ -1,6 +1,20 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { IdentityModule } from '../identity/identity.module';
+import { ConsumerModule } from '../consumer/consumer.module';
+import { PlatformCatalogModule } from '../platform-catalog/platform-catalog.module';
+import { AuditModule } from '../audit/audit.module';
+import { FiscalConfigModule } from '../fiscal-config/fiscal-config.module';
+import { FiscalizationModule } from '../fiscalization/fiscalization.module';
+import { PlatformFiscalConfigController } from './presentation/http/platform-fiscal-config.controller';
+import { UpsertFiscalConfigUseCase } from './application/commands/upsert-fiscal-config.usecase';
+import { SetFiscalDepartmentsUseCase } from './application/commands/set-fiscal-departments.usecase';
+import { CheckFiscalConnectionUseCase } from './application/commands/check-fiscal-connection.usecase';
+import { SetFiscalCertUseCase } from './application/commands/set-fiscal-cert.usecase';
+import { SetFiscalDeviceUseCase } from './application/commands/set-fiscal-device.usecase';
+import { SetFiscalPrintModeUseCase } from './application/commands/set-fiscal-print-mode.usecase';
+import { ListRestaurantBranchesUseCase } from './application/queries/list-restaurant-branches.usecase';
+import { GetFiscalConfigStatusUseCase } from './application/queries/get-fiscal-config-status.usecase';
 import { PASSWORD_HASHER } from '../identity/application/ports/password-hasher';
 import { Argon2PasswordHasher } from '../identity/infrastructure/services/argon2-password-hasher';
 
@@ -46,6 +60,9 @@ import { PlansController } from './presentation/http/plans.controller';
 import { OrganizationsController } from './presentation/http/organizations.controller';
 import { SubscriptionsController } from './presentation/http/subscriptions.controller';
 import { PlatformAdminController } from './presentation/http/platform-admin.controller';
+import { PlatformConsumerListingController } from './presentation/http/platform-consumer-listing.controller';
+import { PlatformCatalogItemsController } from './presentation/http/platform-catalog-items.controller';
+import { PlatformCatalogTaxonomyController } from './presentation/http/platform-catalog-taxonomy.controller';
 import { PLATFORM_ADMIN_QUERY } from './application/ports/platform-admin-query.port';
 import { PrismaPlatformAdminQueryService } from './infrastructure/persistence/prisma-platform-admin-query.service';
 import { GetOrgRestaurantsUseCase } from './application/queries/get-org-restaurants.usecase';
@@ -59,13 +76,25 @@ import { GetPlatformDashboardUseCase } from './application/queries/get-platform-
  * live under /platform and are protected solely by PlatformAuthGuard.
  */
 @Module({
-  imports: [JwtModule.register({}), IdentityModule],
+  imports: [
+    JwtModule.register({}),
+    IdentityModule,
+    ConsumerModule,
+    PlatformCatalogModule,
+    AuditModule,
+    FiscalConfigModule,
+    FiscalizationModule,
+  ],
   controllers: [
     PlatformAuthController,
     PlansController,
     OrganizationsController,
     SubscriptionsController,
     PlatformAdminController,
+    PlatformConsumerListingController,
+    PlatformCatalogItemsController,
+    PlatformCatalogTaxonomyController,
+    PlatformFiscalConfigController,
   ],
   providers: [
     PlatformAuthGuard,
@@ -95,6 +124,15 @@ import { GetPlatformDashboardUseCase } from './application/queries/get-platform-
     GetSubscriptionHistoryUseCase,
     ListPlatformUsersUseCase,
     GetPlatformDashboardUseCase,
+    // fiscal config (FISCAL-4)
+    UpsertFiscalConfigUseCase,
+    SetFiscalDepartmentsUseCase,
+    CheckFiscalConnectionUseCase,
+    GetFiscalConfigStatusUseCase,
+    SetFiscalCertUseCase,
+    SetFiscalDeviceUseCase,
+    SetFiscalPrintModeUseCase,
+    ListRestaurantBranchesUseCase,
 
     // port -> implementation bindings
     { provide: PLATFORM_USER_REPOSITORY, useClass: PrismaPlatformUserRepository },

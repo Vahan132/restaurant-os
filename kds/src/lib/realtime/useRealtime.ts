@@ -1,21 +1,25 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/auth/store';
-import {
-  ConnectionStatus,
-  KDS_EVENTS,
-  KdsTicketEvent,
-  realtimeClient,
-  Station,
-} from './client';
+import { useBranchStore } from '@/lib/branch/store';
+import { useStationStore } from '@/lib/station/store';
+import { resolveSocketTarget, useEndpointStore } from '@/lib/endpoint/store';
+import { ConnectionStatus, realtimeClient } from './client';
 
 /**
- * Connects the realtime client to the current auth token and tracks connection
- * status. Reconnects automatically when the token changes (after a refresh).
+ * Keeps the realtime client connected to the current auth token AND pinned
+ * branch:station, aimed at the device's endpoint (cloud or local hub), and
+ * tracks connection status. The handshake carries the pin, so the socket only
+ * ever connects once a branch + station are chosen; it reconnects automatically
+ * when the token (refresh), the pin, or the endpoint changes.
  */
 export function useRealtimeConnection(): { status: ConnectionStatus } {
   const accessToken = useAuthStore((s) => s.accessToken);
+  const branchId = useBranchStore((s) => s.branchId);
+  const station = useStationStore((s) => s.station);
+  const target = useEndpointStore((s) => s.target);
+  const hubBaseUrl = useEndpointStore((s) => s.hubBaseUrl);
   const [status, setStatus] = useState<ConnectionStatus>(realtimeClient.getStatus());
 
   useEffect(() => {
@@ -24,47 +28,16 @@ export function useRealtimeConnection(): { status: ConnectionStatus } {
   }, []);
 
   useEffect(() => {
-    if (accessToken) {
-      realtimeClient.setToken(accessToken);
+    if (accessToken && branchId && station) {
+      realtimeClient.connect(
+        accessToken,
+        { branchId, station },
+        resolveSocketTarget({ target, hubBaseUrl }),
+      );
     } else {
       realtimeClient.disconnect();
     }
-  }, [accessToken]);
+  }, [accessToken, branchId, station, target, hubBaseUrl]);
 
   return { status };
-}
-
-/**
- * Subscribes to the given stations for the lifetime of the component and
- * invokes `onTicketChange` on any kds:ticket.* event and on socket reconnect.
- * The board uses this to trigger an HTTP refetch (the read model is canonical).
- */
-export function useStationSubscription(
-  stations: Station[],
-  onTicketChange: (event?: KdsTicketEvent) => void,
-): void {
-  // Keep the latest callback without re-subscribing.
-  const cbRef = useRef(onTicketChange);
-  cbRef.current = onTicketChange;
-
-  const key = stations.join(',');
-
-  useEffect(() => {
-    if (stations.length === 0) return;
-
-    realtimeClient.subscribeStations(stations);
-
-    const offs = [
-      realtimeClient.onTicketEvent(KDS_EVENTS.ticketNew, (e) => cbRef.current(e)),
-      realtimeClient.onTicketEvent(KDS_EVENTS.ticketUpdated, (e) => cbRef.current(e)),
-      realtimeClient.onTicketEvent(KDS_EVENTS.ticketCancelled, (e) => cbRef.current(e)),
-      realtimeClient.onReconnected(() => cbRef.current()),
-    ];
-
-    return () => {
-      offs.forEach((off) => off());
-      realtimeClient.unsubscribeStations(stations);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
 }

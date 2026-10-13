@@ -36,6 +36,21 @@ export interface TimeSeriesBucket {
 export interface PaymentMethodRow {
   method: string;
   amount: number;
+  /** Number of ACTIVE payments recorded with this method. */
+  paymentCount: number;
+}
+
+/**
+ * One branch's payment-method breakdown for a single business day — the cashier
+ * shift report. Same basis as the restaurant-wide report (ACTIVE payments on
+ * orders CLOSED in the window), narrowed to one branch.
+ */
+export interface BranchPaymentMethodsData {
+  rows: PaymentMethodRow[];
+  totalAmount: number;
+  paymentCount: number;
+  /** Closed orders at this branch in the window that carry at least one payment. */
+  orderCount: number;
 }
 export interface WaiterRow {
   waiterId: string;
@@ -52,8 +67,21 @@ export interface TableRow {
 export interface ItemRow {
   menuItemId: string;
   name: string;
+  /** Menu category (the "Group" column of the sales report). */
+  categoryId: string | null;
+  categoryName: string | null;
   quantity: number;
   revenueAmount: number;
+  /**
+   * Cost price of what was sold (minor units): the FIFO cost actually deducted
+   * from stock for these order lines (net of reversals). Lines with no stock
+   * movement fall back to the dish's current recipe cost x qty.
+   */
+  costAmount: number;
+  /** revenue - cost. */
+  grossProfitAmount: number;
+  /** True when part of the cost came from the recipe estimate (no ledger cost). */
+  costEstimated: boolean;
 }
 export interface DiscountsData {
   totalDiscountAmount: number;
@@ -86,18 +114,59 @@ export interface ReportsQuery {
   /** Restaurant IANA timezone (for day boundaries + buckets). */
   timezone(restaurantId: string): Promise<string>;
   dashboard(restaurantId: string, dayStart: Date, dayEnd: Date): Promise<DashboardData>;
-  salesSummary(restaurantId: string, from: Date, to: Date): Promise<SalesSummaryData>;
+  /**
+   * BR-REPORTS-1: every range query takes an optional `branchIds` filter
+   * (orders by their branch). Omitted = restaurant-wide.
+   */
+  salesSummary(
+    restaurantId: string,
+    from: Date,
+    to: Date,
+    branchIds?: string[],
+  ): Promise<SalesSummaryData>;
   salesTimeSeries(
     restaurantId: string,
     from: Date,
     to: Date,
     groupBy: 'day' | 'week' | 'month',
     timeZone: string,
+    branchIds?: string[],
   ): Promise<TimeSeriesBucket[]>;
-  salesByPaymentMethod(restaurantId: string, from: Date, to: Date): Promise<PaymentMethodRow[]>;
-  salesByWaiter(restaurantId: string, from: Date, to: Date): Promise<WaiterRow[]>;
-  salesByTable(restaurantId: string, from: Date, to: Date): Promise<TableRow[]>;
-  salesByItem(restaurantId: string, from: Date, to: Date): Promise<ItemRow[]>;
-  discounts(restaurantId: string, from: Date, to: Date): Promise<DiscountsData>;
-  cancellations(restaurantId: string, from: Date, to: Date): Promise<CancellationsData>;
+  salesByPaymentMethod(
+    restaurantId: string,
+    from: Date,
+    to: Date,
+    branchIds?: string[],
+  ): Promise<PaymentMethodRow[]>;
+  branchPaymentMethods(
+    restaurantId: string,
+    branchId: string,
+    from: Date,
+    to: Date,
+  ): Promise<BranchPaymentMethodsData>;
+  salesByWaiter(
+    restaurantId: string,
+    from: Date,
+    to: Date,
+    branchIds?: string[],
+  ): Promise<WaiterRow[]>;
+  salesByTable(
+    restaurantId: string,
+    from: Date,
+    to: Date,
+    branchIds?: string[],
+  ): Promise<TableRow[]>;
+  salesByItem(restaurantId: string, from: Date, to: Date, branchIds?: string[]): Promise<ItemRow[]>;
+  discounts(
+    restaurantId: string,
+    from: Date,
+    to: Date,
+    branchIds?: string[],
+  ): Promise<DiscountsData>;
+  cancellations(
+    restaurantId: string,
+    from: Date,
+    to: Date,
+    branchIds?: string[],
+  ): Promise<CancellationsData>;
 }

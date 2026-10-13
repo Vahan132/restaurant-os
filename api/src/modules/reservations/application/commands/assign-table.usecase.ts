@@ -6,9 +6,11 @@ import {
   ReservationRepository,
 } from '../../domain/repositories/reservation.repository';
 import {
+  CrossBranchReference,
   NoRestaurantInScope,
   ReservationNotFound,
   ReservationsDisabled,
+  TableAlreadyReserved,
   TableNotInRestaurant,
 } from '../application.errors';
 import {
@@ -19,9 +21,11 @@ import {
   RESERVATIONS_TABLE_READER,
   ReservationsTableReader,
 } from '../ports/reservations-table.reader';
+import { tableHasOverlappingReservation } from '../services/reservation-overlap';
 
 export interface AssignTableInput {
   restaurantId: string | null;
+  branchId: string;
   reservationId: string;
   tableId: string;
 }
@@ -43,13 +47,36 @@ export class AssignTableUseCase implements UseCase<AssignTableInput, Reservation
     if (!settings.enableReservations) {
       throw ReservationsDisabled();
     }
-    const reservation = await this.reservations.findById(input.restaurantId, input.reservationId);
+    const reservation = await this.reservations.findById(
+      input.restaurantId,
+      input.branchId,
+      input.reservationId,
+    );
     if (!reservation) {
       throw ReservationNotFound();
     }
-    const status = await this.tables.findTableStatus(input.restaurantId, input.tableId);
-    if (status === null) {
+    const table = await this.tables.findTableRef(input.restaurantId, input.tableId);
+    if (table === null) {
       throw TableNotInRestaurant();
+    }
+    // §6 intra-branch integrity: the assigned table must be in this reservation's branch.
+    if (table.branchId !== reservation.branchId) {
+      throw CrossBranchReference();
+    }
+    // Reject assigning a table already held by another active reservation whose
+    // window overlaps this one's (same record-based overlap as create; exclude
+    // self so re-assigning the same table to this reservation is a no-op).
+    const overlaps = await tableHasOverlappingReservation(
+      this.reservations,
+      input.restaurantId,
+      reservation.branchId,
+      input.tableId,
+      reservation.reservedAt,
+      reservation.durationMinutes,
+      reservation.id,
+    );
+    if (overlaps) {
+      throw TableAlreadyReserved();
     }
     reservation.assignTable(input.tableId);
     await this.reservations.save(reservation);

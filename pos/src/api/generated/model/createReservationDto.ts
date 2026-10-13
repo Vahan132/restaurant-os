@@ -20,5 +20,7 @@ export interface CreateReservationDto {
   /** Assign a table (plan only; no live hold). */
   tableId?: string;
   notes?: string;
+  /** Optional free-text note from the customer. */
+  customerNote?: string;
   status?: CreateReservationDtoStatus;
 }

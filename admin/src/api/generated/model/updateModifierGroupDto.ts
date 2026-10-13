@@ -6,8 +6,24 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { UpdateModifierGroupDtoSelectionType } from './updateModifierGroupDtoSelectionType';
+import type { UpdateModifierGroupDtoStatus } from './updateModifierGroupDtoStatus';
 
 export interface UpdateModifierGroupDto {
+  /**
+     * Armenian name translation.
+     * @nullable
+     */
+  nameHy?: string | null;
+  /**
+     * Russian name translation.
+     * @nullable
+     */
+  nameRu?: string | null;
+  /**
+     * English name translation.
+     * @nullable
+     */
+  nameEn?: string | null;
   name?: string;
   selectionType?: UpdateModifierGroupDtoSelectionType;
   required?: boolean;
@@ -15,6 +31,6 @@ export interface UpdateModifierGroupDto {
   minSelect?: number;
   /** @minimum 1 */
   maxSelect?: number;
-  /** @minimum 0 */
-  displayOrder?: number;
+  /** Archive a group with INACTIVE. */
+  status?: UpdateModifierGroupDtoStatus;
 }

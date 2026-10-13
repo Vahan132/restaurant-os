@@ -1,8 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  MinLength,
+} from 'class-validator';
+import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '../../../../shared/application/pagination';
 import { MenuStatus, ModifierSelectionType } from '../../domain/enums';
+import { NameI18nDto } from './i18n.dto';
 
-export class CreateModifierGroupDto {
+export class CreateModifierGroupDto extends NameI18nDto {
   @ApiProperty({ example: 'Size' })
   @IsString()
   @MinLength(1)
@@ -28,15 +41,9 @@ export class CreateModifierGroupDto {
   @IsInt()
   @Min(1)
   maxSelect?: number;
-
-  @ApiPropertyOptional({ default: 0, minimum: 0 })
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  displayOrder?: number;
 }
 
-export class UpdateModifierGroupDto {
+export class UpdateModifierGroupDto extends NameI18nDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -65,14 +72,39 @@ export class UpdateModifierGroupDto {
   @Min(1)
   maxSelect?: number;
 
-  @ApiPropertyOptional({ minimum: 0 })
+  @ApiPropertyOptional({ enum: MenuStatus, description: 'Archive a group with INACTIVE.' })
   @IsOptional()
-  @IsInt()
-  @Min(0)
-  displayOrder?: number;
+  @IsEnum(MenuStatus)
+  status?: MenuStatus;
 }
 
-export class CreateModifierOptionDto {
+export class ListModifierGroupsQuery {
+  @ApiPropertyOptional({ default: DEFAULT_PAGE, minimum: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page: number = DEFAULT_PAGE;
+
+  @ApiPropertyOptional({ default: DEFAULT_LIMIT, minimum: 1, maximum: MAX_LIMIT })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit: number = DEFAULT_LIMIT;
+
+  @ApiPropertyOptional({ enum: MenuStatus })
+  @IsOptional()
+  @IsEnum(MenuStatus)
+  status?: MenuStatus;
+
+  @ApiPropertyOptional({ description: 'Case-insensitive name search.' })
+  @IsOptional()
+  @IsString()
+  q?: string;
+}
+
+export class CreateModifierOptionDto extends NameI18nDto {
   @ApiProperty({ example: 'Large' })
   @IsString()
   @MinLength(1)
@@ -80,42 +112,57 @@ export class CreateModifierOptionDto {
 
   @ApiPropertyOptional({
     default: 0,
-    minimum: 0,
-    description: 'Price delta in minor units (>= 0).',
+    description: 'Price delta in minor units. May be 0 or negative (a discount).',
   })
   @IsOptional()
   @IsInt()
-  @Min(0)
   priceDeltaAmount?: number;
 
   @ApiPropertyOptional({ default: 0, minimum: 0 })
   @IsOptional()
   @IsInt()
   @Min(0)
-  displayOrder?: number;
+  sortOrder?: number;
+
+  @ApiPropertyOptional({ default: false, description: 'Pre-selected option.' })
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
 }
 
-export class UpdateModifierOptionDto {
+export class UpdateModifierOptionDto extends NameI18nDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @MinLength(1)
   name?: string;
 
-  @ApiPropertyOptional({ minimum: 0 })
+  @ApiPropertyOptional({ description: 'Price delta in minor units. May be 0 or negative.' })
   @IsOptional()
   @IsInt()
-  @Min(0)
   priceDeltaAmount?: number;
 
   @ApiPropertyOptional({ minimum: 0 })
   @IsOptional()
   @IsInt()
   @Min(0)
-  displayOrder?: number;
+  sortOrder?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
 
   @ApiPropertyOptional({ enum: MenuStatus })
   @IsOptional()
   @IsEnum(MenuStatus)
   status?: MenuStatus;
+}
+
+export class ReorderModifierOptionsDto {
+  @ApiProperty({ type: [String], description: 'Option ids in the desired order.' })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  optionIds!: string[];
 }

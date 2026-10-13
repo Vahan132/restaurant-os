@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ui/use-confirm';
 import { getErrorMessage } from '@/lib/api-error';
+import { useRoleLabel } from '@/lib/users/role-label';
 import { useRoles, useRolesInvalidation } from '@/lib/users/use-users-data';
 import { toast } from '@/stores/toast';
 
@@ -19,6 +20,7 @@ export function RolesTab() {
   const invalidate = useRolesInvalidation();
   const { ask, dialog } = useConfirm();
   const { roles, isLoading } = useRoles();
+  const roleLabel = useRoleLabel();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<RoleResponse | null>(null);
@@ -81,7 +83,7 @@ export function RolesTab() {
                 <tr key={role.id} className="border-b border-gray-100">
                   <td className="px-4 py-2 font-medium text-gray-800">
                     <span className="flex items-center gap-2">
-                      {role.name}
+                      {roleLabel(role)}
                       {role.isSystem && <Badge tone="blue">{t('system')}</Badge>}
                     </span>
                   </td>

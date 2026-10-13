@@ -7,6 +7,7 @@ import { NoRestaurantInScope } from '../application.errors';
 
 export interface CreateFloorInput {
   restaurantId: string | null;
+  branchId: string;
   name: string;
   description?: string | null;
   displayOrder?: number;
@@ -27,6 +28,7 @@ export class CreateFloorUseCase implements UseCase<CreateFloorInput, Floor> {
     const floor = Floor.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       name: input.name,
       description: input.description ?? null,
       displayOrder: input.displayOrder,

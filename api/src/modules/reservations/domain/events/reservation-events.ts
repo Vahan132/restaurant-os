@@ -9,6 +9,8 @@ abstract class ReservationEvent extends BaseDomainEvent {
   constructor(
     public readonly reservationId: string,
     public readonly restaurantId: string,
+    /** Owning branch (sourced from the reservation). Drives the realtime relay's branch room. */
+    public readonly branchId: string,
     public readonly status: string,
     public readonly actorUserId: string | null = null,
   ) {

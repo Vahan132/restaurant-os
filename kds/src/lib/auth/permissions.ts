@@ -1,4 +1,5 @@
-import { useAuthStore } from './store';
+import { permissionsForBranch, useAuthStore } from './store';
+import { useBranchStore } from '@/lib/branch/store';
 
 /**
  * Permission codes the KDS app cares about. The backend owns the full catalog
@@ -8,16 +9,43 @@ import { useAuthStore } from './store';
 export const PERMISSIONS = {
   /** Required to view the kitchen display and subscribe to station rooms. */
   KDS_ACCESS: 'KDS_ACCESS',
+  /**
+   * Required to execute a prep/production run from the kitchen (consume inputs +
+   * produce output). Held by process-capability roles (Chef / Sous-Chef by
+   * default); line cooks lack it, so the processes view stays hidden for them.
+   * Matches the backend's `inventory:process:run` check on POST .../run.
+   */
+  PROCESS_RUN: 'inventory:process:run',
 } as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[keyof typeof PERMISSIONS] | (string & {});
 
-/** Reactive hook: true if the signed-in user holds the given permission. */
+/**
+ * Reactive hook: true if the signed-in user holds the given permission **at the
+ * currently pinned branch**. Resolves against that branch's effective set, so a
+ * user with access only at another branch is correctly denied here. Re-renders
+ * when either the auth state or the pinned branch changes.
+ */
 export function usePermission(code: PermissionCode): boolean {
-  return useAuthStore((s) => s.permissions.includes(code));
+  const branchId = useBranchStore((s) => s.branchId);
+  return useAuthStore((s) => permissionsForBranch(s, branchId).includes(code));
 }
 
-/** Non-reactive check, e.g. inside event handlers or guards. */
+/** Non-reactive check at the pinned branch, e.g. inside event handlers/guards. */
 export function hasPermission(code: PermissionCode): boolean {
-  return useAuthStore.getState().permissions.includes(code);
+  const branchId = useBranchStore.getState().branchId;
+  return permissionsForBranch(useAuthStore.getState(), branchId).includes(code);
+}
+
+/**
+ * Reactive hook: true if the user holds the permission at **any** branch they
+ * can access (or restaurant-wide). Used to tell "no kitchen access anywhere"
+ * apart from "pinned to a branch where they lack it".
+ */
+export function useHasPermissionAnyBranch(code: PermissionCode): boolean {
+  return useAuthStore((s) =>
+    s.allBranches
+      ? s.permissions.includes(code)
+      : s.accessibleBranches.some((b) => b.permissions.includes(code)),
+  );
 }

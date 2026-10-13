@@ -5,6 +5,8 @@ import Axios, {
 } from 'axios';
 
 import { resolveSlug } from '@/lib/tenant';
+import { resolveSessionToken } from '@/lib/session';
+import { LOCALE_COOKIE, isLocale } from '@/i18n/config';
 
 /**
  * Normalized API error surfaced to the UI. Errors are flattened to a small,
@@ -31,6 +33,14 @@ export function isNotFound(e: unknown): boolean {
   return isApiError(e) && (e.status === 404 || e.code === 'NOT_FOUND');
 }
 
+/**
+ * True for an expired / missing session token (ORDER-2). The ordering flow
+ * reacts by clearing the stored token and opening a fresh table session.
+ */
+export function isUnauthorized(e: unknown): boolean {
+  return isApiError(e) && (e.status === 401 || e.code === 'UNAUTHORIZED');
+}
+
 const baseURL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || 'http://localhost:3001';
 
@@ -45,6 +55,55 @@ AXIOS_INSTANCE.interceptors.request.use((config) => {
   const slug = resolveSlug();
   if (slug) {
     config.headers.set('X-Restaurant-Slug', slug);
+  }
+  return config;
+});
+
+/**
+ * Attach the QR-web table-session token (ORDER-2) when one exists. The
+ * QR-orders controller is session-gated, so validate-cart / create /
+ * confirm-payment / receipt and the table-session view all need this header.
+ *
+ * We attach it whenever a token is present rather than per-endpoint: browsing
+ * never mints a token (so browse calls stay session-free), and the backend
+ * ignores a stray token on public browse endpoints. A 401 from a session call
+ * means the token expired — the ordering flow clears it and opens a fresh
+ * session (see `useTableSession`).
+ */
+AXIOS_INSTANCE.interceptors.request.use((config) => {
+  const token = resolveSessionToken();
+  if (token) {
+    config.headers.set('X-Session-Token', token);
+  }
+  return config;
+});
+
+/**
+ * Read the guest's EXPLICITLY chosen locale from the `NEXT_LOCALE` cookie. All
+ * tenant-scoped fetches run client-side (see {@link file://../lib/tenant.ts}), so
+ * `document.cookie` is the authoritative source. Returns null on the server, when
+ * no cookie is set (fresh guest), or when the value isn't a supported locale.
+ */
+function resolveLocale(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(
+    new RegExp(`(?:^|;\\s*)${LOCALE_COOKIE}=([^;]*)`),
+  );
+  const value = match ? decodeURIComponent(match[1] ?? '') : undefined;
+  return isLocale(value) ? value : null;
+}
+
+/**
+ * Attach `X-Locale` (LOCALE-2D) so the storefront returns localized menu content
+ * (LOCALE-1 reads it, LOCALE-2B emits by it). Sent ONLY when the guest has
+ * actively picked a language (a valid `NEXT_LOCALE` cookie). When absent we OMIT
+ * the header so the backend falls back to the restaurant's own `defaultLanguage`
+ * — we never override it with next-intl's `'en'` default for a fresh guest.
+ */
+AXIOS_INSTANCE.interceptors.request.use((config) => {
+  const locale = resolveLocale();
+  if (locale) {
+    config.headers.set('X-Locale', locale);
   }
   return config;
 });

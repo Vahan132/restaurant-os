@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { OrderResponse, OrderResponseStatus } from '@/api/generated/model';
 import { useMoney } from '@/lib/useMoney';
 import { OrderRequestsBell } from '@/components/requests/OrderRequestsBell';
+import { BranchMenu } from '@/components/branch/BranchMenu';
 
 const ORDER_STATUS_BADGE: Record<OrderResponseStatus, string> = {
   DRAFT: 'bg-gray-200 text-gray-700',
@@ -47,13 +48,25 @@ export function OrderHeader({ order, tableName }: OrderHeaderProps) {
             #{order.orderNumber} · {where}
           </h1>
           <span
+            data-testid="pos-order-status"
+            data-status={order.status}
             className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${ORDER_STATUS_BADGE[order.status]}`}
           >
             {tStatus(order.status)}
           </span>
+          {order.fiscalStatus === 'FAILED' ? (
+            <span
+              data-testid="pos-fiscal-error"
+              title={order.fiscalError ?? undefined}
+              className="ml-1.5 mt-0.5 inline-block rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold uppercase text-red-700"
+            >
+              {t('fiscalError')}
+            </span>
+          ) : null}
         </div>
       </div>
       <div className="flex items-center gap-3">
+        <BranchMenu />
         <OrderRequestsBell />
         <div className="text-right">
           <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('total')}</p>

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
+import { snapshotPermissionsForRole } from '../../../identity/domain/permissions.catalog';
 import { UserPermissionReader } from '../../application/ports/user-permission.reader';
 
 /** Checks whether a user (in an org) holds a permission, via their role. */
@@ -21,8 +22,8 @@ export class PrismaUserPermissionReader implements UserPermissionReader {
     }
     const role = await this.prisma.role.findFirst({
       where: { id: user.roleId, organizationId },
-      select: { permissions: true },
+      select: { permissions: true, code: true, isSystem: true },
     });
-    return role?.permissions?.includes(permission) ?? false;
+    return snapshotPermissionsForRole(role).includes(permission);
   }
 }

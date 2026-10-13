@@ -25,9 +25,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BranchMembershipResponse,
   ChangePasswordDto,
   CreateUserDto,
   UpdateUserDto,
+  UpsertBranchMembershipDto,
   UserResponse,
   UsersControllerListParams
 } from '../model';
@@ -536,4 +538,222 @@ export const useUsersControllerSetPassword = <TError = void,
         TContext
       > => {
       return useMutation(getUsersControllerSetPasswordMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary List a user's branch memberships.
+ */
+export const branchMembershipsControllerList = (
+    id: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<BranchMembershipResponse[]>(
+      {url: `/users/${id}/branch-memberships`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getBranchMembershipsControllerListQueryKey = (id: string,) => {
+    return [
+    `/users/${id}/branch-memberships`
+    ] as const;
+    }
+
+
+export const getBranchMembershipsControllerListQueryOptions = <TData = Awaited<ReturnType<typeof branchMembershipsControllerList>>, TError = void>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchMembershipsControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBranchMembershipsControllerListQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof branchMembershipsControllerList>>> = ({ signal }) => branchMembershipsControllerList(id, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof branchMembershipsControllerList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BranchMembershipsControllerListQueryResult = NonNullable<Awaited<ReturnType<typeof branchMembershipsControllerList>>>
+export type BranchMembershipsControllerListQueryError = void
+
+
+export function useBranchMembershipsControllerList<TData = Awaited<ReturnType<typeof branchMembershipsControllerList>>, TError = void>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchMembershipsControllerList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof branchMembershipsControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof branchMembershipsControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBranchMembershipsControllerList<TData = Awaited<ReturnType<typeof branchMembershipsControllerList>>, TError = void>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchMembershipsControllerList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof branchMembershipsControllerList>>,
+          TError,
+          Awaited<ReturnType<typeof branchMembershipsControllerList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBranchMembershipsControllerList<TData = Awaited<ReturnType<typeof branchMembershipsControllerList>>, TError = void>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchMembershipsControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List a user's branch memberships.
+ */
+
+export function useBranchMembershipsControllerList<TData = Awaited<ReturnType<typeof branchMembershipsControllerList>>, TError = void>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof branchMembershipsControllerList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBranchMembershipsControllerListQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * @summary Grant or change a user's role at a branch.
+ */
+export const branchMembershipsControllerUpsert = (
+    id: string,
+    upsertBranchMembershipDto: UpsertBranchMembershipDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<BranchMembershipResponse>(
+      {url: `/users/${id}/branch-memberships`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: upsertBranchMembershipDto, signal
+    },
+      options);
+    }
+
+
+
+export const getBranchMembershipsControllerUpsertMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof branchMembershipsControllerUpsert>>, TError,{id: string;data: UpsertBranchMembershipDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof branchMembershipsControllerUpsert>>, TError,{id: string;data: UpsertBranchMembershipDto}, TContext> => {
+
+const mutationKey = ['branchMembershipsControllerUpsert'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof branchMembershipsControllerUpsert>>, {id: string;data: UpsertBranchMembershipDto}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  branchMembershipsControllerUpsert(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BranchMembershipsControllerUpsertMutationResult = NonNullable<Awaited<ReturnType<typeof branchMembershipsControllerUpsert>>>
+    export type BranchMembershipsControllerUpsertMutationBody = UpsertBranchMembershipDto
+    export type BranchMembershipsControllerUpsertMutationError = void
+
+    /**
+ * @summary Grant or change a user's role at a branch.
+ */
+export const useBranchMembershipsControllerUpsert = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof branchMembershipsControllerUpsert>>, TError,{id: string;data: UpsertBranchMembershipDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof branchMembershipsControllerUpsert>>,
+        TError,
+        {id: string;data: UpsertBranchMembershipDto},
+        TContext
+      > => {
+      return useMutation(getBranchMembershipsControllerUpsertMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Revoke a user's role at a branch.
+ */
+export const branchMembershipsControllerRemove = (
+    id: string,
+    branchId: string,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<unknown>(
+      {url: `/users/${id}/branch-memberships/${branchId}`, method: 'DELETE', signal
+    },
+      options);
+    }
+
+
+
+export const getBranchMembershipsControllerRemoveMutationOptions = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof branchMembershipsControllerRemove>>, TError,{id: string;branchId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof branchMembershipsControllerRemove>>, TError,{id: string;branchId: string}, TContext> => {
+
+const mutationKey = ['branchMembershipsControllerRemove'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof branchMembershipsControllerRemove>>, {id: string;branchId: string}> = (props) => {
+          const {id,branchId} = props ?? {};
+
+          return  branchMembershipsControllerRemove(id,branchId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BranchMembershipsControllerRemoveMutationResult = NonNullable<Awaited<ReturnType<typeof branchMembershipsControllerRemove>>>
+
+    export type BranchMembershipsControllerRemoveMutationError = void
+
+    /**
+ * @summary Revoke a user's role at a branch.
+ */
+export const useBranchMembershipsControllerRemove = <TError = void,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof branchMembershipsControllerRemove>>, TError,{id: string;branchId: string}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof branchMembershipsControllerRemove>>,
+        TError,
+        {id: string;branchId: string},
+        TContext
+      > => {
+      return useMutation(getBranchMembershipsControllerRemoveMutationOptions(options), queryClient);
     }

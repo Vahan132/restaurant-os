@@ -52,6 +52,7 @@ export interface BillingView {
 export interface AccountQuery {
   activePlans(): Promise<PublicPlanView[]>;
   isSlugTaken(slug: string): Promise<boolean>;
+  isEmailTaken(email: string): Promise<boolean>;
   overview(organizationId: string, ownerUserId: string): Promise<AccountOverview | null>;
   subscriptionView(organizationId: string): Promise<AccountSubscriptionView | null>;
   billing(organizationId: string): Promise<BillingView | null>;

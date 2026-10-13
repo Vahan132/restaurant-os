@@ -56,7 +56,9 @@ export class TableStatusService {
     if (!restaurantId) {
       throw NoRestaurantInScope();
     }
-    const table = await this.tables.findById(restaurantId, tableId);
+    // SYSTEM transitions are invoked cross-module without an active branch; the
+    // table's branch is intrinsic to the aggregate, so resolve restaurant-wide.
+    const table = await this.tables.findByIdAnyBranch(restaurantId, tableId);
     if (!table) {
       throw TableNotFound();
     }

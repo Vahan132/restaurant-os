@@ -30,11 +30,13 @@ import {
   InvalidOrderItemTransitionError,
   InvalidOrderTransitionError,
   NoItemsToSendError,
+  OrderAlreadyPaidError,
   OrderItemNotEditableError,
   OrderItemNotFoundError,
   OrderNotMutableError,
   OrderNotPaidError,
   PaymentExceedsRemainingError,
+  PrepaymentNotSettledError,
   PaymentNotActiveError,
   PaymentNotFoundError,
   SplitItemNotEligibleError,
@@ -46,11 +48,16 @@ import { Payment } from './payment';
 
 export interface OrderProps {
   restaurantId: string;
-  branchId: string | null;
+  branchId: string;
   orderNumber: number;
   type: OrderType;
   tableId: string | null;
-  waiterId: string;
+  /** ORDER-2: the PREPAYMENT ordering container this order is attached to. */
+  tableSessionId: string | null;
+  /** ORDER-2: null for a QR-web (customer-placed) order; set for staff orders. */
+  waiterId: string | null;
+  /** ORDER-4: the CX-2 consumer who placed this order via the app; null otherwise. */
+  consumerId: string | null;
   status: OrderStatus;
   currency: string;
   subtotalAmount: number;
@@ -68,6 +75,21 @@ export interface OrderProps {
   paymentStatus: PaymentStatus;
   paidAmount: number;
   splitFromOrderId: string | null;
+  // ── ORDER-2 fiscal-aware tender split (integer minor units) ──────────────
+  cardAmount: number;
+  cashAmount: number;
+  partialAmount: number;
+  prePaymentAmount: number;
+  changeAmount: number;
+  partnerTin: string | null;
+  paymentReference: string | null;
+  // ── ORDER-2 fiscal result (null until fiscalised) ────────────────────────
+  fiscalReceiptId: string | null;
+  fiscalNumber: string | null;
+  fiscalQr: string | null;
+  fiscalizedAt: Date | null;
+  // FISCAL-0: fatal-config fiscal error marker (SRC code), or null = none.
+  fiscalError: string | null;
   items: OrderItem[];
   payments: Payment[];
   createdAt: Date;
@@ -77,10 +99,15 @@ export interface OrderProps {
 export interface CreateOrderInput {
   id: string;
   restaurantId: string;
-  branchId?: string | null;
+  branchId: string;
   type: OrderType;
   tableId?: string | null;
-  waiterId: string;
+  /** ORDER-2: the attached PREPAYMENT session (QR-web). Optional for staff orders. */
+  tableSessionId?: string | null;
+  /** Null for a QR-web customer order; required for staff-placed orders. */
+  waiterId: string | null;
+  /** ORDER-4: the app consumer who placed this order. Null for QR-web/staff. */
+  consumerId?: string | null;
   currency: string;
   splitFromOrderId?: string | null;
 }
@@ -102,11 +129,13 @@ export class Order extends AggregateRoot<string> {
     const now = new Date();
     return new Order(input.id, {
       restaurantId: input.restaurantId,
-      branchId: input.branchId ?? null,
+      branchId: input.branchId,
       orderNumber: 0,
       type: input.type,
       tableId: input.tableId ?? null,
+      tableSessionId: input.tableSessionId ?? null,
       waiterId: input.waiterId,
+      consumerId: input.consumerId ?? null,
       status: OrderStatus.DRAFT,
       currency: input.currency,
       subtotalAmount: 0,
@@ -124,6 +153,18 @@ export class Order extends AggregateRoot<string> {
       paymentStatus: PaymentStatus.UNPAID,
       paidAmount: 0,
       splitFromOrderId: input.splitFromOrderId ?? null,
+      cardAmount: 0,
+      cashAmount: 0,
+      partialAmount: 0,
+      prePaymentAmount: 0,
+      changeAmount: 0,
+      partnerTin: null,
+      paymentReference: null,
+      fiscalReceiptId: null,
+      fiscalNumber: null,
+      fiscalQr: null,
+      fiscalizedAt: null,
+      fiscalError: null,
       items: [],
       payments: [],
       createdAt: now,
@@ -139,7 +180,7 @@ export class Order extends AggregateRoot<string> {
   get restaurantId(): string {
     return this.props.restaurantId;
   }
-  get branchId(): string | null {
+  get branchId(): string {
     return this.props.branchId;
   }
   get orderNumber(): number {
@@ -151,8 +192,14 @@ export class Order extends AggregateRoot<string> {
   get tableId(): string | null {
     return this.props.tableId;
   }
-  get waiterId(): string {
+  get tableSessionId(): string | null {
+    return this.props.tableSessionId;
+  }
+  get waiterId(): string | null {
     return this.props.waiterId;
+  }
+  get consumerId(): string | null {
+    return this.props.consumerId;
   }
   get status(): OrderStatus {
     return this.props.status;
@@ -205,6 +252,67 @@ export class Order extends AggregateRoot<string> {
   get splitFromOrderId(): string | null {
     return this.props.splitFromOrderId;
   }
+  get cardAmount(): number {
+    return this.props.cardAmount;
+  }
+  get cashAmount(): number {
+    return this.props.cashAmount;
+  }
+  get partialAmount(): number {
+    return this.props.partialAmount;
+  }
+  get prePaymentAmount(): number {
+    return this.props.prePaymentAmount;
+  }
+  get changeAmount(): number {
+    return this.props.changeAmount;
+  }
+  get partnerTin(): string | null {
+    return this.props.partnerTin;
+  }
+  get paymentReference(): string | null {
+    return this.props.paymentReference;
+  }
+  get fiscalReceiptId(): string | null {
+    return this.props.fiscalReceiptId;
+  }
+  get fiscalNumber(): string | null {
+    return this.props.fiscalNumber;
+  }
+  get fiscalQr(): string | null {
+    return this.props.fiscalQr;
+  }
+  get fiscalizedAt(): Date | null {
+    return this.props.fiscalizedAt;
+  }
+  get fiscalError(): string | null {
+    return this.props.fiscalError;
+  }
+  isFiscalized(): boolean {
+    return this.props.fiscalizedAt !== null;
+  }
+  /** FISCAL-0: a fatal-config fiscal error is recorded — do NOT re-attempt fiscalization. */
+  hasFatalFiscalError(): boolean {
+    return this.props.fiscalError !== null;
+  }
+  /**
+   * FISCAL-1b: derived fiscal display state for read models. Null until the order
+   * is PAID (nothing to fiscalise yet). Once PAID: FAILED if a fatal-config error
+   * is recorded, OK once a receipt exists, else PENDING (paid-but-unfiscalised,
+   * still retrying). OK and FAILED are mutually exclusive.
+   */
+  fiscalStatus(): 'OK' | 'PENDING' | 'FAILED' | null {
+    if (this.props.paymentStatus !== PaymentStatus.PAID) {
+      return null;
+    }
+    if (this.props.fiscalError !== null) {
+      return 'FAILED';
+    }
+    if (this.props.fiscalizedAt !== null) {
+      return 'OK';
+    }
+    return 'PENDING';
+  }
   get items(): OrderItem[] {
     return [...this.props.items];
   }
@@ -241,7 +349,13 @@ export class Order extends AggregateRoot<string> {
     }
     this.props.orderNumber = orderNumber;
     this.addDomainEvent(
-      new OrderCreatedEvent(this.id, this.props.restaurantId, orderNumber, this.props.tableId),
+      new OrderCreatedEvent(
+        this.id,
+        this.props.restaurantId,
+        this.props.branchId,
+        orderNumber,
+        this.props.tableId,
+      ),
     );
   }
 
@@ -314,13 +428,18 @@ export class Order extends AggregateRoot<string> {
         nameSnapshot: item.nameSnapshot,
         preparationStation: item.preparationStation,
         quantity: item.quantity,
+        modifierOptionIds: item.modifiers
+          .map((m) => m.modifierOptionId)
+          .filter((id): id is string => id !== null),
       });
     }
     if (this.props.status === OrderStatus.DRAFT) {
       this.transitionTo(OrderStatus.SENT_TO_KITCHEN);
     }
     this.touch();
-    this.addDomainEvent(new OrderItemsSentToKitchenEvent(this.id, this.props.restaurantId, sent));
+    this.addDomainEvent(
+      new OrderItemsSentToKitchenEvent(this.id, this.props.restaurantId, this.props.branchId, sent),
+    );
   }
 
   markServed(): void {
@@ -380,6 +499,7 @@ export class Order extends AggregateRoot<string> {
       new OrderItemCancelledEvent(
         this.id,
         this.props.restaurantId,
+        this.props.branchId,
         itemId,
         station,
         reason,
@@ -392,13 +512,23 @@ export class Order extends AggregateRoot<string> {
     if (!reason || reason.trim().length === 0) {
       throw new CancelReasonRequiredError();
     }
+    // Capture lines that were live on a station BEFORE the transition so the
+    // inventory listener can reverse their consumption (INV-3).
+    const sentOrderItemIds = this.props.items.filter((i) => i.isActiveOnStation()).map((i) => i.id);
     this.transitionTo(OrderStatus.CANCELLED);
     this.props.cancelledReason = reason;
     this.props.cancelledByUserId = cancelledByUserId;
     this.props.cancelApprovedByUserId = cancelApprovedByUserId;
     this.touch();
     this.addDomainEvent(
-      new OrderCancelledEvent(this.id, this.props.restaurantId, reason, cancelledByUserId),
+      new OrderCancelledEvent(
+        this.id,
+        this.props.restaurantId,
+        this.props.branchId,
+        reason,
+        cancelledByUserId,
+        sentOrderItemIds,
+      ),
     );
   }
 
@@ -435,7 +565,8 @@ export class Order extends AggregateRoot<string> {
     method: PaymentMethod;
     amount: number;
     tenderedAmount?: number | null;
-    processedByUserId: string;
+    /** Null for a gateway-processed QR prepayment (no staff user). */
+    processedByUserId: string | null;
   }): Payment {
     this.assertNotTerminal();
     const remaining = this.remainingAmount();
@@ -445,6 +576,7 @@ export class Order extends AggregateRoot<string> {
     const payment = Payment.create({
       id: input.id,
       restaurantId: this.props.restaurantId,
+      branchId: this.props.branchId, // payments inherit the order's branch
       orderId: this.id,
       method: input.method,
       amount: input.amount,
@@ -496,8 +628,100 @@ export class Order extends AggregateRoot<string> {
     this.props.closedAt = now;
     this.touch();
     this.addDomainEvent(
-      new OrderClosedEvent(this.id, this.props.restaurantId, this.props.tableId, actorUserId),
+      new OrderClosedEvent(
+        this.id,
+        this.props.restaurantId,
+        this.props.branchId,
+        this.props.tableId,
+        actorUserId,
+      ),
     );
+  }
+
+  // ── ORDER-2: QR-web prepayment settlement + fiscalization ────────────────
+
+  /**
+   * Settle a QR-web prepayment IN FULL (card only, v1). Records a gateway-
+   * processed CARD payment (no staff user), fills the fiscal tender split, and
+   * stores the gateway reference. Requires a fresh, unpaid, non-terminal order;
+   * on success paymentStatus becomes PAID (via recomputePaymentStatus).
+   */
+  settlePrepaymentCard(input: { paymentId: string; amount: number; paymentReference: string }): Payment {
+    this.assertNotTerminal();
+    if (this.props.paymentStatus === PaymentStatus.PAID) {
+      throw new OrderAlreadyPaidError();
+    }
+    const payment = this.recordPayment({
+      id: input.paymentId,
+      method: PaymentMethod.CARD,
+      amount: input.amount,
+      tenderedAmount: null,
+      processedByUserId: null,
+    });
+    // Tender split: card only. Products-mode receipt → prePayment 0, no change.
+    this.props.cardAmount = input.amount;
+    this.props.cashAmount = 0;
+    this.props.partialAmount = 0;
+    this.props.prePaymentAmount = 0;
+    this.props.changeAmount = 0;
+    this.props.paymentReference = input.paymentReference;
+    this.touch();
+    return payment;
+  }
+
+  /**
+   * Persist the fiscal result onto the order. IDEMPOTENT: a no-op once already
+   * fiscalised, so a retried confirm (recoverable paid-but-unfiscalized branch)
+   * never overwrites or double-issues.
+   */
+  applyFiscalResult(result: {
+    receiptId: string;
+    fiscalNumber: string;
+    qr: string;
+    issuedAt: Date;
+  }): boolean {
+    if (this.isFiscalized()) {
+      return false;
+    }
+    this.props.fiscalReceiptId = result.receiptId;
+    this.props.fiscalNumber = result.fiscalNumber;
+    this.props.fiscalQr = result.qr;
+    this.props.fiscalizedAt = result.issuedAt;
+    // FISCAL-0: a successful fiscalisation supersedes any prior fatal marker.
+    this.props.fiscalError = null;
+    this.touch();
+    return true;
+  }
+
+  /**
+   * FISCAL-0: record a FATAL-config fiscalization failure (e.g. SRC 192/403) so a
+   * retried ConfirmPayment stops re-attempting and an operator can see the code.
+   * No-op once fiscalised (a fatal marker never overwrites a real receipt).
+   */
+  markFiscalFatal(code: string): void {
+    if (this.isFiscalized()) {
+      return;
+    }
+    this.props.fiscalError = code;
+    this.touch();
+  }
+
+  /**
+   * ORDER-2 prepayment gate + KDS dispatch. SENT_TO_KITCHEN is unreachable until
+   * paymentStatus = PAID; this reuses the existing sendToKitchen path (raises
+   * OrderItemsSentToKitchenEvent → realtime relay → KDS), so there is no parallel
+   * dispatch. Only valid from DRAFT; callers guard idempotency on status.
+   */
+  dispatchPrepaid(now: Date = new Date()): void {
+    if (this.props.paymentStatus !== PaymentStatus.PAID) {
+      throw new PrepaymentNotSettledError();
+    }
+    this.sendToKitchen(now);
+  }
+
+  /** True once the order has left DRAFT (dispatched to the kitchen or terminal). */
+  hasBeenDispatched(): boolean {
+    return this.props.status !== OrderStatus.DRAFT;
   }
 
   /** paidAmount = sum of ACTIVE payments; status derived against the current total. */
@@ -551,7 +775,9 @@ export class Order extends AggregateRoot<string> {
       orderNumber: 0,
       type: this.props.type,
       tableId: this.props.tableId,
+      tableSessionId: this.props.tableSessionId,
       waiterId: this.props.waiterId,
+      consumerId: this.props.consumerId, // split inherits the placing consumer
       status: childStatus,
       currency: this.props.currency,
       subtotalAmount: 0,
@@ -569,6 +795,18 @@ export class Order extends AggregateRoot<string> {
       paymentStatus: PaymentStatus.UNPAID,
       paidAmount: 0,
       splitFromOrderId: this.id,
+      cardAmount: 0,
+      cashAmount: 0,
+      partialAmount: 0,
+      prePaymentAmount: 0,
+      changeAmount: 0,
+      partnerTin: null,
+      paymentReference: null,
+      fiscalReceiptId: null,
+      fiscalNumber: null,
+      fiscalQr: null,
+      fiscalizedAt: null,
+      fiscalError: null,
       items: moved,
       payments: [],
       createdAt: now,
@@ -600,6 +838,7 @@ export class Order extends AggregateRoot<string> {
       new OrderItemStatusChangedEvent(
         this.id,
         this.props.restaurantId,
+        this.props.branchId,
         item.id,
         item.preparationStation,
         item.status,
@@ -626,6 +865,7 @@ export class Order extends AggregateRoot<string> {
       new OrderItemStatusChangedEvent(
         this.id,
         this.props.restaurantId,
+        this.props.branchId,
         item.id,
         item.preparationStation,
         item.status,
@@ -634,7 +874,12 @@ export class Order extends AggregateRoot<string> {
     );
     if (before !== OrderStatus.READY && this.props.status === OrderStatus.READY) {
       this.addDomainEvent(
-        new OrderReadyEvent(this.id, this.props.restaurantId, this.props.tableId),
+        new OrderReadyEvent(
+          this.id,
+          this.props.restaurantId,
+          this.props.branchId,
+          this.props.tableId,
+        ),
       );
     }
     this.touch();
@@ -659,6 +904,7 @@ export class Order extends AggregateRoot<string> {
         new OrderItemStatusChangedEvent(
           this.id,
           this.props.restaurantId,
+          this.props.branchId,
           item.id,
           item.preparationStation,
           item.status,
@@ -668,7 +914,12 @@ export class Order extends AggregateRoot<string> {
     }
     if (before !== OrderStatus.READY && this.props.status === OrderStatus.READY) {
       this.addDomainEvent(
-        new OrderReadyEvent(this.id, this.props.restaurantId, this.props.tableId),
+        new OrderReadyEvent(
+          this.id,
+          this.props.restaurantId,
+          this.props.branchId,
+          this.props.tableId,
+        ),
       );
     }
     this.touch();

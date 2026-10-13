@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsOptional, Matches } from 'class-validator';
+import { IsIn, IsOptional, IsString, Matches } from 'class-validator';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -11,6 +11,23 @@ export class DateRangeQuery {
   @ApiProperty({ description: 'To date (YYYY-MM-DD, inclusive, restaurant tz).' })
   @Matches(DATE, { message: 'to must be YYYY-MM-DD' })
   to!: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Only this branch. Omitted = every branch the caller may report on (all branches for the owner).',
+  })
+  @IsOptional()
+  @IsString()
+  branchId?: string;
+}
+
+export class BusinessDayQuery {
+  @ApiPropertyOptional({
+    description: 'Business day (YYYY-MM-DD, restaurant tz). Defaults to today there.',
+  })
+  @IsOptional()
+  @Matches(DATE, { message: 'date must be YYYY-MM-DD' })
+  date?: string;
 }
 
 export class TimeSeriesQuery extends DateRangeQuery {

@@ -23,7 +23,9 @@ export class ReservationResponse {
   @ApiProperty() durationMinutes!: number;
   @ApiProperty({ nullable: true, type: String }) tableId!: string | null;
   @ApiProperty({ enum: RES_STATUSES }) status!: string;
+  @ApiProperty({ enum: ['STAFF', 'PUBLIC', 'PHONE'] }) source!: string;
   @ApiProperty({ nullable: true, type: String }) notes!: string | null;
+  @ApiProperty({ nullable: true, type: String }) customerNote!: string | null;
   @ApiProperty({ nullable: true, type: String }) arrivedAt!: string | null;
   @ApiProperty({ nullable: true, type: String }) seatedAt!: string | null;
   @ApiProperty({ nullable: true, type: String }) completedAt!: string | null;
@@ -47,7 +49,9 @@ export class ReservationResponse {
       durationMinutes: r.durationMinutes,
       tableId: r.tableId,
       status: r.status,
+      source: r.source,
       notes: r.notes,
+      customerNote: r.customerNote,
       arrivedAt: iso(r.arrivedAt),
       seatedAt: iso(r.seatedAt),
       completedAt: iso(r.completedAt),

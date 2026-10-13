@@ -7,7 +7,8 @@ import { useAccountOverview, useUpdateProfile, accountQueryKeys } from "@/api/ho
 import { Card, QueryState } from "@/components/account/ui";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
-import { toast, toastError } from "@/lib/toast";
+import { toast } from "@/lib/toast";
+import { useApiError } from "@/hooks/useApiError";
 
 export default function ProfilePage() {
   const t = useTranslations("account.profile");
@@ -15,9 +16,11 @@ export default function ProfilePage() {
   const qc = useQueryClient();
   const overview = useAccountOverview();
   const update = useUpdateProfile();
+  const { toastError } = useApiError();
 
   const [fullName, setFullName] = useState("");
   const [touched, setTouched] = useState(false);
+  const [error, setError] = useState<string>();
 
   // Seed the field from the loaded profile (only until the user edits).
   useEffect(() => {
@@ -26,8 +29,9 @@ export default function ProfilePage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError(undefined);
     if (fullName.trim().length < 2) {
-      toast.error(tv("fullName"));
+      setError(tv("fullName"));
       return;
     }
     try {
@@ -49,12 +53,14 @@ export default function ProfilePage() {
     >
       <Card title={t("title")} description={t("desc")}>
         <form onSubmit={onSubmit} className="flex max-w-md flex-col gap-5">
-          <Field label={t("fullName")} htmlFor="fullName" required>
+          <Field label={t("fullName")} htmlFor="fullName" error={error} required>
             <Input
               id="fullName"
               value={fullName}
+              invalid={!!error}
               onChange={(e) => {
                 setTouched(true);
+                if (error) setError(undefined);
                 setFullName(e.target.value);
               }}
               autoComplete="name"

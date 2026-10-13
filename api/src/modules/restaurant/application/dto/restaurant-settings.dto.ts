@@ -38,6 +38,13 @@ export class UpdateRestaurantSettingsDto {
   @IsString()
   logoUrl?: string;
 
+  @ApiPropertyOptional({
+    description: 'MEDIA-1: object key from a presigned logo upload (finalize). Overrides logoUrl.',
+  })
+  @IsOptional()
+  @IsString()
+  logoKey?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -118,4 +125,12 @@ export class UpdateRestaurantSettingsDto {
   @IsOptional()
   @IsBoolean()
   enableCustomerOrdering?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      '3A: when false (default), admin/manager email login must come from an enrolled ADMIN-surface device. Owner is always exempt (break-glass).',
+  })
+  @IsOptional()
+  @IsBoolean()
+  allowUnanchoredAdminLogin?: boolean;
 }

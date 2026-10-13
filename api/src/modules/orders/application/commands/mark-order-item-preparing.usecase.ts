@@ -7,6 +7,8 @@ import { NoRestaurantInScope, OrderItemNotFound } from '../application.errors';
 
 export interface MarkOrderItemPreparingInput {
   restaurantId: string | null;
+  /** Active branch; null when invoked cross-module (KDS, not branch-scoped until BR-5). */
+  branchId?: string | null;
   itemId: string;
 }
 
@@ -22,7 +24,11 @@ export class MarkOrderItemPreparingUseCase implements UseCase<MarkOrderItemPrepa
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findByItemId(input.restaurantId, input.itemId);
+    const order = await this.orders.findByItemId(
+      input.restaurantId,
+      input.branchId ?? null,
+      input.itemId,
+    );
     if (!order) {
       throw OrderItemNotFound();
     }

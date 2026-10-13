@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
 import {
   BillingInfoView,
+  BranchView,
   HallView,
   PlatformAdminQuery,
   PlatformDashboard,
@@ -18,6 +19,20 @@ const SUBSCRIPTION_STATUSES = ['TRIALING', 'ACTIVE', 'PAST_DUE', 'CANCELED', 'SU
 @Injectable()
 export class PrismaPlatformAdminQueryService implements PlatformAdminQuery {
   constructor(private readonly prisma: PrismaService) {}
+
+  async restaurantBranches(restaurantId: string): Promise<BranchView[]> {
+    const branches = await this.prisma.branch.findMany({
+      where: { restaurantId, deletedAt: null },
+      select: { id: true, name: true, isDefault: true, status: true },
+      orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
+    });
+    return branches.map((b) => ({
+      id: b.id,
+      name: b.name,
+      isDefault: b.isDefault,
+      status: b.status,
+    }));
+  }
 
   async orgRestaurants(organizationId: string): Promise<RestaurantWithHallsView[]> {
     const restaurants = await this.prisma.restaurant.findMany({

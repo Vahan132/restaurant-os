@@ -1,61 +1,37 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
 
-import { usePublicOrderRequestsControllerCreate } from '@/api/generated/public/public';
-import type { PublicOrderRequestResponse } from '@/api/generated/model';
-import { isApiError, type ApiError } from '@/api/mutator';
-import { toOrderItems } from '@/lib/cart';
 import { formatMoney } from '@/lib/money';
 
 import QuantityStepper from './QuantityStepper';
 import { useCart } from './CartProvider';
 
 interface Props {
-  qr: string;
   currency: string;
   locale: string;
   onClose: () => void;
-  onPlaced: (orderId: string) => void;
+  /** Proceed to the prepayment checkout (validate + pay). */
+  onCheckout: () => void;
 }
 
-export default function CartView({ qr, currency, locale, onClose, onPlaced }: Props) {
+/**
+ * Cart review for the QR-web PREPAYMENT flow (ORDER-2). This is a client-side
+ * convenience list: the shown subtotal is INDICATIVE only. The authoritative,
+ * server-validated total is computed and displayed on the checkout step before
+ * the customer pays — this screen never drives payment.
+ */
+export default function CartView({ currency, locale, onClose, onCheckout }: Props) {
   const t = useTranslations('cart');
   const { lines, subtotal, setQuantity, removeLine, clear } = useCart();
-  const [customerName, setCustomerName] = useState('');
-  const [note, setNote] = useState('');
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const createOrder = usePublicOrderRequestsControllerCreate<ApiError>({
-    mutation: {
-      onSuccess: (res) => {
-        clear(); // clear only after a successful submit
-        // The spec types this 201 response as `unknown` (it only documents an
-        // example, no schema $ref), so narrow to the documented shape.
-        onPlaced((res as PublicOrderRequestResponse).id);
-      },
-      onError: (err) => {
-        // Keep the cart so the customer can adjust (e.g. item became unavailable).
-        setErrorMsg(isApiError(err) ? err.message : t('placeError'));
-      },
-    },
-  });
-
-  function placeOrder() {
-    setErrorMsg(null);
-    createOrder.mutate({
-      data: {
-        qr,
-        ...(customerName.trim() ? { customerName: customerName.trim() } : {}),
-        ...(note.trim() ? { note: note.trim() } : {}),
-        items: toOrderItems(lines),
-      },
-    });
-  }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-white"
+      role="dialog"
+      aria-modal="true"
+      data-testid="cart-view"
+    >
       <header className="sticky top-0 flex items-center gap-3 border-b border-gray-100 bg-white px-4 py-3">
         <button
           type="button"
@@ -114,47 +90,23 @@ export default function CartView({ qr, currency, locale, onClose, onPlaced }: Pr
             ))}
           </ul>
         )}
-
-        {lines.length > 0 ? (
-          <div className="mt-5 space-y-3">
-            <input
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder={t('namePlaceholder')}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-accent focus:outline-none"
-            />
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={2}
-              placeholder={t('notePlaceholder')}
-              className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-accent focus:outline-none"
-            />
-            {errorMsg ? (
-              <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">
-                {errorMsg}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
       </div>
 
       {lines.length > 0 ? (
         <div className="mx-auto w-full max-w-2xl border-t border-gray-100 px-4 py-3">
           <div className="mb-2 flex items-center justify-between text-sm">
-            <span className="text-gray-600">{t('total')}</span>
+            <span className="text-gray-600">{t('subtotalIndicative')}</span>
             <span className="font-semibold tabular-nums text-gray-900">
               {formatMoney(subtotal, currency, locale)}
             </span>
           </div>
           <button
             type="button"
-            onClick={placeOrder}
-            disabled={createOrder.isPending}
-            className="w-full rounded-xl bg-brand px-4 py-3.5 text-sm font-semibold text-white disabled:opacity-50"
+            data-testid="go-to-checkout"
+            onClick={onCheckout}
+            className="w-full rounded-xl bg-brand px-4 py-3.5 text-sm font-semibold text-white"
           >
-            {createOrder.isPending ? t('placing') : t('placeOrder')}
+            {t('checkout')}
           </button>
         </div>
       ) : null}

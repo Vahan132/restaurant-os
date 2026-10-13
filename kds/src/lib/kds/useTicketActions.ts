@@ -4,7 +4,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useCallback } from 'react';
 import {
-  getKdsControllerTicketsQueryKey,
   useKdsControllerItemReady,
   useKdsControllerOrderReady,
   useKdsControllerPreparing,
@@ -12,22 +11,23 @@ import {
 import type { NormalizedError } from '@/api/mutator';
 import type { Station } from '@/lib/realtime/client';
 import { useToast } from '@/components/Toast';
+import { branchHeaders, ticketsQueryKey } from './branchRequest';
 
 /**
- * Item/order actions. Each calls its endpoint, then invalidates the selected
- * stations' ticket queries so the board reflects the new status (the read model
- * is canonical). Errors surface as normalized toasts.
+ * Item/order actions for the pinned branch + station. Each call carries
+ * `X-Branch-Id` so the mutation — and the resulting order.ready event — stays
+ * within this branch, then invalidates this station's branch-scoped ticket query
+ * so the board reflects the new status (the read model is canonical). Errors
+ * surface as normalized toasts.
  */
-export function useTicketActions(stations: Station[]) {
+export function useTicketActions(station: Station, branchId: string) {
   const queryClient = useQueryClient();
   const t = useTranslations('board');
   const toast = useToast();
 
   const refetch = useCallback(() => {
-    stations.forEach((s) =>
-      queryClient.invalidateQueries({ queryKey: getKdsControllerTicketsQueryKey(s) }),
-    );
-  }, [queryClient, stations]);
+    queryClient.invalidateQueries({ queryKey: ticketsQueryKey(station, branchId) });
+  }, [queryClient, station, branchId]);
 
   const onError = useCallback(
     (err: unknown) => {
@@ -37,9 +37,20 @@ export function useTicketActions(stations: Station[]) {
     [toast, t],
   );
 
-  const preparing = useKdsControllerPreparing({ mutation: { onSuccess: refetch, onError } });
-  const itemReady = useKdsControllerItemReady({ mutation: { onSuccess: refetch, onError } });
-  const orderReady = useKdsControllerOrderReady({ mutation: { onSuccess: refetch, onError } });
+  const request = { headers: branchHeaders(branchId) };
+
+  const preparing = useKdsControllerPreparing({
+    mutation: { onSuccess: refetch, onError },
+    request,
+  });
+  const itemReady = useKdsControllerItemReady({
+    mutation: { onSuccess: refetch, onError },
+    request,
+  });
+  const orderReady = useKdsControllerOrderReady({
+    mutation: { onSuccess: refetch, onError },
+    request,
+  });
 
   // Destructure the (stable) mutate fns so memoized cards keep identity.
   const { mutate: startMutate } = preparing;

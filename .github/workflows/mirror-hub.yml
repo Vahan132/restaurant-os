@@ -1,0 +1,89 @@
+# ── EDGE-DIST-1 — mirror the Edge Hub dist files to the PUBLIC installer repo ──
+# On each `edge-v*` tag, push the exact set of files a restaurant admin downloads
+# into the PUBLIC `restaurant-os-hub` repo, so the repointed installers (which read
+# from raw.githubusercontent.com/Vahan132/restaurant-os-hub/main/...) resolve with
+# NO GitHub account, PAT, or package-visibility clicks.
+#
+# The dist stays AUTHORED here (api/windows, api/ubuntu, api/docker-compose.edge.yml,
+# api/.env.edge.example); this workflow only publishes a flat copy of it. Idempotent:
+# it overwrites the public copies each release and commits only when something
+# actually changed.
+#
+# Auth: HUB_MIRROR_TOKEN — a FINE-GRAINED PAT with Contents: write scoped to ONLY
+# restaurant-os-hub, stored as a secret in this repo. (GITHUB_TOKEN can't reach
+# another repo, so a dedicated token is required.)
+#
+# Note: this runs in parallel with edge-image-old.yml on the same tag. The published
+# image is normally live within the same minute; an admin who installs in that brief
+# window and hits a not-yet-pushed image just re-runs — `docker compose pull` is
+# retriable and the installer keeps the compose it already fetched.
+name: mirror-hub
+
+on:
+  push:
+    tags:
+      - 'edge-v*'
+
+# Only reads this repo's contents; the cross-repo write uses HUB_MIRROR_TOKEN.
+permissions:
+  contents: read
+
+jobs:
+  mirror-public-hub:
+    runs-on: ubuntu-latest
+    env:
+      HUB_REPO: Vahan132/restaurant-os-hub
+      TAG: ${{ github.ref_name }}
+      HUB_MIRROR_TOKEN: ${{ secrets.HUB_MIRROR_TOKEN }}
+    steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+
+      - name: Fail early if the mirror token is missing
+        run: |
+          if [ -z "${HUB_MIRROR_TOKEN}" ]; then
+            echo "::error::HUB_MIRROR_TOKEN secret is not set — cannot mirror to ${HUB_REPO}." >&2
+            echo "Add a fine-grained PAT (Contents: write, scoped to ${HUB_REPO}) as HUB_MIRROR_TOKEN." >&2
+            exit 1
+          fi
+
+      - name: Stage the flat public dist
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/hub-dist"
+          rm -rf "$stage"; mkdir -p "$stage"
+
+          # FLAT layout: the raw base is <repo>/main/<file>, so every file the admin
+          # (or the installer) fetches must live at the repo root. Copy the EXACT set
+          # an admin downloads — the whole windows/ + ubuntu/ dirs plus compose + env.
+          cp api/windows/* "$stage/"
+          cp api/ubuntu/*  "$stage/"
+          cp api/docker-compose.edge.yml "$stage/"
+          cp api/.env.edge.example       "$stage/"
+
+          echo "Staged for ${TAG}:"; ls -A "$stage"
+
+      - name: Push to the public hub repo
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/hub-dist"
+          work="$RUNNER_TEMP/hub-repo"
+          rm -rf "$work"
+          git clone --depth 1 \
+            "https://x-access-token:${HUB_MIRROR_TOKEN}@github.com/${HUB_REPO}.git" "$work"
+          cd "$work"
+          # Guarantee a `main` branch even if the public repo is still empty
+          # (first-ever mirror): on a fresh clone HEAD may be an unborn branch.
+          git checkout -B main
+          # Overwrite the mirrored dist files; preserve .git and anything else the
+          # public repo carries (e.g. a hand-written README or LICENSE).
+          cp -a "$stage/." "$work/"
+          git config user.name  "edge-mirror-bot"
+          git config user.email "edge-mirror-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No dist changes for ${TAG}; nothing to mirror."
+          else
+            git commit -m "Mirror edge dist for ${TAG}"
+            git push origin HEAD:main
+          fi

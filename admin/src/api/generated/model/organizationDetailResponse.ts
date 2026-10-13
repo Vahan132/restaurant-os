@@ -5,6 +5,7 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { OrganizationDetailResponseBillingInfo } from './organizationDetailResponseBillingInfo';
 import type { OrganizationDetailResponseRestaurantsItem } from './organizationDetailResponseRestaurantsItem';
 import type { OrganizationDetailResponseSubscription } from './organizationDetailResponseSubscription';
 
@@ -16,4 +17,8 @@ export interface OrganizationDetailResponse {
   /** @nullable */
   subscription: OrganizationDetailResponseSubscription;
   restaurants: OrganizationDetailResponseRestaurantsItem[];
+  /** @nullable */
+  billingInfo: OrganizationDetailResponseBillingInfo;
+  /** No payment processing yet — billing/payments integration pending. */
+  paymentsEnabled: boolean;
 }

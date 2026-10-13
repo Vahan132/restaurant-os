@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Order } from '../../domain/entities/order';
 import { OrderItem } from '../../domain/entities/order-item';
 import { Payment } from '../../domain/entities/payment';
@@ -58,6 +58,7 @@ export class OrderTotalsResponse {
 
 export class PaymentResponse {
   @ApiProperty() id!: string;
+  @ApiProperty() branchId!: string;
   @ApiProperty({ enum: ['CASH', 'CARD', 'BANK_TRANSFER', 'OTHER'] }) method!: string;
   @ApiProperty() amount!: number;
   @ApiProperty({ nullable: true, type: Number }) tenderedAmount!: number | null;
@@ -67,6 +68,7 @@ export class PaymentResponse {
   static from(p: Payment): PaymentResponse {
     return {
       id: p.id,
+      branchId: p.branchId,
       method: p.method,
       amount: p.amount,
       tenderedAmount: p.tenderedAmount,
@@ -79,10 +81,12 @@ export class PaymentResponse {
 export class OrderResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
+  @ApiProperty() branchId!: string;
   @ApiProperty() orderNumber!: number;
   @ApiProperty({ enum: ['DINE_IN', 'TAKEAWAY'] }) type!: string;
   @ApiProperty({ nullable: true, type: String }) tableId!: string | null;
-  @ApiProperty() waiterId!: string;
+  @ApiProperty({ nullable: true, type: String, description: 'Null for QR-web customer orders.' })
+  waiterId!: string | null;
   @ApiProperty({
     enum: ['DRAFT', 'SENT_TO_KITCHEN', 'PREPARING', 'READY', 'SERVED', 'CLOSED', 'CANCELLED'],
   })
@@ -96,11 +100,24 @@ export class OrderResponse {
   @ApiProperty() paidAmount!: number;
   @ApiProperty({ nullable: true, type: String }) splitFromOrderId!: string | null;
   @ApiProperty({ type: [PaymentResponse] }) payments!: PaymentResponse[];
+  @ApiPropertyOptional({
+    enum: ['OK', 'PENDING', 'FAILED'],
+    nullable: true,
+    description: 'FISCAL-1b: derived fiscal state; null until the order is PAID.',
+  })
+  fiscalStatus!: 'OK' | 'PENDING' | 'FAILED' | null;
+  @ApiPropertyOptional({
+    nullable: true,
+    type: String,
+    description: 'FISCAL-1b: fatal fiscal error code (staff-only); null when none.',
+  })
+  fiscalError!: string | null;
 
   static from(o: Order): OrderResponse {
     return {
       id: o.id,
       restaurantId: o.restaurantId,
+      branchId: o.branchId,
       orderNumber: o.orderNumber,
       type: o.type,
       tableId: o.tableId,
@@ -116,11 +133,13 @@ export class OrderResponse {
         totalAmount: o.totalAmount,
         currency: o.currency,
       },
-      items: o.items.map(OrderItemResponse.from),
+      items: o.items.map((i) => OrderItemResponse.from(i)),
       paymentStatus: o.paymentStatus,
       paidAmount: o.paidAmount,
       splitFromOrderId: o.splitFromOrderId,
       payments: o.payments.map(PaymentResponse.from),
+      fiscalStatus: o.fiscalStatus(),
+      fiscalError: o.fiscalError,
     };
   }
 }
@@ -131,6 +150,19 @@ export class RecordPaymentResponse {
   @ApiProperty({ description: 'Cash change (tendered - amount); 0 otherwise.' })
   changeAmount!: number;
   @ApiProperty({ type: OrderResponse }) order!: OrderResponse;
+}
+
+/** FISCAL-EDGE-4: stored fiscal receipt data for reprint (local re-render, no device). */
+export class FiscalReceiptResponse {
+  @ApiProperty() orderId!: string;
+  @ApiProperty() orderNumber!: number;
+  @ApiProperty() currency!: string;
+  @ApiProperty() totalAmount!: number;
+  @ApiProperty({ description: 'SRC device receipt id.' }) receiptId!: string;
+  @ApiProperty({ description: 'SRC fiscal number printed on the receipt.' }) fiscalNumber!: string;
+  @ApiProperty({ description: 'SRC QR string the receipt renders as a QR code.' }) qr!: string;
+  @ApiProperty({ description: 'When the fiscal receipt was issued (ISO-8601).' })
+  fiscalizedAt!: string;
 }
 
 /** Even-split breakdown (stateless calc). shares SUM EXACTLY to total. */
@@ -164,6 +196,14 @@ export class ReceiptItemLine {
 export class ReceiptPaymentLine {
   @ApiProperty({ enum: ['CASH', 'CARD', 'BANK_TRANSFER', 'OTHER'] }) method!: string;
   @ApiProperty() amount!: number;
+  @ApiProperty({
+    nullable: true,
+    type: Number,
+    description: 'Cash tendered by the customer; null for non-cash or when not recorded.',
+  })
+  tenderedAmount!: number | null;
+  @ApiProperty({ description: 'Cash change (tendered - amount); 0 otherwise.' })
+  changeAmount!: number;
 }
 
 /** Structured receipt read model. serviceFee is its own line. NO tax field. */
@@ -213,7 +253,12 @@ export class ReceiptResponse {
       totalAmount: o.totalAmount,
       payments: o.payments
         .filter((p) => p.isActive())
-        .map((p) => ({ method: p.method, amount: p.amount })),
+        .map((p) => ({
+          method: p.method,
+          amount: p.amount,
+          tenderedAmount: p.tenderedAmount,
+          changeAmount: p.changeAmount(),
+        })),
       paymentStatus: o.paymentStatus,
       footer: meta.footer,
     };

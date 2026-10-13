@@ -1,4 +1,5 @@
 import { AggregateRoot } from '../../../../shared/domain/aggregate-root';
+import { RolePermissionsUpdatedEvent } from '../events/role-events';
 import { SystemRoleNotDeletableError, UnknownPermissionError } from '../identity.errors';
 import { PermissionKey, unknownPermissionKeys } from '../permissions.catalog';
 
@@ -8,6 +9,8 @@ export interface RoleProps {
   code: string;
   permissions: PermissionKey[];
   isSystem: boolean;
+  /** ALL-BRANCH reach (FIX-E): true → the user sees/operates every branch. */
+  allBranches: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,6 +22,7 @@ export interface CreateRoleInput {
   code: string;
   permissions: string[];
   isSystem?: boolean;
+  allBranches?: boolean;
 }
 
 /**
@@ -42,6 +46,7 @@ export class Role extends AggregateRoot<string> {
       code: input.code,
       permissions,
       isSystem: input.isSystem ?? false,
+      allBranches: input.allBranches ?? false,
       createdAt: now,
       updatedAt: now,
     });
@@ -76,6 +81,10 @@ export class Role extends AggregateRoot<string> {
   get isSystem(): boolean {
     return this.props.isSystem;
   }
+  /** ALL-BRANCH reach (FIX-E). */
+  get allBranches(): boolean {
+    return this.props.allBranches;
+  }
   get createdAt(): Date {
     return this.props.createdAt;
   }
@@ -91,6 +100,9 @@ export class Role extends AggregateRoot<string> {
   replacePermissions(permissions: string[]): void {
     this.props.permissions = Role.assertValidPermissions(permissions);
     this.touch();
+    // Notify open sessions so gated UI + backend authz re-resolve live (no
+    // re-login). The relay fans this out to the role's org room.
+    this.addDomainEvent(new RolePermissionsUpdatedEvent(this.id, this.props.organizationId));
   }
 
   rename(name: string): void {

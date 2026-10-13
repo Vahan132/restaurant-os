@@ -9,14 +9,17 @@ import {
   NoRestaurantInScope,
   ReservationNotFound,
   ReservationsDisabled,
+  TableAlreadyReserved,
 } from '../application.errors';
 import {
   RESERVATION_SETTINGS_READER,
   ReservationSettingsReader,
 } from '../ports/reservation-settings.reader';
+import { tableHasOverlappingReservation } from '../services/reservation-overlap';
 
 export interface UpdateReservationInput {
   restaurantId: string | null;
+  branchId: string;
   reservationId: string;
   customerName?: string;
   customerPhone?: string;
@@ -43,7 +46,11 @@ export class UpdateReservationUseCase implements UseCase<UpdateReservationInput,
     if (!settings.enableReservations) {
       throw ReservationsDisabled();
     }
-    const reservation = await this.reservations.findById(input.restaurantId, input.reservationId);
+    const reservation = await this.reservations.findById(
+      input.restaurantId,
+      input.branchId,
+      input.reservationId,
+    );
     if (!reservation) {
       throw ReservationNotFound();
     }
@@ -56,6 +63,28 @@ export class UpdateReservationUseCase implements UseCase<UpdateReservationInput,
       durationMinutes: input.durationMinutes,
       notes: input.notes,
     });
+    // If the edit moved this reservation's time window (or it already holds a
+    // table), re-check for a double-booking on that same table — the same
+    // record-based overlap create/assign-table enforce. Excludes self so an
+    // unrelated edit (e.g. renaming the customer) is never blocked. editDetails
+    // has already applied the new reservedAt/durationMinutes above.
+    if (
+      reservation.tableId &&
+      (input.reservedAt !== undefined || input.durationMinutes !== undefined)
+    ) {
+      const overlaps = await tableHasOverlappingReservation(
+        this.reservations,
+        input.restaurantId,
+        input.branchId,
+        reservation.tableId,
+        reservation.reservedAt,
+        reservation.durationMinutes,
+        reservation.id,
+      );
+      if (overlaps) {
+        throw TableAlreadyReserved();
+      }
+    }
     await this.reservations.save(reservation);
     return reservation;
   }

@@ -11,6 +11,7 @@ export class RoleMapper {
       code: record.code,
       permissions: record.permissions as PermissionKey[],
       isSystem: record.isSystem,
+      allBranches: record.allBranches,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     });
@@ -24,6 +25,7 @@ export class RoleMapper {
       code: role.code,
       permissions: role.permissions,
       isSystem: role.isSystem,
+      allBranches: role.allBranches,
       createdAt: role.createdAt,
       updatedAt: role.updatedAt,
     };

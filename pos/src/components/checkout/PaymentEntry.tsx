@@ -119,6 +119,7 @@ export function PaymentEntry({ order, amount, onAmount, paying, onRecord }: Paym
 
       <button
         type="button"
+        data-testid="pay-submit"
         onClick={record}
         disabled={!valid || paying}
         className="h-14 w-full select-none rounded-xl bg-emerald-600 text-lg font-bold text-white active:scale-[0.98] disabled:opacity-50"

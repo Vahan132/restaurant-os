@@ -3,13 +3,16 @@ import { UseCase } from '../../../../shared/application/use-case';
 import { DomainEventPublisher } from '../../../../shared/infrastructure/events/domain-event-publisher';
 import { ID_GENERATOR, IdGenerator } from '../../../identity/application/ports/id-generator';
 import { Reservation } from '../../domain/entities/reservation';
+import { ReservationSource } from '../../domain/enums';
 import {
   RESERVATION_REPOSITORY,
   ReservationRepository,
 } from '../../domain/repositories/reservation.repository';
 import {
+  CrossBranchReference,
   NoRestaurantInScope,
   ReservationsDisabled,
+  TableAlreadyReserved,
   TableNotInRestaurant,
 } from '../application.errors';
 import {
@@ -20,10 +23,11 @@ import {
   RESERVATIONS_TABLE_READER,
   ReservationsTableReader,
 } from '../ports/reservations-table.reader';
+import { tableHasOverlappingReservation } from '../services/reservation-overlap';
 
 export interface CreateReservationInput {
   restaurantId: string | null;
-  branchId?: string | null;
+  branchId: string;
   createdByUserId: string;
   customerName: string;
   customerPhone: string;
@@ -33,6 +37,10 @@ export interface CreateReservationInput {
   durationMinutes?: number;
   tableId?: string | null;
   notes?: string | null;
+  source?: ReservationSource;
+  customerNote?: string | null;
+  /** CX-3: stamp the booking consumer (CustomerAccount id) when via the consumer app. */
+  consumerId?: string | null;
   initialStatus?: 'PENDING' | 'CONFIRMED';
 }
 
@@ -56,15 +64,32 @@ export class CreateReservationUseCase implements UseCase<CreateReservationInput,
       throw ReservationsDisabled();
     }
     if (input.tableId) {
-      const status = await this.tables.findTableStatus(input.restaurantId, input.tableId);
-      if (status === null) {
+      const table = await this.tables.findTableRef(input.restaurantId, input.tableId);
+      if (table === null) {
         throw TableNotInRestaurant();
+      }
+      // §6 intra-branch integrity: the assigned table must be in this branch.
+      if (table.branchId !== input.branchId) {
+        throw CrossBranchReference();
+      }
+      // Reject a second active reservation whose [reservedAt, +duration) window
+      // overlaps an existing active one on the SAME table (prevents double-booking).
+      const overlaps = await tableHasOverlappingReservation(
+        this.reservations,
+        input.restaurantId,
+        input.branchId,
+        input.tableId,
+        input.reservedAt,
+        input.durationMinutes,
+      );
+      if (overlaps) {
+        throw TableAlreadyReserved();
       }
     }
     const reservation = Reservation.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
-      branchId: input.branchId ?? null,
+      branchId: input.branchId,
       customerName: input.customerName,
       customerPhone: input.customerPhone,
       customerEmail: input.customerEmail ?? null,
@@ -73,6 +98,9 @@ export class CreateReservationUseCase implements UseCase<CreateReservationInput,
       durationMinutes: input.durationMinutes,
       tableId: input.tableId ?? null,
       notes: input.notes ?? null,
+      source: input.source ?? ReservationSource.STAFF,
+      customerNote: input.customerNote ?? null,
+      consumerId: input.consumerId ?? null,
       createdByUserId: input.createdByUserId,
     });
     if (input.initialStatus === 'CONFIRMED') {

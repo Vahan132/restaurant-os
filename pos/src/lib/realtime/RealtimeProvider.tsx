@@ -10,17 +10,19 @@ import {
   type ReactNode,
 } from 'react';
 import { io, type Socket } from 'socket.io-client';
-import { API_BASE_URL } from '@/api/mutator';
 import { useAuthStore } from '@/stores/auth';
+import { useBranchStore } from '@/stores/branch';
+import { resolveSocketBaseUrl, resolveSocketPath, useEndpointStore } from '@/stores/endpoint';
 
 /**
- * Realtime endpoint config. Behind the path-based reverse proxy the socket.io
- * server is reached at the bare host (NEXT_PUBLIC_SOCKET_BASE_URL) while the
- * client `path` is overridden to /res/socket.io — nginx maps that back to the
- * backend's default /socket.io/. Both fall back to dev defaults when unset.
+ * Realtime endpoint config is resolved from the device's target (see
+ * `@/stores/endpoint`):
+ *  - Cloud: the socket.io server sits behind nginx — reach the bare host
+ *    (NEXT_PUBLIC_SOCKET_BASE_URL) with the `path` overridden to /res/socket.io,
+ *    which nginx maps back to the backend's default /socket.io/.
+ *  - Local hub: connect to the hub's LAN base URL directly, with socket.io's
+ *    default path (no reverse proxy in front of the hub).
  */
-const SOCKET_BASE_URL = process.env.NEXT_PUBLIC_SOCKET_BASE_URL ?? API_BASE_URL;
-const SOCKET_PATH = process.env.NEXT_PUBLIC_SOCKET_PATH || undefined;
 
 interface RealtimeContextValue {
   socket: Socket | null;
@@ -45,6 +47,10 @@ const RealtimeContext = createContext<RealtimeContextValue>({
  */
 export function RealtimeProvider({ children }: { children: ReactNode }) {
   const accessToken = useAuthStore((s) => s.accessToken);
+  const activeBranchId = useBranchStore((s) => s.activeBranchId);
+  // Reconnect when the device's target changes (cloud <-> hub, or a new hub URL).
+  const endpointTarget = useEndpointStore((s) => s.target);
+  const hubBaseUrl = useEndpointStore((s) => s.hubBaseUrl);
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [online, setOnline] = useState(true);
@@ -70,10 +76,13 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const socket = io(`${SOCKET_BASE_URL}/realtime`, {
+    const socket = io(`${resolveSocketBaseUrl()}/realtime`, {
       transports: ['websocket'],
-      auth: { token: accessToken },
-      path: SOCKET_PATH,
+      // Include the active branch in the handshake so the server joins this
+      // socket to the right branch room — we only receive the selected branch's
+      // realtime updates (and reconnect below whenever the branch changes).
+      auth: { token: accessToken, branchId: activeBranchId ?? undefined },
+      path: resolveSocketPath(),
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
@@ -91,7 +100,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       socketRef.current = null;
       setConnected(false);
     };
-  }, [accessToken]);
+  }, [accessToken, activeBranchId, endpointTarget, hubBaseUrl]);
 
   const value = useMemo<RealtimeContextValue>(
     () => ({ socket: socketRef.current, connected, online }),

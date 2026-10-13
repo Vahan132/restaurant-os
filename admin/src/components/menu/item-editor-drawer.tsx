@@ -11,6 +11,8 @@ import {
   useItemsControllerStatus,
   useItemsControllerUpdate,
 } from '@/api/generated/menu-items/menu-items';
+import { useMediaControllerPresignMenuItemImage } from '@/api/generated/media/media';
+import { useTenantFiscalControllerDepartments } from '@/api/generated/fiscal/fiscal';
 import {
   CreateMenuItemDtoPreparationStation,
   MenuItemResponseAvailability,
@@ -22,13 +24,26 @@ import {
 } from '@/api/generated/model';
 import { Can } from '@/components/auth/can';
 import { ModifierGroupsEditor } from '@/components/menu/modifier-groups-editor';
+import {
+  TranslationFields,
+  descriptionTranslationFields,
+  nameTranslationFields,
+  primaryLocaleName,
+  toI18nDraft,
+  EMPTY_I18N,
+  type I18nDraft,
+} from '@/components/menu/translation-fields';
+import { RecipeCostPanel } from '@/components/inventory/recipe-cost-panel';
 import { Button } from '@/components/ui/button';
 import { Drawer } from '@/components/ui/drawer';
 import { Field, inputClass } from '@/components/ui/form';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { getErrorMessage } from '@/lib/api-error';
 import { usePermission } from '@/lib/auth/use-permission';
+import { useRecipeForMenuItem } from '@/lib/inventory/use-recipe-data';
 import { useMenuInvalidation } from '@/lib/menu/use-menu-invalidation';
-import { minorToInput, toMinor } from '@/lib/money';
+import { useRestaurant } from '@/lib/restaurant/use-restaurant';
+import { formatMoney, minorToInput, toMinor } from '@/lib/money';
 import { PERMISSIONS } from '@/lib/permissions';
 import { toast } from '@/stores/toast';
 
@@ -40,18 +55,27 @@ export function ItemEditorDrawer({
   categories,
   currency,
   onClose,
+  initialTab = 'details',
 }: {
   itemId: string | null;
   categoryId: string | null;
   categories: CategoryResponse[];
   currency: string;
   onClose: () => void;
+  initialTab?: 'details' | 'recipe';
 }) {
   const t = useTranslations('menu');
   const tc = useTranslations('common');
+  const ti = useTranslations('inventory');
   const canManage = usePermission(PERMISSIONS.MENU_MANAGE);
+  const canSetPrice = usePermission(PERMISSIONS.MENU_ITEM_SET_PRICE);
+  const canManageRecipe = usePermission(PERMISSIONS.INVENTORY_RECIPE_MANAGE);
   const { invalidateItems, invalidateItem, invalidateMenuTree, invalidateCategories } =
     useMenuInvalidation();
+  const { data: restaurant } = useRestaurant();
+  const primaryLocale = restaurant?.defaultLanguage;
+
+  const [tab, setTab] = useState<'details' | 'recipe'>(initialTab);
 
   // After a create, we switch to edit mode for the new item so the user can
   // immediately manage its modifiers without closing the drawer.
@@ -62,35 +86,67 @@ export function ItemEditorDrawer({
   });
   const detail = detailQuery.data;
 
+  // FISCAL-DEPT-3B: the active branch's registered fiscal departments (scoped by
+  // X-Branch-Id — the same context the item is created/edited under). Drives the
+  // department dropdown; an empty list (non-fiscal or unconfigured) disables it.
+  const departmentsQuery = useTenantFiscalControllerDepartments();
+  const fiscalDepartments = departmentsQuery.data?.departments ?? [];
+
+  // Recipe estimated cost drives the margin helper (read-only to everyone).
+  const { recipe } = useRecipeForMenuItem(workingId);
+  const estimatedCost = recipe?.estimatedUnitCost_amount ?? null;
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [nameI18n, setNameI18n] = useState<I18nDraft>(EMPTY_I18N);
+  const [descriptionI18n, setDescriptionI18n] = useState<I18nDraft>(EMPTY_I18N);
   const [formCategoryId, setFormCategoryId] = useState(categoryId ?? categories[0]?.id ?? '');
   const [priceInput, setPriceInput] = useState('0');
   const [imageUrl, setImageUrl] = useState('');
+  const [imageKey, setImageKey] = useState<string | undefined>(undefined);
   const [station, setStation] = useState<string>(CreateMenuItemDtoPreparationStation.KITCHEN);
   const [prepTime, setPrepTime] = useState('');
   const [status, setStatus] = useState<string>(MenuItemResponseStatus.ACTIVE);
   const [availability, setAvailability] = useState<string>(
     MenuItemResponseAvailability.AVAILABLE,
   );
-  const [errors, setErrors] = useState<{ name?: string; category?: string; price?: string }>({});
+  // ADGCODE-UI: the dish-level SRC ATG classifier code (free-text; soft-warned only,
+  // never blocks save — SRC is the real validator at fiscalization).
+  const [adgCode, setAdgCode] = useState('');
+  // FISCAL-DEPT-3B: selected fiscal department code ('' = unassigned).
+  const [dep, setDep] = useState('');
+  const [errors, setErrors] = useState<{
+    name?: string;
+    category?: string;
+    price?: string;
+  }>({});
 
   // Populate the form from the fetched item (edit mode / after create).
   useEffect(() => {
     if (!detail) return;
     setName(detail.name);
     setDescription(detail.description ?? '');
+    setNameI18n(toI18nDraft(detail.nameI18n));
+    setDescriptionI18n(toI18nDraft(detail.descriptionI18n));
     setFormCategoryId(detail.categoryId);
     setPriceInput(minorToInput(detail.priceAmount, currency));
     setImageUrl(detail.imageUrl ?? '');
+    setImageKey(detail.imageKey ?? undefined);
     setStation(detail.preparationStation);
     setPrepTime(detail.prepTimeMinutes != null ? String(detail.prepTimeMinutes) : '');
     setStatus(detail.status);
     setAvailability(detail.availability);
+    setAdgCode(detail.adgCode ?? '');
+    setDep(detail.dep ?? '');
   }, [detail, currency]);
+
+  // ADGCODE-UI: accept 4–15 digits (SRC ATG codes are numeric). Empty is allowed
+  // (not yet classified); we do NOT check the value against the SRC lists (v1).
+  const ADG_CODE_RE = /^\d{4,15}$/;
 
   const create = useItemsControllerCreate();
   const update = useItemsControllerUpdate();
+  const presignImage = useMediaControllerPresignMenuItemImage();
   const priceMut = useItemsControllerPrice();
   const statusMut = useItemsControllerStatus();
   const availabilityMut = useItemsControllerAvailability();
@@ -117,19 +173,33 @@ export function ItemEditorDrawer({
 
     try {
       if (!workingId) {
-        // CREATE: general fields + price together, then status/availability if
-        // the user changed them away from the server defaults.
+        // CREATE: general fields first, then price/status/availability via their
+        // dedicated endpoints (the create DTO no longer carries those).
         const created = (await create.mutateAsync({
           data: {
             name: name.trim(),
             categoryId: formCategoryId,
-            priceAmount: priceMinor ?? 0,
             description: description.trim() || undefined,
-            imageUrl: imageUrl.trim() || undefined,
+            imageUrl: imageKey ? undefined : imageUrl.trim() || undefined,
+            imageKey: imageKey || undefined,
             preparationStation: station as CreateMenuItemDtoPreparationStation,
             prepTimeMinutes,
+            // FISCAL-DEPT-3B: send the picked department on create ('' = omit, stays
+            // unassigned). Backend validates it against the branch's registered set.
+            dep: dep.trim() || undefined,
+            ...nameTranslationFields(primaryLocale, nameI18n),
+            ...descriptionTranslationFields(primaryLocale, descriptionI18n),
           },
         })) as MenuItemResponse;
+
+        // Price is set via its dedicated (audited) endpoint after create, since
+        // CreateMenuItemDto no longer accepts a price.
+        if (canSetPrice && (priceMinor ?? 0) > 0) {
+          await priceMut.mutateAsync({
+            id: created.id,
+            data: { priceAmount: priceMinor ?? 0 },
+          });
+        }
 
         if (status !== MenuItemResponseStatus.ACTIVE) {
           await statusMut.mutateAsync({
@@ -143,6 +213,10 @@ export function ItemEditorDrawer({
             data: { availability: availability as SetItemAvailabilityDtoAvailability },
           });
         }
+        // ADGCODE-UI: create DTO can't carry adgCode; set it via PATCH after create.
+        if (adgCode.trim()) {
+          await update.mutateAsync({ id: created.id, data: { adgCode: adgCode.trim() } });
+        }
         await Promise.all([invalidateItems(), invalidateMenuTree(), invalidateCategories()]);
         toast.success(t('toast.itemCreated'));
         setWorkingId(created.id);
@@ -154,13 +228,22 @@ export function ItemEditorDrawer({
           data: {
             name: name.trim(),
             description: description.trim() || undefined,
-            imageUrl: imageUrl.trim() || undefined,
+            imageUrl: imageKey ? undefined : imageUrl.trim() || undefined,
+            imageKey: imageKey || undefined,
             categoryId: formCategoryId,
             preparationStation: station as CreateMenuItemDtoPreparationStation,
             prepTimeMinutes,
+            // Send the current field value (populated from the dish on load, so an
+            // untouched code is preserved); an empty string clears it.
+            adgCode: adgCode.trim(),
+            // FISCAL-DEPT-3B: same partial-update semantics as adgCode — send the
+            // current selection; empty string clears (unassigns) the department.
+            dep: dep.trim(),
+            ...nameTranslationFields(primaryLocale, nameI18n),
+            ...descriptionTranslationFields(primaryLocale, descriptionI18n),
           },
         });
-        if ((priceMinor ?? 0) !== detail.priceAmount) {
+        if (canSetPrice && (priceMinor ?? 0) !== detail.priceAmount) {
           await priceMut.mutateAsync({ id: workingId, data: { priceAmount: priceMinor ?? 0 } });
           toast.success(t('toast.priceUpdated'));
         }
@@ -192,6 +275,16 @@ export function ItemEditorDrawer({
   const title = workingId ? t('editItem') : t('addItem');
   const loadingDetail = !!workingId && detailQuery.isLoading;
 
+  // Margin helper (visible to anyone with read): price − estimated cost.
+  const priceMinorNow = toMinor(priceInput, currency);
+  const marginMinor =
+    priceMinorNow != null && estimatedCost != null ? priceMinorNow - estimatedCost : null;
+  const marginPct =
+    marginMinor != null && priceMinorNow != null && priceMinorNow > 0
+      ? (marginMinor / priceMinorNow) * 100
+      : null;
+  const modifierOptions = (detail?.modifierGroups ?? []).flatMap((g) => g.options);
+
   return (
     <Drawer
       open
@@ -217,9 +310,32 @@ export function ItemEditorDrawer({
           ))}
         </div>
       ) : (
-        <div className="space-y-5">
-          <div className="space-y-3">
-            <Field label={t('itemName')} required error={errors.name}>
+        <>
+          <div className="mb-4 flex gap-1 border-b border-gray-200">
+            {(['details', 'recipe'] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTab(key)}
+                className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                  tab === key
+                    ? 'border-brand text-brand'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {key === 'details' ? ti('tabDetails') : ti('tabRecipe')}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'details' ? (
+            <div className="space-y-5">
+              <div className="space-y-3">
+                <Field
+                  label={`${t('itemName')} (${primaryLocaleName(primaryLocale)})`}
+                  required
+                  error={errors.name}
+                >
               <input
                 className={inputClass}
                 value={name}
@@ -227,7 +343,14 @@ export function ItemEditorDrawer({
                 onChange={(e) => setName(e.target.value)}
               />
             </Field>
-            <Field label={t('description')}>
+            <TranslationFields
+              primaryLocale={primaryLocale}
+              label={t('itemName')}
+              value={nameI18n}
+              onChange={setNameI18n}
+              disabled={!canManage}
+            />
+            <Field label={`${t('description')} (${primaryLocaleName(primaryLocale)})`}>
               <textarea
                 className={inputClass}
                 rows={2}
@@ -236,6 +359,14 @@ export function ItemEditorDrawer({
                 onChange={(e) => setDescription(e.target.value)}
               />
             </Field>
+            <TranslationFields
+              primaryLocale={primaryLocale}
+              label={t('description')}
+              value={descriptionI18n}
+              onChange={setDescriptionI18n}
+              multiline
+              disabled={!canManage}
+            />
             <div className="grid grid-cols-2 gap-3">
               <Field label={t('category')} required error={errors.category}>
                 <select
@@ -251,14 +382,23 @@ export function ItemEditorDrawer({
                   ))}
                 </select>
               </Field>
-              <Field label={`${t('price')} (${currency})`} required error={errors.price}>
+              <Field label={`${ti('sellPrice')} (${currency})`} required error={errors.price}>
                 <input
                   inputMode="decimal"
                   className={inputClass}
                   value={priceInput}
-                  disabled={!canManage}
+                  disabled={!canSetPrice}
                   onChange={(e) => setPriceInput(e.target.value)}
                 />
+                {!canSetPrice && (
+                  <span className="mt-1 block text-xs text-gray-400">{ti('priceReadOnly')}</span>
+                )}
+                {marginMinor != null && (
+                  <span className="mt-1 block text-xs text-gray-500">
+                    {ti('margin')}: {formatMoney(marginMinor, currency)}
+                    {marginPct != null && ` (${marginPct.toFixed(1)}%)`}
+                  </span>
+                )}
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -287,14 +427,68 @@ export function ItemEditorDrawer({
                 />
               </Field>
             </div>
+            <Field label={t('adgCode')}>
+              <input
+                className={inputClass}
+                value={adgCode}
+                disabled={!canManage}
+                inputMode="numeric"
+                placeholder={t('adgCodePlaceholder')}
+                onChange={(e) => setAdgCode(e.target.value)}
+              />
+              {adgCode.trim() && !ADG_CODE_RE.test(adgCode.trim()) ? (
+                <span className="mt-1 block text-xs text-amber-600">{t('adgCodeWarning')}</span>
+              ) : (
+                <span className="mt-1 block text-xs text-gray-500">{t('adgCodeHelper')}</span>
+              )}
+            </Field>
+            {/* FISCAL-DEPT-3B: department dropdown — options come only from the
+                branch's registered fiscal departments (label + dep, submits dep).
+                Empty list (non-fiscal / unconfigured) disables it with a setup hint,
+                never free text. Optional at the data layer; required at fiscalize on
+                a fiscal-active branch (see the coverage view). */}
+            <Field label={t('department')}>
+              <select
+                className={inputClass}
+                value={dep}
+                disabled={!canManage || fiscalDepartments.length === 0}
+                onChange={(e) => setDep(e.target.value)}
+              >
+                <option value="">{t('departmentUnassigned')}</option>
+                {fiscalDepartments.map((d) => (
+                  <option key={d.dep} value={d.dep}>
+                    {d.label ? `${d.label} (${d.dep})` : d.dep}
+                  </option>
+                ))}
+              </select>
+              {fiscalDepartments.length === 0 ? (
+                <span className="mt-1 block text-xs text-amber-600">
+                  {t('departmentNoneHint')}
+                </span>
+              ) : (
+                <span className="mt-1 block text-xs text-gray-500">{t('departmentHelper')}</span>
+              )}
+            </Field>
             <Field label={t('imageUrl')}>
               <input
                 className={inputClass}
                 value={imageUrl}
                 disabled={!canManage}
-                onChange={(e) => setImageUrl(e.target.value)}
+                onChange={(e) => {
+                  setImageUrl(e.target.value);
+                  setImageKey(undefined);
+                }}
               />
             </Field>
+            <ImageUpload
+              previewUrl={imageUrl || null}
+              disabled={!canManage}
+              presign={async (contentType) => {
+                const r = await presignImage.mutateAsync({ data: { contentType } });
+                return { url: r.url, key: r.key };
+              }}
+              onUploaded={(key) => setImageKey(key)}
+            />
             <div className="grid grid-cols-2 gap-3">
               <Field label={t('status')}>
                 <select
@@ -339,8 +533,21 @@ export function ItemEditorDrawer({
                 {t('saveItemFirst')}
               </p>
             )}
-          </div>
-        </div>
+              </div>
+            </div>
+          ) : workingId && detail ? (
+            <RecipeCostPanel
+              menuItemId={workingId}
+              currency={currency}
+              modifierOptions={modifierOptions}
+              canManage={canManageRecipe}
+            />
+          ) : (
+            <p className="rounded-md border border-dashed border-gray-300 p-4 text-center text-sm text-gray-500">
+              {ti('saveItemFirstRecipe')}
+            </p>
+          )}
+        </>
       )}
     </Drawer>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
@@ -10,11 +11,17 @@ export default function LanguageSwitcher() {
   const t = useTranslations('language');
   const active = useLocale();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
 
   function change(next: Locale) {
     // Persist for one year; no locale path segment (path is the slug).
     document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
+    // The menu is fetched client-side via React Query with locale-independent
+    // keys, so router.refresh() (RSC only) won't re-request it. Invalidate so the
+    // next fetch carries the new X-Locale and localized content replaces the
+    // stale copy immediately.
+    void queryClient.invalidateQueries();
     startTransition(() => router.refresh());
   }
 

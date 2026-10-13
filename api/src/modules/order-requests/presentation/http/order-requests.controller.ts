@@ -7,6 +7,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Paginated } from '../../../../shared/application/pagination';
+import { ActiveBranchId } from '../../../../shared/auth/active-branch.decorator';
+import { BranchScoped } from '../../../../shared/auth/branch-scoped.decorator';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
 import { CurrentUser } from '../../../../shared/tenancy/current-user.decorator';
@@ -26,6 +28,7 @@ const P = PERMISSIONS;
 
 @ApiTags('order-requests')
 @ApiBearerAuth('access-token')
+@BranchScoped()
 @Controller('order-requests')
 export class OrderRequestsController {
   constructor(
@@ -41,10 +44,12 @@ export class OrderRequestsController {
   @ApiOkResponse({ type: [StaffOrderRequestResponse] })
   async list(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Query() query: ListOrderRequestsQuery,
   ): Promise<Paginated<StaffOrderRequestResponse>> {
     return this.listRequests.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       status: query.status,
       page: query.page,
       limit: query.limit,
@@ -61,11 +66,13 @@ export class OrderRequestsController {
   @ApiOkResponse({ type: OrderResponse })
   async confirm(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
   ): Promise<OrderResponse> {
     const order = await this.confirmRequest.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       requestId: id,
       userId: user.sub,
     });
@@ -80,12 +87,14 @@ export class OrderRequestsController {
   @ApiOkResponse({ type: StaffOrderRequestResponse })
   async reject(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Body() dto: RejectOrderRequestDto,
   ): Promise<StaffOrderRequestResponse> {
     const request = await this.rejectRequest.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       requestId: id,
       userId: user.sub,
       reason: dto.reason ?? null,

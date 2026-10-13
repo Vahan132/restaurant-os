@@ -2,13 +2,17 @@
 
 import { useCallback, useState } from 'react';
 import { axiosInstance, NormalizedError } from '@/api/mutator';
-import { AuthUser, useAuthStore } from './store';
+import { AuthUser, BranchAccess, useAuthStore } from './store';
 import { realtimeClient } from '@/lib/realtime/client';
+import { useBranchStore } from '@/lib/branch/store';
 import { useStationStore } from '@/lib/station/store';
 
 interface MePayload {
   user: AuthUser;
   permissions: string[];
+  allBranches: boolean;
+  accessibleBranches: BranchAccess[];
+  defaultBranchId: string | null;
 }
 
 /**
@@ -34,7 +38,13 @@ export function useAuth() {
         const me = await axiosInstance
           .get('/auth/me')
           .then((r) => unwrapData<MePayload>(r.data));
-        setMe(me.user, me.permissions);
+        setMe({
+          user: me.user,
+          permissions: me.permissions,
+          allBranches: me.allBranches,
+          accessibleBranches: me.accessibleBranches,
+          defaultBranchId: me.defaultBranchId,
+        });
         return true;
       } catch (e) {
         setError(e as NormalizedError);
@@ -58,6 +68,7 @@ export function useAuth() {
     } finally {
       realtimeClient.disconnect();
       useStationStore.getState().clear();
+      useBranchStore.getState().clear();
       clear();
     }
   }, [clear]);

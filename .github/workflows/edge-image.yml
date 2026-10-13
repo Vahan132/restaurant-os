@@ -1,0 +1,169 @@
+# ── EDGE-PKG-1 — build & publish the edge hub image ─────────────────────────
+# Builds api/Dockerfile and publishes a PUBLIC, multi-arch (amd64 + arm64) image
+# to GitHub Container Registry so any Docker host can `pull` it with no creds.
+#
+# Trigger: push a tag matching `edge-v*` (e.g. `edge-v0.1.0`). The image is
+# tagged with that exact version AND `latest`, so an admin can pin
+# (EDGE_IMAGE_TAG=edge-v0.1.0) or track the newest (`latest`).
+#
+#   git tag edge-v0.1.0 && git push origin edge-v0.1.0
+#
+# A tag push ALSO cuts a GitHub Release and attaches every installer asset (see
+# the `release` job) so a restaurant admin gets real download links instead of
+# "clone the private repo" — release assets are public even on a private repo.
+#
+# Manual dry-run: the workflow_dispatch path builds both arches but does NOT push
+# (verifies the Dockerfile still builds multi-arch without cutting a release) and
+# does NOT create a Release.
+#
+# One-time setup: after the FIRST successful publish, make the package public —
+# GitHub → your profile → Packages → restaurant-os-edge → Package settings →
+# Danger Zone → Change visibility → Public. (GHCR packages start private; this is
+# a one-time click. Nothing secret is in the image, so public is safe by design.)
+
+name: edge-image
+
+on:
+  push:
+    tags:
+      - 'edge-v*'
+  workflow_dispatch: {} # manual multi-arch build (no push) to validate the Dockerfile
+
+# GITHUB_TOKEN needs package write to push to ghcr.io. `contents: read` to check out.
+# The `release` job raises this to `contents: write` at the job level so it can
+# create the GitHub Release.
+permissions:
+  contents: read
+  packages: write
+
+env:
+  # ghcr requires a lowercase owner; hardcoded so forks/renames are explicit.
+  IMAGE: ghcr.io/vahan132/restaurant-os-edge
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # QEMU lets a single amd64 runner cross-build the arm64 layer.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Only log in when we intend to push (tag builds). Dispatch dry-runs skip it.
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Derive tags/labels from the git ref. On `edge-v0.1.0` this yields
+      # `:edge-v0.1.0` (+ `:latest`, since it's a semver-shaped release tag).
+      - name: Compute image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
+
+      - name: Build and push (multi-arch)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          file: ./api/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          # Push only on a real tag; workflow_dispatch just proves the build.
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── EDGE-OFFLINE-UI — build & publish the hub reverse-proxy image ────────────
+  # nginx with the LAN /res/* routing baked in (api/edge-proxy/). PUBLIC + multi-
+  # arch so any hub pulls it with no creds. Tagged like the api image (edge-v* +
+  # latest), so docker-compose.edge.yml references it via EDGE_IMAGE_TAG.
+  # One-time: flip the restaurant-os-edge-proxy GHCR package to Public after the
+  # first publish (same as restaurant-os-edge).
+  build-proxy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compute image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/vahan132/restaurant-os-edge-proxy
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
+      - name: Build and push (multi-arch)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api/edge-proxy
+          file: ./api/edge-proxy/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # ── EDGE-PKG-4 — cut the release notes (changelog only) ──────────────────────
+  # Runs only on a real `edge-v*` tag (never the dispatch dry-run). Records a
+  # GitHub Release purely for the changelog. It attaches NO installer assets: the
+  # installer/compose/env files are published to the PUBLIC `restaurant-os-hub`
+  # repo by `mirror-hub.yml`, and both installers fetch them from that repo's raw
+  # URLs. Private-repo release-asset downloads are auth-walled, so they are
+  # deliberately NOT part of any install path.
+  release:
+    needs: build-and-push
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the Release (notes only)
+    steps:
+      - name: Create Release (notes only)
+        uses: softprops/action-gh-release@v2
+        with:
+          # The tag that triggered the run (refs/tags/edge-v0.1.0 -> edge-v0.1.0).
+          tag_name: ${{ github.ref_name }}
+          name: Restaurant OS Edge Hub ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            Restaurant OS Edge Hub — release notes for `${{ github.ref_name }}`.
+
+            Public image: `${{ env.IMAGE }}:${{ github.ref_name }}` (and `:latest`).
+
+            Installers are published to the PUBLIC hub repo (no GitHub account, no
+            login, no token): https://github.com/Vahan132/restaurant-os-hub
+
+            **Windows** — download `install-hub.bat` + the `*.ps1` scripts from the
+            hub repo and double-click `install-hub.bat`. See `EDGE_HUB_WINDOWS_GUIDE.md`.
+
+            **Ubuntu / Debian** — one command:
+            ```bash
+            curl -fsSLO https://raw.githubusercontent.com/Vahan132/restaurant-os-hub/main/install-hub.sh
+            sudo bash install-hub.sh
+            ```
+            See `EDGE_HUB_UBUNTU_GUIDE.md`.

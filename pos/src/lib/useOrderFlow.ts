@@ -11,10 +11,9 @@ import { useTablesControllerChangeStatus } from '@/api/generated/tables/tables';
 import type { OrderResponse } from '@/api/generated/model';
 import type { ApiError } from '@/api/mutator';
 import { toast } from '@/lib/toast';
-import { useAuthMe } from '@/lib/useAuthMe';
 import { useFloorDataInvalidator } from '@/lib/useActiveOrders';
 import { isOpenOrder } from '@/lib/orders';
-import { PERMISSIONS } from '@/lib/permissions';
+import { PERMISSIONS, useEffectivePermissions } from '@/lib/permissions';
 
 const TAKEAWAY_KEY = '__takeaway__';
 
@@ -32,7 +31,7 @@ const TAKEAWAY_KEY = '__takeaway__';
 export function useOrderFlow() {
   const router = useRouter();
   const t = useTranslations('flow');
-  const { data: me } = useAuthMe();
+  const permissions = useEffectivePermissions();
   const create = useOrdersControllerCreate();
   const changeStatus = useTablesControllerChangeStatus();
   const invalidate = useFloorDataInvalidator();
@@ -44,8 +43,8 @@ export function useOrderFlow() {
   }, []);
 
   const can = useCallback(
-    (permission: string) => (me?.permissions ?? []).includes(permission),
-    [me],
+    (permission: string) => permissions.includes(permission),
+    [permissions],
   );
 
   const goToOrder = useCallback(

@@ -1,0 +1,16 @@
+# ── EDGE-PKG-1 — local DEV override: build the edge image from source ────────
+# The canonical docker-compose.edge.yml PULLS the published GHCR image (what an
+# admin runs). Developers who want to build from local source instead layer this
+# override, which replaces the pulled image with a local `build:`:
+#
+#   docker compose -f docker-compose.edge.yml -f docker-compose.edge.build.yml \
+#     --env-file .env.edge up -d --build
+#
+# (This is exactly what the `pnpm edge:up` / `edge:down` scripts do.)
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # A local tag so `docker compose` doesn't try to pull ghcr on build runs.
+    image: restaurant-os-edge:local

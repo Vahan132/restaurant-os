@@ -12,5 +12,6 @@ export interface ReceiptMeta {
 
 /** Reads receipt metadata. Impl in infrastructure (tenant-scoped). */
 export interface ReceiptReader {
-  get(restaurantId: string, waiterId: string, tableId: string | null): Promise<ReceiptMeta>;
+  /** waiterId is null for QR-web customer orders (no "served by"). */
+  get(restaurantId: string, waiterId: string | null, tableId: string | null): Promise<ReceiptMeta>;
 }

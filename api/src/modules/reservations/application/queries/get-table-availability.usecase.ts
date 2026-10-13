@@ -13,6 +13,7 @@ import {
 
 export interface GetTableAvailabilityInput {
   restaurantId: string | null;
+  branchId: string;
   windowStart: Date;
   windowEnd: Date;
 }
@@ -37,9 +38,10 @@ export class GetTableAvailabilityUseCase implements UseCase<
       throw NoRestaurantInScope();
     }
     const startMs = input.windowStart.getTime();
-    const tables = await this.tables.listActiveTables(input.restaurantId);
+    const tables = await this.tables.listActiveTables(input.restaurantId, input.branchId);
     const candidates = await this.reservations.findActiveWithTableBefore(
       input.restaurantId,
+      input.branchId,
       input.windowEnd,
     );
     // keep only reservations whose [reservedAt, +duration) actually overlaps the window

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { z } from "zod";
 import { useLocale, useTranslations } from "next-intl";
@@ -8,21 +8,25 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Stepper } from "./Stepper";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
 import {
   usePlans,
   useSubdomainAvailability,
+  useEmailAvailability,
   useSignup,
   planFeatures,
   type PublicPlanResponse,
 } from "@/api/hooks";
+import { normalizeError } from "@/api/http-client";
 import { useAuthStore, type SessionUser } from "@/stores/auth";
 import { formatMoney } from "@/lib/money";
 import { validateSlugFormat, slugify, SLUG_MIN, SLUG_MAX, type SlugReason } from "@/lib/slug";
 import { buildCustomerUrl } from "@/lib/platform";
 import { cn } from "@/lib/cn";
-import { toast, toastError } from "@/lib/toast";
+import { toast } from "@/lib/toast";
+import { useApiError } from "@/hooks/useApiError";
 
 type Data = {
   ownerName: string;
@@ -37,6 +41,8 @@ type Data = {
   timezone: string;
   agreeTerms: boolean;
 };
+
+const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function useDebounced<T>(value: T, delay = 400): T {
   const [v, setV] = useState(value);
@@ -54,6 +60,7 @@ export function SignupWizard() {
   const params = useSearchParams();
   const setSession = useAuthStore((s) => s.setSession);
   const signup = useSignup();
+  const { message: errorMessage, toastError } = useApiError();
 
   const STEPS = [t("steps.account"), t("steps.plan"), t("steps.restaurant")];
 
@@ -90,12 +97,24 @@ export function SignupWizard() {
     slug: "",
     currency: "USD",
     defaultLanguage: "en",
-    timezone:
-      typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC",
+    timezone: "UTC",
     agreeTerms: false,
   }));
 
-  const set = (patch: Partial<Data>) => setData((d) => ({ ...d, ...patch }));
+  const set = (patch: Partial<Data>) => {
+    setData((d) => ({ ...d, ...patch }));
+    setErrors((prev) => {
+      const touched = Object.keys(patch).filter((k) => prev[k]);
+      if (!touched.length) return prev;
+      const next = { ...prev };
+      for (const k of touched) delete next[k];
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    setData((d) => ({ ...d, timezone: detectTimezone() }));
+  }, []);
 
   // --- Plans -------------------------------------------------------------
   const plansQuery = usePlans();
@@ -133,6 +152,20 @@ export function SignupWizard() {
     return { kind: "idle" as const };
   }, [data.slug, slugFormat, debouncedSlug, availabilityQuery.isFetching, availabilityQuery.data]);
 
+  const emailFormatValid = EMAIL_FORMAT.test(data.email.trim());
+  const debouncedEmail = useDebounced(data.email);
+  const emailCheckEnabled = emailFormatValid && debouncedEmail === data.email;
+  const emailQuery = useEmailAvailability(debouncedEmail.trim().toLowerCase(), emailCheckEnabled);
+
+  const emailState = useMemo<EmailStateValue>(() => {
+    if (!data.email || !emailFormatValid) return { kind: "idle" };
+    if (debouncedEmail !== data.email || emailQuery.isFetching) return { kind: "checking" };
+    if (emailQuery.data) {
+      return emailQuery.data.available ? { kind: "available" } : { kind: "unavailable" };
+    }
+    return { kind: "idle" };
+  }, [data.email, emailFormatValid, debouncedEmail, emailQuery.isFetching, emailQuery.data]);
+
   // --- Step navigation ---------------------------------------------------
   function validateStep(target: number): boolean {
     setErrors({});
@@ -142,6 +175,9 @@ export function SignupWizard() {
         setErrors(fieldErrors(r.error));
         return false;
       }
+      if (emailState.kind !== "available") {
+        return false;
+      }
       if (!data.agreeTerms) {
         setErrors({ agreeTerms: tv("agreeTerms") });
         return false;
@@ -149,7 +185,7 @@ export function SignupWizard() {
     }
     if (step === 1) {
       if (!data.planCode) {
-        toast.error(t("plan.chooseToContinue"));
+        setErrors({ planCode: t("plan.chooseToContinue") });
         return false;
       }
     }
@@ -201,6 +237,17 @@ export function SignupWizard() {
       toast.success(t("toastSuccess"), { description: t("toastSuccessDesc") });
       router.replace("/account");
     } catch (err) {
+      const { code } = normalizeError(err);
+      if (code === "EMAIL_TAKEN") {
+        setErrors({ email: errorMessage(err) });
+        setStep(0);
+        return;
+      }
+      if (code === "SLUG_TAKEN" || code === "INVALID_SLUG") {
+        setErrors({ slug: errorMessage(err) });
+        setStep(2);
+        return;
+      }
       toastError(err, t("toastError"));
     }
   }
@@ -247,10 +294,11 @@ export function SignupWizard() {
                   id="email"
                   type="email"
                   value={data.email}
-                  invalid={!!errors.email}
+                  invalid={!!errors.email || emailState.kind === "unavailable"}
                   autoComplete="email"
                   onChange={(e) => set({ email: e.target.value })}
                 />
+                <EmailStatus state={emailState} />
               </Field>
               <Field
                 label={t("account.password")}
@@ -259,9 +307,8 @@ export function SignupWizard() {
                 hint={t("account.passwordHint")}
                 required
               >
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   value={data.password}
                   invalid={!!errors.password}
                   autoComplete="new-password"
@@ -329,11 +376,20 @@ export function SignupWizard() {
                       key={plan.code}
                       plan={plan}
                       selected={data.planCode === plan.code}
-                      onSelect={() => set({ planCode: plan.code })}
+                      invalid={!!errors.planCode}
+                      onSelect={() => {
+                        set({ planCode: plan.code });
+                        if (errors.planCode) setErrors({});
+                      }}
                     />
                   ))}
                 </div>
               )}
+              {errors.planCode ? (
+                <p className="text-xs font-medium text-terracotta-ink" role="alert">
+                  {errors.planCode}
+                </p>
+              ) : null}
             </div>
           )}
 
@@ -387,7 +443,7 @@ export function SignupWizard() {
                   <Select
                     id="currency"
                     value={data.currency}
-                    onChange={(e) => set({ currency: e.target.value })}
+                    onChange={(v) => set({ currency: v })}
                     options={[
                       ["USD", "USD ($)"],
                       ["EUR", "EUR (€)"],
@@ -401,7 +457,7 @@ export function SignupWizard() {
                   <Select
                     id="defaultLanguage"
                     value={data.defaultLanguage}
-                    onChange={(e) => set({ defaultLanguage: e.target.value })}
+                    onChange={(v) => set({ defaultLanguage: v })}
                     options={[
                       ["en", "English"],
                       ["hy", "Հայերեն"],
@@ -410,11 +466,11 @@ export function SignupWizard() {
                   />
                 </Field>
                 <Field label={t("restaurant.timezone")} htmlFor="timezone" error={errors.timezone}>
-                  <Input
+                  <Select
                     id="timezone"
                     value={data.timezone}
-                    invalid={!!errors.timezone}
-                    onChange={(e) => set({ timezone: e.target.value })}
+                    onChange={(v) => set({ timezone: v })}
+                    options={TIMEZONE_OPTIONS}
                   />
                 </Field>
               </div>
@@ -470,10 +526,12 @@ function fieldErrors(error: z.ZodError): Record<string, string> {
 function PlanOption({
   plan,
   selected,
+  invalid,
   onSelect,
 }: {
   plan: PublicPlanResponse;
   selected: boolean;
+  invalid?: boolean;
   onSelect: () => void;
 }) {
   const t = useTranslations("signup.plan");
@@ -488,7 +546,9 @@ function PlanOption({
         "flex w-full items-start justify-between gap-4 rounded-xl border p-4 text-left transition-all",
         selected
           ? "border-terracotta bg-terracotta-soft/50 shadow-sm"
-          : "border-line bg-cream hover:border-terracotta/40",
+          : invalid
+            ? "border-terracotta bg-cream"
+            : "border-line bg-cream hover:border-terracotta/40",
       )}
     >
       <div>
@@ -546,6 +606,31 @@ function ErrorRetry({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+type EmailStateValue =
+  | { kind: "idle" }
+  | { kind: "checking" }
+  | { kind: "available" }
+  | { kind: "unavailable" };
+
+function EmailStatus({ state }: { state: EmailStateValue }) {
+  const t = useTranslations("signup.email");
+  const tv = useTranslations("validation.email");
+  if (state.kind === "idle") return null;
+
+  let text = "";
+  let cls = "text-terracotta-ink";
+  if (state.kind === "checking") {
+    text = t("checking");
+    cls = "text-muted";
+  } else if (state.kind === "available") {
+    text = t("available");
+    cls = "text-sage-deep";
+  } else {
+    text = tv("taken");
+  }
+  return <p className={cn("mt-1.5 text-xs font-medium", cls)}>{text}</p>;
+}
+
 type SlugStateValue =
   | { kind: "idle" }
   | { kind: "checking" }
@@ -583,21 +668,133 @@ function Select({
 }: {
   id: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onChange: (value: string) => void;
   options: [string, string][];
 }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef<HTMLButtonElement>(null);
+  const selected = options.find(([v]) => v === value);
+
+  useEffect(() => {
+    if (!open) return;
+    activeRef.current?.scrollIntoView({ block: "nearest" });
+    const onPointerDown = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
   return (
-    <select
-      id={id}
-      value={value}
-      onChange={onChange}
-      className="w-full rounded-md border border-line bg-paper px-3 py-2.5 text-base text-ink transition-colors hover:border-terracotta/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-terracotta"
-    >
-      {options.map(([v, label]) => (
-        <option key={v} value={v}>
-          {label}
-        </option>
-      ))}
-    </select>
+    <div ref={rootRef} className="relative">
+      <button
+        id={id}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "flex w-full items-center justify-between gap-2 rounded-md border border-line bg-paper py-2.5 pl-3.5 pr-3 text-left text-base text-ink",
+          "transition-colors duration-fast hover:border-terracotta/40",
+          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-terracotta",
+        )}
+      >
+        <span className="truncate">{selected?.[1] ?? value}</span>
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          fill="none"
+          className={cn(
+            "h-4 w-4 shrink-0 text-muted transition-transform duration-fast",
+            open && "rotate-180",
+          )}
+        >
+          <path
+            d="m6 9 6 6 6-6"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+
+      <div
+        role="listbox"
+        className={cn(
+          "absolute left-0 top-full z-50 mt-2 max-h-44 w-full overflow-y-auto rounded-lg border border-line bg-paper p-1 shadow-lg",
+          "origin-top transition-all duration-fast ease-out-soft",
+          open
+            ? "pointer-events-auto scale-100 opacity-100"
+            : "pointer-events-none scale-95 opacity-0",
+        )}
+      >
+        {options.map(([v, label]) => {
+          const active = v === value;
+          return (
+            <button
+              key={v}
+              ref={active ? activeRef : undefined}
+              type="button"
+              role="option"
+              aria-selected={active}
+              onClick={() => {
+                onChange(v);
+                setOpen(false);
+              }}
+              className={cn(
+                "flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors duration-fast",
+                active
+                  ? "bg-sand/60 font-semibold text-terracotta-ink"
+                  : "text-ink-soft hover:bg-sand/60 hover:text-ink",
+              )}
+            >
+              <span>{label}</span>
+              <svg
+                aria-hidden
+                viewBox="0 0 24 24"
+                fill="none"
+                className={cn("h-4 w-4 shrink-0 text-terracotta", !active && "opacity-0")}
+              >
+                <path
+                  d="m5 13 4 4L19 7"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
+
+function detectTimezone(): string {
+  const hours = Math.round(-new Date().getTimezoneOffset() / 60);
+  return offsetToZone(Math.max(-12, Math.min(14, hours)));
+}
+
+function offsetToZone(hours: number): string {
+  if (hours === 0) return "UTC";
+  return `Etc/GMT${hours > 0 ? "- " : "+ "}${Math.abs(hours)}`;
+}
+
+const TIMEZONE_OPTIONS: [string, string][] = (() => {
+  const out: [string, string][] = [];
+  for (let h = 14; h >= -12; h--) {
+    const label = h === 0 ? "0 UTC" : `${h > 0 ? "+ " : "- "}${Math.abs(h)} UTC`;
+    out.push([offsetToZone(h), label]);
+  }
+  return out;
+})();

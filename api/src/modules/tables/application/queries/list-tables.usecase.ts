@@ -10,6 +10,7 @@ import { NoRestaurantInScope } from '../application.errors';
 
 export interface ListTablesInput {
   restaurantId: string | null;
+  branchId: string;
   floorId?: string;
   status?: TableStatus;
 }
@@ -27,6 +28,7 @@ export class ListTablesUseCase implements UseCase<ListTablesInput, RestaurantTab
     }
     return this.tables.list({
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       floorId: input.floorId,
       status: input.status,
     });

@@ -62,3 +62,29 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 );
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key !== 'pos-auth') return;
+    const state = useAuthStore.getState();
+    let next: { accessToken?: string | null; refreshToken?: string | null } | null = null;
+    if (event.newValue) {
+      try {
+        next =
+          (JSON.parse(event.newValue) as {
+            state?: { accessToken?: string | null; refreshToken?: string | null };
+          }).state ?? null;
+      } catch {
+        next = null;
+      }
+    }
+    const nextAccess = next?.accessToken ?? null;
+    const nextRefresh = next?.refreshToken ?? null;
+    if (nextAccess === state.accessToken && nextRefresh === state.refreshToken) return;
+    if (nextAccess && nextRefresh) {
+      state.setTokens(nextAccess, nextRefresh);
+    } else {
+      state.clear();
+    }
+  });
+}

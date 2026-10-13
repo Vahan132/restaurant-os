@@ -84,6 +84,7 @@ export class PrismaOrganizationProvisioningRepository implements OrganizationPro
             code: r.code,
             permissions: r.permissions,
             isSystem: r.isSystem,
+            allBranches: r.allBranches,
             createdAt: r.createdAt,
             updatedAt: r.updatedAt,
           },

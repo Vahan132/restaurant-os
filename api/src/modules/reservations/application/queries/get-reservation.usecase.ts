@@ -9,6 +9,7 @@ import { NoRestaurantInScope, ReservationNotFound } from '../application.errors'
 
 export interface GetReservationInput {
   restaurantId: string | null;
+  branchId: string;
   reservationId: string;
 }
 
@@ -23,7 +24,11 @@ export class GetReservationUseCase implements UseCase<GetReservationInput, Reser
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const reservation = await this.reservations.findById(input.restaurantId, input.reservationId);
+    const reservation = await this.reservations.findById(
+      input.restaurantId,
+      input.branchId,
+      input.reservationId,
+    );
     if (!reservation) {
       throw ReservationNotFound();
     }

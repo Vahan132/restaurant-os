@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Missed Call Sync",
+    "slug": "android-missed-call-sync",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "missedcallsync",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "platforms": ["android"],
+    "android": {
+      "package": "com.restaurantos.missedcallsync",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.READ_CALL_LOG",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        "android.permission.RECEIVE_BOOT_COMPLETED"
+      ],
+      "blockedPermissions": [],
+      "adaptiveIcon": {
+        "backgroundColor": "#0B1220"
+      }
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-dev-client",
+      [
+        "./plugins/withMissedCallService",
+        {
+          "foregroundServiceType": "dataSync"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+      }
+    }
+  }
+}

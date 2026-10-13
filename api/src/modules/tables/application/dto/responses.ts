@@ -5,6 +5,7 @@ import { RestaurantTable } from '../../domain/entities/restaurant-table';
 export class FloorResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
+  @ApiProperty() branchId!: string;
   @ApiProperty() name!: string;
   @ApiProperty({ nullable: true, type: String }) description!: string | null;
   @ApiProperty() displayOrder!: number;
@@ -14,6 +15,7 @@ export class FloorResponse {
     return {
       id: f.id,
       restaurantId: f.restaurantId,
+      branchId: f.branchId,
       name: f.name,
       description: f.description,
       displayOrder: f.displayOrder,
@@ -25,6 +27,7 @@ export class FloorResponse {
 export class TableResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
+  @ApiProperty() branchId!: string;
   @ApiProperty() floorId!: string;
   @ApiProperty() name!: string;
   @ApiProperty() seatCapacity!: number;
@@ -36,6 +39,7 @@ export class TableResponse {
     return {
       id: t.id,
       restaurantId: t.restaurantId,
+      branchId: t.branchId,
       floorId: t.floorId,
       name: t.name,
       seatCapacity: t.seatCapacity,

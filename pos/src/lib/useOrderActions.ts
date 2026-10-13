@@ -16,12 +16,21 @@ import {
 import type { ApplyDiscountDtoType, OrderResponse } from '@/api/generated/model';
 import type { ApiError } from '@/api/mutator';
 import { toast } from '@/lib/toast';
-import { useAuthMe } from '@/lib/useAuthMe';
 import { useSettings } from '@/lib/useSettings';
 import { useFloorDataInvalidator } from '@/lib/useActiveOrders';
-import { PERMISSIONS } from '@/lib/permissions';
+import { PERMISSIONS, useEffectivePermissions } from '@/lib/permissions';
+import { getDeviceSecret } from '@/lib/device/deviceSecretStore';
+import type { StepUpOutcome, StepUpSubmit } from '@/components/order/ManagerPinModal';
 
 type RequestApproval = (permission: string) => Promise<string | null>;
+type RequestStepUp = (submit: StepUpSubmit) => Promise<boolean>;
+
+/** Best-effort cooldown seconds from a 429, when the backend provides one. */
+function retryAfterSeconds(err: ApiError): number | undefined {
+  const details = err.details as { retryAfterSeconds?: number; retryAfter?: number } | undefined;
+  const raw = details?.retryAfterSeconds ?? details?.retryAfter;
+  return typeof raw === 'number' && raw > 0 ? Math.ceil(raw) : undefined;
+}
 
 /**
  * Order-management actions: discount, cancel item / order, move table, mark served.
@@ -29,11 +38,15 @@ type RequestApproval = (permission: string) => Promise<string | null>;
  * and runs the manager-approval flow when the matching approval toggle is on.
  * Mutations write the returned order into cache and invalidate as a safety net.
  */
-export function useOrderActions(orderId: string, requestApproval: RequestApproval) {
+export function useOrderActions(
+  orderId: string,
+  requestApproval: RequestApproval,
+  requestStepUp: RequestStepUp,
+) {
   const t = useTranslations('actions');
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: me } = useAuthMe();
+  const permissions = useEffectivePermissions();
   const { data: settings } = useSettings();
   const invalidateFloor = useFloorDataInvalidator();
 
@@ -44,7 +57,7 @@ export function useOrderActions(orderId: string, requestApproval: RequestApprova
   const moveM = useOrdersControllerMove();
   const serveM = useOrdersControllerServe();
 
-  const can = useCallback((perm: string) => (me?.permissions ?? []).includes(perm), [me]);
+  const can = useCallback((perm: string) => permissions.includes(perm), [permissions]);
 
   const writeOrder = useCallback(
     (order: OrderResponse) => queryClient.setQueryData(getOrdersControllerGetQueryKey(orderId), order),
@@ -58,9 +71,13 @@ export function useOrderActions(orderId: string, requestApproval: RequestApprova
   // --- gating (permission AND settings toggle) ---
   const allowDiscounts = settings?.allowDiscounts ?? false;
   const allowCancellation = settings?.allowOrderCancellation ?? false;
-  const canDiscount = can(PERMISSIONS.DISCOUNT_APPLY) && allowDiscounts;
+  const holdsDiscount = can(PERMISSIONS.DISCOUNT_APPLY);
+  const canDiscount = holdsDiscount && allowDiscounts;
   const canCancel = can(PERMISSIONS.ORDER_CANCEL) && allowCancellation;
   const canEdit = can(PERMISSIONS.ORDER_EDIT);
+  // A non-holder may still *attempt* a discount: the order editor opens the
+  // manager-PIN step-up. They authorize via a manager's PIN, never by logging in.
+  const canRequestDiscount = (holdsDiscount || canEdit) && allowDiscounts;
 
   /** Resolve approvedByUserId when a toggle requires it; returns undefined if not needed, null if aborted. */
   const resolveApproval = useCallback(
@@ -73,10 +90,52 @@ export function useOrderActions(orderId: string, requestApproval: RequestApprova
 
   const applyDiscount = useCallback(
     async (args: { type: ApplyDiscountDtoType; value: number }) => {
-      if (!canDiscount) {
+      if (!allowDiscounts) {
         toast.error(t('notAllowed'), t('discountsDisabled'));
         return;
       }
+
+      // --- Step-up path: caller lacks DISCOUNT_APPLY ---------------------------
+      // Open the manager-PIN modal (no name picker, no re-login). The requesting
+      // user's session is untouched; the device secret + manager PIN authorize
+      // the discount on the enrolled terminal. Errors surface inside the modal.
+      if (!holdsDiscount) {
+        if (!canEdit) {
+          toast.error(t('notAllowed'), t('editDisabled'));
+          return;
+        }
+        const applied = await requestStepUp(async (pin): Promise<StepUpOutcome> => {
+          const deviceSecret = getDeviceSecret();
+          // Not enrolled / secret gone — present as a generic failure, never
+          // disclosing which factor was missing, and don't hit the endpoint.
+          if (!deviceSecret) return { kind: 'failed' };
+          try {
+            const order = await discount.mutateAsync({
+              id: orderId,
+              data: {
+                type: args.type,
+                value: args.value,
+                authorization: { deviceSecret, pin },
+              },
+            });
+            writeOrder(order);
+            return { kind: 'ok' };
+          } catch (err) {
+            const apiErr = err as ApiError;
+            // Device rate-limited → lockout/cooldown; pad disables itself so the
+            // counter can't hammer the endpoint.
+            if (apiErr?.status === 429) {
+              return { kind: 'lockout', retryAfterSeconds: retryAfterSeconds(apiErr) };
+            }
+            // 403 (bad PIN, wrong/revoked device, no authority) → generic.
+            return { kind: 'failed' };
+          }
+        });
+        if (applied) toast.success(t('discountApplied'));
+        return;
+      }
+
+      // --- Direct path: caller holds DISCOUNT_APPLY ---------------------------
       const approvedByUserId = await resolveApproval(
         Boolean(settings?.requireApprovalForDiscount),
         PERMISSIONS.DISCOUNT_APPLY,
@@ -94,7 +153,19 @@ export function useOrderActions(orderId: string, requestApproval: RequestApprova
         refetch();
       }
     },
-    [canDiscount, resolveApproval, settings, discount, orderId, writeOrder, refetch, t],
+    [
+      allowDiscounts,
+      holdsDiscount,
+      canEdit,
+      requestStepUp,
+      resolveApproval,
+      settings,
+      discount,
+      orderId,
+      writeOrder,
+      refetch,
+      t,
+    ],
   );
 
   const removeDiscount = useCallback(async () => {
@@ -165,7 +236,7 @@ export function useOrderActions(orderId: string, requestApproval: RequestApprova
 
   const moveTable = useCallback(
     async (tableId: string) => {
-      if (!canEdit) {
+      if (!can(PERMISSIONS.ORDER_MOVE_TABLE)) {
         toast.error(t('notAllowed'), t('editDisabled'));
         return;
       }
@@ -182,7 +253,7 @@ export function useOrderActions(orderId: string, requestApproval: RequestApprova
         refetch();
       }
     },
-    [canEdit, moveM, orderId, writeOrder, invalidateFloor, refetch, t],
+    [can, moveM, orderId, writeOrder, invalidateFloor, refetch, t],
   );
 
   const markServed = useCallback(async () => {
@@ -209,6 +280,7 @@ export function useOrderActions(orderId: string, requestApproval: RequestApprova
     markServed,
     // gating
     canDiscount,
+    canRequestDiscount,
     canCancel,
     canEdit,
     allowDiscounts,

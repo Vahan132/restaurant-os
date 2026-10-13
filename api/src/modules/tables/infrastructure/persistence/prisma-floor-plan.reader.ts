@@ -10,16 +10,16 @@ import { FloorPlanFloor, FloorPlanReader } from '../../application/ports/floor-p
 export class PrismaFloorPlanReader implements FloorPlanReader {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getFloorPlan(restaurantId: string): Promise<FloorPlanFloor[]> {
+  async getFloorPlan(restaurantId: string, branchId: string): Promise<FloorPlanFloor[]> {
     const floors = await this.prisma.floor.findMany({
-      where: { restaurantId, status: 'ACTIVE', deletedAt: null },
+      where: { restaurantId, branchId, status: 'ACTIVE', deletedAt: null },
       orderBy: { displayOrder: 'asc' },
     });
 
     const result: FloorPlanFloor[] = [];
     for (const floor of floors) {
       const tables = await this.prisma.restaurantTable.findMany({
-        where: { restaurantId, floorId: floor.id, deletedAt: null },
+        where: { restaurantId, branchId, floorId: floor.id, deletedAt: null },
         orderBy: { name: 'asc' },
       });
       result.push({

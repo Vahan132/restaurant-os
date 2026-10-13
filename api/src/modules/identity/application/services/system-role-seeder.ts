@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  SYSTEM_ROLE_ALL_BRANCHES,
   SYSTEM_ROLE_CODES,
   SYSTEM_ROLE_NAMES,
   SYSTEM_ROLE_PERMISSIONS,
@@ -15,6 +16,8 @@ export interface SystemRoleSeed {
   code: SystemRoleCode;
   permissions: string[];
   isSystem: true;
+  /** ALL-BRANCH reach (FIX-E): only OWNER is true. */
+  allBranches: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +44,7 @@ export class SystemRoleSeeder {
       code,
       permissions: SYSTEM_ROLE_PERMISSIONS[code],
       isSystem: true as const,
+      allBranches: SYSTEM_ROLE_ALL_BRANCHES[code],
       createdAt: now,
       updatedAt: now,
     }));

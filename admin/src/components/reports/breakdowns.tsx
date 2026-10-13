@@ -1,14 +1,12 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useMemo } from 'react';
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 import type {
   CancelledItemResponse,
   CancelledOrderResponse,
   DiscountOrderResponse,
-  ItemRowResponse,
   PaymentMethodResponse,
   TableRowResponse,
   WaiterRowResponse,
@@ -16,7 +14,6 @@ import type {
 import { SortableTable, type Column } from '@/components/reports/sortable-table';
 import { formatMoney } from '@/lib/money';
 import {
-  useByItem,
   useByPaymentMethod,
   useByTable,
   useByWaiter,
@@ -42,6 +39,7 @@ export function PaymentMethodBreakdown({ from, to, currency }: BreakdownProps) {
       key: 'amount',
       label: t('byPayment.amount'),
       align: 'right',
+      kind: 'money',
       cell: (r) => formatMoney(r.amount, currency),
       csv: (r) => r.amount,
       sort: (r) => r.amount,
@@ -85,8 +83,8 @@ export function WaiterBreakdown({ from, to, currency }: BreakdownProps) {
   const { rows, isLoading } = useByWaiter(from, to);
   const columns: Column<WaiterRowResponse>[] = [
     { key: 'waiter', label: t('byWaiter.waiter'), cell: (r) => r.waiterName ?? t('byWaiter.unknown'), csv: (r) => r.waiterName ?? '', sort: (r) => r.waiterName ?? '' },
-    { key: 'revenue', label: t('byWaiter.revenue'), align: 'right', cell: (r) => formatMoney(r.revenueAmount, currency), csv: (r) => r.revenueAmount, sort: (r) => r.revenueAmount },
-    { key: 'orders', label: t('byWaiter.orders'), align: 'right', cell: (r) => r.orderCount, csv: (r) => r.orderCount, sort: (r) => r.orderCount },
+    { key: 'revenue', label: t('byWaiter.revenue'), align: 'right', kind: 'money', cell: (r) => formatMoney(r.revenueAmount, currency), csv: (r) => r.revenueAmount, sort: (r) => r.revenueAmount },
+    { key: 'orders', label: t('byWaiter.orders'), align: 'right', kind: 'qty', cell: (r) => r.orderCount, csv: (r) => r.orderCount, sort: (r) => r.orderCount },
   ];
   return <SortableTable title={t('byWaiter.title')} rows={rows} columns={columns} csvName="by-waiter" isLoading={isLoading} emptyText={t('empty')} />;
 }
@@ -96,22 +94,10 @@ export function TableBreakdown({ from, to, currency }: BreakdownProps) {
   const { rows, isLoading } = useByTable(from, to);
   const columns: Column<TableRowResponse>[] = [
     { key: 'table', label: t('byTable.table'), cell: (r) => r.tableName ?? t('byTable.unassigned'), csv: (r) => r.tableName ?? '', sort: (r) => r.tableName ?? '' },
-    { key: 'revenue', label: t('byTable.revenue'), align: 'right', cell: (r) => formatMoney(r.revenueAmount, currency), csv: (r) => r.revenueAmount, sort: (r) => r.revenueAmount },
-    { key: 'orders', label: t('byTable.orders'), align: 'right', cell: (r) => r.orderCount, csv: (r) => r.orderCount, sort: (r) => r.orderCount },
+    { key: 'revenue', label: t('byTable.revenue'), align: 'right', kind: 'money', cell: (r) => formatMoney(r.revenueAmount, currency), csv: (r) => r.revenueAmount, sort: (r) => r.revenueAmount },
+    { key: 'orders', label: t('byTable.orders'), align: 'right', kind: 'qty', cell: (r) => r.orderCount, csv: (r) => r.orderCount, sort: (r) => r.orderCount },
   ];
   return <SortableTable title={t('byTable.title')} rows={rows} columns={columns} csvName="by-table" isLoading={isLoading} emptyText={t('empty')} />;
-}
-
-export function ItemBreakdown({ from, to, currency }: BreakdownProps) {
-  const t = useTranslations('reports');
-  const { rows, isLoading } = useByItem(from, to);
-  const sorted = useMemo(() => [...rows].sort((a, b) => b.revenueAmount - a.revenueAmount), [rows]);
-  const columns: Column<ItemRowResponse>[] = [
-    { key: 'item', label: t('byItem.item'), cell: (r) => r.name, csv: (r) => r.name, sort: (r) => r.name },
-    { key: 'qty', label: t('byItem.qty'), align: 'right', cell: (r) => r.quantity, csv: (r) => r.quantity, sort: (r) => r.quantity },
-    { key: 'revenue', label: t('byItem.revenue'), align: 'right', cell: (r) => formatMoney(r.revenueAmount, currency), csv: (r) => r.revenueAmount, sort: (r) => r.revenueAmount },
-  ];
-  return <SortableTable title={t('byItem.title')} rows={sorted} columns={columns} csvName="by-item" isLoading={isLoading} emptyText={t('empty')} />;
 }
 
 export function DiscountsBreakdown({ from, to, currency }: BreakdownProps) {
@@ -120,7 +106,7 @@ export function DiscountsBreakdown({ from, to, currency }: BreakdownProps) {
   const rows = discounts?.orders ?? [];
   const columns: Column<DiscountOrderResponse>[] = [
     { key: 'order', label: t('discounts.order'), cell: (r) => `#${r.orderNumber}`, csv: (r) => r.orderNumber, sort: (r) => r.orderNumber },
-    { key: 'amount', label: t('discounts.amount'), align: 'right', cell: (r) => formatMoney(r.discountAmount, currency), csv: (r) => r.discountAmount, sort: (r) => r.discountAmount },
+    { key: 'amount', label: t('discounts.amount'), align: 'right', kind: 'money', cell: (r) => formatMoney(r.discountAmount, currency), csv: (r) => r.discountAmount, sort: (r) => r.discountAmount },
   ];
   return (
     <SortableTable
@@ -142,13 +128,13 @@ export function CancellationsBreakdown({ from, to, currency }: BreakdownProps) {
 
   const orderCols: Column<CancelledOrderResponse>[] = [
     { key: 'order', label: t('cancellations.order'), cell: (r) => `#${r.orderNumber}`, csv: (r) => r.orderNumber, sort: (r) => r.orderNumber },
-    { key: 'value', label: t('cancellations.value'), align: 'right', cell: (r) => formatMoney(r.totalAmount, currency), csv: (r) => r.totalAmount, sort: (r) => r.totalAmount },
+    { key: 'value', label: t('cancellations.value'), align: 'right', kind: 'money', cell: (r) => formatMoney(r.totalAmount, currency), csv: (r) => r.totalAmount, sort: (r) => r.totalAmount },
     { key: 'reason', label: t('cancellations.reason'), cell: (r) => r.reason ?? t('cancellations.noReason'), csv: (r) => r.reason ?? '' },
   ];
   const itemCols: Column<CancelledItemResponse>[] = [
     { key: 'item', label: t('cancellations.item'), cell: (r) => r.name, csv: (r) => r.name, sort: (r) => r.name },
-    { key: 'qty', label: t('cancellations.qty'), align: 'right', cell: (r) => r.quantity, csv: (r) => r.quantity, sort: (r) => r.quantity },
-    { key: 'value', label: t('cancellations.value'), align: 'right', cell: (r) => formatMoney(r.lineTotalAmount, currency), csv: (r) => r.lineTotalAmount, sort: (r) => r.lineTotalAmount },
+    { key: 'qty', label: t('cancellations.qty'), align: 'right', kind: 'qty', cell: (r) => r.quantity, csv: (r) => r.quantity, sort: (r) => r.quantity },
+    { key: 'value', label: t('cancellations.value'), align: 'right', kind: 'money', cell: (r) => formatMoney(r.lineTotalAmount, currency), csv: (r) => r.lineTotalAmount, sort: (r) => r.lineTotalAmount },
     { key: 'reason', label: t('cancellations.reason'), cell: (r) => r.reason ?? t('cancellations.noReason'), csv: (r) => r.reason ?? '' },
   ];
 

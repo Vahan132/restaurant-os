@@ -1,7 +1,8 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useAuthMe } from '@/lib/useAuthMe';
+import { useBranchStore } from '@/stores/branch';
 
 /**
  * POS-relevant permission keys. These mirror the backend's RESOURCE_ACTION codes
@@ -16,20 +17,52 @@ export const PERMISSIONS = {
   PAYMENT_PROCESS: 'PAYMENT_PROCESS',
   TABLE_STATUS_UPDATE: 'TABLE_STATUS_UPDATE',
   DASHBOARD_VIEW: 'DASHBOARD_VIEW',
+  /** Branch-scoped cashier shift report (payment-method totals for a day). */
+  REPORTS_SHIFT_VIEW: 'reports:shift:view',
+  // IIKO-PERM-1 finer rights (mirror api permissions.catalog.ts).
+  /** Edit/pay/cancel another waiter's order (iiko F_AOT). Enforced server-side. */
+  ORDER_EDIT_OTHERS: 'order:edit_others',
+  /** Move an order to another table (iiko F_CMP). */
+  ORDER_MOVE_TABLE: 'order:move_table',
+  /** Void a recorded payment (iiko F_STRN). */
+  PAYMENT_VOID: 'payment:void',
+  /** Fiscalize / view the fiscal receipt (iiko F_FRC). */
+  FISCAL_RECEIPT_PRINT: 'fiscal:receipt:print',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
-/** Returns whether the current user holds the given permission. */
-export function usePermission(permission: Permission): boolean {
+/**
+ * The caller's EFFECTIVE permission set at the currently selected branch.
+ *
+ * A user can hold different roles per branch (manager at one, waiter at another),
+ * so /auth/me returns a permission set per accessible branch. Gating must resolve
+ * against the active branch (BR-8a store) — never the flat restaurant-wide list —
+ * so capabilities change when the terminal switches branch.
+ *
+ * Returns an empty set (deny-all) until a branch is resolved; BranchGate blocks
+ * the app until one is selected, so gated UI only renders once this is populated.
+ */
+export function useEffectivePermissions(): string[] {
   const { data } = useAuthMe();
-  return data?.permissions?.includes(permission) ?? false;
+  const activeBranchId = useBranchStore((s) => s.activeBranchId);
+
+  return useMemo(() => {
+    if (!data) return [];
+    const branch = data.accessibleBranches.find((b) => b.id === activeBranchId);
+    return branch?.permissions ?? [];
+  }, [data, activeBranchId]);
 }
 
-/** Returns whether the current user holds ALL of the given permissions. */
+/** Returns whether the caller holds the given permission at the active branch. */
+export function usePermission(permission: Permission): boolean {
+  const granted = useEffectivePermissions();
+  return granted.includes(permission);
+}
+
+/** Returns whether the caller holds ALL of the given permissions at the active branch. */
 export function usePermissions(...permissions: Permission[]): boolean {
-  const { data } = useAuthMe();
-  const granted = data?.permissions ?? [];
+  const granted = useEffectivePermissions();
   return permissions.every((p) => granted.includes(p));
 }
 
@@ -41,11 +74,10 @@ interface CanProps {
   fallback?: ReactNode;
 }
 
-/** Conditionally render children based on the current user's permissions. */
+/** Conditionally render children based on the caller's active-branch permissions. */
 export function Can({ perform, children, fallback = null }: CanProps) {
   const required = Array.isArray(perform) ? perform : [perform];
-  const { data } = useAuthMe();
-  const granted = data?.permissions ?? [];
+  const granted = useEffectivePermissions();
   const allowed = required.every((p) => granted.includes(p));
   return <>{allowed ? children : fallback}</>;
 }

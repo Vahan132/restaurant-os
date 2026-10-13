@@ -8,11 +8,13 @@
 import type { MenuItemDetailResponsePreparationStation } from './menuItemDetailResponsePreparationStation';
 import type { MenuItemDetailResponseStatus } from './menuItemDetailResponseStatus';
 import type { MenuItemDetailResponseAvailability } from './menuItemDetailResponseAvailability';
-import type { ModifierGroupWithOptionsResponse } from './modifierGroupWithOptionsResponse';
+import type { AttachedModifierGroupResponse } from './attachedModifierGroupResponse';
 
 export interface MenuItemDetailResponse {
   id: string;
   restaurantId: string;
+  branchId: string;
+  code: string;
   categoryId: string;
   name: string;
   /** @nullable */
@@ -20,10 +22,22 @@ export interface MenuItemDetailResponse {
   priceAmount: number;
   /** @nullable */
   imageUrl: string | null;
+  /**
+   * MEDIA-1: object-storage key when the image was uploaded (null for URL-paste).
+   * @nullable
+   */
+  imageKey: string | null;
   preparationStation: MenuItemDetailResponsePreparationStation;
   /** @nullable */
   prepTimeMinutes: number | null;
   status: MenuItemDetailResponseStatus;
   availability: MenuItemDetailResponseAvailability;
-  modifierGroups: ModifierGroupWithOptionsResponse[];
+  /** Hides the customer ingredient list. */
+  hideRecipe: boolean;
+  /**
+   * ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified).
+   * @nullable
+   */
+  adgCode: string | null;
+  modifierGroups: AttachedModifierGroupResponse[];
 }

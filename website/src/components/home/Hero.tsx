@@ -25,7 +25,7 @@ export function Hero() {
           </Reveal>
 
           <Reveal trigger="mount" delay={1}>
-            <h1 className="text-balance font-display text-5xl leading-[1.02] sm:text-6xl lg:text-7xl">
+            <h1 className="text-balance font-display text-[2.75rem] leading-[1.2] sm:text-5xl/[1.2]">
               {t.rich("title", {
                 em: (chunks) => <span className="italic text-terracotta-ink">{chunks}</span>,
               })}
@@ -39,7 +39,7 @@ export function Hero() {
           </Reveal>
 
           <Reveal trigger="mount" delay={3}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-3 min-[535px]:flex-row min-[535px]:items-center">
               <ButtonLink href={site.routes.signup} size="lg">
                 {t("ctaPrimary")}
               </ButtonLink>

@@ -5,11 +5,22 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { AccessibleBranchResponse } from './accessibleBranchResponse';
 import type { RoleResponse } from './roleResponse';
 import type { UserResponse } from './userResponse';
 
 export interface MeResponse {
   user: UserResponse;
   role: RoleResponse | null;
+  /** Restaurant-wide permission set. */
   permissions: string[];
+  /** True if the caller is restaurant-wide (their role applies at every branch). */
+  allBranches: boolean;
+  /** Branches the caller can access, each with effective permissions. */
+  accessibleBranches: AccessibleBranchResponse[];
+  /**
+     * The caller's default branch id.
+     * @nullable
+     */
+  defaultBranchId: string | null;
 }

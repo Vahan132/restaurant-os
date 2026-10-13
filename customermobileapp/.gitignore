@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# Env
+.env
+.env.local
+.env*.local
+
+# Synced spec (regenerate with `npm run sync:spec`)
+/openapi.json
+
+# Generated API client (regenerate with `npm run generate:api`)
+/src/api/generated/
+
+# Misc
+*.log
+.DS_Store
+npm-debug.*
+yarn-error.*

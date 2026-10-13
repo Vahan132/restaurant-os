@@ -26,7 +26,9 @@ export function OrderActionsToolbar({ order, actions }: OrderActionsToolbarProps
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Can perform={PERMISSIONS.DISCOUNT_APPLY}>
+      {/* Any order editor can open the discount sheet. Holders of DISCOUNT_APPLY
+          apply directly; everyone else is taken through the manager-PIN step-up. */}
+      <Can perform={PERMISSIONS.ORDER_EDIT}>
         <ToolbarButton
           label={t('discount')}
           disabled={!actions.allowDiscounts}
@@ -35,12 +37,13 @@ export function OrderActionsToolbar({ order, actions }: OrderActionsToolbarProps
         />
       </Can>
 
-      <Can perform={PERMISSIONS.ORDER_EDIT}>
+      <Can perform={PERMISSIONS.ORDER_MOVE_TABLE}>
         <ToolbarButton label={t('moveTable')} disabled={actions.moving} onClick={() => setSheet('move')} />
       </Can>
 
       <Can perform={PERMISSIONS.ORDER_EDIT}>
         <ToolbarButton
+          testId="mark-served"
           label={t('markServed')}
           disabled={actions.serving || order.items.length === 0}
           highlight={anyReady}
@@ -120,16 +123,19 @@ function ToolbarButton({
   disabled,
   highlight,
   title,
+  testId,
 }: {
   label: string;
   onClick: () => void;
   disabled?: boolean;
   highlight?: boolean;
   title?: string;
+  testId?: string;
 }) {
   return (
     <button
       type="button"
+      data-testid={testId}
       onClick={onClick}
       disabled={disabled}
       title={title}

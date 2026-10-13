@@ -11,6 +11,8 @@ export interface OpeningHour {
 export interface RestaurantSettingsProps {
   restaurantId: string;
   logoUrl: string | null;
+  /** MEDIA-1: object-storage key when the logo was uploaded (null for URL-paste). */
+  logoKey: string | null;
   phone: string | null;
   address: string | null;
   taxRateBps: number;
@@ -26,12 +28,16 @@ export interface RestaurantSettingsProps {
   allowManualTableStatus: boolean;
   enableQrMenu: boolean;
   enableCustomerOrdering: boolean;
+  /** 3A: when false (default), admin/manager email login must be device-anchored. */
+  allowUnanchoredAdminLogin: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface UpdateRestaurantSettingsInput {
   logoUrl?: string | null;
+  /** MEDIA-1: uploaded object key (finalize). Non-empty overrides logoUrl. */
+  logoKey?: string | null;
   phone?: string | null;
   address?: string | null;
   taxRateBps?: number;
@@ -47,6 +53,7 @@ export interface UpdateRestaurantSettingsInput {
   allowManualTableStatus?: boolean;
   enableQrMenu?: boolean;
   enableCustomerOrdering?: boolean;
+  allowUnanchoredAdminLogin?: boolean;
 }
 
 /** RestaurantSettings aggregate (1:1 with Restaurant). Rates are basis points. */
@@ -85,6 +92,7 @@ export class RestaurantSettings extends AggregateRoot<string> {
       this.props.serviceFeeRateBps = input.serviceFeeRateBps;
     }
     if (input.logoUrl !== undefined) this.props.logoUrl = input.logoUrl;
+    if (input.logoKey !== undefined) this.props.logoKey = input.logoKey;
     if (input.phone !== undefined) this.props.phone = input.phone;
     if (input.address !== undefined) this.props.address = input.address;
     if (input.receiptFooter !== undefined) this.props.receiptFooter = input.receiptFooter;
@@ -104,6 +112,8 @@ export class RestaurantSettings extends AggregateRoot<string> {
     if (input.enableQrMenu !== undefined) this.props.enableQrMenu = input.enableQrMenu;
     if (input.enableCustomerOrdering !== undefined)
       this.props.enableCustomerOrdering = input.enableCustomerOrdering;
+    if (input.allowUnanchoredAdminLogin !== undefined)
+      this.props.allowUnanchoredAdminLogin = input.allowUnanchoredAdminLogin;
     // Keep stored state honest: customer ordering requires the public QR menu.
     if (this.props.enableCustomerOrdering && !this.props.enableQrMenu) {
       this.props.enableCustomerOrdering = false;

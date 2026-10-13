@@ -15,7 +15,7 @@ export function Testimonials() {
       <Container>
         <Reveal className="flex flex-col items-center gap-3 text-center">
           <span className="eyebrow">{t("eyebrow")}</span>
-          <h2 className="max-w-2xl text-balance text-3xl sm:text-4xl">{t("title")}</h2>
+          <h2 className="max-w-2xl text-balance text-3xl/[1.2] sm:text-4xl/[1.2]">{t("title")}</h2>
         </Reveal>
 
         {/* logo strip (placeholder wordmarks) */}

@@ -7,12 +7,28 @@ import {
   UserUnblockedEvent,
 } from '../../../identity/domain/events/user-events';
 import {
+  DeviceEnrolledEvent,
+  DeviceRevokedEvent,
+} from '../../../identity/domain/events/device-events';
+import {
+  StaffPinCreatedEvent,
+  StaffPinLockedOutEvent,
+  StaffPinResetEvent,
+  StaffPinRevokedEvent,
+} from '../../../identity/domain/events/staff-pin-events';
+import {
+  AdminLoginPolicyChangedEvent,
+  BranchIpPolicyChangedEvent,
+} from '../../../restaurant/domain/events/policy-events';
+import {
   MenuItemCreatedEvent,
   MenuItemDeletedEvent,
   MenuItemPriceChangedEvent,
 } from '../../../menu/domain/events/menu-events';
 import {
   DiscountAppliedEvent,
+  DiscountStepUpAuthorizedEvent,
+  DiscountStepUpFailedEvent,
   OrderCancelledEvent,
   OrderClosedEvent,
   OrderItemCancelledEvent,
@@ -27,6 +43,11 @@ import {
   ReservationCancelledEvent,
   ReservationNoShowEvent,
 } from '../../../reservations/domain/events/reservation-events';
+import {
+  ProcessRunExecutedEvent,
+  StockCountAdjustedEvent,
+  StockTransferredEvent,
+} from '../../../inventory/domain/events/inventory-events';
 import { AppendAuditLogUseCase } from '../../application/commands/append-audit-log.usecase';
 import { AuditActorType } from '../../domain/enums';
 
@@ -102,6 +123,121 @@ export class AuditEventSubscribers {
     });
   }
 
+  // ── device-anchored staff auth (3A) ─────────────────────────────────────────
+  @OnEvent('identity.device.enrolled')
+  async onDeviceEnrolled(e: DeviceEnrolledEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      branchId: e.branchId,
+      actorType: AuditActorType.USER,
+      actorId: e.enrolledByUserId,
+      action: 'DEVICE_ENROLLED',
+      entityType: 'Device',
+      entityId: e.deviceId,
+      newValue: { surface: e.surface },
+      ip: e.ip,
+    });
+  }
+
+  @OnEvent('identity.device.revoked')
+  async onDeviceRevoked(e: DeviceRevokedEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      branchId: e.branchId,
+      actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
+      actorId: e.actorUserId,
+      action: 'DEVICE_REVOKED',
+      entityType: 'Device',
+      entityId: e.deviceId,
+    });
+  }
+
+  @OnEvent('identity.staff_pin.created')
+  async onStaffPinCreated(e: StaffPinCreatedEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
+      actorId: e.actorUserId,
+      action: 'STAFF_PIN_CREATED',
+      entityType: 'StaffPin',
+      entityId: e.userId,
+    });
+  }
+
+  @OnEvent('identity.staff_pin.reset')
+  async onStaffPinReset(e: StaffPinResetEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
+      actorId: e.actorUserId,
+      action: 'STAFF_PIN_RESET',
+      entityType: 'StaffPin',
+      entityId: e.userId,
+    });
+  }
+
+  @OnEvent('identity.staff_pin.revoked')
+  async onStaffPinRevoked(e: StaffPinRevokedEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
+      actorId: e.actorUserId,
+      action: 'STAFF_PIN_REVOKED',
+      entityType: 'StaffPin',
+      entityId: e.userId,
+    });
+  }
+
+  @OnEvent('identity.staff_pin.locked_out')
+  async onStaffPinLockedOut(e: StaffPinLockedOutEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      branchId: e.branchId,
+      // System-driven lockout; the target is the user whose PIN was locked.
+      actorType: AuditActorType.SYSTEM,
+      actorId: null,
+      action: 'STAFF_PIN_LOCKED_OUT',
+      entityType: 'StaffPin',
+      entityId: e.userId,
+      newValue: {
+        deviceId: e.deviceId,
+        failedAttempts: e.failedAttempts,
+        lockedUntil: e.lockedUntil.toISOString(),
+      },
+      ip: e.ip,
+    });
+  }
+
+  // ── restaurant security policy (3A) ─────────────────────────────────────────
+  @OnEvent('restaurant.branch.ip_policy_changed')
+  async onBranchIpPolicyChanged(e: BranchIpPolicyChangedEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      branchId: e.branchId,
+      actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
+      actorId: e.actorUserId,
+      action: 'BRANCH_IP_POLICY_CHANGED',
+      entityType: 'Branch',
+      entityId: e.branchId,
+      newValue: { ipBindingMode: e.ipBindingMode, ipAllowlist: e.ipAllowlist },
+      ip: e.ip,
+    });
+  }
+
+  @OnEvent('restaurant.admin_login_policy_changed')
+  async onAdminLoginPolicyChanged(e: AdminLoginPolicyChangedEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
+      actorId: e.actorUserId,
+      action: 'ADMIN_LOGIN_POLICY_CHANGED',
+      entityType: 'RestaurantSettings',
+      entityId: e.restaurantId,
+      newValue: { allowUnanchoredAdminLogin: e.allowUnanchoredAdminLogin },
+      ip: e.ip,
+    });
+  }
+
   // ── menu ──────────────────────────────────────────────────────────────────
   @OnEvent('menu.item.created')
   async onMenuItemCreated(e: MenuItemCreatedEvent): Promise<void> {
@@ -147,6 +283,7 @@ export class AuditEventSubscribers {
   async onOrderCancelled(e: OrderCancelledEvent): Promise<void> {
     await this.safe({
       restaurantId: e.restaurantId,
+      branchId: e.branchId,
       actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
       actorId: e.actorUserId,
       action: 'ORDER_CANCELLED',
@@ -160,6 +297,7 @@ export class AuditEventSubscribers {
   async onOrderItemCancelled(e: OrderItemCancelledEvent): Promise<void> {
     await this.safe({
       restaurantId: e.restaurantId,
+      branchId: e.branchId,
       actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
       actorId: e.actorUserId,
       action: 'ORDER_ITEM_CANCELLED',
@@ -182,6 +320,46 @@ export class AuditEventSubscribers {
     });
   }
 
+  @OnEvent('orders.discount.step_up_authorized')
+  async onDiscountStepUpAuthorized(e: DiscountStepUpAuthorizedEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      branchId: e.branchId,
+      // The REQUESTER is the actor (they stay logged in); the authorizing manager
+      // is captured in newValue so the trail records both parties + device + IP.
+      actorType: e.requestedByUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
+      actorId: e.requestedByUserId,
+      action: 'DISCOUNT_STEP_UP_AUTHORIZED',
+      entityType: 'Order',
+      entityId: e.orderId,
+      newValue: {
+        authorizedByUserId: e.authorizedByUserId,
+        deviceId: e.deviceId,
+        discountType: e.discountType,
+        discountValue: e.discountValue,
+        discountAmount: e.discountAmount,
+      },
+      ip: e.ip,
+    });
+  }
+
+  @OnEvent('orders.discount.step_up_failed')
+  async onDiscountStepUpFailed(e: DiscountStepUpFailedEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      branchId: e.branchId,
+      actorType: e.requestedByUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
+      actorId: e.requestedByUserId,
+      action: 'DISCOUNT_STEP_UP_FAILED',
+      entityType: 'Order',
+      entityId: e.orderId,
+      // The specific failure factor lives ONLY here (and server logs), never on
+      // the HTTP response.
+      newValue: { deviceId: e.deviceId, reason: e.reason },
+      ip: e.ip,
+    });
+  }
+
   @OnEvent('orders.payment.recorded')
   async onPaymentRecorded(e: PaymentRecordedEvent): Promise<void> {
     await this.safe({
@@ -199,6 +377,7 @@ export class AuditEventSubscribers {
   async onOrderClosed(e: OrderClosedEvent): Promise<void> {
     await this.safe({
       restaurantId: e.restaurantId,
+      branchId: e.branchId,
       actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
       actorId: e.actorUserId,
       action: 'ORDER_CLOSED',
@@ -229,6 +408,69 @@ export class AuditEventSubscribers {
       action: 'RESERVATION_NO_SHOW',
       entityType: 'Reservation',
       entityId: e.reservationId,
+    });
+  }
+
+  // ── inventory: multi-location correction adjustments (6A §6) ───────────────
+  @OnEvent('inventory.stock.count_adjusted')
+  async onInventoryCountAdjusted(e: StockCountAdjustedEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      branchId: e.branchId,
+      actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
+      actorId: e.actorUserId,
+      action: 'INVENTORY_COUNT_ADJUSTED',
+      entityType: 'InventoryItem',
+      entityId: e.itemId,
+      newValue: {
+        locationId: e.locationId,
+        deltaBaseQty: e.deltaBaseQty,
+        countedBaseQty: e.countedBaseQty,
+      },
+    });
+  }
+
+  // ── KDS prep/production runs (7A) ──────────────────────────────────────────
+  @OnEvent('inventory.process.run_executed')
+  async onProcessRunExecuted(e: ProcessRunExecutedEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      branchId: e.branchId,
+      actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
+      actorId: e.actorUserId,
+      action: 'INVENTORY_PROCESS_RUN',
+      entityType: 'ProcessRun',
+      entityId: e.runId,
+      newValue: {
+        processId: e.processId,
+        multiplier: e.multiplier,
+        inputCostAmount: e.inputCostAmount,
+        processingCostAmount: e.processingCostAmount,
+        totalCostAmount: e.totalCostAmount,
+        wentNegative: e.wentNegative,
+        inputs: e.inputs,
+        outputs: e.outputs,
+      },
+    });
+  }
+
+  @OnEvent('inventory.stock.transferred')
+  async onInventoryTransferred(e: StockTransferredEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      branchId: e.branchId,
+      actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
+      actorId: e.actorUserId,
+      action: 'INVENTORY_TRANSFERRED',
+      entityType: 'InventoryTransfer',
+      entityId: e.transferId,
+      newValue: {
+        itemId: e.itemId,
+        fromLocationId: e.fromLocationId,
+        toLocationId: e.toLocationId,
+        baseQty: e.baseQty,
+        sliceCount: e.sliceCount,
+      },
     });
   }
 

@@ -5,12 +5,21 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios';
 import { useAuthStore } from '@/stores/auth';
+import { useBranchStore } from '@/stores/branch';
+import {
+  CLOUD_API_BASE_URL,
+  resolveApiBaseUrl,
+} from '@/stores/endpoint';
+import { readPersistedTokens, withRefreshLock } from './refresh-lock';
+import { getDeviceSecret } from '@/lib/device/deviceSecretStore';
 
 /**
  * Custom axios mutator — mirrors the admin app.
  *
  * Responsibilities:
- *  - single axios instance, baseURL from NEXT_PUBLIC_API_BASE_URL
+ *  - single axios instance; baseURL is resolved per-request from the device's
+ *    endpoint target (cloud default, or a Local hub on the LAN — see
+ *    `@/stores/endpoint`). Switching the target takes effect on the next call.
  *  - attach the Bearer access token on every request
  *  - UNWRAP the success envelope ({ data: resource } | { data: { items, pagination } })
  *  - normalize errors to { code, message }
@@ -20,8 +29,11 @@ import { useAuthStore } from '@/stores/auth';
  * orval is configured to route every generated hook through `apiRequest`.
  */
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
+/**
+ * The cloud REST base URL. Kept as a named export for back-compat; live traffic
+ * uses `resolveApiBaseUrl()` so it follows the device's selected target.
+ */
+export const API_BASE_URL = CLOUD_API_BASE_URL;
 
 /** Shape every caller can rely on for failures. */
 export interface ApiError {
@@ -34,15 +46,37 @@ export interface ApiError {
 }
 
 export const axiosInstance = axios.create({
+  // Resolved per request in the interceptor below; this is just the initial
+  // (cloud) default for any call made before the interceptor runs.
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// --- request: attach bearer token -----------------------------------------
+// --- request: target base URL + bearer token + active branch ---------------
 axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  // Point every request at the device's current target (cloud or Local hub).
+  // Resolved here (not at create time) so a target switch needs no re-init.
+  config.baseURL = resolveApiBaseUrl();
   const token = useAuthStore.getState().accessToken;
   if (token) {
     config.headers.set?.('Authorization', `Bearer ${token}`);
+  }
+  // Branch scope: every call is made on behalf of the terminal's active branch,
+  // so the backend returns that branch's menu/prices, tables and orders (and
+  // tags created orders to it). Pre-selection (null) sends no header, which is
+  // correct for the branch-agnostic bootstrap calls (/auth/me, /restaurant/*).
+  const branchId = useBranchStore.getState().activeBranchId;
+  if (branchId) {
+    config.headers.set?.('X-Branch-Id', branchId);
+  }
+  // Device anchor: once this terminal is enrolled (3A), attach its device secret
+  // to every request so device-anchored endpoints can verify the terminal. Read
+  // synchronously from the IndexedDB store's in-memory mirror. An explicit header
+  // already set by a generated hook (e.g. the staff-picker's X-Device-Secret)
+  // wins and is left untouched.
+  const deviceSecret = getDeviceSecret();
+  if (deviceSecret && !config.headers.has?.('X-Device-Secret')) {
+    config.headers.set?.('X-Device-Secret', deviceSecret);
   }
   return config;
 });
@@ -85,21 +119,38 @@ function redirectToLogin(): void {
 
 /** Perform a single refresh, shared across all concurrent 401s. */
 async function refreshAccessToken(): Promise<string | null> {
-  const { refreshToken } = useAuthStore.getState();
-  if (!refreshToken) return null;
+  const triggerToken = useAuthStore.getState().refreshToken;
+  if (!triggerToken) return null;
 
-  try {
-    // Bare axios call — bypass interceptors to avoid recursion.
-    const res = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
-    const data = res.data?.data ?? res.data;
-    const newAccess: string | undefined = data?.accessToken;
-    const newRefresh: string | undefined = data?.refreshToken;
-    if (!newAccess) return null;
-    useAuthStore.getState().setTokens(newAccess, newRefresh ?? refreshToken);
-    return newAccess;
-  } catch {
-    return null;
-  }
+  return withRefreshLock(async () => {
+    const persisted = readPersistedTokens();
+    const current = persisted?.refreshToken ?? null;
+    if (current && current !== triggerToken && persisted?.accessToken) {
+      useAuthStore.getState().setTokens(persisted.accessToken, current);
+      return persisted.accessToken;
+    }
+    const tokenToUse = current ?? triggerToken;
+    try {
+      // Bare axios call — bypass interceptors to avoid recursion. Resolve the
+      // target base URL explicitly since this call skips the interceptor.
+      const res = await axios.post(`${resolveApiBaseUrl()}/auth/refresh`, {
+        refreshToken: tokenToUse,
+      });
+      const data = res.data?.data ?? res.data;
+      const newAccess: string | undefined = data?.accessToken;
+      const newRefresh: string | undefined = data?.refreshToken;
+      if (!newAccess) return null;
+      useAuthStore.getState().setTokens(newAccess, newRefresh ?? tokenToUse);
+      return newAccess;
+    } catch {
+      const after = readPersistedTokens();
+      if (after?.refreshToken && after.refreshToken !== tokenToUse && after.accessToken) {
+        useAuthStore.getState().setTokens(after.accessToken, after.refreshToken);
+        return after.accessToken;
+      }
+      return null;
+    }
+  });
 }
 
 function normalizeError(error: unknown): ApiError {

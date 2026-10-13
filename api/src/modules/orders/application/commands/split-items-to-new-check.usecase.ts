@@ -9,6 +9,7 @@ import { ORDER_SETTINGS_READER, OrderSettingsReader } from '../ports/order-setti
 
 export interface SplitItemsToNewCheckInput {
   restaurantId: string | null;
+  branchId: string;
   orderId: string;
   itemIds: string[];
 }
@@ -40,7 +41,7 @@ export class SplitItemsToNewCheckUseCase implements UseCase<
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findById(input.restaurantId, input.orderId);
+    const order = await this.orders.findById(input.restaurantId, input.branchId, input.orderId);
     if (!order) {
       throw OrderNotFound();
     }

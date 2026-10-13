@@ -14,10 +14,16 @@ import { ModifierGroupNotFound, NoRestaurantInScope } from '../application.error
 
 export interface AddModifierOptionInput {
   restaurantId: string | null;
+  branchId: string;
   groupId: string;
   name: string;
+  /** LOCALE-2A: optional hy/ru/en translations of the name. */
+  nameHy?: string | null;
+  nameRu?: string | null;
+  nameEn?: string | null;
   priceDeltaAmount?: number;
-  displayOrder?: number;
+  sortOrder?: number;
+  isDefault?: boolean;
 }
 
 /** Add an option to a modifier group (verifies the group belongs to the restaurant). */
@@ -33,17 +39,22 @@ export class AddModifierOptionUseCase implements UseCase<AddModifierOptionInput,
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const group = await this.groups.findById(input.restaurantId, input.groupId);
+    const group = await this.groups.findById(input.restaurantId, input.branchId, input.groupId);
     if (!group) {
       throw ModifierGroupNotFound();
     }
     const option = ModifierOption.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       modifierGroupId: input.groupId,
       name: input.name,
-      priceDeltaAmount: input.priceDeltaAmount, // aggregate rejects negatives
-      displayOrder: input.displayOrder,
+      nameHy: input.nameHy,
+      nameRu: input.nameRu,
+      nameEn: input.nameEn,
+      priceDeltaAmount: input.priceDeltaAmount, // may be 0 or negative (Prompt 1A)
+      sortOrder: input.sortOrder,
+      isDefault: input.isDefault,
     });
     await this.options.create(option);
     return option;

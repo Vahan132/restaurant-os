@@ -8,6 +8,7 @@ import { CategoryNotFound, NoRestaurantInScope } from '../application.errors';
 
 export interface DeleteCategoryInput {
   restaurantId: string | null;
+  branchId: string;
   categoryId: string;
 }
 
@@ -22,11 +23,19 @@ export class DeleteCategoryUseCase implements UseCase<DeleteCategoryInput, void>
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const category = await this.categories.findById(input.restaurantId, input.categoryId);
+    const category = await this.categories.findById(
+      input.restaurantId,
+      input.branchId,
+      input.categoryId,
+    );
     if (!category) {
       throw CategoryNotFound();
     }
-    const activeItems = await this.categories.countActiveItems(input.restaurantId, category.id);
+    const activeItems = await this.categories.countActiveItems(
+      input.restaurantId,
+      input.branchId,
+      category.id,
+    );
     category.softDelete(activeItems); // throws CATEGORY_HAS_ITEMS if > 0
     await this.categories.update(category);
   }

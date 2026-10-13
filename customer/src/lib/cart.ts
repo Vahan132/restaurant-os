@@ -1,6 +1,7 @@
 import type {
   OrderRequestItemDto,
   PublicMenuItemResponse,
+  QrCartDto,
 } from '@/api/generated/model';
 
 /** A single selected modifier option, snapshotted at add-to-cart time. */
@@ -64,6 +65,32 @@ export function buildCartLine(
     quantity,
     note: note && note.trim() ? note.trim() : null,
     lineTotal: lineTotal(item.priceAmount, modifiers, quantity),
+  };
+}
+
+/**
+ * Map cart lines to the QR-web PREPAYMENT cart payload (ORDER-2:
+ * `QrCartDto`, used by both validate-cart and create-order).
+ *
+ * This is DISTINCT from `toOrderItems` (the older pay-at-table order-requests
+ * flow): `QrCartLineDto` takes a FLAT `modifierOptionIds` array (no group ids,
+ * no snapshot names/prices) — the server recomputes everything from the ids, so
+ * the client never sends authoritative prices.
+ *
+ * NOTE: `note` is intentionally omitted. The generated `QrCartLineDto.note`
+ * type is `{ [key: string]: unknown } | null` (a loosely-typed object, not a
+ * string), so the shape the backend expects for a free-text line note is
+ * ambiguous. Line notes are kept in the local cart for the customer's own
+ * reference but not sent on prepay until the backend note contract is pinned
+ * down. See customer/ORDER-2-FE.findings.md, NOTE #5.
+ */
+export function toQrCart(lines: CartLine[]): QrCartDto {
+  return {
+    lines: lines.map((l) => ({
+      menuItemId: l.menuItemId,
+      quantity: l.quantity,
+      modifierOptionIds: l.modifiers.map((m) => m.modifierOptionId),
+    })),
   };
 }
 

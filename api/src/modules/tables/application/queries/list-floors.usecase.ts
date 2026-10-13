@@ -7,6 +7,7 @@ import { NoRestaurantInScope } from '../application.errors';
 
 export interface ListFloorsInput {
   restaurantId: string | null;
+  branchId: string;
   status?: ZoneStatus;
   includeInactive?: boolean;
 }
@@ -22,6 +23,7 @@ export class ListFloorsUseCase implements UseCase<ListFloorsInput, Floor[]> {
     }
     return this.floors.list({
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       status: input.status,
       includeInactive: input.includeInactive,
     });

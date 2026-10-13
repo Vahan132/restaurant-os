@@ -29,6 +29,7 @@ export class OrderMapper {
     const items = r.items.map((it) =>
       OrderItem.reconstitute(it.id, {
         restaurantId: it.restaurantId,
+        branchId: it.branchId,
         orderId: it.orderId,
         menuItemId: it.menuItemId,
         nameSnapshot: it.nameSnapshot,
@@ -42,6 +43,16 @@ export class OrderMapper {
         preparingAt: it.preparingAt,
         readyAt: it.readyAt,
         cancelledReason: it.cancelledReason,
+        goodCode: it.goodCode,
+        goodName: it.goodName,
+        unit: it.unit,
+        adgCode: it.adgCode,
+        dep: it.dep,
+        discount: it.discount,
+        discountType: it.discountType,
+        additionalDiscount: it.additionalDiscount,
+        additionalDiscountType: it.additionalDiscountType,
+        emarks: it.emarks,
         modifiers: it.modifiers.map((m) =>
           OrderItemModifier.reconstitute(m.id, {
             modifierGroupId: m.modifierGroupId,
@@ -58,6 +69,7 @@ export class OrderMapper {
     const payments = r.payments.map((p) =>
       Payment.reconstitute(p.id, {
         restaurantId: p.restaurantId,
+        branchId: p.branchId,
         orderId: p.orderId,
         method: p.method as PaymentMethod,
         amount: p.amount,
@@ -73,11 +85,13 @@ export class OrderMapper {
 
     return Order.reconstitute(r.id, {
       restaurantId: r.restaurantId,
-      branchId: r.branchId,
+      branchId: r.branchId, // immutable; sourced at creation
       orderNumber: r.orderNumber,
       type: r.type as OrderType,
       tableId: r.tableId,
+      tableSessionId: r.tableSessionId,
       waiterId: r.waiterId,
+      consumerId: r.consumerId,
       status: r.status as OrderStatus,
       currency: r.currency,
       subtotalAmount: r.subtotalAmount,
@@ -95,6 +109,18 @@ export class OrderMapper {
       paymentStatus: r.paymentStatus as PaymentStatus,
       paidAmount: r.paidAmount,
       splitFromOrderId: r.splitFromOrderId,
+      cardAmount: r.cardAmount,
+      cashAmount: r.cashAmount,
+      partialAmount: r.partialAmount,
+      prePaymentAmount: r.prePaymentAmount,
+      changeAmount: r.changeAmount,
+      partnerTin: r.partnerTin,
+      paymentReference: r.paymentReference,
+      fiscalReceiptId: r.fiscalReceiptId,
+      fiscalNumber: r.fiscalNumber,
+      fiscalQr: r.fiscalQr,
+      fiscalizedAt: r.fiscalizedAt,
+      fiscalError: r.fiscalError,
       items,
       payments,
       createdAt: r.createdAt,
@@ -102,13 +128,17 @@ export class OrderMapper {
     });
   }
 
-  /** Scalar order columns (without items) for create/update. */
+  /**
+   * Scalar order columns (without items) for create/update. branchId is OMITTED
+   * here (immutable): it is written once via {@link toCreateOrderRow} at creation
+   * and never updated.
+   */
   static toOrderRow(o: Order) {
     return {
       restaurantId: o.restaurantId,
-      branchId: o.branchId,
       type: o.type as OrderType,
       tableId: o.tableId,
+      tableSessionId: o.tableSessionId,
       waiterId: o.waiterId,
       status: o.status as OrderStatus,
       currency: o.currency,
@@ -127,14 +157,35 @@ export class OrderMapper {
       paymentStatus: o.paymentStatus as PaymentStatus,
       paidAmount: o.paidAmount,
       splitFromOrderId: o.splitFromOrderId,
+      cardAmount: o.cardAmount,
+      cashAmount: o.cashAmount,
+      partialAmount: o.partialAmount,
+      prePaymentAmount: o.prePaymentAmount,
+      changeAmount: o.changeAmount,
+      partnerTin: o.partnerTin,
+      paymentReference: o.paymentReference,
+      fiscalReceiptId: o.fiscalReceiptId,
+      fiscalNumber: o.fiscalNumber,
+      fiscalQr: o.fiscalQr,
+      fiscalizedAt: o.fiscalizedAt,
+      fiscalError: o.fiscalError,
       updatedAt: o.updatedAt,
     };
+  }
+
+  /**
+   * Order columns for CREATE: includes the immutable branchId and consumerId.
+   * Both are written once at creation and never updated (omitted from toOrderRow).
+   */
+  static toCreateOrderRow(o: Order) {
+    return { branchId: o.branchId, consumerId: o.consumerId, ...OrderMapper.toOrderRow(o) };
   }
 
   static toPaymentRow(o: Order, p: Payment) {
     return {
       id: p.id,
       restaurantId: o.restaurantId,
+      branchId: o.branchId, // payments inherit the order's branch
       orderId: o.id,
       method: p.method as PaymentMethod,
       amount: p.amount,
@@ -152,6 +203,7 @@ export class OrderMapper {
     return {
       id: item.id,
       restaurantId: o.restaurantId,
+      branchId: o.branchId, // items inherit the order's branch
       orderId: o.id,
       menuItemId: item.menuItemId,
       nameSnapshot: item.nameSnapshot,
@@ -165,6 +217,16 @@ export class OrderMapper {
       preparingAt: item.preparingAt,
       readyAt: item.readyAt,
       cancelledReason: item.cancelledReason,
+      goodCode: item.goodCode,
+      goodName: item.goodName,
+      unit: item.unit,
+      adgCode: item.adgCode,
+      dep: item.dep,
+      discount: item.discount,
+      discountType: item.discountType,
+      additionalDiscount: item.additionalDiscount,
+      additionalDiscountType: item.additionalDiscountType,
+      emarks: item.emarks,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
     };

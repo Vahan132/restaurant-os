@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Frame } from "./Frame";
 
 /* Lightweight, tokenized product mockups for each platform pillar.
@@ -5,15 +6,16 @@ import { Frame } from "./Frame";
    so they stay cohesive with the rest of the site. */
 
 export function POSVisual() {
+  const t = useTranslations("home.visuals.pos");
   const items = [
     { name: "Margherita", qty: 2, price: "18" },
     { name: "Burrata & peach", qty: 1, price: "14" },
     { name: "Negroni", qty: 2, price: "12" },
   ];
   return (
-    <Frame label="Point-of-sale order screen with a live ticket">
-      <div className="grid grid-cols-5 gap-4">
-        <div className="col-span-3 grid grid-cols-2 gap-2.5">
+    <Frame label={t("alt")}>
+      <div className="grid grid-cols-5 gap-4 max-[455px]:grid-cols-1">
+        <div className="col-span-3 grid grid-cols-2 gap-2.5 max-[455px]:col-span-1">
           {["Pizza", "Antipasti", "Cocktails", "Dolci", "Pasta", "Wine"].map((c, i) => (
             <div
               key={c}
@@ -25,9 +27,9 @@ export function POSVisual() {
             </div>
           ))}
         </div>
-        <div className="col-span-2 flex flex-col rounded-lg bg-cream p-3">
+        <div className="col-span-2 flex flex-col rounded-lg bg-cream p-3 max-[455px]:col-span-1">
           <p className="mb-2 text-2xs font-semibold uppercase tracking-eyebrow text-muted">
-            Table 12
+            {t("table", { n: 12 })}
           </p>
           <div className="flex flex-col gap-2">
             {items.map((it) => (
@@ -40,7 +42,7 @@ export function POSVisual() {
             ))}
           </div>
           <div className="mt-3 flex items-center justify-between border-t border-line pt-2 text-sm font-semibold">
-            <span>Total</span>
+            <span>{t("total")}</span>
             <span className="tabular-nums text-terracotta-ink">$74</span>
           </div>
         </div>
@@ -50,10 +52,11 @@ export function POSVisual() {
 }
 
 export function KDSVisual() {
+  const t = useTranslations("home.visuals.kds");
   const tickets = [
-    { t: "#214 · Table 5", age: "2:10", tone: "sage", items: ["Carbonara", "House salad"] },
-    { t: "#215 · Takeaway", age: "4:48", tone: "saffron", items: ["Margherita ×2", "Tiramisu"] },
-    { t: "#216 · Table 9", age: "6:32", tone: "terracotta", items: ["Risotto", "Branzino"] },
+    { no: "214", where: t("table", { n: 5 }), age: "2:10", tone: "sage", items: ["Carbonara", "House salad"] },
+    { no: "215", where: t("takeaway"), age: "4:48", tone: "saffron", items: ["Margherita ×2", "Tiramisu"] },
+    { no: "216", where: t("table", { n: 9 }), age: "6:32", tone: "terracotta", items: ["Risotto", "Branzino"] },
   ];
   const ring: Record<string, string> = {
     sage: "border-l-sage",
@@ -61,15 +64,15 @@ export function KDSVisual() {
     terracotta: "border-l-terracotta",
   };
   return (
-    <Frame label="Kitchen display showing live order tickets">
+    <Frame label={t("alt")}>
       <div className="grid grid-cols-3 gap-3">
         {tickets.map((tk) => (
           <div
-            key={tk.t}
+            key={tk.no}
             className={`rounded-lg border border-line border-l-4 bg-cream p-3 ${ring[tk.tone]}`}
           >
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-2xs font-semibold text-ink-soft">{tk.t}</span>
+              <span className="text-2xs font-semibold text-ink-soft">{`#${tk.no} · ${tk.where}`}</span>
               <span className="rounded-pill bg-paper px-1.5 py-0.5 text-2xs tabular-nums text-muted">
                 {tk.age}
               </span>
@@ -90,6 +93,7 @@ export function KDSVisual() {
 }
 
 export function TablesVisual() {
+  const t = useTranslations("home.visuals.tables");
   // simple floor plan
   const tables = [
     { x: "8%", y: "12%", s: "h-12 w-12", seated: true },
@@ -100,7 +104,7 @@ export function TablesVisual() {
     { x: "76%", y: "58%", s: "h-14 w-14", seated: true },
   ];
   return (
-    <Frame label="Floor plan with table availability">
+    <Frame label={t("alt")}>
       <div className="relative h-44 rounded-lg bg-cream">
         {tables.map((t, i) => (
           <div
@@ -115,15 +119,16 @@ export function TablesVisual() {
             {i + 1}
           </div>
         ))}
-        <span className="absolute bottom-2 right-3 text-2xs text-muted">Patio · Main</span>
+        <span className="absolute bottom-2 right-3 text-2xs text-muted">{t("zones")}</span>
       </div>
     </Frame>
   );
 }
 
 export function QRVisual() {
+  const t = useTranslations("home.visuals.qr");
   return (
-    <Frame label="Customer scanning a QR menu on a phone">
+    <Frame label={t("alt")}>
       <div className="flex items-center justify-center gap-5 py-2">
         {/* phone */}
         <div className="w-28 shrink-0 rounded-2xl border border-line bg-cream p-2 shadow-sm">
@@ -137,7 +142,7 @@ export function QRVisual() {
               </div>
             ))}
             <div className="mt-2 rounded-md bg-terracotta py-1 text-center text-2xs font-semibold text-white">
-              Order
+              {t("order")}
             </div>
           </div>
         </div>
@@ -160,15 +165,16 @@ export function QRVisual() {
 }
 
 export function ReportsVisual() {
+  const t = useTranslations("home.visuals.reports");
   const bars = [38, 52, 44, 67, 58, 81, 72];
   const days = ["M", "T", "W", "T", "F", "S", "S"];
   return (
-    <Frame label="Sales report dashboard with a weekly revenue chart">
+    <Frame label={t("alt")}>
       <div className="grid grid-cols-3 gap-3">
         <div className="col-span-2 rounded-lg bg-cream p-3">
           <div className="mb-3 flex items-end justify-between">
             <div>
-              <p className="text-2xs uppercase tracking-eyebrow text-muted">This week</p>
+              <p className="text-2xs uppercase tracking-eyebrow text-muted">{t("thisWeek")}</p>
               <p className="font-display text-2xl text-ink">$28,940</p>
             </div>
             <span className="rounded-pill bg-sage-soft px-2 py-0.5 text-2xs font-semibold text-sage-deep">
@@ -189,9 +195,9 @@ export function ReportsVisual() {
         </div>
         <div className="flex flex-col gap-2.5">
           {[
-            { l: "Covers", v: "412" },
-            { l: "Avg. check", v: "$38" },
-            { l: "Top item", v: "Carbonara" },
+            { l: t("covers"), v: "412" },
+            { l: t("avgCheck"), v: "$38" },
+            { l: t("topItem"), v: "Carbonara" },
           ].map((s) => (
             <div key={s.l} className="rounded-lg bg-cream p-2.5">
               <p className="text-2xs uppercase tracking-eyebrow text-muted">{s.l}</p>

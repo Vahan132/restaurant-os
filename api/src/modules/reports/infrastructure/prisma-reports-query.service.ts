@@ -3,6 +3,7 @@ import { PrismaService } from '../../../shared/infrastructure/prisma/prisma.serv
 import { OrderStatus } from '../../orders/domain/enums';
 import { bucketKey } from '../application/report-time.util';
 import {
+  BranchPaymentMethodsData,
   CancellationsData,
   DashboardData,
   DiscountsData,
@@ -14,6 +15,9 @@ import {
   TimeSeriesBucket,
   WaiterRow,
 } from '../application/ports/reports-query.port';
+
+/** BR-REPORTS-1: optional branch filter for order-based queries. */
+const inBranches = (branchIds?: string[]) => (branchIds ? { branchId: { in: branchIds } } : {});
 
 const NON_TERMINAL: OrderStatus[] = [
   OrderStatus.DRAFT,
@@ -41,9 +45,14 @@ export class PrismaReportsQueryService implements ReportsQuery {
     return r?.timezone ?? 'UTC';
   }
 
-  private closedOrders(restaurantId: string, from: Date, to: Date) {
+  private closedOrders(restaurantId: string, from: Date, to: Date, branchIds?: string[]) {
     return this.prisma.order.findMany({
-      where: { restaurantId, status: 'CLOSED', closedAt: { gte: from, lt: to } },
+      where: {
+        restaurantId,
+        ...inBranches(branchIds),
+        status: 'CLOSED',
+        closedAt: { gte: from, lt: to },
+      },
     });
   }
 
@@ -123,8 +132,13 @@ export class PrismaReportsQueryService implements ReportsQuery {
     };
   }
 
-  async salesSummary(restaurantId: string, from: Date, to: Date): Promise<SalesSummaryData> {
-    const closed = await this.closedOrders(restaurantId, from, to);
+  async salesSummary(
+    restaurantId: string,
+    from: Date,
+    to: Date,
+    branchIds?: string[],
+  ): Promise<SalesSummaryData> {
+    const closed = await this.closedOrders(restaurantId, from, to, branchIds);
     const totalRevenueAmount = closed.reduce((s, o) => s + o.totalAmount, 0);
     const totalDiscountAmount = closed.reduce((s, o) => s + o.discountAmount, 0);
     const closedOrderCount = closed.length;
@@ -132,7 +146,12 @@ export class PrismaReportsQueryService implements ReportsQuery {
       closedOrderCount > 0 ? Math.floor(totalRevenueAmount / closedOrderCount) : 0;
 
     const cancelled = await this.prisma.order.findMany({
-      where: { restaurantId, status: 'CANCELLED', createdAt: { gte: from, lt: to } },
+      where: {
+        restaurantId,
+        ...inBranches(branchIds),
+        status: 'CANCELLED',
+        createdAt: { gte: from, lt: to },
+      },
     });
     return {
       totalRevenueAmount,
@@ -150,8 +169,9 @@ export class PrismaReportsQueryService implements ReportsQuery {
     to: Date,
     groupBy: 'day' | 'week' | 'month',
     timeZone: string,
+    branchIds?: string[],
   ): Promise<TimeSeriesBucket[]> {
-    const closed = await this.closedOrders(restaurantId, from, to);
+    const closed = await this.closedOrders(restaurantId, from, to, branchIds);
     const buckets = new Map<string, { revenueAmount: number; orderCount: number }>();
     for (const o of closed) {
       const key = bucketKey(o.closedAt as Date, timeZone, groupBy);
@@ -169,24 +189,72 @@ export class PrismaReportsQueryService implements ReportsQuery {
     restaurantId: string,
     from: Date,
     to: Date,
+    branchIds?: string[],
   ): Promise<PaymentMethodRow[]> {
-    const closed = await this.closedOrders(restaurantId, from, to);
-    const orderIds = closed.map((o) => o.id);
-    if (orderIds.length === 0) return [];
+    const closed = await this.closedOrders(restaurantId, from, to, branchIds);
+    return (await this.paymentBreakdown(closed.map((o) => o.id))).rows;
+  }
+
+  /**
+   * Cashier shift report: the same breakdown narrowed to ONE branch. Scoped by
+   * the ORDER's branch (not the payment's) so the basis matches the rest of the
+   * reports — a payment always belongs to the order it settles.
+   */
+  async branchPaymentMethods(
+    restaurantId: string,
+    branchId: string,
+    from: Date,
+    to: Date,
+  ): Promise<BranchPaymentMethodsData> {
+    const closed = await this.prisma.order.findMany({
+      where: { restaurantId, branchId, status: 'CLOSED', closedAt: { gte: from, lt: to } },
+      select: { id: true },
+    });
+    return this.paymentBreakdown(closed.map((o) => o.id));
+  }
+
+  /** Sum ACTIVE payments on the given orders, grouped by method. */
+  private async paymentBreakdown(orderIds: string[]): Promise<BranchPaymentMethodsData> {
+    if (orderIds.length === 0) {
+      return { rows: [], totalAmount: 0, paymentCount: 0, orderCount: 0 };
+    }
     const payments = await this.prisma.payment.findMany({
       where: { orderId: { in: orderIds }, state: 'ACTIVE' },
     });
-    const byMethod = new Map<string, number>();
-    for (const p of payments) byMethod.set(p.method, (byMethod.get(p.method) ?? 0) + p.amount);
-    return [...byMethod.entries()]
-      .map(([method, amount]) => ({ method, amount }))
-      .sort((a, b) => b.amount - a.amount);
+    const byMethod = new Map<string, { amount: number; paymentCount: number }>();
+    const paidOrders = new Set<string>();
+    let totalAmount = 0;
+    for (const p of payments) {
+      const cur = byMethod.get(p.method) ?? { amount: 0, paymentCount: 0 };
+      cur.amount += p.amount;
+      cur.paymentCount += 1;
+      byMethod.set(p.method, cur);
+      paidOrders.add(p.orderId);
+      totalAmount += p.amount;
+    }
+    return {
+      rows: [...byMethod.entries()]
+        .map(([method, v]) => ({ method, ...v }))
+        .sort((a, b) => b.amount - a.amount),
+      totalAmount,
+      paymentCount: payments.length,
+      orderCount: paidOrders.size,
+    };
   }
 
-  async salesByWaiter(restaurantId: string, from: Date, to: Date): Promise<WaiterRow[]> {
-    const closed = await this.closedOrders(restaurantId, from, to);
+  async salesByWaiter(
+    restaurantId: string,
+    from: Date,
+    to: Date,
+    branchIds?: string[],
+  ): Promise<WaiterRow[]> {
+    const closed = await this.closedOrders(restaurantId, from, to, branchIds);
     const agg = new Map<string, { revenueAmount: number; orderCount: number }>();
     for (const o of closed) {
+      // Customer-placed (QR-web) orders have no waiter — excluded from by-waiter sales.
+      if (o.waiterId === null) {
+        continue;
+      }
       const cur = agg.get(o.waiterId) ?? { revenueAmount: 0, orderCount: 0 };
       cur.revenueAmount += o.totalAmount;
       cur.orderCount += 1;
@@ -198,8 +266,13 @@ export class PrismaReportsQueryService implements ReportsQuery {
       .sort((a, b) => b.revenueAmount - a.revenueAmount);
   }
 
-  async salesByTable(restaurantId: string, from: Date, to: Date): Promise<TableRow[]> {
-    const closed = await this.closedOrders(restaurantId, from, to);
+  async salesByTable(
+    restaurantId: string,
+    from: Date,
+    to: Date,
+    branchIds?: string[],
+  ): Promise<TableRow[]> {
+    const closed = await this.closedOrders(restaurantId, from, to, branchIds);
     const agg = new Map<string, { revenueAmount: number; orderCount: number }>();
     for (const o of closed) {
       const key = o.tableId ?? '__none__';
@@ -218,30 +291,118 @@ export class PrismaReportsQueryService implements ReportsQuery {
       .sort((a, b) => b.revenueAmount - a.revenueAmount);
   }
 
-  async salesByItem(restaurantId: string, from: Date, to: Date): Promise<ItemRow[]> {
-    const closed = await this.closedOrders(restaurantId, from, to);
+  async salesByItem(
+    restaurantId: string,
+    from: Date,
+    to: Date,
+    branchIds?: string[],
+  ): Promise<ItemRow[]> {
+    const closed = await this.closedOrders(restaurantId, from, to, branchIds);
     const items = await this.itemsForOrders(
       closed.map((o) => o.id),
       true,
     );
-    const agg = new Map<string, { name: string; quantity: number; revenueAmount: number }>();
+    const ledgerCost = await this.orderLineCosts(
+      restaurantId,
+      items.map((i) => i.id),
+    );
+    const agg = new Map<
+      string,
+      {
+        name: string;
+        quantity: number;
+        revenueAmount: number;
+        costAmount: number;
+        missingQty: number;
+      }
+    >();
     for (const it of items) {
       const cur = agg.get(it.menuItemId) ?? {
         name: it.nameSnapshot,
         quantity: 0,
         revenueAmount: 0,
+        costAmount: 0,
+        missingQty: 0,
       };
       cur.quantity += it.quantity;
       cur.revenueAmount += it.lineTotalAmount;
+      const cost = ledgerCost.get(it.id);
+      if (cost === undefined) cur.missingQty += it.quantity;
+      else cur.costAmount += cost;
       agg.set(it.menuItemId, cur);
     }
+
+    const menuItemIds = [...agg.keys()];
+    const [menuItems, recipes] = await Promise.all([
+      menuItemIds.length
+        ? this.prisma.menuItem.findMany({
+            where: { id: { in: menuItemIds } },
+            select: { id: true, categoryId: true, category: { select: { name: true } } },
+          })
+        : Promise.resolve([]),
+      menuItemIds.length
+        ? this.prisma.recipe.findMany({
+            where: { restaurantId, menuItemId: { in: menuItemIds }, deletedAt: null },
+            select: { menuItemId: true, costAmount: true },
+          })
+        : Promise.resolve([]),
+    ]);
+    const menuById = new Map(menuItems.map((m) => [m.id, m]));
+    const recipeCost = new Map(recipes.map((r) => [r.menuItemId, r.costAmount]));
+
     return [...agg.entries()]
-      .map(([menuItemId, v]) => ({ menuItemId, ...v }))
+      .map(([menuItemId, v]) => {
+        const menu = menuById.get(menuItemId);
+        const perUnit = recipeCost.get(menuItemId) ?? null;
+        const estimated = v.missingQty > 0 && perUnit !== null && perUnit > 0;
+        const costAmount = v.costAmount + (estimated ? perUnit! * v.missingQty : 0);
+        return {
+          menuItemId,
+          name: v.name,
+          categoryId: menu?.categoryId ?? null,
+          categoryName: menu?.category?.name ?? null,
+          quantity: v.quantity,
+          revenueAmount: v.revenueAmount,
+          costAmount,
+          grossProfitAmount: v.revenueAmount - costAmount,
+          costEstimated: estimated,
+        };
+      })
       .sort((a, b) => b.revenueAmount - a.revenueAmount);
   }
 
-  async discounts(restaurantId: string, from: Date, to: Date): Promise<DiscountsData> {
-    const closed = await this.closedOrders(restaurantId, from, to);
+  /**
+   * Actual cost price per order line from the stock ledger: every movement keyed
+   * refType=ORDER_LINE / refId=orderItemId (consumption is negative, reversals
+   * positive), so cost = -sum. Lines that never touched stock are absent.
+   */
+  private async orderLineCosts(
+    restaurantId: string,
+    orderItemIds: string[],
+  ): Promise<Map<string, number>> {
+    const out = new Map<string, number>();
+    const CHUNK = 5000;
+    for (let i = 0; i < orderItemIds.length; i += CHUNK) {
+      const ids = orderItemIds.slice(i, i + CHUNK);
+      const rows = await this.prisma.stockMovement.groupBy({
+        by: ['refId'],
+        where: { restaurantId, refType: 'ORDER_LINE', refId: { in: ids } },
+        _sum: { costAmount: true },
+      });
+      for (const r of rows) {
+        if (r.refId) out.set(r.refId, -(r._sum.costAmount ?? 0));
+      }
+    }
+    return out;
+  }
+
+  async discounts(
+    restaurantId: string,
+    from: Date,
+    to: Date,
+    branchIds?: string[],
+  ): Promise<DiscountsData> {
+    const closed = await this.closedOrders(restaurantId, from, to, branchIds);
     const withDiscount = closed.filter((o) => o.discountAmount > 0);
     return {
       totalDiscountAmount: withDiscount.reduce((s, o) => s + o.discountAmount, 0),
@@ -255,14 +416,24 @@ export class PrismaReportsQueryService implements ReportsQuery {
     };
   }
 
-  async cancellations(restaurantId: string, from: Date, to: Date): Promise<CancellationsData> {
+  async cancellations(
+    restaurantId: string,
+    from: Date,
+    to: Date,
+    branchIds?: string[],
+  ): Promise<CancellationsData> {
     const cancelledOrders = await this.prisma.order.findMany({
-      where: { restaurantId, status: 'CANCELLED', createdAt: { gte: from, lt: to } },
+      where: {
+        restaurantId,
+        ...inBranches(branchIds),
+        status: 'CANCELLED',
+        createdAt: { gte: from, lt: to },
+      },
       orderBy: { createdAt: 'desc' },
     });
     // cancelled items across orders created in the window (item-level cancels)
     const orders = await this.prisma.order.findMany({
-      where: { restaurantId, createdAt: { gte: from, lt: to } },
+      where: { restaurantId, ...inBranches(branchIds), createdAt: { gte: from, lt: to } },
     });
     const cancelledItemsRaw = await this.itemsForOrders(
       orders.map((o) => o.id),

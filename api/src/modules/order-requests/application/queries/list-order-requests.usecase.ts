@@ -20,6 +20,7 @@ import {
 
 export interface ListOrderRequestsInput {
   restaurantId: string | null;
+  branchId: string;
   status?: CustomerOrderRequestStatus;
   page: number;
   limit: number;
@@ -44,6 +45,7 @@ export class ListOrderRequestsUseCase implements UseCase<
     const { skip, take } = toSkipTake(pagination);
     const { items, total } = await this.requests.list({
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       status: input.status,
       skip,
       take,

@@ -222,7 +222,8 @@ export function ItemsList({
                       <Button size="sm" variant="secondary" onClick={() => onEditItem(item)}>
                         {tc('edit')}
                       </Button>
-                      <Can permission={PERMISSIONS.MENU_MANAGE}>
+                      {/* Stop-list toggle has its own right (iiko F_EM). */}
+                      <Can permission={PERMISSIONS.MENU_STOP_LIST}>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -232,6 +233,8 @@ export function ItemsList({
                             ? t('unavailable')
                             : t('available')}
                         </Button>
+                      </Can>
+                      <Can permission={PERMISSIONS.MENU_MANAGE}>
                         <Button size="sm" variant="ghost" onClick={() => toggleStatus(item)}>
                           {item.status === MenuItemResponseStatus.ACTIVE
                             ? t('deactivate')
