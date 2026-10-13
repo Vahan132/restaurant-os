@@ -2,6 +2,10 @@
  * Minimal dependency-free ZIP writer (STORE method, no compression). Enough to
  * bundle a handful of small text files (the hub package) in the browser without
  * pulling in a zip library. Produces a standard .zip any OS can open.
+ *
+ * Everything is written into ONE ArrayBuffer (via DataView) and handed to Blob as
+ * that buffer, so we never put a `Uint8Array<ArrayBufferLike>` into `BlobPart[]`
+ * (which the strict DOM lib types reject because the buffer could be shared).
  */
 const CRC_TABLE = (() => {
   const t = new Uint32Array(256);
@@ -22,44 +26,87 @@ function crc32(bytes: Uint8Array): number {
   return (c ^ 0xffffffff) >>> 0;
 }
 
-const u16 = (n: number): Uint8Array => new Uint8Array([n & 0xff, (n >>> 8) & 0xff]);
-const u32 = (n: number): Uint8Array =>
-  new Uint8Array([n & 0xff, (n >>> 8) & 0xff, (n >>> 16) & 0xff, (n >>> 24) & 0xff]);
-
 export function makeStoreZip(files: { path: string; content: string }[]): Blob {
   const enc = new TextEncoder();
-  const parts: BlobPart[] = [];
-  const central: BlobPart[] = [];
-  let offset = 0;
-  let centralSize = 0;
-
-  for (const f of files) {
-    const nameBytes = enc.encode(f.path);
+  const entries = files.map((f) => {
+    const name = enc.encode(f.path);
     const data = enc.encode(f.content);
-    const crc = crc32(data);
+    return { name, data, crc: crc32(data) };
+  });
 
-    const local: BlobPart[] = [
-      u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0),
-      u32(crc), u32(data.length), u32(data.length),
-      u16(nameBytes.length), u16(0), nameBytes,
-    ];
-    const localLen = 30 + nameBytes.length;
-    parts.push(...local, data);
-
-    central.push(
-      u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0),
-      u32(crc), u32(data.length), u32(data.length),
-      u16(nameBytes.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset),
-      nameBytes,
-    );
-    centralSize += 46 + nameBytes.length;
-    offset += localLen + data.length;
+  let total = 22; // end-of-central-directory record
+  for (const e of entries) {
+    total += 30 + e.name.length + e.data.length; // local header + name + data
+    total += 46 + e.name.length; // central-directory header + name
   }
 
-  const eocd: BlobPart[] = [
-    u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length),
-    u32(centralSize), u32(offset), u16(0),
-  ];
+  const buffer = new ArrayBuffer(total);
+  const out = new Uint8Array(buffer);
+  const dv = new DataView(buffer);
+  let p = 0;
 
-  return new Blob([...parts, ...central, ...eocd], { type: 'application/zip' });
+  const w16 = (n: number): void => {
+    dv.setUint16(p, n & 0xffff, true);
+    p += 2;
+  };
+  const w32 = (n: number): void => {
+    dv.setUint32(p, n >>> 0, true);
+    p += 4;
+  };
+  const wb = (b: Uint8Array): void => {
+    out.set(b, p);
+    p += b.length;
+  };
+
+  const offsets: number[] = [];
+  for (const e of entries) {
+    offsets.push(p);
+    w32(0x04034b50); // local file header signature
+    w16(20); // version needed
+    w16(0); // flags
+    w16(0); // method: store
+    w16(0); // mod time
+    w16(0); // mod date
+    w32(e.crc);
+    w32(e.data.length);
+    w32(e.data.length);
+    w16(e.name.length);
+    w16(0); // extra len
+    wb(e.name);
+    wb(e.data);
+  }
+
+  const centralStart = p;
+  entries.forEach((e, i) => {
+    w32(0x02014b50); // central file header signature
+    w16(20); // version made by
+    w16(20); // version needed
+    w16(0); // flags
+    w16(0); // method
+    w16(0); // mod time
+    w16(0); // mod date
+    w32(e.crc);
+    w32(e.data.length);
+    w32(e.data.length);
+    w16(e.name.length);
+    w16(0); // extra len
+    w16(0); // comment len
+    w16(0); // disk number
+    w16(0); // internal attrs
+    w32(0); // external attrs
+    w32(offsets[i] ?? 0); // local header offset
+    wb(e.name);
+  });
+  const centralSize = p - centralStart;
+
+  w32(0x06054b50); // end of central directory signature
+  w16(0); // disk number
+  w16(0); // disk with central dir
+  w16(entries.length);
+  w16(entries.length);
+  w32(centralSize);
+  w32(centralStart);
+  w16(0); // comment len
+
+  return new Blob([buffer], { type: 'application/zip' });
 }
