@@ -145,12 +145,19 @@ describe('PairEdgeNodeUseCase (EDGE-PAIR-2)', () => {
     });
   });
 
-  it('fails closed when the cloud master KEK is not configured', async () => {
-    const { uc, codes } = build(undefined);
+  it('pairs WITHOUT a fiscal KEK when the cloud master KEK is not configured (fiscal is decoupled from pairing)', async () => {
+    // '' = FISCAL_MASTER_KEK unset (exactly what docker-compose passes); the
+    // service treats it as absent. (Passing `undefined` would hit build()'s
+    // default param and configure a KEK — not what we want to test.)
+    const { uc, codes, nodes } = build('');
     codes.seed('NOKEK123');
-    await expect(uc.execute({ code: 'NOKEK123' })).rejects.toMatchObject({
-      response: { code: 'PAIRING_KEK_UNAVAILABLE' },
-    });
+    const res = await uc.execute({ code: 'NOKEK123' });
+    // Pairing succeeds and enrols the node — fiscal never blocks it.
+    expect(nodes.created).toHaveLength(1);
+    expect(res.nodeToken).toMatch(/^[0-9a-f]{64}$/);
+    // No KEK minted or stored when the platform has no master KEK.
+    expect(res.fiscalKek).toBeUndefined();
+    expect(nodes.keks.has(res.nodeId)).toBe(false);
   });
 
   it('re-pair rotates the KEK (a fresh key, prior active revoked)', async () => {

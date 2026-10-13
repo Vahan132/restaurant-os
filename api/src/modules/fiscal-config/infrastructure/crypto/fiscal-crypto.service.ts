@@ -37,7 +37,13 @@ export class FiscalCryptoService {
 
   constructor(config: ConfigService<AppConfig, true>) {
     const hex = config.get('FISCAL_MASTER_KEK', { infer: true }) as string | undefined;
-    if (hex !== undefined) {
+    // Treat an empty/whitespace value as ABSENT (not malformed): docker-compose
+    // passes `FISCAL_MASTER_KEK: ${FISCAL_MASTER_KEK:-}` which is "" on a fresh
+    // hub, and ConfigService.get() can surface that raw "" past the zod coercion.
+    // An UNPAIRED hub has no KEK yet (pairing delivers it), so "" must let the hub
+    // boot in setup mode (kek=null -> lazy error only if a fiscal op is attempted).
+    // A present-but-malformed value (a real typo) still fails fast below.
+    if (hex !== undefined && hex.trim() !== '') {
       if (!/^[0-9a-fA-F]{64}$/.test(hex)) {
         throw new Error('FISCAL_MASTER_KEK must be 64 hex chars (32 bytes).');
       }

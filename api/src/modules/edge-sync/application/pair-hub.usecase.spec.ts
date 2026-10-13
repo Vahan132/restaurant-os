@@ -68,7 +68,7 @@ describe('PairHubUseCase (EDGE-SETUP-3A)', () => {
     // Response carries only non-secret identity — never the token/KEK.
     expect(res).toEqual({ paired: true, nodeId: 'node-1', branchId: 'b-1', restarting: true });
     expect(JSON.stringify(res).includes(RESULT.nodeToken)).toBe(false);
-    expect(JSON.stringify(res).includes(RESULT.fiscalKek)).toBe(false);
+    expect(JSON.stringify(res).includes(RESULT.fiscalKek as string)).toBe(false);
   });
 
   it('maps an invalid code to INVALID_PAIRING_CODE and does NOT persist or restart', async () => {

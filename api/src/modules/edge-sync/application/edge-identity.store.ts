@@ -12,8 +12,9 @@ export interface PersistedEdgeIdentity {
   nodeId: string;
   /** Long-lived node bearer token (→ EDGE_NODE_TOKEN). */
   nodeToken: string;
-  /** Per-hub fiscal KEK, 64 hex chars (→ FISCAL_MASTER_KEK, verbatim). */
-  fiscalKek: string;
+  /** Per-hub fiscal KEK, 64 hex chars (→ FISCAL_MASTER_KEK, verbatim). Optional:
+   *  only delivered when the platform has fiscalization configured. */
+  fiscalKek?: string;
   /** Cloud server address (→ CLOUD_URL) so snapshot/resync work after restart. */
   cloudUrl?: string;
 }
@@ -49,8 +50,12 @@ export class EdgeIdentityStore {
       `EDGE_BRANCH_ID=${identity.branchId}`,
       `EDGE_NODE_ID=${identity.nodeId}`,
       `EDGE_NODE_TOKEN=${identity.nodeToken}`,
-      `FISCAL_MASTER_KEK=${identity.fiscalKek}`,
     ];
+    // Only persist a fiscal KEK when pairing actually delivered one (i.e. the
+    // platform has fiscalization set up). Pairing for offline serving carries none.
+    if (identity.fiscalKek) {
+      lines.push(`FISCAL_MASTER_KEK=${identity.fiscalKek}`);
+    }
     if (identity.cloudUrl) {
       // Single-quote so any query-string metacharacters survive `set -a` sourcing;
       // strip single quotes defensively (URLs never contain them).

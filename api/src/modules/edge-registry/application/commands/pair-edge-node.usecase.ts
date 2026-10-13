@@ -11,7 +11,7 @@ import {
   EDGE_PAIRING_CODE_REPOSITORY,
   EdgePairingCodeRepository,
 } from '../../domain/repositories/edge-pairing-code.repository';
-import { InvalidPairingCode, PairingKekUnavailable } from '../edge-registry.errors';
+import { InvalidPairingCode } from '../edge-registry.errors';
 import { generateNodeToken, hashNodeToken, hashPairingCode } from '../edge-token.util';
 
 export interface PairEdgeNodeInput {
@@ -28,8 +28,10 @@ export interface PairEdgeNodeResult {
    * master-wrapped form is persisted). Hex (not base64) so the hub writes it
    * VERBATIM into its FISCAL_MASTER_KEK slot, which is validated as 64-hex — no
    * hub-side decode/transform, per the EDGE-KEK-1 "lands in the existing slot" rule.
+   * OPTIONAL: present only when the platform has a master KEK configured (i.e.
+   * fiscalization is set up). Pairing never depends on it.
    */
-  fiscalKek: string;
+  fiscalKek?: string;
   organizationId: string;
   restaurantId: string;
   branchId: string;
@@ -58,12 +60,6 @@ export class PairEdgeNodeUseCase implements UseCase<PairEdgeNodeInput, PairEdgeN
     if (!pairing) {
       throw InvalidPairingCode();
     }
-    // Per-hub KEK delivery requires the cloud master KEK — fail closed rather than
-    // enrol a hub that could never decrypt fiscal data.
-    if (!this.crypto.isConfigured) {
-      throw PairingKekUnavailable();
-    }
-
     // Atomic single-use claim BEFORE creating anything: a lost race (already
     // redeemed / just expired) rejects, so a code enrols at most one hub.
     const nodeId = this.ids.generate();
@@ -88,16 +84,22 @@ export class PairEdgeNodeUseCase implements UseCase<PairEdgeNodeInput, PairEdgeN
     });
     await this.nodes.create(node);
 
-    // Generate the per-hub KEK, store it WRAPPED under the master KEK, and deliver
-    // the bare 32 bytes exactly once in the response below. Once stored, the read
-    // model auto-re-wraps this branch's fiscal DEKs to it (EDGE-KEK-1).
-    const hubKek = this.crypto.generateHubKek();
-    await this.nodes.setFiscalKek(nodeId, this.crypto.wrapHubKek(hubKek));
+    // Per-hub fiscal KEK is OPTIONAL and has NOTHING to do with pairing a hub for
+    // offline POS/KDS/Admin. It is minted here only as a convenience WHEN the
+    // platform already has a master KEK (fiscalization configured); otherwise the
+    // hub pairs with no fiscal key at all and fiscal is set up later, per
+    // restaurant, from the admin panel. Pairing must never hard-depend on it.
+    let fiscalKek: string | undefined;
+    if (this.crypto.isConfigured) {
+      const hubKek = this.crypto.generateHubKek();
+      await this.nodes.setFiscalKek(nodeId, this.crypto.wrapHubKek(hubKek));
+      fiscalKek = hubKek.toString('hex');
+    }
 
     return {
       nodeId,
       nodeToken: token,
-      fiscalKek: hubKek.toString('hex'),
+      fiscalKek,
       organizationId: pairing.organizationId,
       restaurantId: pairing.restaurantId,
       branchId: pairing.branchId,

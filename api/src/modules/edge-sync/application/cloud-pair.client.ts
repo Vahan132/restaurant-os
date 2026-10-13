@@ -6,8 +6,8 @@ import { AppConfig } from '../../../shared/infrastructure/config/env.schema';
 export interface CloudPairResult {
   nodeId: string;
   nodeToken: string;
-  /** Per-hub fiscal KEK, 64 hex chars. */
-  fiscalKek: string;
+  /** Per-hub fiscal KEK, 64 hex chars. Absent when the platform has no master KEK. */
+  fiscalKek?: string;
   organizationId: string;
   restaurantId: string;
   branchId: string;

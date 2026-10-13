@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 
 /** POST /edge-nodes/pairing-code body (restaurant-admin, EDGE_MANAGE). */
@@ -44,12 +44,13 @@ export class EdgePairResponse {
   @ApiProperty() nodeId!: string;
   @ApiProperty({ description: 'Long-lived node bearer token. Write to EDGE_NODE_TOKEN. Shown ONCE.' })
   nodeToken!: string;
-  @ApiProperty({
+  @ApiPropertyOptional({
     description:
-      'Per-hub fiscal KEK as 64 hex chars (32 bytes). Write VERBATIM to the ' +
-      'FISCAL_MASTER_KEK slot (validated as 64-hex). Shown ONCE.',
+      'Per-hub fiscal KEK as 64 hex chars (32 bytes). Present ONLY when the ' +
+      'platform has a master KEK configured; omitted otherwise (the hub pairs ' +
+      'without it and fiscal is configured later per restaurant). Shown ONCE.',
   })
-  fiscalKek!: string;
+  fiscalKek?: string;
   @ApiProperty() organizationId!: string;
   @ApiProperty() restaurantId!: string;
   @ApiProperty() branchId!: string;
