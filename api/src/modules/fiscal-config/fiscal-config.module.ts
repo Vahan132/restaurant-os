@@ -16,6 +16,9 @@ import { PrismaFiscalConfigStore } from './infrastructure/persistence/prisma-fis
 import { PrismaFiscalPrintModeReader } from './infrastructure/persistence/prisma-fiscal-print-mode.reader';
 import { PrismaTenantFiscalDepartmentReader } from './infrastructure/persistence/prisma-tenant-fiscal-department.reader';
 import { TenantFiscalController } from './presentation/http/tenant-fiscal.controller';
+import { AuditModule } from '../audit/audit.module';
+import { BranchFiscalSettingsService } from './application/services/branch-fiscal-settings.service';
+import { BranchFiscalSettingsController } from './presentation/http/branch-fiscal-settings.controller';
 
 /**
  * Fiscal-config module (FISCAL-4). Owns the encrypted per-tenant store + the
@@ -28,12 +31,15 @@ import { TenantFiscalController } from './presentation/http/tenant-fiscal.contro
   // FISCAL-DEPT-3A: the tenant-facing (restaurant-operator) non-secret departments
   // read. The platform-admin fiscal endpoints live in the platform module and are
   // untouched.
-  controllers: [TenantFiscalController],
+  imports: [AuditModule],
+  // HDM-TM-2: restaurant-owner per-branch HDM settings.
+  controllers: [TenantFiscalController, BranchFiscalSettingsController],
   providers: [
     FiscalCryptoService,
     DbFiscalConfigAdapter,
     EnvFileFiscalConfigAdapter,
     GetBranchFiscalDepartmentsUseCase,
+    BranchFiscalSettingsService,
     { provide: FISCAL_CONFIG_STORE, useClass: PrismaFiscalConfigStore },
     { provide: FISCAL_PRINT_MODE_READER, useClass: PrismaFiscalPrintModeReader },
     { provide: TENANT_FISCAL_DEPARTMENT_READER, useClass: PrismaTenantFiscalDepartmentReader },

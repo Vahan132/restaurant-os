@@ -1227,7 +1227,8 @@
       "5": "Saturday",
       "6": "Sunday"
     },
-    "paymentsTab": "Online payments"
+    "paymentsTab": "Online payments",
+    "fiscalTab": "HDM (fiscal)"
   },
   "audit": {
     "title": "Audit log",
@@ -2287,5 +2288,48 @@
     "cardDeclined": "declined",
     "cardFunds": "insufficient funds",
     "card3ds": "3-D Secure failed"
+  },
+  "fiscalSettings": {
+    "title": "HDM — fiscal receipts",
+    "subtitle": "The TouchMaster HDM of THIS branch. Each branch has its own device and settings.",
+    "on": "On",
+    "off": "Off",
+    "notSetUp": "Not set up",
+    "guideTitle": "How to connect the TouchMaster HDM",
+    "guide1": "On the HDM open “Առև. ծրագրերի և հեռ. կառ. համ.-ի հետ ինտեգրացիա” and tick “Ակտիվացնել կապը արտաքին ծրագրի հետ”.",
+    "guide2": "In “Ավտոմատ համակարգի IP հասցեն” enter the IP of the hub computer in this restaurant, or tick “Անջատել IP հասցեի սահմանափակումը”.",
+    "guide3": "Press “Գեներացնել” next to “ՀԴՄ գաղտնաբառ” and copy the password into the Password field below.",
+    "guide4": "Copy “ՀԴՄ IP հասցե” into HDM IP address and “Պորտ” into Port below, then press “Պահպանել” on the HDM.",
+    "guide5": "Enter the code and PIN of an HDM operator (cashier) that has all needed departments.",
+    "guide6": "Save here. The hub picks it up in a minute — then on the POS press HDM → Test connection.",
+    "active": "Print fiscal receipts through the HDM",
+    "activeHint": "Turn on once the connection test succeeds.",
+    "host": "HDM IP address (ՀԴՄ IP հասցե)",
+    "port": "Port (Պորտ)",
+    "password": "HDM password (ՀԴՄ գաղտնաբառ)",
+    "secretKept": "•••••••• saved — leave blank to keep",
+    "cashier": "Operator (cashier) code",
+    "pin": "Operator PIN",
+    "crn": "HDM registration number (optional)",
+    "printMode": "When to print",
+    "printAuto": "Automatically when the bill is paid",
+    "printManual": "When the waiter presses Fiscalize",
+    "useExtPos": "Cards are taken on a separate bank terminal",
+    "useExtPosHint": "Leave on unless the HDM itself has a card module.",
+    "save": "Save HDM settings",
+    "saved": "HDM settings saved for this branch.",
+    "portInvalid": "Port must be a number between 1 and 65535.",
+    "cashierInvalid": "Operator code must be a whole number.",
+    "testHint": "The live connection test runs on the POS (HDM button), because only the hub inside the restaurant can reach the device.",
+    "deptTitle": "HDM departments",
+    "deptHint": "Department numbers exactly as on the HDM (POS → HDM → Test connection lists them). Menu items are assigned to these.",
+    "saveDeviceFirst": "Save the HDM device first.",
+    "deptNo": "No.",
+    "deptTax": "Tax type",
+    "deptName": "Name",
+    "deptAdd": "Add department",
+    "deptSave": "Save departments",
+    "savedDepts": "Departments saved.",
+    "deptIncomplete": "Each department needs a number and a tax type."
   }
 }

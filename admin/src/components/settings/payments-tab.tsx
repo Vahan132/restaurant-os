@@ -29,7 +29,7 @@ const PROCESSORS = ['', 'idram', 'telcell', 'arca', 'ameriabank', 'sandbox'];
  */
 export function PaymentsTab() {
   const t = useTranslations('paymentsSettings');
-  const canManage = usePermission(PERMISSIONS.SETTINGS_MANAGE, 'restaurant');
+  const canManage = usePermission(PERMISSIONS.SETTINGS_MANAGE); // per active branch
   const { data, isLoading } = usePaymentSettings();
   const save = useSavePaymentSettings();
   const check = useCheckPaymentSettings();
