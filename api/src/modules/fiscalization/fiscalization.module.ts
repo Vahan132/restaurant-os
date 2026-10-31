@@ -8,6 +8,8 @@ import { EHdmFiscalizationAdapter } from './infrastructure/adapters/ehdm-fiscali
 import { PhysicalHdmFiscalizationAdapter } from './infrastructure/adapters/physical-hdm-fiscalization.adapter';
 import { StubFiscalizationAdapter } from './infrastructure/adapters/stub-fiscalization.adapter';
 import { HttpsEHdmTransport } from './infrastructure/http/https-ehdm.transport';
+import { FiscalDeviceOpsService } from './application/services/fiscal-device-ops.service';
+import { FiscalDeviceController } from './presentation/http/fiscal-device.controller';
 
 /**
  * Fiscalization module. FISCALIZATION_PORT is selected by APP_MODE (FISCAL-EDGE-2):
@@ -21,7 +23,10 @@ import { HttpsEHdmTransport } from './infrastructure/http/https-ehdm.transport';
  */
 @Module({
   imports: [FiscalConfigModule],
+  // HDM-TM-1: hub-side device ops (probe / reprint / X-Z report / sync).
+  controllers: [FiscalDeviceController],
   providers: [
+    FiscalDeviceOpsService,
     StubFiscalizationAdapter,
     EHdmFiscalizationAdapter,
     ChannelRouterFiscalizationAdapter,
@@ -37,6 +42,6 @@ import { HttpsEHdmTransport } from './infrastructure/http/https-ehdm.transport';
       inject: [EdgeConfigService, PhysicalHdmFiscalizationAdapter, ChannelRouterFiscalizationAdapter],
     },
   ],
-  exports: [FISCALIZATION_PORT, EHdmFiscalizationAdapter],
+  exports: [FISCALIZATION_PORT, EHdmFiscalizationAdapter, FiscalDeviceOpsService],
 })
 export class FiscalizationModule {}

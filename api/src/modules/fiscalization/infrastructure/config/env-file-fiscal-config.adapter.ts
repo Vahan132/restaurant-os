@@ -5,6 +5,7 @@ import { AppConfig } from '../../../../shared/infrastructure/config/env.schema';
 import { FatalFiscalError } from '../../application/ports/fiscal-errors';
 import {
   FiscalConfigPort,
+  FiscalDeviceConfig,
   FiscalEnvironment,
   FiscalLanguage,
   TenantFiscalConfig,
@@ -68,6 +69,16 @@ export class EnvFileFiscalConfigAdapter implements FiscalConfigPort {
       language: raw.language ?? 'hy',
       departmentMap: raw.departmentMap ?? {},
     });
+  }
+
+  /** The env/file backing never carries a physical device (DB backing only). */
+  getDeviceConfig(restaurantId: string, branchId: string): Promise<FiscalDeviceConfig> {
+    return Promise.reject(
+      new FatalFiscalError(
+        'DEVICE_NOT_CONFIGURED',
+        `No physical HDM device configured for ${restaurantId}:${branchId} (FILE backend).`,
+      ),
+    );
   }
 
   private load(path: string): Record<string, RawTenantEntry> {

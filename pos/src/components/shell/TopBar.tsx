@@ -15,6 +15,7 @@ import { HubStatusBadge } from './HubStatusBadge';
 import { OrderRequestsBell } from '@/components/requests/OrderRequestsBell';
 import { BranchMenu } from '@/components/branch/BranchMenu';
 import { EndpointSettings } from '@/components/settings/EndpointSettings';
+import { HdmDeviceButton } from '@/components/settings/HdmDevicePanel';
 import { StaffPickerLogin } from '@/components/auth/StaffPickerLogin';
 import { Can, PERMISSIONS } from '@/lib/permissions';
 
@@ -89,6 +90,9 @@ export function TopBar() {
           >
             {t('shiftReport')}
           </button>
+        </Can>
+        <Can perform={PERMISSIONS.FISCAL_RECEIPT_PRINT}>
+          <HdmDeviceButton />
         </Can>
         <EndpointSettings />
         <LanguageSwitcher />

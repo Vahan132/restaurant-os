@@ -287,6 +287,27 @@ export const envSchema = z
       z.coerce.number().int().min(1).default(5_242_880),
     ),
 
+    // ── PAYNET-1: online payments ───────────────────────────────────────────
+    // Public base URL of THIS API as the internet sees it (e.g.
+    // https://api.example.am/res/api). Used to build the Paynet webhook
+    // `callback_url`. Blank → no callback_url is sent; payments are then confirmed
+    // only when the buyer returns (still safe: confirm always re-reads Paynet).
+    PUBLIC_API_URL: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().url().optional(),
+    ),
+    // When a branch has NO active online-payment provider, may QR prepayment fall
+    // back to the always-captures stub? true keeps today's demo behaviour; set
+    // false in production so an unconfigured branch cannot take free orders.
+    PAYMENT_ALLOW_STUB: z.preprocess(
+      (v) => (typeof v === 'string' ? v.trim().toLowerCase() !== 'false' : v),
+      z.boolean().default(true),
+    ),
+    PAYNET_BASE_URL: z.preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().url().default('https://paynet.am'),
+    ),
+
     // ── FISCAL-1: electronic-HDM adapter config ─────────────────────────────
     // Path to a JSON file mapping "<restaurantId>:<branchId>" -> per-tenant SRC
     // e-HDM config (crn, cashierId, environment, cert/key/ca PEM file PATHS,

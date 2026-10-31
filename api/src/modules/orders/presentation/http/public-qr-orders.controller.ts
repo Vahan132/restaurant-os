@@ -13,6 +13,8 @@ import { SessionTokenGuard } from '../../../table-sessions/presentation/http/ses
 import { ValidateCartUseCase } from '../../application/commands/validate-cart.usecase';
 import { CreatePrepaymentOrderUseCase } from '../../application/commands/create-prepayment-order.usecase';
 import { ConfirmPaymentUseCase } from '../../application/commands/confirm-payment.usecase';
+import { StartOnlinePaymentUseCase } from '../../application/commands/start-online-payment.usecase';
+import { StartOnlinePaymentDto, StartOnlinePaymentResponse } from '../../application/dto/online-payment.dto';
 import {
   GetOrderReceiptUseCase,
   toOrderReceiptView,
@@ -40,6 +42,7 @@ export class PublicQrOrdersController {
     private readonly validateCart: ValidateCartUseCase,
     private readonly createOrder: CreatePrepaymentOrderUseCase,
     private readonly confirmPayment: ConfirmPaymentUseCase,
+    private readonly startOnlinePayment: StartOnlinePaymentUseCase,
     private readonly getReceipt: GetOrderReceiptUseCase,
   ) {}
 
@@ -74,6 +77,28 @@ export class PublicQrOrdersController {
       lines: dto.lines,
     });
     return CreatedQrOrderResponse.from(result);
+  }
+
+  @Post(':orderId/start-payment')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({
+    summary:
+      'Begin online payment (PAYNET-1): REDIRECT → send the buyer to checkoutUrl; CONFIRM → call confirm-payment now.',
+  })
+  @ApiOkResponse({ type: StartOnlinePaymentResponse })
+  async startPayment(
+    @CurrentSession() session: SessionContext,
+    @Param('orderId') orderId: string,
+    @Body() dto: StartOnlinePaymentDto,
+  ): Promise<StartOnlinePaymentResponse> {
+    const res = await this.startOnlinePayment.execute({
+      restaurantId: session.restaurantId,
+      branchId: session.branchId,
+      sessionId: session.sessionId,
+      orderId,
+      returnUrl: dto.returnUrl,
+    });
+    return StartOnlinePaymentResponse.from(res);
   }
 
   @Post(':orderId/confirm-payment')

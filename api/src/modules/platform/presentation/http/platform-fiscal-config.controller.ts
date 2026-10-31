@@ -89,7 +89,7 @@ export class PlatformFiscalConfigController {
   }
 
   @Post(':restaurantId/:branchId/device')
-  @ApiOperation({ summary: 'Set the physical-HDM device (host/port/password; password write-only).' })
+  @ApiOperation({ summary: 'Set the physical-HDM device (host/port/password/operator/PIN; secrets write-only).' })
   @ApiParam({ name: 'restaurantId' })
   @ApiParam({ name: 'branchId' })
   @ApiOkResponse({ type: FiscalConfigStatusResponse })
@@ -105,6 +105,9 @@ export class PlatformFiscalConfigController {
       deviceHost: dto.host,
       devicePort: dto.port,
       devicePassword: dto.password,
+      deviceCashierId: dto.cashierId,
+      devicePin: dto.pin,
+      deviceUseExtPos: dto.useExtPos,
       ...actorOf(req),
     });
     return this.statusOrThrow(restaurantId, branchId);

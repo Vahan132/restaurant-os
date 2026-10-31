@@ -15,6 +15,15 @@ export interface SetFiscalDeviceDto {
      * @maximum 65535
      */
   port: number;
-  /** Device password. Encrypted at rest; never returned by any read. */
-  password: string;
+  /** Device integration password (HDM → "ՀԴՄ գաղտնաբառ"). Encrypted at rest; never returned. Omit to keep the stored one. */
+  password?: string;
+  /**
+   * HDM operator (cashier) code used to log in (fn 2).
+   * @nullable
+   */
+  cashierId?: number | null;
+  /** Operator PIN. Write-only; omit to keep the stored one. */
+  pin?: string;
+  /** true = card payments are taken on a separate bank terminal (default); false = the HDM runs its own card app. */
+  useExtPos?: boolean;
 }

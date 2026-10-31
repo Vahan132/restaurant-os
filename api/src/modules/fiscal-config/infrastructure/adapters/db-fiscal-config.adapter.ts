@@ -7,6 +7,7 @@ import { resolveBaseUrl } from '../../../fiscalization/application/ehdm-protocol
 import { FatalFiscalError } from '../../../fiscalization/application/ports/fiscal-errors';
 import {
   FiscalConfigPort,
+  FiscalDeviceConfig,
   TenantFiscalConfig,
 } from '../../../fiscalization/application/ports/fiscal-config.port';
 import { FiscalCryptoService } from '../crypto/fiscal-crypto.service';
@@ -66,22 +67,8 @@ export class DbFiscalConfigAdapter implements FiscalConfigPort {
       cipher: keyCipher, iv: keyIv, authTag: keyAuthTag,
     });
 
-    // FISCAL-EDGE-1: optional physical device. host/port + all three password
-    // blobs must be present together; the password shares the row DEK above.
-    const { deviceHost, devicePort, devicePwdCipher, devicePwdIv, devicePwdAuthTag } = cfg;
-    let device: TenantFiscalConfig['device'];
-    if (
-      deviceHost !== null &&
-      devicePort !== null &&
-      devicePwdCipher &&
-      devicePwdIv &&
-      devicePwdAuthTag
-    ) {
-      const password = this.crypto.openUnderDek(dek, {
-        cipher: devicePwdCipher, iv: devicePwdIv, authTag: devicePwdAuthTag,
-      });
-      device = { host: deviceHost, port: devicePort, password: password.toString('utf8') };
-    }
+    // FISCAL-EDGE-1: optional physical device (shares the row DEK above).
+    const device = this.openDevice(cfg, dek) ?? undefined;
 
     const departmentMap: Record<string, string> = {};
     for (const d of cfg.departments) {
@@ -99,6 +86,83 @@ export class DbFiscalConfigAdapter implements FiscalConfigPort {
       language: cfg.language as 'hy' | 'en' | 'ru',
       departmentMap,
       ...(device ? { device } : {}),
+    };
+  }
+
+  /**
+   * HDM-TM-1: physical-device config only. Needs an ACTIVE row + device + DEK, but
+   * NOT the e-HDM cert/key (a TouchMaster-only branch has none).
+   */
+  async getDeviceConfig(restaurantId: string, branchId: string): Promise<FiscalDeviceConfig> {
+    const cfg = await this.prisma.fiscalConfig.findUnique({
+      where: { restaurantId_branchId: { restaurantId, branchId } },
+    });
+    const notConfigured = (): FatalFiscalError =>
+      new FatalFiscalError(
+        'DEVICE_NOT_CONFIGURED',
+        `No active physical HDM device configured for ${restaurantId}:${branchId}.`,
+      );
+    if (!cfg || !cfg.active || !cfg.dekCipher || !cfg.dekIv || !cfg.dekAuthTag) {
+      throw notConfigured();
+    }
+    const dek = this.crypto.unwrapDek({
+      cipher: cfg.dekCipher,
+      iv: cfg.dekIv,
+      authTag: cfg.dekAuthTag,
+    });
+    const device = this.openDevice(cfg, dek);
+    if (!device) {
+      throw notConfigured();
+    }
+    return device;
+  }
+
+  /** Decrypt the device password (+ optional PIN) under the row DEK, or null. */
+  private openDevice(
+    cfg: {
+      deviceHost: string | null;
+      devicePort: number | null;
+      devicePwdCipher: Buffer | null;
+      devicePwdIv: Buffer | null;
+      devicePwdAuthTag: Buffer | null;
+      deviceCashierId: number | null;
+      devicePinCipher: Buffer | null;
+      devicePinIv: Buffer | null;
+      devicePinAuthTag: Buffer | null;
+      deviceUseExtPos: boolean;
+    },
+    dek: Buffer,
+  ): FiscalDeviceConfig | null {
+    const { deviceHost, devicePort, devicePwdCipher, devicePwdIv, devicePwdAuthTag } = cfg;
+    if (
+      deviceHost === null ||
+      devicePort === null ||
+      !devicePwdCipher ||
+      !devicePwdIv ||
+      !devicePwdAuthTag
+    ) {
+      return null;
+    }
+    const password = this.crypto
+      .openUnderDek(dek, { cipher: devicePwdCipher, iv: devicePwdIv, authTag: devicePwdAuthTag })
+      .toString('utf8');
+    const pin =
+      cfg.devicePinCipher && cfg.devicePinIv && cfg.devicePinAuthTag
+        ? this.crypto
+            .openUnderDek(dek, {
+              cipher: cfg.devicePinCipher,
+              iv: cfg.devicePinIv,
+              authTag: cfg.devicePinAuthTag,
+            })
+            .toString('utf8')
+        : null;
+    return {
+      host: deviceHost,
+      port: devicePort,
+      password,
+      cashierId: cfg.deviceCashierId,
+      pin,
+      useExtPos: cfg.deviceUseExtPos,
     };
   }
 

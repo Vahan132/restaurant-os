@@ -83,6 +83,10 @@ export function FiscalConfigManager() {
   const [deviceHost, setDeviceHost] = useState('');
   const [devicePort, setDevicePort] = useState('');
   const [devicePassword, setDevicePassword] = useState('');
+  // HDM-TM-1: operator login (fn 2) + card-terminal mode. PIN is write-only.
+  const [deviceCashier, setDeviceCashier] = useState('');
+  const [devicePin, setDevicePin] = useState('');
+  const [deviceUseExtPos, setDeviceUseExtPos] = useState(true);
   const [printMode, setPrintMode] = useState<PrintMode>('AUTO');
 
   const selKey = `${restaurantId}:${branchId}`;
@@ -109,6 +113,8 @@ export function FiscalConfigManager() {
       );
       setDeviceHost(status.deviceHost ?? '');
       setDevicePort(status.devicePort != null ? String(status.devicePort) : '');
+      setDeviceCashier(status.deviceCashierId != null ? String(status.deviceCashierId) : '');
+      setDeviceUseExtPos(status.deviceUseExtPos ?? true);
       setPrintMode(status.fiscalPrintMode as PrintMode);
     } else {
       setCrn('');
@@ -119,11 +125,14 @@ export function FiscalConfigManager() {
       setDepts([]);
       setDeviceHost('');
       setDevicePort('');
+      setDeviceCashier('');
+      setDeviceUseExtPos(true);
       setPrintMode('AUTO');
     }
     setCertPem('');
     setKeyPem('');
     setDevicePassword('');
+    setDevicePin('');
     setCheckResult(null);
     setHydratedKey(selKey);
   }, [status, statusQ.isLoading, selKey, branchSelected, hydratedKey]);
@@ -200,13 +209,27 @@ export function FiscalConfigManager() {
       toast.error(t('devicePortInvalid'));
       return;
     }
+    const cashierNum = deviceCashier.trim() === '' ? null : Number(deviceCashier);
+    if (cashierNum !== null && (!Number.isInteger(cashierNum) || cashierNum < 0)) {
+      toast.error(t('deviceCashierInvalid'));
+      return;
+    }
     try {
       await deviceMut.mutateAsync({
         restaurantId,
         branchId,
-        data: { host: deviceHost.trim(), port: portNum, password: devicePassword },
+        data: {
+          host: deviceHost.trim(),
+          port: portNum,
+          // Write-only secrets: omitted when blank so the stored ones are kept.
+          ...(devicePassword !== '' ? { password: devicePassword } : {}),
+          ...(devicePin.trim() !== '' ? { pin: devicePin.trim() } : {}),
+          cashierId: cashierNum,
+          useExtPos: deviceUseExtPos,
+        },
       });
       setDevicePassword('');
+      setDevicePin('');
       await refreshStatus();
       toast.success(t('savedDevice'));
     } catch (err) {
@@ -516,6 +539,19 @@ export function FiscalConfigManager() {
             ) : (
               <>
                 <p className="text-xs text-gray-500">{t('deviceHint')}</p>
+                <details className="rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
+                  <summary className="cursor-pointer font-medium text-gray-800">
+                    {t('deviceGuideTitle')}
+                  </summary>
+                  <ol className="mt-2 list-decimal space-y-1 pl-4">
+                    <li>{t('deviceGuide1')}</li>
+                    <li>{t('deviceGuide2')}</li>
+                    <li>{t('deviceGuide3')}</li>
+                    <li>{t('deviceGuide4')}</li>
+                    <li>{t('deviceGuide5')}</li>
+                    <li>{t('deviceGuide6')}</li>
+                  </ol>
+                </details>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="block text-sm">
                     <span className="mb-1 block text-gray-600">{t('deviceHost')}</span>
@@ -549,6 +585,40 @@ export function FiscalConfigManager() {
                       placeholder={status?.deviceConfigured ? t('devicePasswordSet') : ''}
                     />
                   </label>
+                  <label className="block text-sm">
+                    <span className="mb-1 block text-gray-600">{t('deviceCashier')}</span>
+                    <input
+                      className={inputClass}
+                      type="number"
+                      min={0}
+                      value={deviceCashier}
+                      onChange={(e) => setDeviceCashier(e.target.value)}
+                      placeholder="3"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="mb-1 block text-gray-600">{t('devicePin')}</span>
+                    <input
+                      className={inputClass}
+                      type="password"
+                      autoComplete="new-password"
+                      value={devicePin}
+                      onChange={(e) => setDevicePin(e.target.value)}
+                      placeholder={status?.devicePinConfigured ? t('devicePasswordSet') : ''}
+                    />
+                  </label>
+                  <label className="flex items-start gap-2 text-sm text-gray-700 sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={deviceUseExtPos}
+                      onChange={(e) => setDeviceUseExtPos(e.target.checked)}
+                    />
+                    <span>
+                      {t('deviceUseExtPos')}
+                      <span className="block text-xs text-gray-500">{t('deviceUseExtPosHint')}</span>
+                    </span>
+                  </label>
                 </div>
                 <Button
                   variant="primary"
@@ -557,7 +627,7 @@ export function FiscalConfigManager() {
                     deviceMut.isPending ||
                     deviceHost.trim() === '' ||
                     devicePort === '' ||
-                    devicePassword === ''
+                    (devicePassword === '' && !status?.deviceConfigured)
                   }
                 >
                   {t('saveDevice')}

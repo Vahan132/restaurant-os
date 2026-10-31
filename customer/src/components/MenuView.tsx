@@ -26,6 +26,8 @@ import CartBar from './cart/CartBar';
 import CartView from './cart/CartView';
 import CheckoutView from './cart/CheckoutView';
 import ReceiptView from './cart/ReceiptView';
+import PaymentReturnView from './cart/PaymentReturnView';
+import { readReturnOrderId } from '@/lib/onlinePayment';
 import SessionOrders from './cart/SessionOrders';
 import { useCart } from './cart/CartProvider';
 import CategoryNav from './CategoryNav';
@@ -113,8 +115,14 @@ export default function MenuView() {
     | { name: 'cart' }
     | { name: 'checkout' }
     | { name: 'receipt'; orderId: string }
+    | { name: 'paymentReturn'; orderId: string }
     | { name: 'status' }
   >({ name: 'menu' });
+  // PAYNET-1: back from Paynet's hosted checkout (?paynet_order=<id>) → confirm.
+  useEffect(() => {
+    const returned = readReturnOrderId();
+    if (returned) setStage({ name: 'paymentReturn', orderId: returned });
+  }, []);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const categories = useMemo(() => menuQ.data?.categories ?? [], [menuQ.data]);
@@ -232,6 +240,18 @@ export default function MenuView() {
             setHasSession(true);
             setStage({ name: 'receipt', orderId });
           }}
+        />
+      );
+    }
+    if (stage.name === 'paymentReturn') {
+      return (
+        <PaymentReturnView
+          orderId={stage.orderId}
+          onPaid={(orderId) => {
+            setHasSession(true);
+            setStage({ name: 'receipt', orderId });
+          }}
+          onBackToCart={() => setStage({ name: 'cart' })}
         />
       );
     }

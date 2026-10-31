@@ -18,7 +18,12 @@ export interface PaymentChargeInput {
   idempotencyKey: string;
 }
 
-export type PaymentChargeStatus = 'CAPTURED' | 'DECLINED';
+/**
+ * CAPTURED = money is in; DECLINED = no (or a failed/expired) payment;
+ * PENDING (PAYNET-1) = a hosted-checkout payment exists but the buyer has not
+ * finished it yet — the caller must NOT settle and should ask to retry shortly.
+ */
+export type PaymentChargeStatus = 'CAPTURED' | 'DECLINED' | 'PENDING';
 
 /** Result of a prepayment charge. */
 export interface PaymentChargeResult {
@@ -37,4 +42,38 @@ export interface PaymentChargeResult {
  */
 export interface PaymentPort {
   charge(input: PaymentChargeInput): Promise<PaymentChargeResult>;
+}
+
+// ── PAYNET-1: hosted checkout (redirect) ─────────────────────────────────────
+
+/** DI token for the OnlineCheckoutPort. */
+export const ONLINE_CHECKOUT_PORT = Symbol('OnlineCheckoutPort');
+
+export interface StartCheckoutInput {
+  restaurantId: string;
+  branchId: string;
+  orderRef: string;
+  currency: string;
+  /** Integer minor units (server-authoritative order total). */
+  amount: number;
+  /** Where the provider sends the buyer back (our QR page). */
+  returnUrl: string;
+  description?: string;
+}
+
+export type StartCheckoutResult =
+  /** Redirect the buyer to the provider's hosted checkout. */
+  | { status: 'REDIRECT'; checkoutUrl: string; providerRef: string }
+  /** The provider already holds a completed payment for this order — just confirm. */
+  | { status: 'ALREADY_PAID' }
+  /** No online provider configured for this branch — confirm directly (stub/dev). */
+  | { status: 'DIRECT' };
+
+/**
+ * Redirect-based online payment seam. `charge()` on the PaymentPort then acts as
+ * the VERIFY step (reads the provider's truth for the order) when the buyer
+ * comes back or a webhook arrives.
+ */
+export interface OnlineCheckoutPort {
+  startCheckout(input: StartCheckoutInput): Promise<StartCheckoutResult>;
 }

@@ -419,5 +419,31 @@
     "refresh": "Refresh",
     "noPermission": "You don't have permission to view the shift report.",
     "basisNote": "Counts every active payment on bills closed today."
+  },
+  "hdm": {
+    "button": "HDM",
+    "title": "Fiscal device (HDM)",
+    "close": "Close",
+    "needsHub": "This terminal uses the cloud. The HDM is on the restaurant network — switch to the local hub (gear icon) to use these actions.",
+    "probe": "Test connection",
+    "testLogin": "Test operator login",
+    "printLastCopy": "Reprint last receipt",
+    "xReport": "X report",
+    "zReport": "Z report (close shift)",
+    "zConfirm": "Tap again to print Z",
+    "sync": "Sync with tax service",
+    "working": "Working…",
+    "failed": "HDM action failed",
+    "unreachable": "The HDM could not be reached.",
+    "loginOk": "Operator login OK.",
+    "printed": "Sent to the HDM printer.",
+    "synced": "HDM synchronised.",
+    "probeOk": "Connected to {host}:{port} ({ms} ms).",
+    "probeFail": "No connection to {host}:{port}.",
+    "operatorMissing": "The configured operator code was not found on this HDM.",
+    "operators": "Operators",
+    "departments": "Departments",
+    "taxType": "tax type {type}",
+    "hubIps": "Hub IPs"
   }
 }

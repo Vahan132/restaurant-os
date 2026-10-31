@@ -37,11 +37,25 @@ export interface TenantFiscalConfig {
    * for the future physical adapter — it is NEVER returned on any HTTP read model
    * or logged. Absent (undefined) for e-HDM-only branches.
    */
-  device?: {
-    host: string;
-    port: number;
-    password: string;
-  };
+  device?: FiscalDeviceConfig;
+}
+
+/**
+ * HDM-TM-1: decrypted physical-HDM device config (hub-side only, never on an HTTP
+ * read model). Resolvable WITHOUT an e-HDM cert — a branch that only has a
+ * physical TouchMaster HDM has no SRC web-service certificate at all.
+ */
+export interface FiscalDeviceConfig {
+  host: string;
+  port: number;
+  /** Integration password set on the HDM ("ՀԴՄ գաղտնաբառ"). */
+  password: string;
+  /** HDM operator code for login (fn 2); null when not yet configured. */
+  cashierId: number | null;
+  /** Operator PIN; null when not yet configured. */
+  pin: string | null;
+  /** Cards on a separate bank terminal (true) vs the HDM's own card app (false). */
+  useExtPos: boolean;
 }
 
 export interface FiscalConfigPort {
@@ -51,4 +65,10 @@ export interface FiscalConfigPort {
    * until secrets are in place), never a retryable error.
    */
   getConfig(restaurantId: string, branchId: string): Promise<TenantFiscalConfig>;
+
+  /**
+   * HDM-TM-1: resolve ONLY the physical-device config (no e-HDM cert required).
+   * Throws FatalFiscalError DEVICE_NOT_CONFIGURED when absent/inactive.
+   */
+  getDeviceConfig(restaurantId: string, branchId: string): Promise<FiscalDeviceConfig>;
 }

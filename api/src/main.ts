@@ -12,7 +12,12 @@ import { ResponseEnvelopeInterceptor } from './shared/presentation/interceptors/
 import { setupSwagger } from './shared/presentation/swagger';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: false });
+  // PAYNET-1: rawBody keeps the exact request bytes (req.rawBody) so payment
+  // webhooks can verify their HMAC signature over the raw body.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: false,
+    rawBody: true,
+  });
   // REPORT-XLSX-1: report exports POST the rendered table (can exceed the 100kb default).
   app.useBodyParser('json', { limit: '5mb' });
   const logger = new Logger('Bootstrap');

@@ -31,6 +31,15 @@ export interface FiscalConfigStatusResponse {
   devicePort: number | null;
   /** True once a device password is set (never exposes the material). */
   deviceConfigured: boolean;
+  /**
+   * HDM operator code for login.
+   * @nullable
+   */
+  deviceCashierId: number | null;
+  /** True once an operator PIN is set (never exposes it). */
+  devicePinConfigured: boolean;
+  /** Cards on a separate bank terminal (true) vs HDM card app (false). */
+  deviceUseExtPos: boolean;
   /** Dine-in fiscalize print mode. */
   fiscalPrintMode: FiscalConfigStatusResponseFiscalPrintMode;
   departments: FiscalDepartmentResponse[];

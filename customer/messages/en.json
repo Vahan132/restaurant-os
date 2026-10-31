@@ -77,7 +77,8 @@
     "paying": "Processing payment…",
     "retryPay": "Retry payment",
     "payError": "Payment didn’t go through. Your order is saved — please try again.",
-    "stubNote": "Demo payment — no card is charged."
+    "stubNote": "Demo payment — no card is charged.",
+    "paymentNote": "Secure payment by card, Idram or Telcell."
   },
   "receipt": {
     "paidTitle": "Payment complete",
@@ -125,5 +126,14 @@
     "errorTitle": "Couldn’t load status",
     "errorBody": "Please head back and try again.",
     "backToMenu": "Back to menu"
+  },
+  "paymentReturn": {
+    "checking": "Confirming your payment…",
+    "declinedTitle": "Payment not completed",
+    "declined": "The payment was declined or cancelled. Your cart is saved — you can try again.",
+    "stillPending": "Your payment is still being processed. If money was taken, staff will see it — or try again in a minute.",
+    "errorTitle": "Something went wrong",
+    "error": "We couldn't confirm your payment. Please try again.",
+    "backToCart": "Back to cart"
   }
 }

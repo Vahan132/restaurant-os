@@ -2,9 +2,8 @@ import { Inject, Injectable, Optional } from '@nestjs/common';
 import {
   FISCAL_CONFIG_PORT,
   FiscalConfigPort,
-  TenantFiscalConfig,
+  FiscalDeviceConfig,
 } from '../../application/ports/fiscal-config.port';
-import { FatalFiscalError } from '../../application/ports/fiscal-errors';
 import {
   FiscalizationInput,
   FiscalizationPort,
@@ -43,20 +42,15 @@ export class PhysicalHdmFiscalizationAdapter implements FiscalizationPort {
   ) {}
 
   async fiscalize(input: FiscalizationInput): Promise<FiscalizationResult> {
-    const cfg = await this.config.getConfig(input.restaurantId, input.branchId);
-    const device = this.requireDevice(cfg, input);
+    // HDM-TM-1: device-only resolution — no e-HDM cert needed for a physical HDM.
+    const device = await this.config.getDeviceConfig(input.restaurantId, input.branchId);
 
     // Fail-closed pre-flight: a null-adgCode line throws FatalFiscalError(192) and
     // (FISCAL-DEPT-1) a null-dep line throws FatalFiscalError(DEP_REQUIRED) BEFORE
     // opening the socket (the device would reject/misclassify it; a loop can't heal).
-    const body = buildPrintBody(input);
+    const body = buildPrintBody(input, { useExtPos: device.useExtPos });
 
-    const session = new PhysicalHdmSessionClient({
-      host: device.host,
-      port: device.port,
-      devicePassword: device.password,
-      connector: this.connector,
-    });
+    const session = this.openSession(device);
     try {
       const result = await session.print(body);
       return parsePrintResult(result, input);
@@ -66,17 +60,15 @@ export class PhysicalHdmFiscalizationAdapter implements FiscalizationPort {
     }
   }
 
-  /** The branch's physical device, or a fatal stop if none is provisioned. */
-  private requireDevice(
-    cfg: TenantFiscalConfig,
-    input: FiscalizationInput,
-  ): NonNullable<TenantFiscalConfig['device']> {
-    if (!cfg.device) {
-      throw new FatalFiscalError(
-        'DEVICE_NOT_CONFIGURED',
-        `No physical HDM device configured for ${input.restaurantId}:${input.branchId}.`,
-      );
-    }
-    return cfg.device;
+  /** A fresh, single-use session client for a branch device (also used by diagnostics). */
+  openSession(device: FiscalDeviceConfig): PhysicalHdmSessionClient {
+    return new PhysicalHdmSessionClient({
+      host: device.host,
+      port: device.port,
+      devicePassword: device.password,
+      cashierId: device.cashierId,
+      pin: device.pin,
+      connector: this.connector,
+    });
   }
 }

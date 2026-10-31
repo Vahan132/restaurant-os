@@ -4,13 +4,14 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { OperationsTab } from '@/components/settings/operations-tab';
+import { PaymentsTab } from '@/components/settings/payments-tab';
 import { ProfileTab } from '@/components/settings/profile-tab';
 import { SecurityTab } from '@/components/settings/security-tab';
 import { Can } from '@/components/auth/can';
 import { PERMISSIONS } from '@/lib/permissions';
 
 // Branch management moved to its own screen (/branches, gated BRANCH_MANAGE).
-type Tab = 'profile' | 'operations' | 'security';
+type Tab = 'profile' | 'operations' | 'payments' | 'security';
 
 export function SettingsManager() {
   const t = useTranslations('settings');
@@ -19,6 +20,7 @@ export function SettingsManager() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'profile', label: t('profileTab') },
     { key: 'operations', label: t('operationsTab') },
+    { key: 'payments', label: t('paymentsTab') },
     { key: 'security', label: t('securityTab') },
   ];
 
@@ -53,6 +55,7 @@ export function SettingsManager() {
 
       {tab === 'profile' && <ProfileTab />}
       {tab === 'operations' && <OperationsTab />}
+      {tab === 'payments' && <PaymentsTab />}
       {tab === 'security' && <SecurityTab />}
     </div>
   );

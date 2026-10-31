@@ -12,6 +12,7 @@ import type { ValidatedCartResponse } from '@/api/generated/model';
 import { isApiError, isUnauthorized, type ApiError } from '@/api/mutator';
 import { cartSubtotal, toQrCart } from '@/lib/cart';
 import { formatMoney } from '@/lib/money';
+import { buildReturnUrl, startPayment } from '@/lib/onlinePayment';
 
 import { useCart } from './CartProvider';
 import { useTableSession } from './useTableSession';
@@ -108,6 +109,14 @@ export default function CheckoutView({ qr, currency, locale, onBack, onPaid }: P
         );
         orderId = created.orderId;
         createdOrderIdRef.current = orderId;
+      }
+      // PAYNET-1: hosted checkout. REDIRECT → leave for Paynet (the cart stays
+      // until the server confirms the payment on return); CONFIRM → no online
+      // provider for this branch (dev/stub) or already paid → confirm now.
+      const start = await withSession(() => startPayment(orderId!, buildReturnUrl(orderId!)));
+      if (start.mode === 'REDIRECT' && start.checkoutUrl) {
+        window.location.assign(start.checkoutUrl);
+        return; // keep the "paying" state while the browser navigates away
       }
       // Idempotent: pays, fiscalises and dispatches the order to the kitchen.
       await withSession(() => confirmMut.mutateAsync({ orderId: orderId! }));
@@ -248,7 +257,7 @@ export default function CheckoutView({ qr, currency, locale, onBack, onPaid }: P
                 ? t('retryPay')
                 : t('pay', { amount: formatMoney(validated.totalAmount, cur, locale) })}
           </button>
-          <p className="mt-2 text-center text-xs text-gray-400">{t('stubNote')}</p>
+          <p className="mt-2 text-center text-xs text-gray-400">{t('paymentNote')}</p>
         </div>
       ) : null}
     </div>

@@ -24,6 +24,9 @@ export const FISCAL_CONFIG_BYTEA_COLUMNS = [
   'devicePwdCipher',
   'devicePwdIv',
   'devicePwdAuthTag',
+  'devicePinCipher',
+  'devicePinIv',
+  'devicePinAuthTag',
 ] as const;
 
 type FiscalConfigByteaColumn = (typeof FISCAL_CONFIG_BYTEA_COLUMNS)[number];

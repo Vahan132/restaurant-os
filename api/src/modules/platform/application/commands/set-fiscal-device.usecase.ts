@@ -32,6 +32,9 @@ export class SetFiscalDeviceUseCase {
       deviceHost: cmd.deviceHost,
       devicePort: cmd.devicePort,
       devicePassword: cmd.devicePassword,
+      deviceCashierId: cmd.deviceCashierId,
+      devicePin: cmd.devicePin,
+      deviceUseExtPos: cmd.deviceUseExtPos,
     });
     await this.audit.execute({
       restaurantId: cmd.restaurantId,
@@ -47,6 +50,10 @@ export class SetFiscalDeviceUseCase {
         deviceConfigured: true,
         deviceHost: cmd.deviceHost,
         devicePort: cmd.devicePort,
+        deviceCashierId: cmd.deviceCashierId ?? null,
+        deviceUseExtPos: cmd.deviceUseExtPos ?? null,
+        passwordChanged: Boolean(cmd.devicePassword?.trim()),
+        pinChanged: Boolean(cmd.devicePin?.trim()),
       },
       ip: cmd.ip ?? null,
       userAgent: cmd.userAgent ?? null,

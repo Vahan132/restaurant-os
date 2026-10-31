@@ -2463,6 +2463,15 @@ model FiscalConfig {
   devicePwdCipher   Bytes?  @map("device_pwd_cipher")
   devicePwdIv       Bytes?  @map("device_pwd_iv")
   devicePwdAuthTag  Bytes?  @map("device_pwd_auth_tag")
+  // HDM-TM-1: operator login for the external-app protocol (fn 2 needs the HDM
+  // OPERATOR code + PIN, not only the integration password). PIN is encrypted
+  // under the same row DEK. useExtPos=true → cards are taken on a separate bank
+  // terminal (the HDM only records the cashless amount).
+  deviceCashierId   Int?    @map("device_cashier_id")
+  devicePinCipher   Bytes?  @map("device_pin_cipher")
+  devicePinIv       Bytes?  @map("device_pin_iv")
+  devicePinAuthTag  Bytes?  @map("device_pin_auth_tag")
+  deviceUseExtPos   Boolean @default(true) @map("device_use_ext_pos")
 
   // FISCAL-EDGE-3: dine-in fiscalize behaviour (AUTO on payment vs MANUAL/defer).
   // Non-secret scalar — rides the config sync + snapshot via the FISCAL-EDGE-1
@@ -2601,4 +2610,51 @@ model Expense {
   @@index([restaurantId, branchId, occurredAt])
   @@index([categoryId])
   @@map("expenses")
+}
+
+// ── PAYNET-1: online payments (Paynet.am gateway) ───────────────────────────
+// One config per branch: the RESTAURANT'S OWN Paynet merchant account (no
+// platform cut). API key + webhook secret are envelope-encrypted with the same
+// scheme as fiscal secrets (per-row DEK wrapped by FISCAL_MASTER_KEK). Cloud-only:
+// NOT part of the edge sync (customer QR checkout runs on the cloud).
+enum PaymentProviderKind {
+  PAYNET
+}
+
+model PaymentProviderConfig {
+  id           String              @id @default(cuid())
+  restaurantId String              @map("restaurant_id")
+  branchId     String              @map("branch_id")
+  provider     PaymentProviderKind @default(PAYNET)
+  enabled      Boolean             @default(false)
+  // Derived from the key prefix: sk_live_ → true, sk_test_ → false (sandbox).
+  livemode     Boolean             @default(false)
+  apiKeyLast4  String?             @map("api_key_last4")
+
+  apiKeyCipher         Bytes? @map("api_key_cipher")
+  apiKeyIv             Bytes? @map("api_key_iv")
+  apiKeyAuthTag        Bytes? @map("api_key_auth_tag")
+  webhookSecretCipher  Bytes? @map("webhook_secret_cipher")
+  webhookSecretIv      Bytes? @map("webhook_secret_iv")
+  webhookSecretAuthTag Bytes? @map("webhook_secret_auth_tag")
+  dekCipher            Bytes? @map("dek_cipher")
+  dekIv                Bytes? @map("dek_iv")
+  dekAuthTag           Bytes? @map("dek_auth_tag")
+  kekVersion           Int?   @map("kek_version")
+
+  // Optional: the restaurant's verified Paynet domain (else inferred from return_url).
+  domain    String?
+  // Optional: pre-select a payment method on Paynet's checkout (e.g. "idram").
+  processor String?
+
+  lastCheckAt    DateTime? @map("last_check_at")
+  lastCheckOk    Boolean?  @map("last_check_ok")
+  lastCheckError String?   @map("last_check_error")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([restaurantId, branchId])
+  @@index([restaurantId])
+  @@map("payment_provider_configs")
 }

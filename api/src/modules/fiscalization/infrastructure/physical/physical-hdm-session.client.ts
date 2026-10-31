@@ -7,8 +7,11 @@ import {
   deriveKey1,
   encryptJsonBody,
   parseResponseHeader,
+  parseOperatorsAndDepartments,
   PHYSICAL_OK_CODE,
   PhysicalFn,
+  PhysicalOperatorsAndDepartments,
+  PhysicalReportType,
   PhysicalPrintBody,
   PhysicalPrintResult,
   PhysicalSessionError,
@@ -23,9 +26,9 @@ import {
  * monotonic `seq`; fn-3 logout on teardown. The session key lives in MEMORY ONLY
  * and is never logged.
  *
- * HARDWARE-UNVERIFIED: the login body shape and whether login itself carries a
- * `seq` are assumptions (login sends `{ password }`, no seq; first in-session
- * request is seq=1). Adjust `loginBody()` once the device confirms.
+ * HDM-TM-1: login body per manual v0.7.3 §4.4.2 is `{ password, cashier, pin }`
+ * (cashier = the HDM OPERATOR code, pin = that operator's PIN) and carries no
+ * `seq`; the first in-session request is seq=1.
  */
 
 /** Minimal duplex surface this client needs — a real net.Socket satisfies it. */
@@ -53,6 +56,10 @@ export interface PhysicalHdmSessionOptions {
   port: number;
   /** Device password — key1 is derived from it; also sent in the login body. */
   devicePassword: string;
+  /** HDM operator (cashier) code used for login (fn 2). */
+  cashierId?: number | null;
+  /** That operator's PIN. */
+  pin?: string | null;
   /** Injected for tests; defaults to a real TCP connector. */
   connector?: TcpConnector;
   /** Per-read timeout (ms). */
@@ -65,7 +72,11 @@ export class PhysicalHdmSessionClient {
   private readonly host: string;
   private readonly port: number;
   private readonly devicePassword: string;
+  private readonly cashierId: number | null;
+  private readonly pin: string | null;
   private readonly key1: Buffer;
+  /** Hex of the last raw response header — NON-secret, for on-site diagnostics. */
+  lastResponseHeaderHex: string | null = null;
   private readonly connector: TcpConnector;
   private readonly timeoutMs: number;
 
@@ -81,6 +92,8 @@ export class PhysicalHdmSessionClient {
     this.host = opts.host;
     this.port = opts.port;
     this.devicePassword = opts.devicePassword;
+    this.cashierId = opts.cashierId ?? null;
+    this.pin = opts.pin ?? null;
     this.key1 = deriveKey1(opts.devicePassword);
     this.connector = opts.connector ?? defaultTcpConnector;
     this.timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -95,6 +108,61 @@ export class PhysicalHdmSessionClient {
         classifyPhysicalError(code, messageOf(json));
       }
       return json as unknown as PhysicalPrintResult;
+    });
+  }
+
+  /**
+   * fn-1 operators + departments. Encrypted with key1 (password only) and needs
+   * NO operator login, so it is the safest connectivity probe: it proves the
+   * IP allow-list, the port and the password without printing anything.
+   */
+  async listOperatorsAndDepartments(): Promise<PhysicalOperatorsAndDepartments> {
+    await this.ensureConnected();
+    const { code, json } = await this.request(
+      PhysicalFn.GET_OPERATORS_DEPARTMENTS,
+      { password: this.devicePassword },
+      this.key1,
+      false,
+    );
+    if (code !== PHYSICAL_OK_CODE) {
+      classifyPhysicalError(code, messageOf(json));
+    }
+    return parseOperatorsAndDepartments(json);
+  }
+
+  /** fn-5: print a copy of the last receipt on the HDM printer. */
+  async printLastCopy(): Promise<void> {
+    await this.simple(PhysicalFn.PRINT_LAST_COPY, {});
+  }
+
+  /** fn-9: print an X (shift so far) or Z (close shift) report on the HDM. */
+  async printReport(reportType: PhysicalReportType): Promise<void> {
+    await this.simple(PhysicalFn.REPORT, { reportType });
+  }
+
+  /** fn-14: synchronise the HDM with the tax service (heals codes 155/156). */
+  async syncDevice(): Promise<void> {
+    await this.simple(PhysicalFn.SYNC, {});
+  }
+
+  /** fn-11: cash in (true) / out (false) of the HDM drawer. */
+  async cashInOut(amount: number, isCashIn: boolean, description: string): Promise<void> {
+    await this.simple(PhysicalFn.CASH_IN_OUT, {
+      amount,
+      isCashIn,
+      description,
+      ...(this.cashierId !== null ? { cashierId: this.cashierId } : {}),
+    });
+  }
+
+  /** In-session request with no meaningful response body. */
+  private async simple(fn: PhysicalFn, body: object): Promise<Record<string, unknown>> {
+    return this.withSession(async (key2) => {
+      const { code, json } = await this.request(fn, body, key2, true);
+      if (code !== PHYSICAL_OK_CODE) {
+        classifyPhysicalError(code, messageOf(json));
+      }
+      return json;
     });
   }
 
@@ -143,9 +211,13 @@ export class PhysicalHdmSessionClient {
 
   // ── internals ──────────────────────────────────────────────────────────────
 
-  /** The login body. HARDWARE-UNVERIFIED shape. */
+  /** The login body (manual v0.7.3 §4.4.2): password + operator code + PIN. */
   private loginBody(): Record<string, unknown> {
-    return { password: this.devicePassword };
+    return {
+      password: this.devicePassword,
+      ...(this.cashierId !== null ? { cashier: this.cashierId } : {}),
+      ...(this.pin !== null ? { pin: this.pin } : {}),
+    };
   }
 
   /** Monotonic per-session sequence — each in-session request is strictly greater. */
@@ -200,7 +272,9 @@ export class PhysicalHdmSessionClient {
     await this.ensureConnected();
     this.assertConn().write(Buffer.concat([header, ciphertext]));
 
-    const respHeader = parseResponseHeader(await this.readExactly(RESPONSE_HEADER_LEN));
+    const rawHeader = await this.readExactly(RESPONSE_HEADER_LEN);
+    this.lastResponseHeaderHex = rawHeader.toString('hex');
+    const respHeader = parseResponseHeader(rawHeader);
     const bodyBuf =
       respHeader.bodyLength > 0 ? await this.readExactly(respHeader.bodyLength) : Buffer.alloc(0);
     const json = bodyBuf.length ? decryptJsonBody<Record<string, unknown>>(key, bodyBuf) : {};

@@ -13,6 +13,7 @@ import {
   encryptJsonBody,
   HDM_INDICATOR,
   parsePrintResult,
+  parseOperatorsAndDepartments,
   parseResponseHeader,
   PhysicalFn,
   PhysicalSessionError,
@@ -20,6 +21,7 @@ import {
   pkcs7Unpad,
   PROTOCOL_VERSION,
   REQUEST_HEADER_LEN,
+  RESPONSE_HEADER_LEN,
 } from './physical-hdm-protocol';
 
 /**
@@ -108,34 +110,53 @@ describe('physical-HDM codec — crypto', () => {
 });
 
 describe('physical-HDM codec — framing', () => {
-  it('builds a 12-byte request header (indicator, version, fn, reserved, BE length)', () => {
-    const header = buildRequestHeader(PhysicalFn.PRINT, 0x0102);
+  it('builds the 12-byte request header per manual v0.7.3 (indicator, 00 05, fn, reserved, 2-byte BE length)', () => {
+    const header = buildRequestHeader(PhysicalFn.PRINT, 0x0205);
     expect(header.length).toBe(REQUEST_HEADER_LEN);
     expect(header.subarray(0, 6).equals(HDM_INDICATOR)).toBe(true);
-    expect(header[6]).toBe(PROTOCOL_VERSION);
-    expect(header[7]).toBe(PhysicalFn.PRINT);
-    expect(header[8]).toBe(0x00); // reserved
-    // 3-byte BigEndian length at offset 9
-    expect(header.readUIntBE(9, 3)).toBe(0x0102);
-    expect([header[9], header[10], header[11]]).toEqual([0x00, 0x01, 0x02]);
+    expect([header[6], header[7]]).toEqual([0x00, 0x05]); // protocol version
+    expect(header.readUIntBE(6, 2)).toBe(PROTOCOL_VERSION);
+    expect(header[8]).toBe(PhysicalFn.PRINT);
+    expect(header[9]).toBe(0x00); // reserved
+    expect([header[10], header[11]]).toEqual([0x02, 0x05]); // 517 BE
   });
 
-  it('parses a response header with BigEndian code + length', () => {
-    const h = Buffer.alloc(12);
-    h.writeUInt8(5, 0);
-    h.writeUInt8(9, 1); // program version
-    h.writeUIntBE(200, 2, 2); // code
-    h.writeUIntBE(345, 4, 4); // body length
+  it('matches the manual sample header for fn 1 with a 517-byte body', () => {
+    const header = buildRequestHeader(PhysicalFn.GET_OPERATORS_DEPARTMENTS, 517);
+    expect(header.toString('hex')).toBe('d580d4b4d584' + '0005' + '01' + '00' + '0205');
+  });
+
+  it('parses an 11-byte response header with BigEndian code + length', () => {
+    const h = Buffer.alloc(11);
+    h.writeUIntBE(5, 0, 2); // version
+    h.writeUIntBE(0x070300, 2, 3); // program version
+    h.writeUIntBE(200, 5, 2); // code
+    h.writeUIntBE(345, 7, 2); // body length
+    expect(RESPONSE_HEADER_LEN).toBe(11);
     const parsed = parseResponseHeader(h);
-    expect(parsed).toMatchObject({ version: 5, programVersion: 9, responseCode: 200, bodyLength: 345 });
+    expect(parsed).toMatchObject({ version: 5, programVersion: 0x070300, responseCode: 200, bodyLength: 345 });
+  });
+});
+
+describe('physical-HDM codec — fn-1 operators/departments', () => {
+  it('accepts both the top-level and the `list`-nested shapes', () => {
+    const flat = { c: [{ id: 2, name: 'Գայանե', deps: [1, 2] }], d: [{ id: 1, name: 'Մրգեր', type: 1 }] };
+    const expected = {
+      operators: [{ id: 2, name: 'Գայանե', deps: [1, 2] }],
+      departments: [{ id: 1, name: 'Մրգեր', type: 1 }],
+    };
+    expect(parseOperatorsAndDepartments(flat)).toEqual(expected);
+    expect(parseOperatorsAndDepartments({ list: flat })).toEqual(expected);
+    expect(parseOperatorsAndDepartments({})).toEqual({ operators: [], departments: [] });
   });
 });
 
 describe('physical-HDM codec — fn-4 print payload', () => {
-  it('shapes money (2dp), qty (3dp), dep, useExtPOS=false, paidAmount=cash+card', () => {
+  it('shapes money (2dp), qty (3dp), dep, useExtPOS=true by default, paidAmount=cash+card', () => {
     const body = buildPrintBody(makeInput({ cashAmount: 40000, cardAmount: 60000 }));
     expect(body.mode).toBe(2);
-    expect(body.useExtPOS).toBe(false);
+    expect(body.useExtPOS).toBe(true);
+    expect(buildPrintBody(makeInput({}), { useExtPos: false }).useExtPOS).toBe(false);
     expect(body.paidAmount).toBe(1000); // (40000+60000)/100
     expect(body.paidAmountCard).toBe(600);
     expect(body.items).toHaveLength(1);

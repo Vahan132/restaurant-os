@@ -70,6 +70,8 @@ import { TablesTableStatusGateway } from './infrastructure/gateways/tables-table
 
 import { OrdersController } from './presentation/http/orders.controller';
 import { PublicQrOrdersController } from './presentation/http/public-qr-orders.controller';
+import { PaynetWebhookController } from './presentation/http/paynet-webhook.controller';
+import { StartOnlinePaymentUseCase } from './application/commands/start-online-payment.usecase';
 import { AppOrdersController } from './presentation/http/app-orders.controller';
 import { ConsumerThrottlerGuard } from './presentation/http/consumer-throttler.guard';
 
@@ -96,7 +98,12 @@ import { ConsumerThrottlerGuard } from './presentation/http/consumer-throttler.g
     ConsumerIdentityModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
   ],
-  controllers: [OrdersController, PublicQrOrdersController, AppOrdersController],
+  controllers: [
+    OrdersController,
+    PublicQrOrdersController,
+    AppOrdersController,
+    PaynetWebhookController,
+  ],
   providers: [
     // application services
     OrderItemBuilder,
@@ -109,6 +116,7 @@ import { ConsumerThrottlerGuard } from './presentation/http/consumer-throttler.g
     ValidateCartUseCase,
     CreatePrepaymentOrderUseCase,
     ConfirmPaymentUseCase,
+    StartOnlinePaymentUseCase,
     GetOrderReceiptUseCase,
     // ORDER-4: app-path ownership check (consumer owns the order).
     AssertOrderOwnedByConsumerUseCase,

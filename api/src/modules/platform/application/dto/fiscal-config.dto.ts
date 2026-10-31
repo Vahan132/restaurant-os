@@ -47,10 +47,33 @@ export class SetFiscalDeviceDto {
   @Min(1)
   @Max(65535)
   port!: number;
-  @ApiProperty({ description: 'Device password. Encrypted at rest; never returned by any read.' })
+  @ApiPropertyOptional({
+    description:
+      'Device integration password (HDM → "ՀԴՄ գաղտնաբառ"). Encrypted at rest; never returned. Omit to keep the stored one.',
+  })
+  @IsOptional()
   @IsString()
-  @MinLength(1)
-  password!: string;
+  password?: string;
+  @ApiPropertyOptional({
+    nullable: true,
+    type: Number,
+    description: 'HDM operator (cashier) code used to log in (fn 2).',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  cashierId?: number | null;
+  @ApiPropertyOptional({ description: 'Operator PIN. Write-only; omit to keep the stored one.' })
+  @IsOptional()
+  @IsString()
+  pin?: string;
+  @ApiPropertyOptional({
+    description:
+      'true = card payments are taken on a separate bank terminal (default); false = the HDM runs its own card app.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  useExtPos?: boolean;
 }
 
 /** FISCAL-EDGE-6A: set a branch's dine-in fiscalize print mode. */
@@ -112,6 +135,12 @@ export class FiscalConfigStatusResponse {
   devicePort!: number | null;
   @ApiProperty({ description: 'True once a device password is set (never exposes the material).' })
   deviceConfigured!: boolean;
+  @ApiProperty({ nullable: true, type: Number, description: 'HDM operator code for login.' })
+  deviceCashierId!: number | null;
+  @ApiProperty({ description: 'True once an operator PIN is set (never exposes it).' })
+  devicePinConfigured!: boolean;
+  @ApiProperty({ description: 'Cards on a separate bank terminal (true) vs HDM card app (false).' })
+  deviceUseExtPos!: boolean;
   @ApiProperty({ enum: ['AUTO', 'MANUAL'], description: 'Dine-in fiscalize print mode.' })
   fiscalPrintMode!: FiscalPrintMode;
   @ApiProperty({ type: [FiscalDepartmentResponse] }) departments!: FiscalDepartmentResponse[];
@@ -132,6 +161,9 @@ export class FiscalConfigStatusResponse {
       deviceHost: s.deviceHost,
       devicePort: s.devicePort,
       deviceConfigured: s.deviceConfigured,
+      deviceCashierId: s.deviceCashierId,
+      devicePinConfigured: s.devicePinConfigured,
+      deviceUseExtPos: s.deviceUseExtPos,
       fiscalPrintMode: s.fiscalPrintMode,
       departments: s.departments.map((d) => ({
         dep: d.dep,

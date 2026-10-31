@@ -7,7 +7,12 @@ import { TouchTableSessionUseCase } from '../../../table-sessions/application/co
 import { Order } from '../../domain/entities/order';
 import { PaymentStatus } from '../../domain/enums';
 import { ORDER_REPOSITORY, OrderRepository } from '../../domain/repositories/order.repository';
-import { NoRestaurantInScope, OrderNotFound, PaymentDeclined } from '../application.errors';
+import {
+  NoRestaurantInScope,
+  OrderNotFound,
+  PaymentDeclined,
+  PaymentPending,
+} from '../application.errors';
 import { FatalFiscalError } from '../../../fiscalization/application/ports/fiscal-errors';
 import { FiscalizationResult } from '../../../fiscalization/application/ports/fiscalization.port';
 import { FiscalizeOrderService } from '../services/fiscalize-order.service';
@@ -16,7 +21,12 @@ export interface ConfirmPaymentInput {
   restaurantId: string | null;
   /** From the token-resolved session context (guard). */
   branchId: string;
-  sessionId: string;
+  /**
+   * The caller's table session. `null` = SYSTEM confirm (PAYNET-1 webhook, which
+   * is authenticated by the provider's HMAC signature instead) — skips the
+   * session-ownership check. Never pass null from a customer-facing route.
+   */
+  sessionId: string | null;
   orderId: string;
 }
 
@@ -64,7 +74,7 @@ export class ConfirmPaymentUseCase implements UseCase<ConfirmPaymentInput, Confi
 
     // ── Phase A: settle payment (idempotent on already-PAID) ────────────────
     const pre = await this.orders.findById(restaurantId, branchId, orderId);
-    if (!pre || pre.tableSessionId !== sessionId) {
+    if (!pre || (sessionId !== null && pre.tableSessionId !== sessionId)) {
       throw OrderNotFound();
     }
     if (pre.paymentStatus !== PaymentStatus.PAID) {
@@ -76,11 +86,14 @@ export class ConfirmPaymentUseCase implements UseCase<ConfirmPaymentInput, Confi
         amount: pre.totalAmount,
         idempotencyKey: pre.id,
       });
+      if (charge.status === 'PENDING') {
+        throw PaymentPending();
+      }
       if (charge.status !== 'CAPTURED') {
         throw PaymentDeclined();
       }
       const settled = await this.orders.withOrderLock(restaurantId, branchId, orderId, (order) => {
-        if (order.tableSessionId !== sessionId) {
+        if (sessionId !== null && order.tableSessionId !== sessionId) {
           throw OrderNotFound();
         }
         // Concurrent duplicate confirm: the winner already settled under the lock.
@@ -101,7 +114,10 @@ export class ConfirmPaymentUseCase implements UseCase<ConfirmPaymentInput, Confi
         await this.events.publishFromAggregate(settled.order);
       }
       // Keep the ordering container out of the idle sweep (best-effort).
-      await this.touchSession.execute({ restaurantId, sessionId });
+      const touchId = sessionId ?? pre.tableSessionId;
+      if (touchId) {
+        await this.touchSession.execute({ restaurantId, sessionId: touchId });
+      }
     }
 
     // ── Phase B: fiscalise + dispatch (idempotent, retry-safe) ──────────────

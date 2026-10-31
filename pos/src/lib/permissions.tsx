@@ -28,6 +28,8 @@ export const PERMISSIONS = {
   PAYMENT_VOID: 'payment:void',
   /** Fiscalize / view the fiscal receipt (iiko F_FRC). */
   FISCAL_RECEIPT_PRINT: 'fiscal:receipt:print',
+  /** Restaurant-wide reports — also gates the HDM Z report (closes the fiscal shift). */
+  REPORTS_VIEW: 'REPORTS_VIEW',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

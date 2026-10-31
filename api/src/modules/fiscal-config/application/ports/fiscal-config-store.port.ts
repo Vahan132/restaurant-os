@@ -38,7 +38,14 @@ export interface SetFiscalDeviceInput {
   branchId: string;
   deviceHost: string;
   devicePort: number;
-  devicePassword: string;
+  /** Omit/blank to KEEP the stored password (write-only field). */
+  devicePassword?: string | null;
+  /** HDM operator (cashier) code used for fn-2 login. */
+  deviceCashierId?: number | null;
+  /** Operator PIN. Omit/blank to KEEP the stored PIN. */
+  devicePin?: string | null;
+  /** Cards on a separate bank terminal (true) vs the HDM's own card app (false). */
+  deviceUseExtPos?: boolean;
 }
 
 /**
@@ -62,6 +69,11 @@ export interface FiscalConfigStatus {
   devicePort: number | null;
   /** True once a device password has been set (never exposes the material). */
   deviceConfigured: boolean;
+  /** HDM-TM-1: non-secret operator code for login, or null. */
+  deviceCashierId: number | null;
+  /** True once an operator PIN has been set (never exposes it). */
+  devicePinConfigured: boolean;
+  deviceUseExtPos: boolean;
   /** FISCAL-EDGE-3 dine-in fiscalize behaviour (AUTO on payment vs MANUAL/defer). */
   fiscalPrintMode: FiscalPrintMode;
   departments: { dep: string; taxRegime: string; label: string | null }[];

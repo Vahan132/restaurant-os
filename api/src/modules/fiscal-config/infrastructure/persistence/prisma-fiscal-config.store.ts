@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
 import {
@@ -16,6 +17,16 @@ export class FiscalConfigNotFoundError extends Error {
   constructor(restaurantId: string, branchId: string) {
     super(`No fiscal config for ${restaurantId}:${branchId}.`);
     this.name = 'FiscalConfigNotFoundError';
+  }
+}
+
+/** HDM-TM-1: the first device setup must include the device password. */
+export class FiscalDevicePasswordRequiredError extends BadRequestException {
+  constructor() {
+    super({
+      code: 'FISCAL_DEVICE_PASSWORD_REQUIRED',
+      message: 'Enter the HDM integration password (set on the device) for the first setup.',
+    });
   }
 }
 
@@ -86,15 +97,28 @@ export class PrismaFiscalConfigStore implements FiscalConfigStore {
       where: {
         restaurantId_branchId: { restaurantId: input.restaurantId, branchId: input.branchId },
       },
-      select: { id: true, dekCipher: true, dekIv: true, dekAuthTag: true },
+      select: {
+        id: true,
+        dekCipher: true,
+        dekIv: true,
+        dekAuthTag: true,
+        devicePwdCipher: true,
+      },
     });
     if (!row) {
       throw new FiscalConfigNotFoundError(input.restaurantId, input.branchId);
     }
-    // Shared DEK: the device password is sealed under the SAME DEK as cert/key
+    const newPassword = input.devicePassword?.trim() ? input.devicePassword : null;
+    const newPin = input.devicePin?.trim() ? input.devicePin.trim() : null;
+    // A first-time device setup must carry the password (write-only, kept if blank later).
+    if (!newPassword && row.devicePwdCipher === null) {
+      throw new FiscalDevicePasswordRequiredError();
+    }
+    // Shared DEK: the device password/PIN are sealed under the SAME DEK as cert/key
     // (reused if present, minted here if the device is configured before a cert).
     const { dek, dekColumns } = this.resolveRowDek(row);
-    const pwd = this.crypto.sealUnderDek(dek, Buffer.from(input.devicePassword, 'utf8'));
+    const pwd = newPassword ? this.crypto.sealUnderDek(dek, Buffer.from(newPassword, 'utf8')) : null;
+    const pin = newPin ? this.crypto.sealUnderDek(dek, Buffer.from(newPin, 'utf8')) : null;
     await this.prisma.fiscalConfig.update({
       where: {
         restaurantId_branchId: { restaurantId: input.restaurantId, branchId: input.branchId },
@@ -102,9 +126,14 @@ export class PrismaFiscalConfigStore implements FiscalConfigStore {
       data: {
         deviceHost: input.deviceHost,
         devicePort: input.devicePort,
-        devicePwdCipher: pwd.cipher,
-        devicePwdIv: pwd.iv,
-        devicePwdAuthTag: pwd.authTag,
+        ...(pwd
+          ? { devicePwdCipher: pwd.cipher, devicePwdIv: pwd.iv, devicePwdAuthTag: pwd.authTag }
+          : {}),
+        ...(input.deviceCashierId !== undefined ? { deviceCashierId: input.deviceCashierId } : {}),
+        ...(pin
+          ? { devicePinCipher: pin.cipher, devicePinIv: pin.iv, devicePinAuthTag: pin.authTag }
+          : {}),
+        ...(input.deviceUseExtPos !== undefined ? { deviceUseExtPos: input.deviceUseExtPos } : {}),
         ...dekColumns,
       },
     });
@@ -213,6 +242,9 @@ export class PrismaFiscalConfigStore implements FiscalConfigStore {
       deviceHost: cfg.deviceHost,
       devicePort: cfg.devicePort,
       deviceConfigured: cfg.devicePwdCipher !== null,
+      deviceCashierId: cfg.deviceCashierId,
+      devicePinConfigured: cfg.devicePinCipher !== null,
+      deviceUseExtPos: cfg.deviceUseExtPos,
       fiscalPrintMode: cfg.fiscalPrintMode as FiscalPrintMode,
       departments: cfg.departments.map((d) => ({
         dep: d.dep,

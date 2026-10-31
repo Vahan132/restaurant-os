@@ -52,6 +52,20 @@ export const PaymentDeclined = () =>
     message: 'The payment could not be completed. Please try again.',
   });
 
+/** PAYNET-1: the hosted-checkout payment exists but the buyer hasn't finished it. */
+export const PaymentPending = () =>
+  new ConflictException({
+    code: 'PAYMENT_PENDING',
+    message: 'The payment is still being processed. Please wait a moment.',
+  });
+
+/** PAYNET-1: the return URL for the hosted checkout must be an absolute http(s) URL. */
+export const InvalidReturnUrl = () =>
+  new BadRequestException({
+    code: 'INVALID_RETURN_URL',
+    message: 'returnUrl must be an absolute http(s) URL.',
+  });
+
 export const MenuItemNotOrderable = () =>
   new ConflictException({
     code: 'MENU_ITEM_NOT_ORDERABLE',

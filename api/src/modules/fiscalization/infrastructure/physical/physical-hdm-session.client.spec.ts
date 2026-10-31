@@ -1,3 +1,4 @@
+import { FatalFiscalError } from '../../application/ports/fiscal-errors';
 import { decrypt3des, deriveKey1, encrypt3des, PhysicalPrintBody } from './physical-hdm-protocol';
 import {
   PhysicalHdmSessionClient,
@@ -15,14 +16,14 @@ const PASSWORD = 'device-pass';
 const KEY1 = deriveKey1(PASSWORD);
 const KEY2 = Buffer.alloc(24, 0x5a); // fixed session key the mock "returns"
 
-/** Build a 12-byte response header + encrypted body, exactly as the device would. */
+/** Build an 11-byte response header + encrypted body, exactly as the device would. */
 function responseFrame(code: number, key: Buffer, body: unknown): Buffer {
   const enc = encrypt3des(key, Buffer.from(JSON.stringify(body), 'utf8'));
-  const h = Buffer.alloc(12);
-  h.writeUInt8(5, 0);
-  h.writeUInt8(1, 1);
-  h.writeUIntBE(code, 2, 2);
-  h.writeUIntBE(enc.length, 4, 4);
+  const h = Buffer.alloc(11);
+  h.writeUIntBE(5, 0, 2);
+  h.writeUIntBE(0x070300, 2, 3);
+  h.writeUIntBE(code, 5, 2);
+  h.writeUIntBE(enc.length, 7, 2);
   return Buffer.concat([h, enc]);
 }
 
@@ -62,7 +63,7 @@ const PRINT_BODY: PhysicalPrintBody = {
   mode: 2,
   partnerTin: null,
   useExtPOS: false,
-  items: [{ dep: 1, qty: 1, price: 1000, productCode: null, productName: 'X', adgCode: '1', unit: null }],
+  items: [{ dep: 1, qty: 1, price: 1000, productCode: 'P1', productName: 'X', adgCode: '1', unit: 'հատ' }],
 };
 
 function connectorFor(socket: MockSocket): TcpConnector {
@@ -90,6 +91,8 @@ describe('PhysicalHdmSessionClient', () => {
       host: 'h',
       port: 1,
       devicePassword: PASSWORD,
+      cashierId: 3,
+      pin: '4321',
       connector: connectorFor(socket),
     });
     const result = await client.print(PRINT_BODY);
@@ -97,7 +100,7 @@ describe('PhysicalHdmSessionClient', () => {
 
     // First write = login (key1, no seq). Second = print (key2, seq=1).
     const login = decodeWrite(socket.writes[0], KEY1);
-    expect(login).toMatchObject({ password: PASSWORD });
+    expect(login).toEqual({ password: PASSWORD, cashier: 3, pin: '4321' });
     expect('seq' in login).toBe(false);
     const print = decodeWrite(socket.writes[1], KEY2);
     expect(print.seq).toBe(1);
@@ -167,6 +170,7 @@ describe('PhysicalHdmSessionClient', () => {
     const socket = new MockSocket();
     socket.responses.push(responseFrame(200, KEY1, okLogin()));
     socket.responses.push(responseFrame(200, KEY2, okPrint(1)));
+    socket.responses.push(responseFrame(200, KEY2, {})); // logout (fn 3) ack
     socket.responses.push(responseFrame(200, KEY1, okLogin())); // fresh login after logout
     socket.responses.push(responseFrame(200, KEY2, okPrint(2)));
 
@@ -189,5 +193,25 @@ describe('PhysicalHdmSessionClient', () => {
       }
     });
     expect(logins.length).toBe(2);
+  });
+
+  it('fn-1 probe needs no login and returns operators + departments (key1)', async () => {
+    const socket = new MockSocket();
+    socket.responses.push(
+      responseFrame(200, KEY1, { c: [{ id: 3, name: 'Op', deps: [1] }], d: [{ id: 1, name: 'Kitchen', type: 1 }] }),
+    );
+    const client = new PhysicalHdmSessionClient({
+      host: 'h',
+      port: 1,
+      devicePassword: PASSWORD,
+      connector: connectorFor(socket),
+    });
+    const res = await client.listOperatorsAndDepartments();
+    expect(res.operators[0]).toEqual({ id: 3, name: 'Op', deps: [1] });
+    expect(res.departments[0]).toEqual({ id: 1, name: 'Kitchen', type: 1 });
+    expect(socket.writes).toHaveLength(1);
+    expect(socket.writes[0][8]).toBe(1); // fn code at byte 8
+    expect(decodeWrite(socket.writes[0], KEY1)).toEqual({ password: PASSWORD });
+    expect(client.lastResponseHeaderHex).toHaveLength(22);
   });
 });
