@@ -455,6 +455,10 @@ model StaffPin {
   // PIN-UNLOCK-1: when a manager last cleared the lockout ("Unlock PIN"). Synced
   // both ways; the NEWER unlock overrides the max/later counter merge.
   lockResetAt     DateTime?
+  // PIN-VIEW-1: the current PIN, AES-256-GCM sealed under a key derived from the
+  // restaurant signing key, so a manager can look it up in the admin (cloud or
+  // hub). Null for PINs issued before this existed (reset to make viewable).
+  pinCipher       String?
   mustRotate      Boolean        @default(false)
   createdByUserId String
   createdAt       DateTime       @default(now())

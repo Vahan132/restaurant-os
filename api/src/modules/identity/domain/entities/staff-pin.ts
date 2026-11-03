@@ -25,6 +25,8 @@ export interface StaffPinProps {
   lockedUntil: Date | null;
   /** PIN-UNLOCK-1: last manager unlock (null = never). Optional for old callers. */
   lockResetAt?: Date | null;
+  /** PIN-VIEW-1: sealed copy of the current PIN (see sealPin). Optional. */
+  pinCipher?: string | null;
   mustRotate: boolean;
   createdByUserId: string;
   createdAt: Date;
@@ -111,6 +113,14 @@ export class StaffPin extends AggregateRoot<string> {
   get lockResetAt(): Date | null {
     return this.props.lockResetAt ?? null;
   }
+  get pinCipher(): string | null {
+    return this.props.pinCipher ?? null;
+  }
+
+  /** PIN-VIEW-1: store the sealed copy of the PIN just issued (create/reset). */
+  setPinCipher(sealed: string | null): void {
+    this.props.pinCipher = sealed;
+  }
   get mustRotate(): boolean {
     return this.props.mustRotate;
   }
@@ -172,6 +182,7 @@ export class StaffPin extends AggregateRoot<string> {
   revoke(actorUserId: string | null = null): void {
     this.props.status = StaffPinStatus.REVOKED;
     this.props.pinFingerprint = null;
+    this.props.pinCipher = null;
     this.props.failedAttempts = 0;
     this.props.lockedUntil = null;
     this.touch();

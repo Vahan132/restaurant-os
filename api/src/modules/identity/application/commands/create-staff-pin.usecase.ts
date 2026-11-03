@@ -17,7 +17,11 @@ import {
 import { ID_GENERATOR, IdGenerator } from '../ports/id-generator';
 import { PASSWORD_HASHER, PasswordHasher } from '../ports/password-hasher';
 import { RESTAURANT_KEY_PROVIDER, RestaurantKeyProvider } from '../ports/restaurant-key.provider';
-import { generatePin, pinFingerprint } from '../../infrastructure/services/device-secret.util';
+import {
+  generatePin,
+  pinFingerprint,
+  sealPin,
+} from '../../infrastructure/services/device-secret.util';
 import { isUniqueViolation } from '../../infrastructure/persistence/prisma-errors';
 
 const MAX_PIN_ALLOCATION_TRIES = 8;
@@ -75,6 +79,7 @@ export class CreateStaffPinUseCase implements UseCase<CreateStaffPinInput, Staff
         let entity: StaffPin;
         if (existing) {
           existing.recreate(pinHash, fingerprint, input.actorUserId);
+          existing.setPinCipher(sealPin(signingKey, pin));
           await this.pins.update(existing);
           entity = existing;
         } else {
@@ -86,6 +91,7 @@ export class CreateStaffPinUseCase implements UseCase<CreateStaffPinInput, Staff
             pinFingerprint: fingerprint,
             createdByUserId: input.actorUserId,
           });
+          entity.setPinCipher(sealPin(signingKey, pin));
           await this.pins.create(entity);
         }
         await this.events.publishFromAggregate(entity);

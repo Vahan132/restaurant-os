@@ -16,6 +16,7 @@ import {
   StaffPinResetEvent,
   StaffPinRevokedEvent,
   StaffPinUnlockedEvent,
+  StaffPinViewedEvent,
 } from '../../../identity/domain/events/staff-pin-events';
 import {
   AdminLoginPolicyChangedEvent,
@@ -196,6 +197,18 @@ export class AuditEventSubscribers {
       actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
       actorId: e.actorUserId,
       action: 'STAFF_PIN_UNLOCKED',
+      entityType: 'StaffPin',
+      entityId: e.userId,
+    });
+  }
+
+  @OnEvent('identity.staff_pin.viewed')
+  async onStaffPinViewed(e: StaffPinViewedEvent): Promise<void> {
+    await this.safe({
+      restaurantId: e.restaurantId,
+      actorType: e.actorUserId ? AuditActorType.USER : AuditActorType.SYSTEM,
+      actorId: e.actorUserId,
+      action: 'STAFF_PIN_VIEWED',
       entityType: 'StaffPin',
       entityId: e.userId,
     });

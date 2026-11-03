@@ -33,6 +33,8 @@ export interface EdgeInfo {
   lastPushAt: string | null;
   /** When the hub last heartbeated to the cloud (OFF-8). Null in CLOUD / never. */
   lastHeartbeatAt: string | null;
+  /** Why the last heartbeat failed (null when the last one succeeded). */
+  lastHeartbeatError: string | null;
   /** Whether sync is paused for a schema mismatch (OFF-8). False in CLOUD. */
   syncPaused: boolean;
   /** Whether an operator must update this hub before sync resumes (OFF-8). */
@@ -147,6 +149,7 @@ export class EdgeController {
       lastPushedSeq,
       lastPushAt,
       lastHeartbeatAt: this.gate.lastHeartbeat?.toISOString() ?? null,
+      lastHeartbeatError: this.gate.lastHeartbeatError,
       syncPaused: this.gate.isPaused,
       updateRequired: this.gate.isUpdateRequired,
       serverTime: new Date().toISOString(),

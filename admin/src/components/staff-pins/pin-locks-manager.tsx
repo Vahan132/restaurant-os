@@ -1,14 +1,19 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getErrorMessage } from '@/lib/api-error';
 import { usePermission } from '@/lib/auth/use-permission';
 import { PERMISSIONS } from '@/lib/permissions';
-import { useStaffPinStatus, useUnlockStaffPin, type StaffPinStatus } from '@/lib/staff-pins/pin-status';
+import {
+  fetchStaffPin,
+  useStaffPinStatus,
+  useUnlockStaffPin,
+  type StaffPinStatus,
+} from '@/lib/staff-pins/pin-status';
 import { toast } from '@/stores/toast';
 
 /**
@@ -25,6 +30,36 @@ export function PinLocksManager() {
   const unlock = useUnlockStaffPin();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [lockedOnly, setLockedOnly] = useState(false);
+  // PIN-VIEW-1: revealed PINs (userId -> pin), auto-hidden after 20 s.
+  const [shown, setShown] = useState<Record<string, string>>({});
+  const [revealingId, setRevealingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (Object.keys(shown).length === 0) return;
+    const h = setTimeout(() => setShown({}), 20_000);
+    return () => clearTimeout(h);
+  }, [shown]);
+
+  const onReveal = async (row: StaffPinStatus) => {
+    if (shown[row.userId]) {
+      setShown(({ [row.userId]: _hidden, ...rest }) => rest);
+      return;
+    }
+    setRevealingId(row.userId);
+    try {
+      const res = await fetchStaffPin(row.userId);
+      if (res.pin) {
+        const value = res.pin;
+        setShown((s) => ({ ...s, [row.userId]: value }));
+      } else {
+        toast.error(t('pinNotViewable'));
+      }
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setRevealingId(null);
+    }
+  };
 
   const all = Array.isArray(data) ? data : [];
   const rows = all.filter((r) => !lockedOnly || r.locked);
@@ -84,6 +119,7 @@ export function PinLocksManager() {
                 <th className="px-4 py-2 font-medium">{t('staff')}</th>
                 <th className="px-4 py-2 font-medium">{t('role')}</th>
                 <th className="px-4 py-2 font-medium">{t('status')}</th>
+                {canManage && <th className="px-4 py-2 font-medium">{t('currentPin')}</th>}
                 <th className="px-4 py-2 font-medium">{t('failedAttempts')}</th>
                 <th className="px-4 py-2" />
               </tr>
@@ -104,6 +140,31 @@ export function PinLocksManager() {
                       <Badge tone="green">{t('active')}</Badge>
                     )}
                   </td>
+                  {canManage && (
+                    <td className="px-4 py-2">
+                      {row.pinStatus !== 'ACTIVE' ? (
+                        <span className="text-gray-400">—</span>
+                      ) : row.pinViewable ? (
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono tracking-widest text-gray-900">
+                            {shown[row.userId] ?? '••••••'}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onReveal(row)}
+                            disabled={revealingId === row.userId}
+                          >
+                            {shown[row.userId] ? t('hidePin') : t('showPin')}
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400" title={t('pinNotViewable')}>
+                          {t('resetToView')}
+                        </span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-4 py-2 text-gray-600">
                     {row.pinStatus === 'ACTIVE' ? row.failedAttempts : '—'}
                   </td>

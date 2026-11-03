@@ -15,7 +15,7 @@ import {
 } from '../application.errors';
 import { PASSWORD_HASHER, PasswordHasher } from '../ports/password-hasher';
 import { RESTAURANT_KEY_PROVIDER, RestaurantKeyProvider } from '../ports/restaurant-key.provider';
-import { generatePin, pinFingerprint } from '../../infrastructure/services/device-secret.util';
+import { generatePin, pinFingerprint, sealPin } from '../../infrastructure/services/device-secret.util';
 import { isUniqueViolation } from '../../infrastructure/persistence/prisma-errors';
 import { StaffPinIssued } from './create-staff-pin.usecase';
 
@@ -64,6 +64,7 @@ export class ResetStaffPinUseCase implements UseCase<ResetStaffPinInput, StaffPi
       const fingerprint = pinFingerprint(signingKey, newPin);
       try {
         pin.reset(pinHash, fingerprint, input.actorUserId);
+        pin.setPinCipher(sealPin(signingKey, newPin));
         await this.pins.update(pin);
         await this.events.publishFromAggregate(pin);
         return { pin: newPin, mustRotate: pin.mustRotate };

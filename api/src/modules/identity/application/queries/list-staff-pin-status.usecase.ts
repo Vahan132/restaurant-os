@@ -18,6 +18,8 @@ export interface StaffPinStatusEntry {
   lockedUntil: string | null;
   failedAttempts: number;
   mustRotate: boolean;
+  /** PIN-VIEW-1: the current PIN can be shown (issued after PINs became viewable). */
+  pinViewable: boolean;
 }
 
 /**
@@ -58,6 +60,7 @@ export class ListStaffPinStatusUseCase
         lockedUntil: locked ? (pin?.lockedUntil?.toISOString() ?? null) : null,
         failedAttempts: active ? (pin?.failedAttempts ?? 0) : 0,
         mustRotate: active ? Boolean(pin?.mustRotate) : false,
+        pinViewable: active && Boolean(pin?.pinCipher),
       };
     });
   }

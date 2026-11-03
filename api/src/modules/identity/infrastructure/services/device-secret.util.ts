@@ -1,4 +1,11 @@
-import { createHash, createHmac, randomBytes, randomInt } from 'node:crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  createHmac,
+  randomBytes,
+  randomInt,
+} from 'node:crypto';
 
 /**
  * Device secret + PIN cryptographic helpers (3A).
@@ -59,4 +66,46 @@ export function deriveCidr(ip: string | null | undefined): string | null {
     }
   }
   return null;
+}
+
+/**
+ * PIN-VIEW-1: reversible copy of a staff PIN so a manager can look it up in the
+ * admin. AES-256-GCM under a key derived from the per-restaurant signing key
+ * (already present on both cloud and hub, never sent to clients), so the hub can
+ * show it offline too. Format: `v1.<iv>.<tag>.<ciphertext>` (base64url).
+ */
+function pinViewKey(restaurantSigningKey: string): Buffer {
+  return createHash('sha256').update(`pin-view:v1:${restaurantSigningKey}`).digest();
+}
+
+export function sealPin(restaurantSigningKey: string, pin: string): string {
+  const iv = randomBytes(12);
+  const c = createCipheriv('aes-256-gcm', pinViewKey(restaurantSigningKey), iv);
+  const ct = Buffer.concat([c.update(pin, 'utf8'), c.final()]);
+  const tag = c.getAuthTag();
+  return ['v1', iv.toString('base64url'), tag.toString('base64url'), ct.toString('base64url')].join(
+    '.',
+  );
+}
+
+/** Open a sealed PIN; null when absent, malformed or sealed under another key. */
+export function openPin(restaurantSigningKey: string, sealed: string | null): string | null {
+  if (!sealed) {
+    return null;
+  }
+  const [v, iv, tag, ct] = sealed.split('.');
+  if (v !== 'v1' || !iv || !tag || !ct) {
+    return null;
+  }
+  try {
+    const d = createDecipheriv(
+      'aes-256-gcm',
+      pinViewKey(restaurantSigningKey),
+      Buffer.from(iv, 'base64url'),
+    );
+    d.setAuthTag(Buffer.from(tag, 'base64url'));
+    return Buffer.concat([d.update(Buffer.from(ct, 'base64url')), d.final()]).toString('utf8');
+  } catch {
+    return null;
+  }
 }

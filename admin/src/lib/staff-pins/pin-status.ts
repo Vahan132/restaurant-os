@@ -18,6 +18,16 @@ export interface StaffPinStatus {
   lockedUntil: string | null;
   failedAttempts: number;
   mustRotate: boolean;
+  /** PIN-VIEW-1: the current PIN can be shown. */
+  pinViewable?: boolean;
+}
+
+/** PIN-VIEW-1: fetch a staff member's current PIN (audited on the server). */
+export function fetchStaffPin(userId: string): Promise<{ pin: string | null }> {
+  return customInstance<{ pin: string | null }>({
+    url: `/staff-pins/${encodeURIComponent(userId)}/pin`,
+    method: 'GET',
+  });
 }
 
 const KEY = 'staff-pin-status';

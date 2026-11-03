@@ -2357,6 +2357,11 @@
     "unlock": "Unlock",
     "resetAttempts": "Reset attempts",
     "unlocked": "{name} can sign in again.",
-    "hint": "On the local hub an unlock works offline and syncs to the cloud when the internet is back."
+    "hint": "On the local hub an unlock works offline and syncs to the cloud when the internet is back.",
+    "currentPin": "Current PIN",
+    "showPin": "Show",
+    "hidePin": "Hide",
+    "resetToView": "Reset PIN to view",
+    "pinNotViewable": "This PIN was issued before PINs could be viewed. Reset it once (Users → PIN) and it will show here."
   }
 }

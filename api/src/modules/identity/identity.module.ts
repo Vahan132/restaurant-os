@@ -49,6 +49,7 @@ import { CreateStaffPinUseCase } from './application/commands/create-staff-pin.u
 import { ResetStaffPinUseCase } from './application/commands/reset-staff-pin.usecase';
 import { RevokeStaffPinUseCase } from './application/commands/revoke-staff-pin.usecase';
 import { UnlockStaffPinUseCase } from './application/commands/unlock-staff-pin.usecase';
+import { RevealStaffPinUseCase } from './application/commands/reveal-staff-pin.usecase';
 import { ListStaffPinStatusUseCase } from './application/queries/list-staff-pin-status.usecase';
 import { PinLoginUseCase } from './application/commands/pin-login.usecase';
 import { ListBranchStaffUseCase } from './application/queries/list-branch-staff.usecase';
@@ -133,6 +134,7 @@ import { DeviceSecretGuard } from './presentation/http/device-secret.guard';
     ResetStaffPinUseCase,
     RevokeStaffPinUseCase,
     UnlockStaffPinUseCase,
+    RevealStaffPinUseCase,
     ListStaffPinStatusUseCase,
     PinLoginUseCase,
     ListBranchStaffUseCase,

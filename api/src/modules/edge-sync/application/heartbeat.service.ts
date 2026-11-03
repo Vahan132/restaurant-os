@@ -90,13 +90,12 @@ export class HeartbeatService implements OnApplicationBootstrap, OnModuleDestroy
     }
 
     const { nodeId } = this.edge.getIdentity();
-    const [state, pendingOutboxCount, dbStatus] = await Promise.all([
-      this.prisma.edgeSyncState.findUnique({ where: { nodeId } }),
-      this.prisma.outboxEntry.count({ where: { status: 'PENDING' } }),
-      this.probeDb(),
-    ]);
-
     try {
+      const [state, pendingOutboxCount, dbStatus] = await Promise.all([
+        this.prisma.edgeSyncState.findUnique({ where: { nodeId } }),
+        this.prisma.outboxEntry.count({ where: { status: 'PENDING' } }),
+        this.probeDb(),
+      ]);
       const result = await this.client.sendHeartbeat({
         lastConfigSyncedAt: state?.lastConfigSyncedAt?.toISOString() ?? null,
         lastPushedSeq: state?.lastPushedSeq ?? null,
@@ -124,7 +123,9 @@ export class HeartbeatService implements OnApplicationBootstrap, OnModuleDestroy
         this.gate.pauseForSchemaMismatch(err.expectedSchemaVersion);
         return { sent: false, paused: true, reason: 'SCHEMA_MISMATCH' };
       }
-      await this.markOffline();
+      // Diagnostics: surfaced on GET /edge/info as lastHeartbeatError.
+      this.gate.recordHeartbeatError((err as Error).message);
+      await this.markOffline().catch(() => undefined);
       this.logger.warn(
         `Heartbeat failed (hub will read OFFLINE in cloud): ${(err as Error).message}`,
       );

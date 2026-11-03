@@ -18,6 +18,7 @@ export class EdgeSyncGate {
   private updateRequired = false;
   private expectedSchemaVersion: string | null = null;
   private lastHeartbeatAt: Date | null = null;
+  private lastHeartbeatErr: string | null = null;
 
   /** Latch sync paused due to a schema-version gap. Idempotent. */
   pauseForSchemaMismatch(expectedSchemaVersion?: string | null): void {
@@ -63,6 +64,16 @@ export class EdgeSyncGate {
   /** Record that the hub successfully reached the cloud with a heartbeat. */
   markHeartbeat(at: Date = new Date()): void {
     this.lastHeartbeatAt = at;
+    this.lastHeartbeatErr = null;
+  }
+
+  /** Why the last heartbeat attempt failed (shown on GET /edge/info). */
+  recordHeartbeatError(message: string): void {
+    this.lastHeartbeatErr = message.slice(0, 300);
+  }
+
+  get lastHeartbeatError(): string | null {
+    return this.lastHeartbeatErr;
   }
 
   /** When the hub last successfully heartbeated to the cloud (null if never). */

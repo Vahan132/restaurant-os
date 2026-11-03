@@ -19,6 +19,10 @@ import { ResetStaffPinUseCase } from '../../application/commands/reset-staff-pin
 import { RevokeStaffPinUseCase } from '../../application/commands/revoke-staff-pin.usecase';
 import { UnlockStaffPinUseCase } from '../../application/commands/unlock-staff-pin.usecase';
 import {
+  RevealStaffPinResult,
+  RevealStaffPinUseCase,
+} from '../../application/commands/reveal-staff-pin.usecase';
+import {
   ListStaffPinStatusUseCase,
   StaffPinStatusEntry,
 } from '../../application/queries/list-staff-pin-status.usecase';
@@ -39,7 +43,30 @@ export class StaffPinsController {
     private readonly resetPin: ResetStaffPinUseCase,
     private readonly revokePin: RevokeStaffPinUseCase,
     private readonly unlockPin: UnlockStaffPinUseCase,
+    private readonly revealPin: RevealStaffPinUseCase,
   ) {}
+
+  /**
+   * PIN-VIEW-1: show the staff member's CURRENT PIN (audited as STAFF_PIN_VIEWED).
+   * `pin: null` = issued before PINs were viewable — reset it once to see it.
+   */
+  @Get(':userId/pin')
+  @RequirePermissions(PERMISSIONS.STAFF_PIN_MANAGE)
+  @ApiParam({ name: 'userId', description: 'The staff user whose current PIN to show.' })
+  @ApiForbiddenResponse({ description: 'Missing staff.pin.manage permission.' })
+  @ApiOperation({ summary: "Show a staff member's current PIN (audited)." })
+  @ApiOkResponse({ schema: { example: { pin: '482913' } } })
+  async reveal(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() actor: CurrentUserContext,
+    @Param('userId') userId: string,
+  ): Promise<RevealStaffPinResult> {
+    return this.revealPin.execute({
+      restaurantId: tenant.restaurantId,
+      actorUserId: actor.sub,
+      userId,
+    });
+  }
 
   /**
    * PIN-UNLOCK-1: clear a locked-out PIN (too many wrong attempts) without

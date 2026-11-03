@@ -35,7 +35,8 @@ export const APP_VERSION = process.env.APP_BUILD?.trim()
 // '4' (PIN-UNLOCK-1): StaffPin rows carry `lockResetAt` in snapshot/config sync
 // and the STAFF_PIN_AUTH push — an older hub's Prisma client would reject the
 // unknown column, so it must update (it auto-updates) before syncing again.
-export const SCHEMA_VERSION = '4';
+// '5' (PIN-VIEW-1): StaffPin rows also carry `pinCipher` (sealed current PIN).
+export const SCHEMA_VERSION = '5';
 
 /**
  * HTTP header the edge sends on every sync request carrying its reported edge

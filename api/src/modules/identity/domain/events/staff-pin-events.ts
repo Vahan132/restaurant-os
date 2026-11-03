@@ -54,6 +54,19 @@ export class StaffPinUnlockedEvent extends BaseDomainEvent {
   }
 }
 
+/** PIN-VIEW-1: a manager looked up a staff member's current PIN (audited). */
+export class StaffPinViewedEvent extends BaseDomainEvent {
+  readonly eventName = 'identity.staff_pin.viewed';
+  constructor(
+    public readonly staffPinId: string,
+    public readonly userId: string,
+    public readonly restaurantId: string,
+    public readonly actorUserId: string | null = null,
+  ) {
+    super(staffPinId);
+  }
+}
+
 export class StaffPinLockedOutEvent extends BaseDomainEvent {
   readonly eventName = 'identity.staff_pin.locked_out';
   constructor(
