@@ -18,7 +18,7 @@ export function isDeviceSyncCode(code?: string | null): boolean {
  * "device rejected" text. 192 / DEP_REQUIRED are raised by OUR pre-flight check
  * (nothing was sent to the device); 151/152 come from the HDM itself.
  */
-export const FISCAL_HINT_CODES = new Set(['192', 'DEP_REQUIRED', '151', '152']);
+export const FISCAL_HINT_CODES = new Set(['192', 'DEP_REQUIRED', '111', '112', '113', '151', '152', '183']);
 
 /** i18n key under `fiscal.hint` for a known code, else null. */
 export function fiscalHintKey(code?: string | null): string | null {

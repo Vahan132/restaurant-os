@@ -410,7 +410,11 @@
       "192": "Some dishes on this bill have no ADG (classification) code. Add it in admin → Menu → Fiscal codes, then press Retry.",
       "DEP_REQUIRED": "Some dishes on this bill have no HDM department. Set it in admin → Menu → Fiscal codes, then press Retry.",
       "151": "The HDM operator is not allowed to sell in this department. Assign the department to the operator on the HDM, then press Retry.",
-      "152": "The amount sent to the HDM is different from the receipt total (e.g. a discount or service fee). Check the bill, then press Retry."
+      "152": "The amount sent to the HDM is different from the receipt total (e.g. a discount or service fee). Check the bill, then press Retry.",
+      "111": "The HDM rejected the operator PIN. Check the operator PIN in admin → Settings → HDM, then press Retry.",
+      "112": "The HDM has no such operator. Enter a valid operator code (and its PIN) in admin → Settings → HDM — use Test connection on the POS to see the operators — then press Retry.",
+      "113": "This HDM operator is inactive on the device. Activate it on the HDM or pick another operator in admin → Settings → HDM, then press Retry.",
+      "183": "The HDM does not accept the ATG code of a dish on this bill. Correct the code in admin → Menu → Fiscal codes (ask your accountant for the right ATG code), then press Retry."
     }
   },
   "shiftReport": {

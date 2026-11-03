@@ -7,6 +7,7 @@ import {
   FiscalMode,
 } from '../../../fiscalization/application/ports/fiscalization.port';
 import { Order } from '../../domain/entities/order';
+import { PaymentMethod } from '../../domain/enums';
 import { MENU_READER, MenuReader } from '../ports/menu-reader.port';
 
 /**
@@ -64,7 +65,30 @@ export class FiscalizeOrderService {
   }
 
   /** Fiscalise the order's products receipt (mode 2). Channel is QR_WEB (e-HDM). */
+  /**
+   * HDM-EDGE-4: the tender split for the receipt. QR prepayments fill
+   * order.cash/cardAmount explicitly; POS (table) bills record PAYMENTS instead
+   * and left those fields 0 — the HDM then got paidAmount 0 and answered 188
+   * "Bad amounts". Derive it from the ACTIVE payments (applied amounts, not the
+   * cash tendered) when the explicit split is empty. Non-cash methods count as
+   * cashless.
+   */
+  private tenderSplit(order: Order): { cash: number; card: number } {
+    if (order.cashAmount + order.cardAmount > 0) {
+      return { cash: order.cashAmount, card: order.cardAmount };
+    }
+    let cash = 0;
+    let card = 0;
+    for (const p of order.payments) {
+      if (!p.isActive()) continue;
+      if (p.method === PaymentMethod.CASH) cash += p.amount;
+      else card += p.amount;
+    }
+    return { cash, card };
+  }
+
   async fiscalizeProducts(order: Order): Promise<FiscalizationResult> {
+    const tender = this.tenderSplit(order);
     const current = await this.currentFiscalCodes(order);
     const lines = order.items
       .filter((i) => !i.isCancelled())
@@ -74,7 +98,12 @@ export class FiscalizeOrderService {
         goodCode: i.goodCode,
         quantityThousandths: Quantity.fromUnits(i.quantity).thousandthsValue,
         unit: i.unit,
-        unitPriceAmount: i.unitPriceAmount,
+        // HDM-EDGE-4: the receipt price must include modifier deltas (lineTotal =
+        // (unit + modifiers) * qty), or the item sum is lower than what was paid.
+        unitPriceAmount:
+          i.quantity > 0 && Number.isInteger(i.lineTotalAmount / i.quantity)
+            ? i.lineTotalAmount / i.quantity
+            : i.unitPriceAmount,
         lineTotalAmount: i.lineTotalAmount,
         adgCode: i.adgCode?.trim() ? i.adgCode : (current.get(i.menuItemId)?.adgCode ?? null),
         dep: i.dep?.trim() ? i.dep : (current.get(i.menuItemId)?.dep ?? null),
@@ -93,8 +122,8 @@ export class FiscalizeOrderService {
       discountAmount: order.discountAmount,
       serviceFeeAmount: order.serviceFeeAmount,
       totalAmount: order.totalAmount,
-      cardAmount: order.cardAmount,
-      cashAmount: order.cashAmount,
+      cardAmount: tender.card,
+      cashAmount: tender.cash,
       partialAmount: order.partialAmount,
       prePaymentAmount: order.prePaymentAmount,
       changeAmount: order.changeAmount,
