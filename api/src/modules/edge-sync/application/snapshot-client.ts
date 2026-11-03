@@ -69,7 +69,11 @@ export class SnapshotClient {
     this.cloudUrl = config.get('CLOUD_URL', { infer: true });
     this.token = config.get('EDGE_NODE_TOKEN', { infer: true });
     this.reportedSchemaVersion =
-      config.get('EDGE_SCHEMA_VERSION', { infer: true }) ?? SCHEMA_VERSION;
+      // `||` (not `??`): compose passes EDGE_SCHEMA_VERSION="" when unset, and
+      // ConfigService can surface that raw "" — an empty report made every
+      // heartbeat fail validation (hub stuck OFFLINE) and bypassed the schema gate.
+      (config.get('EDGE_SCHEMA_VERSION', { infer: true }) as string | undefined)?.trim() ||
+      SCHEMA_VERSION;
   }
 
   isConfigured(): boolean {

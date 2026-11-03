@@ -62,7 +62,11 @@ export class EdgeController {
     private readonly config: ConfigService<AppConfig, true>,
   ) {
     this.reportedSchemaVersion =
-      this.config.get('EDGE_SCHEMA_VERSION', { infer: true }) ?? SCHEMA_VERSION;
+      // `||` (not `??`): compose passes EDGE_SCHEMA_VERSION="" when unset, and
+      // ConfigService can surface that raw "" — an empty report made every
+      // heartbeat fail validation (hub stuck OFFLINE) and bypassed the schema gate.
+      (this.config.get('EDGE_SCHEMA_VERSION', { infer: true }) as string | undefined)?.trim() ||
+      SCHEMA_VERSION;
   }
 
   @Get('info')
