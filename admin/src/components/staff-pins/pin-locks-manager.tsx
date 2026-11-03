@@ -42,7 +42,11 @@ export function PinLocksManager() {
 
   const onReveal = async (row: StaffPinStatus) => {
     if (shown[row.userId]) {
-      setShown(({ [row.userId]: _hidden, ...rest }) => rest);
+      setShown((s) => {
+        const next = { ...s };
+        delete next[row.userId];
+        return next;
+      });
       return;
     }
     setRevealingId(row.userId);
