@@ -405,7 +405,13 @@
     "qrHint": "QR code",
     "loadError": "Couldn’t load the fiscal receipt.",
     "print": "Print",
-    "done": "Done"
+    "done": "Done",
+    "hint": {
+      "192": "Some dishes on this bill have no ADG (classification) code. Add it in admin → Menu → Fiscal codes, then press Retry.",
+      "DEP_REQUIRED": "Some dishes on this bill have no HDM department. Set it in admin → Menu → Fiscal codes, then press Retry.",
+      "151": "The HDM operator is not allowed to sell in this department. Assign the department to the operator on the HDM, then press Retry.",
+      "152": "The amount sent to the HDM is different from the receipt total (e.g. a discount or service fee). Check the bill, then press Retry."
+    }
   },
   "shiftReport": {
     "title": "Shift report",

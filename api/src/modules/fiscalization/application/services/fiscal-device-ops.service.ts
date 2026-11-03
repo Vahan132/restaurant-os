@@ -166,7 +166,9 @@ export class FiscalDeviceOpsService {
 
   private async deviceOrThrow(restaurantId: string, branchId: string) {
     try {
-      return await this.config.getDeviceConfig(restaurantId, branchId);
+      // HDM-EDGE-2: maintenance ops (test connection / login / reports) work even
+      // while receipt printing is switched off — that's how you set the device up.
+      return await this.config.getDeviceConfig(restaurantId, branchId, { requireActive: false });
     } catch (err) {
       if (err instanceof FatalFiscalError) {
         throw new ConflictException({ code: 'FISCAL_NOT_CONFIGURED', message: err.message });

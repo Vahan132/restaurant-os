@@ -70,5 +70,9 @@ export interface FiscalConfigPort {
    * HDM-TM-1: resolve ONLY the physical-device config (no e-HDM cert required).
    * Throws FatalFiscalError DEVICE_NOT_CONFIGURED when absent/inactive.
    */
-  getDeviceConfig(restaurantId: string, branchId: string): Promise<FiscalDeviceConfig>;
+  getDeviceConfig(
+    restaurantId: string,
+    branchId: string,
+    opts?: { requireActive?: boolean },
+  ): Promise<FiscalDeviceConfig>;
 }

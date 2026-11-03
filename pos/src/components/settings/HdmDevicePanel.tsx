@@ -152,7 +152,9 @@ function ProbeResult({ probe }: { probe: HdmProbeResult }) {
   return (
     <div className="mt-4 space-y-2 text-sm">
       <p className={probe.ok ? 'font-semibold text-green-700' : 'font-semibold text-red-700'}>
-        {probe.ok ? t('probeOk', { host: probe.host, port: probe.port, ms: probe.durationMs }) : t('probeFail', { host: probe.host, port: probe.port })}
+        {probe.ok
+          ? t('probeOk', { host: probe.host || '—', port: probe.port, ms: probe.durationMs })
+          : t('probeFail', { host: probe.host || '—', port: probe.port })}
       </p>
       {!probe.ok ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-red-800">
@@ -163,14 +165,14 @@ function ProbeResult({ probe }: { probe: HdmProbeResult }) {
       {probe.operatorFound === false ? (
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-amber-800">{t('operatorMissing')}</p>
       ) : null}
-      {probe.data ? (
+      {probe.device ? (
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <p className="mb-1 font-medium text-gray-800">{t('operators')}</p>
             <ul className="space-y-0.5 text-gray-600">
-              {probe.data.operators.map((o) => (
+              {probe.device.operators.map((o) => (
                 <li key={o.id}>
-                  #{o.id} {o.name} <span className="text-gray-400">({o.deps.join(', ')})</span>
+                  #{o.id} {o.name} <span className="text-gray-400">({(o.deps ?? []).join(', ')})</span>
                 </li>
               ))}
             </ul>
@@ -178,7 +180,7 @@ function ProbeResult({ probe }: { probe: HdmProbeResult }) {
           <div>
             <p className="mb-1 font-medium text-gray-800">{t('departments')}</p>
             <ul className="space-y-0.5 text-gray-600">
-              {probe.data.departments.map((d) => (
+              {probe.device.departments.map((d) => (
                 <li key={d.id}>
                   #{d.id} {d.name} <span className="text-gray-400">({t('taxType', { type: d.type })})</span>
                 </li>

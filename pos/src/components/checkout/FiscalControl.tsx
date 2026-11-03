@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import type { OrderResponse } from '@/api/generated/model';
 import { Can, PERMISSIONS } from '@/lib/permissions';
 import { useFiscal } from '@/lib/useFiscal';
-import { isDeviceSyncCode } from '@/lib/fiscal';
+import { isDeviceSyncCode, fiscalHintKey } from '@/lib/fiscal';
 import { FiscalReceiptModal } from './FiscalReceiptModal';
 
 /**
@@ -74,7 +74,11 @@ function FiscalControlInner({ order }: { order: OrderResponse }) {
               className="rounded-xl bg-red-50 p-3 text-red-800 ring-1 ring-red-200"
             >
               <p className="text-base font-semibold">{t('fatalTitle')}</p>
-              <p className="mt-0.5 text-sm">{t('fatalBody', { code: order.fiscalError ?? '—' })}</p>
+              <p className="mt-0.5 text-sm">
+                {fiscalHintKey(order.fiscalError)
+                  ? t(fiscalHintKey(order.fiscalError) as 'hint.192')
+                  : t('fatalBody', { code: order.fiscalError ?? '—' })}
+              </p>
             </div>
           )}
           <button

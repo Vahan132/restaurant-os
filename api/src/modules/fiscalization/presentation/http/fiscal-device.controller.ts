@@ -40,7 +40,10 @@ export class HdmProbeResponse {
   @ApiProperty() ok!: boolean;
   @ApiProperty() host!: string;
   @ApiProperty() port!: number;
-  @ApiPropertyOptional({ type: HdmProbeDataDto, nullable: true }) data!: HdmProbeDataDto | null;
+  // HDM-EDGE-2: named `device`, NOT `data` — clients unwrap a top-level `data`
+  // key as the API's success envelope, which threw away the rest of the result
+  // (POS crashed on `hubAddresses.join` after a successful probe).
+  @ApiPropertyOptional({ type: HdmProbeDataDto, nullable: true }) device!: HdmProbeDataDto | null;
   @ApiPropertyOptional({ type: Boolean, nullable: true }) operatorFound!: boolean | null;
   @ApiPropertyOptional({ type: String, nullable: true }) errorCode!: string | null;
   @ApiPropertyOptional({ type: String, nullable: true }) errorMessage!: string | null;
@@ -49,7 +52,8 @@ export class HdmProbeResponse {
   @ApiProperty() durationMs!: number;
 
   static from(r: FiscalDeviceProbeResult): HdmProbeResponse {
-    return Object.assign(new HdmProbeResponse(), r);
+    const { data, ...rest } = r;
+    return Object.assign(new HdmProbeResponse(), { ...rest, device: data });
   }
 }
 

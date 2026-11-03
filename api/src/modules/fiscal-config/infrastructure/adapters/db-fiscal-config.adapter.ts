@@ -93,26 +93,56 @@ export class DbFiscalConfigAdapter implements FiscalConfigPort {
    * HDM-TM-1: physical-device config only. Needs an ACTIVE row + device + DEK, but
    * NOT the e-HDM cert/key (a TouchMaster-only branch has none).
    */
-  async getDeviceConfig(restaurantId: string, branchId: string): Promise<FiscalDeviceConfig> {
+  async getDeviceConfig(
+    restaurantId: string,
+    branchId: string,
+    opts: { requireActive?: boolean } = {},
+  ): Promise<FiscalDeviceConfig> {
+    const requireActive = opts.requireActive ?? true;
     const cfg = await this.prisma.fiscalConfig.findUnique({
       where: { restaurantId_branchId: { restaurantId, branchId } },
     });
-    const notConfigured = (): FatalFiscalError =>
-      new FatalFiscalError(
-        'DEVICE_NOT_CONFIGURED',
-        `No active physical HDM device configured for ${restaurantId}:${branchId}.`,
+    // HDM-EDGE-2: say WHICH part is missing, so the POS "Test connection" error
+    // tells the operator what to fix (save, sync, turn on, password).
+    const fail = (reason: string): FatalFiscalError =>
+      new FatalFiscalError('DEVICE_NOT_CONFIGURED', reason);
+    if (!cfg) {
+      throw fail(
+        'The HDM settings for this branch have not reached this hub yet. Save them in ' +
+          'admin → Settings → HDM and wait a minute for the hub to sync.',
       );
-    if (!cfg || !cfg.active || !cfg.dekCipher || !cfg.dekIv || !cfg.dekAuthTag) {
-      throw notConfigured();
     }
-    const dek = this.crypto.unwrapDek({
-      cipher: cfg.dekCipher,
-      iv: cfg.dekIv,
-      authTag: cfg.dekAuthTag,
-    });
+    if (requireActive && !cfg.active) {
+      throw fail(
+        'HDM printing is turned OFF for this branch (admin → Settings → HDM → "Print through HDM").',
+      );
+    }
+    if (
+      cfg.deviceHost === null ||
+      cfg.devicePort === null ||
+      !cfg.devicePwdCipher ||
+      !cfg.dekCipher ||
+      !cfg.dekIv ||
+      !cfg.dekAuthTag
+    ) {
+      throw fail('The HDM IP, port or password is not saved for this branch yet.');
+    }
+    let dek: Buffer;
+    try {
+      dek = this.crypto.unwrapDek({
+        cipher: cfg.dekCipher,
+        iv: cfg.dekIv,
+        authTag: cfg.dekAuthTag,
+      });
+    } catch {
+      throw fail(
+        "The hub cannot unlock the HDM password yet (its encryption key isn't in place). " +
+          'Make sure the cloud has FISCAL_MASTER_KEK set; the hub picks it up within 5 minutes.',
+      );
+    }
     const device = this.openDevice(cfg, dek);
     if (!device) {
-      throw notConfigured();
+      throw fail('The HDM IP, port or password is not saved for this branch yet.');
     }
     return device;
   }

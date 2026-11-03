@@ -20,7 +20,10 @@ export interface HdmProbeResult {
   ok: boolean;
   host: string;
   port: number;
-  data: { operators: HdmOperator[]; departments: HdmDepartment[] } | null;
+  /** Operators + departments read from the device (null when unreachable). */
+  device?: { operators: HdmOperator[]; departments: HdmDepartment[] } | null;
+  /** Older hubs named it `data` (unwrapped by the envelope — see normalizeProbe). */
+  data?: { operators: HdmOperator[]; departments: HdmDepartment[] } | null;
   operatorFound: boolean | null;
   errorCode: string | null;
   errorMessage: string | null;
@@ -29,10 +32,43 @@ export interface HdmProbeResult {
   durationMs: number;
 }
 
+/**
+ * HDM-EDGE-2: accept every shape the probe can arrive in. An older hub returned
+ * the device info under `data`, which the mutator's envelope unwrap mistook for
+ * the whole payload (only `{operators, departments}` survived) → the panel
+ * crashed. Never let a partial payload break the page.
+ */
+function normalizeProbe(raw: unknown): HdmProbeResult {
+  const r = (raw ?? {}) as Partial<HdmProbeResult> & {
+    operators?: HdmOperator[];
+    departments?: HdmDepartment[];
+  };
+  // Unwrapped-to-inner case: we only got { operators, departments }.
+  const innerOnly = Array.isArray(r.operators) || Array.isArray(r.departments);
+  const dev = innerOnly
+    ? { operators: r.operators ?? [], departments: r.departments ?? [] }
+    : (r.device ?? r.data ?? null);
+  return {
+    ok: innerOnly ? true : Boolean(r.ok),
+    host: r.host ?? '',
+    port: r.port ?? 0,
+    device: dev
+      ? { operators: dev.operators ?? [], departments: dev.departments ?? [] }
+      : null,
+    operatorFound: r.operatorFound ?? null,
+    errorCode: r.errorCode ?? null,
+    errorMessage: r.errorMessage ?? null,
+    responseHeaderHex: r.responseHeaderHex ?? null,
+    hubAddresses: Array.isArray(r.hubAddresses) ? r.hubAddresses : [],
+    durationMs: r.durationMs ?? 0,
+  };
+}
+
 const post = <T,>(url: string, data?: unknown) => apiRequest<T>({ url, method: 'POST', data });
 
 export const hdmDevice = {
-  probe: () => post<HdmProbeResult>('/fiscal/device/probe'),
+  probe: async (): Promise<HdmProbeResult> =>
+    normalizeProbe(await post<unknown>('/fiscal/device/probe')),
   testLogin: () => post<{ ok: boolean }>('/fiscal/device/test-login'),
   printLastCopy: () => post<{ ok: boolean }>('/fiscal/device/print-last-copy'),
   xReport: () => post<{ ok: boolean }>('/fiscal/device/report/x'),

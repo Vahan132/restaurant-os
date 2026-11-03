@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { Quantity } from '../../../../shared/domain/value-objects/quantity';
 import {
   FISCALIZATION_PORT,
@@ -7,6 +7,7 @@ import {
   FiscalMode,
 } from '../../../fiscalization/application/ports/fiscalization.port';
 import { Order } from '../../domain/entities/order';
+import { MENU_READER, MenuReader } from '../ports/menu-reader.port';
 
 /**
  * Builds the {@link FiscalizationInput} from a PAID order and invokes the
@@ -27,10 +28,44 @@ import { Order } from '../../domain/entities/order';
 export class FiscalizeOrderService {
   constructor(
     @Inject(FISCALIZATION_PORT) private readonly fiscalization: FiscalizationPort,
+    @Optional() @Inject(MENU_READER) private readonly menus?: MenuReader,
   ) {}
 
+  /**
+   * HDM-EDGE-3: order lines snapshot the dish's ADG code + fiscal department when
+   * the order is taken. If the dish wasn't classified yet, the line has none and
+   * the receipt fails closed (192 / DEP_REQUIRED). Fill those gaps from the
+   * dish's CURRENT menu data, so fixing the menu and pressing Retry works for
+   * orders already taken. Never overrides a value that was snapshotted.
+   */
+  private async currentFiscalCodes(
+    order: Order,
+  ): Promise<Map<string, { adgCode: string | null; dep: string | null }>> {
+    const out = new Map<string, { adgCode: string | null; dep: string | null }>();
+    if (!this.menus) {
+      return out;
+    }
+    const missing = new Set(
+      order.items
+        .filter((i) => !i.isCancelled() && (!i.adgCode?.trim() || !i.dep?.trim()))
+        .map((i) => i.menuItemId),
+    );
+    for (const menuItemId of missing) {
+      try {
+        const m = await this.menus.getItemWithModifiers(order.restaurantId, menuItemId);
+        if (m) {
+          out.set(menuItemId, { adgCode: m.item.adgCode, dep: m.item.dep });
+        }
+      } catch {
+        // best-effort: the pre-flight check still fails closed with a clear code
+      }
+    }
+    return out;
+  }
+
   /** Fiscalise the order's products receipt (mode 2). Channel is QR_WEB (e-HDM). */
-  fiscalizeProducts(order: Order): Promise<FiscalizationResult> {
+  async fiscalizeProducts(order: Order): Promise<FiscalizationResult> {
+    const current = await this.currentFiscalCodes(order);
     const lines = order.items
       .filter((i) => !i.isCancelled())
       .map((i) => ({
@@ -41,8 +76,8 @@ export class FiscalizeOrderService {
         unit: i.unit,
         unitPriceAmount: i.unitPriceAmount,
         lineTotalAmount: i.lineTotalAmount,
-        adgCode: i.adgCode,
-        dep: i.dep,
+        adgCode: i.adgCode?.trim() ? i.adgCode : (current.get(i.menuItemId)?.adgCode ?? null),
+        dep: i.dep?.trim() ? i.dep : (current.get(i.menuItemId)?.dep ?? null),
       }));
 
     return this.fiscalization.fiscalize({

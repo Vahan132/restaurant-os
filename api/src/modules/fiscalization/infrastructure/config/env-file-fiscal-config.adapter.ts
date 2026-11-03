@@ -72,7 +72,11 @@ export class EnvFileFiscalConfigAdapter implements FiscalConfigPort {
   }
 
   /** The env/file backing never carries a physical device (DB backing only). */
-  getDeviceConfig(restaurantId: string, branchId: string): Promise<FiscalDeviceConfig> {
+  getDeviceConfig(
+    restaurantId: string,
+    branchId: string,
+    _opts?: { requireActive?: boolean },
+  ): Promise<FiscalDeviceConfig> {
     return Promise.reject(
       new FatalFiscalError(
         'DEVICE_NOT_CONFIGURED',
