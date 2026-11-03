@@ -26,8 +26,9 @@ export function PinLocksManager() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [lockedOnly, setLockedOnly] = useState(false);
 
-  const rows = (data ?? []).filter((r) => !lockedOnly || r.locked);
-  const lockedCount = (data ?? []).filter((r) => r.locked).length;
+  const all = Array.isArray(data) ? data : [];
+  const rows = all.filter((r) => !lockedOnly || r.locked);
+  const lockedCount = all.filter((r) => r.locked).length;
 
   const onUnlock = async (row: StaffPinStatus) => {
     setBusyId(row.userId);

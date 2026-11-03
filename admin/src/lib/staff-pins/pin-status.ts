@@ -26,7 +26,15 @@ export function useStaffPinStatus() {
   const branchId = useActiveBranchStore((s) => s.activeBranchId);
   return useQuery({
     queryKey: [KEY, branchId],
-    queryFn: () => customInstance<StaffPinStatus[]>({ url: '/staff-pins/status', method: 'GET' }),
+    // The API envelopes bare arrays as { data, pagination }, which the mutator
+    // unwraps to { items, pagination } — normalise to a plain array.
+    queryFn: async (): Promise<StaffPinStatus[]> => {
+      const res = await customInstance<
+        StaffPinStatus[] | { items?: StaffPinStatus[] }
+      >({ url: '/staff-pins/status', method: 'GET' });
+      if (Array.isArray(res)) return res;
+      return Array.isArray(res?.items) ? res.items : [];
+    },
     enabled: branchId !== null,
     refetchInterval: 15_000,
   });
