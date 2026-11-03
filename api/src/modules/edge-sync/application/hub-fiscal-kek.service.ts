@@ -64,7 +64,12 @@ export class HubFiscalKekService implements OnApplicationBootstrap, OnModuleDest
         {},
       );
       if (!res?.fiscalKek) {
-        this.logger.log('Cloud has no fiscal master key configured — HDM secrets unavailable.');
+        // The cloud has no FISCAL_MASTER_KEK yet. Keep checking, so setting it on
+        // the cloud later starts working on this hub without a restart.
+        this.logger.warn(
+          'Cloud has no FISCAL_MASTER_KEK configured yet — HDM secrets unavailable; retrying in 5 min.',
+        );
+        this.retry = setTimeout(() => void this.fetch(), RETRY_MS);
         return;
       }
       this.crypto.adoptKek(res.fiscalKek);

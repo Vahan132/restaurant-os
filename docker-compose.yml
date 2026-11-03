@@ -72,6 +72,19 @@ services:
       SMS_NIKITA_USER: ${SMS_NIKITA_USER:-}
       SMS_NIKITA_PASS: ${SMS_NIKITA_PASS:-}
       SMS_NIKITA_ORIGINATOR: ${SMS_NIKITA_ORIGINATOR:-}
+      # FISCAL-4 / HDM-TM-2 / PAYNET-1: master key that encrypts every branch's HDM
+      # password/PIN and Paynet keys (and wraps each hub's own key). REQUIRED to
+      # save HDM or Paynet settings — 64 hex chars (`openssl rand -hex 32`).
+      # Set ONCE and never change it: secrets saved under it become unreadable.
+      FISCAL_MASTER_KEK: ${FISCAL_MASTER_KEK:-}
+      # FILE keeps the e-HDM (SRC) receipt path off on the cloud; the HDM device
+      # config is stored in the DB regardless and syncs to the hub.
+      FISCAL_CONFIG_BACKEND: ${FISCAL_CONFIG_BACKEND:-FILE}
+      FISCAL_SRC_CA_PATH: ${FISCAL_SRC_CA_PATH:-}
+      # PAYNET-1 online payments.
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-}
+      PAYMENT_ALLOW_STUB: ${PAYMENT_ALLOW_STUB:-false}
+      PAYNET_BASE_URL: ${PAYNET_BASE_URL:-https://paynet.am}
     depends_on:
       postgres: { condition: service_healthy }
       redis:    { condition: service_healthy }
