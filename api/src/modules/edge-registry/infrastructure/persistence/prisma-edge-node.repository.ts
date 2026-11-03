@@ -73,4 +73,21 @@ export class PrismaEdgeNodeRepository implements EdgeNodeRepository {
       },
     });
   }
+
+  async getFiscalKek(
+    nodeId: string,
+  ): Promise<{ cipher: Buffer; iv: Buffer; authTag: Buffer } | null> {
+    const row = await this.prisma.edgeNode.findUnique({
+      where: { id: nodeId },
+      select: { fiscalKekCipher: true, fiscalKekIv: true, fiscalKekAuthTag: true },
+    });
+    if (!row?.fiscalKekCipher || !row.fiscalKekIv || !row.fiscalKekAuthTag) {
+      return null;
+    }
+    return {
+      cipher: Buffer.from(row.fiscalKekCipher),
+      iv: Buffer.from(row.fiscalKekIv),
+      authTag: Buffer.from(row.fiscalKekAuthTag),
+    };
+  }
 }

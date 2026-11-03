@@ -33,6 +33,8 @@ export interface EdgeNodeProps {
   pendingOutboxCount: number | null;
   appVersion: string | null;
   healthStatus: StoredEdgeNodeHealthStatus | null;
+  /** EDGE-UPDATE-1: last "Update now" click (null = never). */
+  updateRequestedAt: Date | null;
   createdByUserId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -78,6 +80,7 @@ export class EdgeNode extends AggregateRoot<string> {
       pendingOutboxCount: null,
       appVersion: null,
       healthStatus: null,
+      updateRequestedAt: null,
       createdByUserId: input.createdByUserId,
       createdAt: now,
       updatedAt: now,
@@ -128,6 +131,9 @@ export class EdgeNode extends AggregateRoot<string> {
   get healthStatus(): StoredEdgeNodeHealthStatus | null {
     return this.props.healthStatus;
   }
+  get updateRequestedAt(): Date | null {
+    return this.props.updateRequestedAt;
+  }
   get createdByUserId(): string {
     return this.props.createdByUserId;
   }
@@ -147,6 +153,12 @@ export class EdgeNode extends AggregateRoot<string> {
   }
 
   /** Idempotent revoke — a revoked node can no longer authenticate. */
+  /** EDGE-UPDATE-1: ask the hub to update itself now (delivered by heartbeat). */
+  requestUpdate(at: Date = new Date()): void {
+    this.props.updateRequestedAt = at;
+    this.touch();
+  }
+
   revoke(): void {
     this.props.status = 'REVOKED';
     this.touch();

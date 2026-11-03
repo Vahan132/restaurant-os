@@ -14,6 +14,7 @@ import {
   useSaveBranchDepartments,
   useSaveBranchHdm,
 } from '@/lib/fiscal/branch-fiscal-settings';
+import { useEdgeMode } from '@/lib/edge/use-edge-mode';
 import { PERMISSIONS } from '@/lib/permissions';
 import { toast } from '@/stores/toast';
 
@@ -29,6 +30,7 @@ type DeptRow = { dep: string; taxRegime: string; label: string };
 export function FiscalTab() {
   const t = useTranslations('fiscalSettings');
   const canManage = usePermission(PERMISSIONS.SETTINGS_MANAGE);
+  const { isEdge } = useEdgeMode();
   const { data, isLoading } = useBranchFiscalSettings();
   const saveHdm = useSaveBranchHdm();
   const saveDeps = useSaveBranchDepartments();
@@ -109,6 +111,11 @@ export function FiscalTab() {
 
   return (
     <div className="max-w-2xl space-y-4">
+      {isEdge && (
+        <p className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+          {t('edgeNote')}
+        </p>
+      )}
       <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>

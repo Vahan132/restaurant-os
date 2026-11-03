@@ -22,6 +22,7 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
+import { EdgeCloudRelay } from '../../../../shared/edge/edge-cloud-relay';
 import { ActiveBranchId } from '../../../../shared/auth/active-branch.decorator';
 import { BranchScoped } from '../../../../shared/auth/branch-scoped.decorator';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
@@ -193,7 +194,25 @@ function restaurantOf(tenant: TenantContext): string {
 @BranchScoped()
 @Controller('fiscal/settings')
 export class BranchFiscalSettingsController {
-  constructor(private readonly settings: BranchFiscalSettingsService) {}
+  constructor(
+    private readonly settings: BranchFiscalSettingsService,
+    private readonly relay: EdgeCloudRelay,
+  ) {}
+
+  /**
+   * HDM-EDGE-1: on the hub the cloud stays the source of truth — forward the save
+   * (node-token auth, branch taken from the hub's identity), then pull config
+   * right away so the hub's copy (and the HDM printing) uses it immediately.
+   * Needs internet; offline → 503 HUB_OFFLINE with a clear message.
+   */
+  private async relayToCloud(
+    path: string,
+    body: Record<string, unknown>,
+  ): Promise<BranchFiscalSettingsResponse> {
+    const res = await this.relay.request<BranchFiscalSettingsResponse>('PUT', path, body);
+    await this.relay.requestConfigSync();
+    return res;
+  }
 
   @Get()
   @RequirePermissions(PERMISSIONS.SETTINGS_MANAGE)
@@ -219,6 +238,12 @@ export class BranchFiscalSettingsController {
     @CurrentUser() user: CurrentUserContext,
     @Body() dto: SaveBranchHdmDto,
   ): Promise<BranchFiscalSettingsResponse> {
+    if (this.relay.isEdge) {
+      return this.relayToCloud('/edge-sync/fiscal-settings/hdm', {
+        ...dto,
+        actorId: user.sub ?? null,
+      });
+    }
     const s = await this.settings.saveHdm({
       restaurantId: restaurantOf(tenant),
       branchId,
@@ -246,6 +271,12 @@ export class BranchFiscalSettingsController {
     @CurrentUser() user: CurrentUserContext,
     @Body() dto: SaveBranchFiscalDepartmentsDto,
   ): Promise<BranchFiscalSettingsResponse> {
+    if (this.relay.isEdge) {
+      return this.relayToCloud('/edge-sync/fiscal-settings/departments', {
+        departments: dto.departments,
+        actorId: user.sub ?? null,
+      });
+    }
     const s = await this.settings.saveDepartments(
       restaurantOf(tenant),
       branchId,

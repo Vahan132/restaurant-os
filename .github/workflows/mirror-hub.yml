@@ -23,6 +23,15 @@ on:
   push:
     tags:
       - 'edge-v*'
+    # EDGE-UPDATE-1: hubs follow develop, and the hub updater re-downloads the
+    # compose from the public hub repo — so mirror whenever those files change.
+    branches: [develop]
+    paths:
+      - 'api/docker-compose.edge.yml'
+      - 'api/.env.edge.example'
+      - 'api/windows/**'
+      - 'api/ubuntu/**'
+      - '.github/workflows/mirror-hub.yml'
 
 # Only reads this repo's contents; the cross-repo write uses HUB_MIRROR_TOKEN.
 permissions:
@@ -33,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HUB_REPO: Vahan132/restaurant-os-hub
-      TAG: ${{ github.ref_name }}
+      TAG: ${{ github.ref_type == 'tag' && github.ref_name || format('develop@{0}', github.sha) }}
       HUB_MIRROR_TOKEN: ${{ secrets.HUB_MIRROR_TOKEN }}
     steps:
       - name: Checkout main repo

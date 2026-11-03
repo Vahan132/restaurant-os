@@ -35,6 +35,8 @@ export interface EdgeHeartbeatResult {
   updateRequired: boolean;
   expectedSchemaVersion: string;
   expectedAppVersion: string;
+  /** EDGE-UPDATE-1: last "Update now" request (absent on an older cloud). */
+  updateRequestedAt?: string | null;
   serverTime: string;
 }
 

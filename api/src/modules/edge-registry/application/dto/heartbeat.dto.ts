@@ -74,6 +74,13 @@ export class HeartbeatResultDto {
   @ApiProperty({ description: 'The app version the cloud currently expects.' })
   expectedAppVersion!: string;
 
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'Last "Update now" request (ISO); the hub updates once per new value.',
+  })
+  updateRequestedAt!: string | null;
+
   @ApiProperty({ description: 'Cloud server time (ISO).' })
   serverTime!: string;
 }

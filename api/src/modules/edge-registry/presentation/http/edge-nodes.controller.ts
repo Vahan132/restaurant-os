@@ -19,6 +19,7 @@ import { APP_VERSION, SCHEMA_VERSION } from '../../../../shared/edge/version';
 import { IssuePairingCodeUseCase } from '../../application/commands/issue-pairing-code.usecase';
 import { RegisterEdgeNodeUseCase } from '../../application/commands/register-edge-node.usecase';
 import { RevokeEdgeNodeUseCase } from '../../application/commands/revoke-edge-node.usecase';
+import { RequestHubUpdateUseCase } from '../../application/commands/request-hub-update.usecase';
 import { ListEdgeNodesUseCase } from '../../application/queries/list-edge-nodes.usecase';
 import {
   EdgeNodeResponse,
@@ -44,6 +45,7 @@ export class EdgeNodesController {
     private readonly list: ListEdgeNodesUseCase,
     private readonly revoke: RevokeEdgeNodeUseCase,
     private readonly issuePairingCode: IssuePairingCodeUseCase,
+    private readonly requestUpdate: RequestHubUpdateUseCase,
     private readonly config: ConfigService<AppConfig, true>,
   ) {}
 
@@ -160,5 +162,20 @@ export class EdgeNodesController {
   @ApiOperation({ summary: 'Revoke an edge node (idempotent).' })
   async revokeNode(@CurrentTenant() tenant: TenantContext, @Param('id') id: string): Promise<void> {
     await this.revoke.execute({ restaurantId: tenant.restaurantId, nodeId: id });
+  }
+
+  /**
+   * EDGE-UPDATE-1: "Update now". The hub picks it up on its next heartbeat
+   * (≤ ~1 min) and its updater pulls + recreates the changed containers in place.
+   */
+  @Post(':id/update')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Ask a hub to update itself now (delivered via heartbeat).' })
+  async requestHubUpdate(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+  ): Promise<{ updateRequestedAt: string }> {
+    const at = await this.requestUpdate.execute({ restaurantId: tenant.restaurantId, nodeId: id });
+    return { updateRequestedAt: at.toISOString() };
   }
 }

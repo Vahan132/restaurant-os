@@ -145,7 +145,9 @@ jobs:
                 echo 'NEXT_PUBLIC_API_BASE_URL=/res/api'
                 ;;
               api)
-                : # no build-args; env arrives at runtime
+                # EDGE-UPDATE-1: stamp the build so cloud + hub report the SAME
+                # app version (hub "update available" = versions differ).
+                echo "APP_BUILD=${GITHUB_SHA::7}"
                 ;;
             esac
             echo '__ARGS__'
@@ -223,3 +225,45 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "$SSH_USER@$SSH_HOST" \
             "cd ~/restaurant-os && git pull --ff-only && docker compose pull && docker compose up -d && { docker compose exec -T proxy nginx -s reload || docker compose restart proxy; } && docker compose ps"
+
+  # ── EDGE-UPDATE-1 — publish the HUB images on the develop channel ────────────
+  # The hub API is the SAME Dockerfile as the cloud API, so instead of a second
+  # (slow, multi-arch) build we copy the freshly published cloud image manifest
+  # to the PUBLIC edge package: restaurant-os-edge:{develop,latest}. Hubs track
+  # that tag and their updater container swaps it in automatically, so the hub
+  # always runs the exact API the cloud runs (POS/KDS/Admin already track
+  # :develop). The tiny edge-proxy (nginx) image is rebuilt alongside.
+  # Note: amd64 only (like the cloud images). edge-v* tags still build multi-arch.
+  publish-hub:
+    needs: [detect, build, retag]
+    if: ${{ always() && needs.detect.result == 'success' && needs.build.result != 'failure' && needs.retag.result != 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy cloud API -> hub API image (manifest copy, no build)
+        run: |
+          set -euo pipefail
+          src="${REGISTRY}/${OWNER}/restaurant-os-api:develop"
+          dst="${REGISTRY}/${OWNER}/restaurant-os-edge"
+          docker buildx imagetools create -t "${dst}:develop" -t "${dst}:latest" "$src"
+
+      - name: Build and push hub proxy (develop channel)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api/edge-proxy
+          file: ./api/edge-proxy/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/restaurant-os-edge-proxy:develop
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/restaurant-os-edge-proxy:latest
+          cache-from: type=gha,scope=edge-proxy
+          cache-to: type=gha,mode=max,scope=edge-proxy

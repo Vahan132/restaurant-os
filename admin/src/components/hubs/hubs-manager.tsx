@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { useEdgeNodesControllerRevokeNode } from '@/api/generated/edge-nodes/edge-nodes';
+import { customInstance } from '@/api/mutator';
 import type {
   EdgeNodeResponse,
   RegisterEdgeNodeResponse,
@@ -30,6 +31,12 @@ import {
 import { useHubs, useHubsInvalidation } from '@/lib/hubs/use-hubs-data';
 import { PERMISSIONS } from '@/lib/permissions';
 import { toast } from '@/stores/toast';
+
+/** EDGE-UPDATE-1 fields (not yet in the generated client). */
+type HubRow = EdgeNodeResponse & {
+  updateRequestedAt?: string | null;
+  expectedAppVersion?: string;
+};
 
 export function HubsManager() {
   const t = useTranslations('hubs');
@@ -71,6 +78,23 @@ export function HubsManager() {
       await invalidate();
     } catch (err) {
       toast.error(getErrorMessage(err));
+    }
+  };
+
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const onUpdateNow = async (hub: EdgeNodeResponse) => {
+    setUpdatingId(hub.id);
+    try {
+      await customInstance<{ updateRequestedAt: string }>({
+        url: `/edge-nodes/${hub.id}/update`,
+        method: 'POST',
+      });
+      toast.success(t('updateQueued'));
+      await invalidate();
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -168,7 +192,27 @@ export function HubsManager() {
                       )}
                     </td>
                     <td className="px-4 py-2 text-gray-600">
-                      <div className="font-mono text-xs">{hub.appVersion ?? '—'}</div>
+                      <div
+                        className="font-mono text-xs"
+                        title={
+                          (hub as HubRow).expectedAppVersion
+                            ? t('latestVersion', { version: (hub as HubRow).expectedAppVersion ?? '' })
+                            : undefined
+                        }
+                      >
+                        {hub.appVersion ?? '—'}
+                      </div>
+                      {!revoked && hub.updateAvailable && (
+                        <Badge tone="amber">{t('updateAvailable')}</Badge>
+                      )}
+                      {!revoked && (hub as HubRow).updateRequestedAt && (
+                        <div
+                          className="text-xs text-gray-400"
+                          title={absoluteTime((hub as HubRow).updateRequestedAt ?? null, locale)}
+                        >
+                          {t('updateRequested', { when: rel((hub as HubRow).updateRequestedAt ?? null) })}
+                        </div>
+                      )}
                       {!revoked && warnings.needsUpdate ? (
                         <div className="text-xs">
                           <span className="font-mono text-amber-700">
@@ -190,7 +234,17 @@ export function HubsManager() {
                     </td>
                     <td className="px-4 py-2">
                       <Can permission={PERMISSIONS.EDGE_MANAGE} scope="restaurant">
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-1">
+                          {!revoked && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => onUpdateNow(hub)}
+                              disabled={updatingId === hub.id}
+                            >
+                              {t('updateNow')}
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="ghost"

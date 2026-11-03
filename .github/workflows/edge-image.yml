@@ -72,7 +72,8 @@ jobs:
           images: ${{ env.IMAGE }}
           tags: |
             type=ref,event=tag
-            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
+            # EDGE-UPDATE-1: :latest now tracks the develop channel (deploy-web
+            # publish-hub). A release tag must not move it backwards.
 
       - name: Build and push (multi-arch)
         uses: docker/build-push-action@v6
@@ -116,7 +117,8 @@ jobs:
           images: ghcr.io/vahan132/restaurant-os-edge-proxy
           tags: |
             type=ref,event=tag
-            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
+            # EDGE-UPDATE-1: :latest now tracks the develop channel (deploy-web
+            # publish-hub). A release tag must not move it backwards.
       - name: Build and push (multi-arch)
         uses: docker/build-push-action@v6
         with:

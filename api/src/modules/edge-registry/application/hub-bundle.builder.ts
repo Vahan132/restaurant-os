@@ -38,10 +38,14 @@ export function buildHubBundle(input: HubBundleInput): ProvisionHubFile[] {
     'NODE_ENV=production',
     'PORT=3001',
     '',
-    '# Images',
-    'EDGE_IMAGE_TAG=latest',
+    '# Images — the hub follows the same release channel as the cloud webapp.',
+    'EDGE_IMAGE_TAG=develop',
     'EDGE_UI_TAG=develop',
     'HTTP_PORT=80',
+    '',
+    '# Automatic updates (the updater container). false = only on "Update now".',
+    'EDGE_AUTO_UPDATE=true',
+    'EDGE_AUTO_UPDATE_MINUTES=15',
     '',
     '# Identity (this hub is pre-paired — delivered by the dashboard).',
     `EDGE_ORG_ID=${input.organizationId}`,
@@ -68,8 +72,8 @@ export function buildHubBundle(input: HubBundleInput): ProvisionHubFile[] {
     `EDGE_POS_DEVICE_SECRET=${input.posDeviceSecret}`,
     `EDGE_KDS_DEVICE_SECRET=${input.kdsDeviceSecret}`,
     '',
-    '# Fiscal is configured per restaurant in the dashboard — nothing to set here.',
-    'FISCAL_CONFIG_BACKEND=FILE',
+    '# Fiscal / HDM is configured per branch in the dashboard (Settings → HDM) and',
+    '# syncs to the hub automatically — nothing to set here.',
     '',
     '# Media + misc',
     'STORAGE_DRIVER=dev',
@@ -84,6 +88,10 @@ export function buildHubBundle(input: HubBundleInput): ProvisionHubFile[] {
     '',
   ].join('\n');
 
+  const composeFetchCmd = `curl -fsSL -o docker-compose.edge.yml ${HUB_COMPOSE_URL}`;
+
+  // run.cmd is safe to re-run at any time: it refreshes the compose file, PULLS
+  // newer images and recreates only what changed (data + pairing are volumes).
   const runCmd = [
     '@echo off',
     'setlocal',
@@ -91,14 +99,34 @@ export function buildHubBundle(input: HubBundleInput): ProvisionHubFile[] {
     'echo Restaurant OS hub - starting...',
     'where docker >nul 2>nul || (echo Docker Desktop is required. Install it, start it, then run this again. ^& pause ^& exit /b 1)',
     'echo Downloading configuration...',
-    `curl -fsSL -o docker-compose.edge.yml ${HUB_COMPOSE_URL} || (echo Could not download. Check the internet connection. ^& pause ^& exit /b 1)`,
-    'echo Starting (the first run downloads images; this can take a few minutes)...',
+    `${composeFetchCmd} || (echo Could not download - using the existing configuration.)`,
+    'if not exist docker-compose.edge.yml (echo No configuration found. Check the internet connection. ^& pause ^& exit /b 1)',
+    'echo Downloading the latest version (the first run can take a few minutes)...',
+    'docker compose -f docker-compose.edge.yml --env-file .env.edge pull || echo Could not download updates - starting the version already on this computer.',
     'docker compose -f docker-compose.edge.yml --env-file .env.edge up -d || (echo Start failed. See the message above. ^& pause ^& exit /b 1)',
+    'docker image prune -f >nul 2>nul',
     'echo.',
     'echo Done. On this computer the apps are at:',
     'echo    POS:   http://localhost/res/pos',
     'echo    KDS:   http://localhost/res/kds',
     'echo    Admin: http://localhost/res/admin',
+    'echo.',
+    'echo The hub now updates itself automatically. To update right away, run update.cmd',
+    'echo or click "Update now" on the Hubs page of the dashboard.',
+    'pause',
+    '',
+  ].join('\r\n');
+
+  const updateCmd = [
+    '@echo off',
+    'setlocal',
+    'cd /d "%~dp0"',
+    'echo Restaurant OS hub - updating (your data and pairing are kept)...',
+    `${composeFetchCmd} || echo Could not download the configuration - keeping the current one.`,
+    'docker compose -f docker-compose.edge.yml --env-file .env.edge pull || (echo Could not download updates. Check the internet connection. ^& pause ^& exit /b 1)',
+    'docker compose -f docker-compose.edge.yml --env-file .env.edge up -d || (echo Update failed. See the message above. ^& pause ^& exit /b 1)',
+    'docker image prune -f >nul 2>nul',
+    'echo Update complete.',
     'pause',
     '',
   ].join('\r\n');
@@ -109,10 +137,27 @@ export function buildHubBundle(input: HubBundleInput): ProvisionHubFile[] {
     'cd "$(dirname "$0")"',
     'command -v docker >/dev/null 2>&1 || { echo "Docker is required. Install it and run this again."; exit 1; }',
     'echo "Downloading configuration..."',
-    `curl -fsSL -o docker-compose.edge.yml ${HUB_COMPOSE_URL}`,
-    'echo "Starting (first run downloads images; this can take a few minutes)..."',
+    `${composeFetchCmd} || echo "Could not download - using the existing configuration."`,
+    '[ -f docker-compose.edge.yml ] || { echo "No configuration found. Check the internet connection."; exit 1; }',
+    'echo "Downloading the latest version (first run can take a few minutes)..."',
+    'docker compose -f docker-compose.edge.yml --env-file .env.edge pull || echo "Could not download updates - starting the local version."',
     'docker compose -f docker-compose.edge.yml --env-file .env.edge up -d',
+    'docker image prune -f >/dev/null 2>&1 || true',
     'echo "Done. Apps: http://localhost/res/pos  (KDS: /res/kds, Admin: /res/admin)"',
+    'echo "The hub updates itself automatically; ./update.sh updates right away."',
+    '',
+  ].join('\n');
+
+  const updateSh = [
+    '#!/usr/bin/env bash',
+    'set -e',
+    'cd "$(dirname "$0")"',
+    'echo "Updating the hub (data and pairing are kept)..."',
+    `${composeFetchCmd} || echo "Could not download the configuration - keeping the current one."`,
+    'docker compose -f docker-compose.edge.yml --env-file .env.edge pull',
+    'docker compose -f docker-compose.edge.yml --env-file .env.edge up -d',
+    'docker image prune -f >/dev/null 2>&1 || true',
+    'echo "Update complete."',
     '',
   ].join('\n');
 
@@ -120,5 +165,7 @@ export function buildHubBundle(input: HubBundleInput): ProvisionHubFile[] {
     { path: '.env.edge', content: envEdge },
     { path: 'run.cmd', content: runCmd },
     { path: 'run.sh', content: runSh },
+    { path: 'update.cmd', content: updateCmd },
+    { path: 'update.sh', content: updateSh },
   ];
 }

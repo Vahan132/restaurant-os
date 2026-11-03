@@ -33,7 +33,7 @@ export interface WrappedSecrets {
  */
 @Injectable()
 export class FiscalCryptoService {
-  private readonly kek: Buffer | null;
+  private kek: Buffer | null;
 
   constructor(config: ConfigService<AppConfig, true>) {
     const hex = config.get('FISCAL_MASTER_KEK', { infer: true }) as string | undefined;
@@ -51,6 +51,19 @@ export class FiscalCryptoService {
     } else {
       this.kek = null;
     }
+  }
+
+  /**
+   * EDGE-KEK-2 (hub only): adopt the per-hub KEK delivered at runtime by the cloud
+   * (POST /edge-sync/fiscal-kek) or read back from /data/fiscal-kek, for hubs that
+   * were provisioned without one. Validated like the env value.
+   */
+  adoptKek(hex: string): void {
+    const v = hex.trim();
+    if (!/^[0-9a-fA-F]{64}$/.test(v)) {
+      throw new Error('Fiscal KEK must be 64 hex chars (32 bytes).');
+    }
+    this.kek = Buffer.from(v, 'hex');
   }
 
   /** True when a valid master KEK is present. */

@@ -25,6 +25,8 @@ export interface RecordHeartbeatOutput {
   updateRequired: boolean;
   expectedSchemaVersion: string;
   expectedAppVersion: string;
+  /** EDGE-UPDATE-1: last "Update now" request (ISO) — the hub dedupes by value. */
+  updateRequestedAt: string | null;
   serverTime: string;
 }
 
@@ -66,6 +68,7 @@ export class RecordHeartbeatUseCase implements UseCase<
       updateRequired: !schemaMatch,
       expectedSchemaVersion: SCHEMA_VERSION,
       expectedAppVersion: APP_VERSION,
+      updateRequestedAt: node.updateRequestedAt?.toISOString() ?? null,
       serverTime: new Date().toISOString(),
     };
   }

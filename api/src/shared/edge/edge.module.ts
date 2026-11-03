@@ -1,4 +1,5 @@
 import { Global, Module } from '@nestjs/common';
+import { EdgeCloudRelay } from './edge-cloud-relay';
 import { EdgeConfigService } from './edge-config.service';
 import { EdgeController } from './edge.controller';
 import { EdgeSyncGate } from './edge-sync-gate';
@@ -21,9 +22,10 @@ import { OUTBOX_RECORDER, PrismaOutboxRecorder } from './outbox-recorder';
   providers: [
     EdgeConfigService,
     EdgeSyncGate,
+    EdgeCloudRelay,
     HubDeviceProvisioner,
     { provide: OUTBOX_RECORDER, useClass: PrismaOutboxRecorder },
   ],
-  exports: [EdgeConfigService, EdgeSyncGate, OUTBOX_RECORDER],
+  exports: [EdgeConfigService, EdgeSyncGate, EdgeCloudRelay, OUTBOX_RECORDER],
 })
 export class EdgeModule {}

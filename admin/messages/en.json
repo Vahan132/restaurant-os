@@ -1975,11 +1975,11 @@
     "statusUnknown": "Unknown",
     "statusRevoked": "Revoked",
     "updateSteps": "Update steps",
-    "updateStepsTitle": "Update this hub's schema",
-    "updateStepsIntro": "This hub is running an older database schema than the platform expects. Update it to resume reliable sync.",
-    "updateStep1": "Open the hub and pull the latest app image.",
-    "updateStep2": "Run the hub's migrations so its schema matches the platform.",
-    "updateStep3": "Confirm the hub reports the expected schema version here.",
+    "updateStepsTitle": "Update this hub",
+    "updateStepsIntro": "Hubs update themselves automatically (every ~15 minutes) and keep all data and pairing. To update right away:",
+    "updateStep1": "Click “Update now” on this page (the hub must be online), or",
+    "updateStep2": "on the hub computer, double-click update.cmd (Windows) or run ./update.sh (Linux) in the hub folder.",
+    "updateStep3": "Hubs installed before automatic updates existed: run run.cmd once — from then on they update themselves.",
     "revoke": "Revoke",
     "confirmRevoke": "Revoke “{name}”? Its token stops working immediately and the hub can no longer sync until re-registered.",
     "alreadyRevoked": "Already revoked",
@@ -2026,7 +2026,12 @@
     "preparing": "Preparing…",
     "dlStep1": "Unzip the downloaded file on the hub computer.",
     "dlStep2": "Double-click run.cmd (Windows) or run.sh (Mac/Linux). Docker Desktop must be installed.",
-    "dlStep3": "Wait a few minutes on the first run, then open http://localhost/res/pos."
+    "dlStep3": "Wait a few minutes on the first run, then open http://localhost/res/pos.",
+    "updateNow": "Update now",
+    "updateRequested": "Update requested {when}",
+    "updateQueued": "Update requested — the hub will update within about a minute.",
+    "updateAvailable": "Update available",
+    "latestVersion": "Cloud version: {version}"
   },
   "consumerListing": {
     "title": "Consumer Listing",
@@ -2330,6 +2335,7 @@
     "deptAdd": "Add department",
     "deptSave": "Save departments",
     "savedDepts": "Departments saved.",
-    "deptIncomplete": "Each department needs a number and a tax type."
+    "deptIncomplete": "Each department needs a number and a tax type.",
+    "edgeNote": "You are on the local hub. Saving sends the change to the cloud (internet needed) and the hub picks it up right away. Printing works offline."
   }
 }

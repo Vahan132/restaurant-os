@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { FiscalConfigModule } from '../fiscal-config/fiscal-config.module';
+import { HubFiscalKekService } from './application/hub-fiscal-kek.service';
 import { CloudPairClient } from './application/cloud-pair.client';
 import { ConfigSyncService } from './application/config-sync.service';
 import { EdgeBootstrapService } from './application/edge-bootstrap.service';
@@ -21,6 +23,8 @@ import { SetupPageController } from './presentation/http/setup-page.controller';
  * EdgeConfigService (edge identity) and PrismaService come from global modules.
  */
 @Module({
+  // EDGE-KEK-2: FiscalCryptoService (the hub adopts its per-hub KEK at runtime).
+  imports: [FiscalConfigModule],
   controllers: [EdgeSyncController, SetupController, SetupPageController],
   providers: [
     SnapshotClient,
@@ -29,6 +33,7 @@ import { SetupPageController } from './presentation/http/setup-page.controller';
     ConfigSyncService,
     SyncPushService,
     HeartbeatService,
+    HubFiscalKekService,
     // EDGE-SETUP-3A: hub-local pairing + identity persistence.
     CloudPairClient,
     EdgeIdentityStore,

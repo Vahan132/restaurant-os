@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EdgeCloudRelay } from '../../../shared/edge/edge-cloud-relay';
 import { EdgeConfigService } from '../../../shared/edge/edge-config.service';
 import { EdgeSyncGate } from '../../../shared/edge/edge-sync-gate';
 import { APP_VERSION } from '../../../shared/edge/version';
@@ -13,6 +14,10 @@ export interface HeartbeatRunResult {
   paused?: boolean;
   reason?: string;
 }
+
+/** EDGE-UPDATE-1: handshake files on the data volume shared with the updater. */
+const UPDATE_REQUEST_FILE = 'update-request';
+const UPDATE_HANDLED_FILE = 'update-handled';
 
 /** Delay before the first post-boot heartbeat (lets bootstrap settle). */
 const INITIAL_HEARTBEAT_DELAY_MS = 8_000;
@@ -40,6 +45,7 @@ export class HeartbeatService implements OnApplicationBootstrap, OnModuleDestroy
     private readonly gate: EdgeSyncGate,
     private readonly prisma: PrismaService,
     config: ConfigService<AppConfig, true>,
+    private readonly relay: EdgeCloudRelay,
   ) {
     this.intervalMs = config.get('EDGE_HEARTBEAT_INTERVAL_MS', { infer: true });
   }
@@ -110,6 +116,7 @@ export class HeartbeatService implements OnApplicationBootstrap, OnModuleDestroy
       }
 
       await this.prisma.edgeSyncState.updateMany({ where: { nodeId }, data: { online: true } });
+      this.handleUpdateRequest(result.updateRequestedAt ?? null);
       return { sent: true, schemaMatch: result.schemaMatch, paused: this.gate.isPaused };
     } catch (err) {
       // The heartbeat endpoint is not schema-guarded, but be defensive.
@@ -137,5 +144,26 @@ export class HeartbeatService implements OnApplicationBootstrap, OnModuleDestroy
   private async markOffline(): Promise<void> {
     const { nodeId } = this.edge.getIdentity();
     await this.prisma.edgeSyncState.updateMany({ where: { nodeId }, data: { online: false } });
+  }
+
+  /**
+   * EDGE-UPDATE-1: the cloud echoes the last "Update now" click. Once per NEW
+   * value, drop `update-request` on the shared data volume — the hub's updater
+   * container watches for it, pulls the newer images and recreates the changed
+   * containers (including this API) in place.
+   */
+  private handleUpdateRequest(requestedAt: string | null): void {
+    if (!requestedAt) {
+      return;
+    }
+    if (this.relay.readDataFile(UPDATE_HANDLED_FILE) === requestedAt) {
+      return;
+    }
+    if (this.relay.writeDataFile(UPDATE_REQUEST_FILE, requestedAt)) {
+      this.relay.writeDataFile(UPDATE_HANDLED_FILE, requestedAt);
+      this.logger.log(
+        `Update requested from the dashboard (${requestedAt}) — handed to the updater.`,
+      );
+    }
   }
 }

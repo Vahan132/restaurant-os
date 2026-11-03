@@ -29,4 +29,6 @@ export interface EdgeNodeRepository {
    * master KEK (EDGE-KEK-1 columns). Set once at pairing; enables re-wrap-on-sync.
    */
   setFiscalKek(nodeId: string, kek: { cipher: Buffer; iv: Buffer; authTag: Buffer }): Promise<void>;
+  /** EDGE-KEK-2: the node's master-wrapped per-hub KEK, or null when none was minted. */
+  getFiscalKek(nodeId: string): Promise<{ cipher: Buffer; iv: Buffer; authTag: Buffer } | null>;
 }

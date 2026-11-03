@@ -145,4 +145,7 @@ export const EDGE_ALLOWED_NAV_KEYS: ReadonlySet<string> = new Set([
   'reservations',
   'menu',
   'reports',
+  // HDM-EDGE-1: Settings is reachable on the hub, but shows ONLY the HDM tab
+  // (saves are relayed to the cloud). See SettingsManager.
+  'settings',
 ]);

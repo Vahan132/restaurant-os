@@ -65,6 +65,13 @@ ENV CLOUD_URL=""
 RUN mkdir -p /data/media && chown -R node:node /data
 USER node
 
+# EDGE-UPDATE-1: build stamp (short git sha, set by CI). Not a secret. Reported
+# as APP_VERSION "0.1.0+<sha>" by cloud and hub so the admin can show
+# "update available" when a hub runs an older build than the cloud. Declared
+# last so it only invalidates this final layer.
+ARG APP_BUILD=""
+ENV APP_BUILD=${APP_BUILD}
+
 # Default to the edge bring-up flow (migrate -> optional seed -> start). For a
 # plain run, override with: `node dist/main.js`.
 ENTRYPOINT ["scripts/edge-entrypoint.sh"]

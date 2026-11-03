@@ -2306,6 +2306,9 @@ model EdgeNode {
   fiscalKekCipher    Bytes?
   fiscalKekIv        Bytes?
   fiscalKekAuthTag   Bytes?
+  // ── EDGE-UPDATE-1: operator clicked "Update now" (Hubs page). Returned in the
+  // heartbeat reply; the hub's updater pulls + recreates containers in place.
+  updateRequestedAt  DateTime?
   createdByUserId String
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt

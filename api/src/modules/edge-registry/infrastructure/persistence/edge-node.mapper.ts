@@ -22,6 +22,7 @@ export class EdgeNodeMapper {
       pendingOutboxCount: r.pendingOutboxCount,
       appVersion: r.appVersion,
       healthStatus: (r.healthStatus as StoredEdgeNodeHealthStatus | null) ?? null,
+      updateRequestedAt: r.updateRequestedAt ?? null,
       createdByUserId: r.createdByUserId,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
@@ -43,6 +44,7 @@ export class EdgeNodeMapper {
       pendingOutboxCount: d.pendingOutboxCount,
       appVersion: d.appVersion,
       healthStatus: d.healthStatus,
+      updateRequestedAt: d.updateRequestedAt,
       createdByUserId: d.createdByUserId,
       updatedAt: d.updatedAt,
     };

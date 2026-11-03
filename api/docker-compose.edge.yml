@@ -11,7 +11,9 @@
 #   docker compose -f docker-compose.edge.yml --env-file .env.edge up -d
 #   # -> boots UNPAIRED into setup mode; pair at http://<host>:3001/setup
 #
-# Update (EDGE-PKG-1 section 2.3):
+# Update (EDGE-UPDATE-1): automatic — the `updater` service below pulls newer
+# images and recreates changed containers in place (also on "Update now" in the
+# dashboard). Manual equivalent (what update.cmd / update.sh do):
 #   docker compose -f docker-compose.edge.yml --env-file .env.edge pull
 #   docker compose -f docker-compose.edge.yml --env-file .env.edge up -d
 #   # entrypoint runs `prisma migrate deploy` on boot -> safe pull->migrate->restart
@@ -113,6 +115,24 @@ services:
       EDGE_SEED: ${EDGE_SEED:-false}
       EDGE_SEED_OWNER_EMAIL: ${EDGE_SEED_OWNER_EMAIL:-owner@edge.local}
       EDGE_SEED_OWNER_PASSWORD: ${EDGE_SEED_OWNER_PASSWORD:-ChangeMe123!}
+
+      # Hub-vouched devices (EDGE-OFFLINE-UI). The dashboard bakes these into
+      # .env.edge; they MUST reach the container or GET /edge/device-key 404s, the
+      # hub-served POS/KDS never get a device secret, and PIN login fails.
+      EDGE_POS_DEVICE_SECRET: ${EDGE_POS_DEVICE_SECRET:-}
+      EDGE_KDS_DEVICE_SECRET: ${EDGE_KDS_DEVICE_SECRET:-}
+      # Staff PIN policy + real client IP behind the bundled proxy.
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      PIN_MAX_ATTEMPTS: ${PIN_MAX_ATTEMPTS:-}
+      PIN_LOCKOUT_MINUTES: ${PIN_LOCKOUT_MINUTES:-}
+
+      # Fiscal / HDM (HDM-TM-1). The branch HDM config syncs down from the cloud
+      # envelope-encrypted; the DB backend reads it and the hub fetches its own
+      # per-hub KEK from the cloud (persisted to /data/fiscal-kek). A NEW variable
+      # name on purpose: older bundles wrote FISCAL_CONFIG_BACKEND=FILE, which
+      # would hide the HDM config from the hub.
+      FISCAL_CONFIG_BACKEND: ${EDGE_FISCAL_CONFIG_BACKEND:-DB}
+      FISCAL_SRC_CA_PATH: ${FISCAL_SRC_CA_PATH:-}
     ports:
       - '${PORT:-3001}:${PORT:-3001}'
     volumes:
@@ -170,6 +190,78 @@ services:
         condition: service_started
       kds:
         condition: service_started
+
+  # ── EDGE-UPDATE-1 — in-place updater ─────────────────────────────────────────
+  # Keeps the hub on the same version as the cloud with NO reinstall: every
+  # EDGE_AUTO_UPDATE_MINUTES (and immediately when "Update now" is clicked in the
+  # dashboard → Hubs) it re-downloads this compose file, pulls newer images and
+  # recreates ONLY the containers whose image changed. Data (edge_pgdata) and
+  # pairing (edge_data) are named volumes, so they survive; the API applies new
+  # DB migrations on start. Uses the host Docker socket (Docker Desktop and Linux
+  # both expose /var/run/docker.sock). It never recreates itself — re-run
+  # run.cmd / run.sh to pick up a new updater definition.
+  #   EDGE_AUTO_UPDATE=false          -> only update on "Update now" / update.cmd
+  #   EDGE_AUTO_UPDATE_MINUTES=15     -> check interval
+  updater:
+    image: docker:27-cli
+    container_name: restaurantos-edge-updater
+    restart: unless-stopped
+    environment:
+      EDGE_AUTO_UPDATE: ${EDGE_AUTO_UPDATE:-true}
+      EDGE_AUTO_UPDATE_MINUTES: ${EDGE_AUTO_UPDATE_MINUTES:-15}
+      EDGE_COMPOSE_URL: ${EDGE_COMPOSE_URL:-https://raw.githubusercontent.com/Vahan132/restaurant-os-hub/main/docker-compose.edge.yml}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # The install folder (this compose file + .env.edge).
+      - ./:/hub
+      # Shared with the API: update-request (written on "Update now") + status.
+      - edge_data:/edge-data
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        set -u
+        COMPOSE=/hub/docker-compose.edge.yml
+        ENVF=/hub/.env.edge
+        REQ=/edge-data/update-request
+        STATUS=/edge-data/update-status.json
+        SERVICES="postgres api admin pos kds proxy"
+        INTERVAL=$$(( $${EDGE_AUTO_UPDATE_MINUTES:-15} * 60 ))
+        [ "$$INTERVAL" -ge 300 ] || INTERVAL=300
+        PROJECT=$$(docker inspect --format '{{ index .Config.Labels "com.docker.compose.project" }}' restaurantos-edge-updater 2>/dev/null)
+        if [ -z "$$PROJECT" ]; then echo "[updater] cannot resolve compose project; idling"; exec sleep infinity; fi
+        echo "[updater] project=$$PROJECT auto=$$EDGE_AUTO_UPDATE every $$INTERVAL s"
+        dc() { docker compose -p "$$PROJECT" -f "$$COMPOSE" --env-file "$$ENVF" "$$@"; }
+        status() { printf '{"at":"%s","trigger":"%s","result":"%s"}\n' "$$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$$1" "$$2" > "$$STATUS" 2>/dev/null || true; }
+        run_update() {
+          echo "[updater] $$(date -u +%FT%TZ) checking for updates ($$1)"
+          if wget -q -T 30 -O /tmp/compose.yml "$$EDGE_COMPOSE_URL" \
+             && docker compose -p "$$PROJECT" -f /tmp/compose.yml --env-file "$$ENVF" config -q >/dev/null 2>&1; then
+            if ! cmp -s /tmp/compose.yml "$$COMPOSE"; then
+              cp /tmp/compose.yml "$$COMPOSE" && echo "[updater] compose file refreshed"
+            fi
+          else
+            echo "[updater] could not refresh compose (offline?) - using the local copy"
+          fi
+          if ! dc pull --quiet $$SERVICES; then
+            echo "[updater] pull failed (offline?) - will retry"; status "$$1" "pull-failed"; return
+          fi
+          if dc up -d $$SERVICES; then
+            docker image prune -f >/dev/null 2>&1 || true
+            echo "[updater] up to date"; status "$$1" "ok"
+          else
+            echo "[updater] up failed"; status "$$1" "up-failed"
+          fi
+        }
+        last=0
+        while :; do
+          now=$$(date +%s)
+          if [ -f "$$REQ" ]; then
+            rm -f "$$REQ"; run_update manual; last=$$now
+          elif [ "$$EDGE_AUTO_UPDATE" = "true" ] && [ $$(( now - last )) -ge "$$INTERVAL" ]; then
+            run_update auto; last=$$now
+          fi
+          sleep 30
+        done
 
 volumes:
   edge_pgdata:

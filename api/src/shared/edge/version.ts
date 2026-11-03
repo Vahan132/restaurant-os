@@ -3,8 +3,18 @@
  * (OFF-6) and monitoring (OFF-8) can confirm they're paired to a compatible hub.
  */
 
-/** Application version (kept in sync with package.json). */
-export const APP_VERSION = '0.1.0';
+/** Base application version (kept in sync with package.json). */
+const BASE_APP_VERSION = '0.1.0';
+
+/**
+ * Application version reported by cloud AND hub. EDGE-UPDATE-1: images built
+ * by CI carry `APP_BUILD` (short git sha), so this becomes `0.1.0+<sha>`; the
+ * cloud's own value is the "expected" version and a hub reporting anything
+ * else shows "update available". Unset (local dev) ⇒ the bare base version.
+ */
+export const APP_VERSION = process.env.APP_BUILD?.trim()
+  ? `${BASE_APP_VERSION}+${process.env.APP_BUILD.trim()}`
+  : BASE_APP_VERSION;
 
 /**
  * Edge sync schema/contract version — an APP CONSTANT (NOT the Prisma migration

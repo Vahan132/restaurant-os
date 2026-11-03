@@ -11,6 +11,9 @@ import { GetBranchSnapshotUseCase } from './application/queries/get-branch-snaps
 import { GetConfigChangesUseCase } from './application/queries/get-config-changes.usecase';
 import { ApplyOperationalPushUseCase } from './application/commands/apply-operational-push.usecase';
 import { RecordHeartbeatUseCase } from './application/commands/record-heartbeat.usecase';
+import { RequestHubUpdateUseCase } from './application/commands/request-hub-update.usecase';
+import { EnsureHubFiscalKekUseCase } from './application/commands/ensure-hub-fiscal-kek.usecase';
+import { EdgeHubFiscalController } from './presentation/http/edge-hub-fiscal.controller';
 import { BRANCH_LOOKUP } from './application/ports/branch-lookup.port';
 import { EDGE_READ_MODEL } from './application/ports/edge-read-model';
 import { OPERATIONAL_WRITER } from './application/ports/operational-writer';
@@ -50,6 +53,7 @@ import { EdgeSyncPushController } from './presentation/http/edge-sync-push.contr
     EdgePairController,
     EdgeSnapshotController,
     EdgeSyncPushController,
+    EdgeHubFiscalController,
   ],
   providers: [
     RegisterEdgeNodeUseCase,
@@ -61,6 +65,8 @@ import { EdgeSyncPushController } from './presentation/http/edge-sync-push.contr
     GetConfigChangesUseCase,
     ApplyOperationalPushUseCase,
     RecordHeartbeatUseCase,
+    RequestHubUpdateUseCase,
+    EnsureHubFiscalKekUseCase,
     EdgeAuthGuard,
     SchemaVersionGuard,
     { provide: EDGE_NODE_REPOSITORY, useClass: PrismaEdgeNodeRepository },

@@ -1,3 +1,4 @@
+export * from './edge-cloud-relay';
 export * from './edge-config.service';
 export * from './edge-sync-gate';
 export * from './edge.controller';

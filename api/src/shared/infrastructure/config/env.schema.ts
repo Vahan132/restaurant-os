@@ -416,6 +416,21 @@ export const envSchema = z
     if (env.APP_MODE === 'EDGE' && !env.EDGE_NODE_ID) {
       return;
     }
+    // EDGE-KEK-2 / HDM-EDGE-1: a PAIRED hub runs the DB backend to read the synced
+    // HDM config. Its KEK may arrive at RUNTIME from the cloud (dashboard-
+    // provisioned hubs never had one in env), and the SRC CA is only needed for
+    // e-HDM (a TouchMaster-only branch never uses it) — both fail lazily and
+    // closed at first use instead of blocking the hub from booting.
+    if (env.APP_MODE === 'EDGE') {
+      if (env.FISCAL_MASTER_KEK && !/^[0-9a-fA-F]{64}$/.test(env.FISCAL_MASTER_KEK)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['FISCAL_MASTER_KEK'],
+          message: 'FISCAL_MASTER_KEK must be 64 hex chars (32 bytes).',
+        });
+      }
+      return;
+    }
     if (!env.FISCAL_MASTER_KEK || !/^[0-9a-fA-F]{64}$/.test(env.FISCAL_MASTER_KEK)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

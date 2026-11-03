@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EdgeCloudRelay } from '../../../shared/edge/edge-cloud-relay';
 import { EdgeConfigService } from '../../../shared/edge/edge-config.service';
 import { EdgeSyncGate } from '../../../shared/edge/edge-sync-gate';
 import { AppConfig } from '../../../shared/infrastructure/config/env.schema';
@@ -38,14 +39,33 @@ export class ConfigSyncService implements OnApplicationBootstrap, OnModuleDestro
     private readonly prisma: PrismaService,
     private readonly gate: EdgeSyncGate,
     config: ConfigService<AppConfig, true>,
+    private readonly relay: EdgeCloudRelay,
   ) {
     this.intervalMs = config.get('CONFIG_SYNC_INTERVAL_MS', { infer: true });
+  }
+
+  /**
+   * HDM-EDGE-1: run a config pull NOW (e.g. right after the hub relayed an HDM
+   * settings save to the cloud). Waits for an in-flight periodic run first so two
+   * pulls never race on the cursor.
+   */
+  async syncNow(): Promise<ConfigSyncResult> {
+    while (this.running) {
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    this.running = true;
+    try {
+      return await this.syncConfig();
+    } finally {
+      this.running = false;
+    }
   }
 
   onApplicationBootstrap(): void {
     if (!this.edge.isPaired) {
       return;
     }
+    this.relay.registerConfigSync(() => this.syncNow());
     // Initial catch-up shortly after boot (once the snapshot bootstrap has run),
     // then poll on the configured interval.
     this.initialTimer = setTimeout(() => void this.tick(), INITIAL_SYNC_DELAY_MS);

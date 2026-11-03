@@ -56,6 +56,14 @@ import { BranchFiscalSettingsController } from './presentation/http/branch-fisca
   ],
   // EDGE-KEK-1: FiscalCryptoService is exported so the cloud edge read model can
   // re-wrap synced fiscal DEKs to a target hub's per-hub KEK (master KEK stays here).
-  exports: [FISCAL_CONFIG_PORT, FISCAL_CONFIG_STORE, FISCAL_PRINT_MODE_READER, FiscalCryptoService],
+  // HDM-EDGE-1: BranchFiscalSettingsService is exported for the hub→cloud relay
+  // (edge-registry), so a hub-served admin can save the branch HDM settings.
+  exports: [
+    FISCAL_CONFIG_PORT,
+    FISCAL_CONFIG_STORE,
+    FISCAL_PRINT_MODE_READER,
+    FiscalCryptoService,
+    BranchFiscalSettingsService,
+  ],
 })
 export class FiscalConfigModule {}

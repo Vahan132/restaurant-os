@@ -9,6 +9,7 @@ import { FiscalTab } from '@/components/settings/fiscal-tab';
 import { ProfileTab } from '@/components/settings/profile-tab';
 import { SecurityTab } from '@/components/settings/security-tab';
 import { Can } from '@/components/auth/can';
+import { useEdgeMode } from '@/lib/edge/use-edge-mode';
 import { PERMISSIONS } from '@/lib/permissions';
 
 // Branch management moved to its own screen (/branches, gated BRANCH_MANAGE).
@@ -16,15 +17,20 @@ type Tab = 'profile' | 'operations' | 'payments' | 'fiscal' | 'security';
 
 export function SettingsManager() {
   const t = useTranslations('settings');
-  const [tab, setTab] = useState<Tab>('profile');
+  const { isEdge } = useEdgeMode();
+  const [selected, setTab] = useState<Tab>('profile');
 
-  const tabs: { key: Tab; label: string }[] = [
+  const allTabs: { key: Tab; label: string }[] = [
     { key: 'profile', label: t('profileTab') },
     { key: 'operations', label: t('operationsTab') },
     { key: 'payments', label: t('paymentsTab') },
     { key: 'fiscal', label: t('fiscalTab') },
     { key: 'security', label: t('securityTab') },
   ];
+  // HDM-EDGE-1: on the local hub only the HDM tab is available (the hub talks to
+  // the device; everything else is cloud-only).
+  const tabs = isEdge ? allTabs.filter((x) => x.key === 'fiscal') : allTabs;
+  const tab: Tab = isEdge ? 'fiscal' : selected;
 
   return (
     <div className="space-y-4">

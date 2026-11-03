@@ -51,6 +51,14 @@ export class EdgeNodeResponse {
   online!: boolean;
   @ApiProperty({ description: 'True if the hub is behind the cloud schema/app version.' })
   updateAvailable!: boolean;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'When "Update now" was last requested for this hub (EDGE-UPDATE-1).',
+  })
+  updateRequestedAt!: string | null;
+  @ApiProperty({ description: 'The app version the cloud runs (the hub should match it).' })
+  expectedAppVersion!: string;
   @ApiProperty() createdAt!: string;
 
   static from(node: EdgeNode, ctx: EdgeNodeViewContext): EdgeNodeResponse {
@@ -72,6 +80,8 @@ export class EdgeNodeResponse {
       healthStatus: node.effectiveHealth(ctx.offlineThresholdMs),
       online,
       updateAvailable: schemaBehind || appBehind,
+      updateRequestedAt: node.updateRequestedAt?.toISOString() ?? null,
+      expectedAppVersion: ctx.expectedAppVersion,
       createdAt: node.createdAt.toISOString(),
     };
   }
