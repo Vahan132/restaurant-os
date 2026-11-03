@@ -405,7 +405,13 @@
     "department": "Department",
     "departmentUnassigned": "— Unassigned —",
     "departmentNoneHint": "Configure fiscal departments for this branch first.",
-    "departmentHelper": "Items without a department can't be fiscalized on a fiscal-active branch."
+    "departmentHelper": "Items without a department can't be fiscalized on a fiscal-active branch.",
+    "depSaved": "Department saved",
+    "depNoneConfigured": "This branch has no HDM departments yet, so dishes can't be assigned one.",
+    "depGoToSettings": "Add them in Settings → HDM (fiscal) → Departments",
+    "depBulkLabel": "{count} dishes have no department — assign them all to:",
+    "depBulkApply": "Assign",
+    "depBulkDone": "Department assigned to {count} dishes"
   },
   "tables": {
     "title": "Tables",

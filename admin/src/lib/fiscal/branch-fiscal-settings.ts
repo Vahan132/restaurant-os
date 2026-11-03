@@ -5,6 +5,7 @@
  * until the next orval regeneration; the mutator sends X-Branch-Id.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getTenantFiscalControllerDepartmentsQueryKey } from '@/api/generated/fiscal/fiscal';
 import { customInstance } from '@/api/mutator';
 import { useActiveBranchStore } from '@/stores/active-branch';
 
@@ -65,6 +66,10 @@ export function useSaveBranchDepartments() {
   return useMutation({
     mutationFn: (departments: { dep: string; taxRegime: string; label: string | null }[]) =>
       customInstance<Res>({ url: '/fiscal/settings/departments', method: 'PUT', data: { departments } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: [KEY] }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: [KEY] });
+      // HDM-EDGE-3: the menu's department pickers read this list.
+      await qc.invalidateQueries({ queryKey: getTenantFiscalControllerDepartmentsQueryKey() });
+    },
   });
 }

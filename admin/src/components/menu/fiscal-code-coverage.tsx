@@ -3,6 +3,9 @@
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
+import Link from 'next/link';
+
+import { useTenantFiscalControllerDepartments } from '@/api/generated/fiscal/fiscal';
 import { useItemsControllerUpdate } from '@/api/generated/menu-items/menu-items';
 import { MenuItemResponseStatus, type MenuItemResponse } from '@/api/generated/model';
 import { Can } from '@/components/auth/can';
@@ -61,6 +64,31 @@ export function FiscalCodeCoverage() {
 
   const update = useItemsControllerUpdate();
 
+  // HDM-EDGE-3: the branch's registered HDM departments (Settings → HDM →
+  // Departments). Departments are assigned here inline / in bulk.
+  const departmentsQuery = useTenantFiscalControllerDepartments();
+  const fiscalDepartments = departmentsQuery.data?.departments ?? [];
+  const [depOverlay, setDepOverlay] = useState<Record<string, string | null>>({});
+  const [bulkDep, setBulkDep] = useState('');
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const effectiveDep = (item: MenuItemResponse): string | null =>
+    item.id in depOverlay ? depOverlay[item.id]! : (item.dep ?? null);
+
+  const saveDep = async (item: MenuItemResponse, value: string) => {
+    setSavingId(item.id);
+    try {
+      // Partial update: only dep ('' clears it).
+      await update.mutateAsync({ id: item.id, data: { dep: value } });
+      setDepOverlay((o) => ({ ...o, [item.id]: value || null }));
+      await Promise.all([invalidateItems(), invalidateMenuTree()]);
+      toast.success(t('depSaved'));
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   const effectiveCode = (item: MenuItemResponse): string | null =>
     item.id in overlay ? overlay[item.id]! : item.adgCode;
 
@@ -69,14 +97,11 @@ export function FiscalCodeCoverage() {
     return effectiveCode(item) ? 'coded' : 'needs';
   };
 
-  // FISCAL-DEPT-2: department coverage is READ-ONLY here — assigning a dep needs
-  // the branch's FiscalDepartment catalog, exposed only via a platform-scoped read
-  // this operator app can't call, so this view surfaces the pre-go-live gap only.
   // Same three states as adgCode: an ACTIVE dish with no dep fails-closed
   // (DEP_REQUIRED) once the branch is fiscal-active; archived (n/a) is excluded.
   const depBucketOf = (item: MenuItemResponse): Bucket => {
     if (item.status !== MenuItemResponseStatus.ACTIVE) return 'na';
-    return item.dep ? 'coded' : 'needs';
+    return effectiveDep(item) ? 'coded' : 'needs';
   };
 
   // Honest denominator: fiscalizable (ACTIVE) dishes only; archived excluded.
@@ -87,8 +112,29 @@ export function FiscalCodeCoverage() {
   const archivedCount = items.length - total;
 
   // Department coverage over the same fiscalizable denominator (ACTIVE dishes).
-  const depAssigned = fiscalizable.filter((i) => !!i.dep).length;
+  const depAssigned = fiscalizable.filter((i) => !!effectiveDep(i)).length;
   const depNeeds = total - depAssigned;
+
+  /** Give every active dish that has NO department the picked one. */
+  const assignBulk = async () => {
+    if (!bulkDep) return;
+    const targets = fiscalizable.filter((i) => !effectiveDep(i));
+    setBulkBusy(true);
+    let done = 0;
+    try {
+      for (const item of targets) {
+        await update.mutateAsync({ id: item.id, data: { dep: bulkDep } });
+        setDepOverlay((o) => ({ ...o, [item.id]: bulkDep }));
+        done += 1;
+      }
+      toast.success(t('depBulkDone', { count: done }));
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setBulkBusy(false);
+      await Promise.all([invalidateItems(), invalidateMenuTree()]);
+    }
+  };
 
   const rows = useMemo(() => {
     let list = showArchived
@@ -98,7 +144,7 @@ export function FiscalCodeCoverage() {
     if (depMissingOnly) list = list.filter((i) => depBucketOf(i) === 'needs');
     return [...list].sort((a, b) => a.name.localeCompare(b.name));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, missingOnly, depMissingOnly, showArchived, overlay]);
+  }, [items, missingOnly, depMissingOnly, showArchived, overlay, depOverlay]);
 
   const draftFor = (item: MenuItemResponse) =>
     item.id in drafts ? drafts[item.id]! : effectiveCode(item) ?? '';
@@ -213,6 +259,36 @@ export function FiscalCodeCoverage() {
           {t('depReadinessHint')}
         </p>
 
+        {/* HDM-EDGE-3: departments come from Settings → HDM → Departments. */}
+        {!departmentsQuery.isLoading && fiscalDepartments.length === 0 ? (
+          <p className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+            {t('depNoneConfigured')}{' '}
+            <Link href="/settings" className="font-medium underline">
+              {t('depGoToSettings')}
+            </Link>
+          </p>
+        ) : canManage && depNeeds > 0 ? (
+          <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 px-4 py-2 text-sm">
+            <span className="text-gray-700">{t('depBulkLabel', { count: depNeeds })}</span>
+            <select
+              className={`${inputClass} max-w-[14rem]`}
+              value={bulkDep}
+              disabled={bulkBusy}
+              onChange={(e) => setBulkDep(e.target.value)}
+            >
+              <option value="">{t('departmentUnassigned')}</option>
+              {fiscalDepartments.map((d) => (
+                <option key={d.dep} value={d.dep}>
+                  {d.label ? `${d.label} (${d.dep})` : d.dep}
+                </option>
+              ))}
+            </select>
+            <Button size="sm" variant="primary" disabled={!bulkDep || bulkBusy} onClick={assignBulk}>
+              {bulkBusy ? '…' : t('depBulkApply')}
+            </Button>
+          </div>
+        ) : null}
+
         <div className="overflow-x-auto p-4">
           {isLoading ? (
             <div className="space-y-2">
@@ -269,7 +345,28 @@ export function FiscalCodeCoverage() {
                         )}
                       </td>
                       <td className="py-2 pr-3">{statusBadge(bucket)}</td>
-                      <td className="py-2 pr-3">{depBadge(depBucketOf(item), item.dep)}</td>
+                      <td className="py-2 pr-3">
+                        {canManage && fiscalDepartments.length > 0 ? (
+                          <select
+                            className={`${inputClass} max-w-[12rem] ${
+                              depBucketOf(item) === 'needs' ? 'border-amber-400' : ''
+                            }`}
+                            value={effectiveDep(item) ?? ''}
+                            disabled={savingId === item.id || bulkBusy}
+                            aria-label={`${t('depColumn')} — ${item.name}`}
+                            onChange={(e) => saveDep(item, e.target.value)}
+                          >
+                            <option value="">{t('departmentUnassigned')}</option>
+                            {fiscalDepartments.map((d) => (
+                              <option key={d.dep} value={d.dep}>
+                                {d.label ? `${d.label} (${d.dep})` : d.dep}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          depBadge(depBucketOf(item), effectiveDep(item))
+                        )}
+                      </td>
                       <td className="py-2">
                         <div className="flex justify-end">
                           <Can permission={PERMISSIONS.MENU_MANAGE}>
