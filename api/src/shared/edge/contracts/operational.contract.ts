@@ -75,6 +75,8 @@ export interface StaffPinAuthPayload {
   failedAttempts: number;
   /** ISO-8601 (or null if not locked). */
   lockedUntil: string | null;
+  /** PIN-UNLOCK-1: last manager unlock on the hub (ISO). Absent on older hubs. */
+  lockResetAt?: string | null;
 }
 
 /** A single entry on the wire (POST /edge-sync/push). */

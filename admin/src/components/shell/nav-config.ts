@@ -107,6 +107,13 @@ export const NAV_ITEMS: NavItem[] = [
     scope: 'restaurant',
   },
   {
+    // PIN-UNLOCK-1: who is locked out of POS/KDS + Unlock. Also on the hub.
+    key: 'staffPins',
+    href: '/staff-pins',
+    anyOf: [PERMISSIONS.STAFF_PIN_MANAGE],
+    scope: 'restaurant',
+  },
+  {
     key: 'users',
     href: '/users',
     anyOf: [PERMISSIONS.USER_MANAGE, PERMISSIONS.USER_VIEW, PERMISSIONS.ROLE_MANAGE],
@@ -148,4 +155,6 @@ export const EDGE_ALLOWED_NAV_KEYS: ReadonlySet<string> = new Set([
   // HDM-EDGE-1: Settings is reachable on the hub, but shows ONLY the HDM tab
   // (saves are relayed to the cloud). See SettingsManager.
   'settings',
+  // PIN-UNLOCK-1: unlocking a locked-out staff PIN must work offline on the hub.
+  'staffPins',
 ]);

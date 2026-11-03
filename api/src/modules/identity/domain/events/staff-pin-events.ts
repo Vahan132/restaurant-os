@@ -41,6 +41,19 @@ export class StaffPinRevokedEvent extends BaseDomainEvent {
   }
 }
 
+/** PIN-UNLOCK-1: a manager cleared a staff member's PIN lockout. */
+export class StaffPinUnlockedEvent extends BaseDomainEvent {
+  readonly eventName = 'identity.staff_pin.unlocked';
+  constructor(
+    public readonly staffPinId: string,
+    public readonly userId: string,
+    public readonly restaurantId: string,
+    public readonly actorUserId: string | null = null,
+  ) {
+    super(staffPinId);
+  }
+}
+
 export class StaffPinLockedOutEvent extends BaseDomainEvent {
   readonly eventName = 'identity.staff_pin.locked_out';
   constructor(

@@ -65,7 +65,8 @@
     "invDaily": "End of day",
     "invReports": "Reports",
     "consumerListing": "Consumer Listing",
-    "menuFiscalCodes": "Fiscal codes"
+    "menuFiscalCodes": "Fiscal codes",
+    "staffPins": "Staff PINs"
   },
   "topbar": {
     "userMenu": "Account",
@@ -2337,5 +2338,25 @@
     "savedDepts": "Departments saved.",
     "deptIncomplete": "Each department needs a number and a tax type.",
     "edgeNote": "You are on the local hub. Saving sends the change to the cloud (internet needed) and the hub picks it up right away. Printing works offline."
+  },
+  "staffPins": {
+    "title": "Staff PINs",
+    "subtitle": "Staff of this branch and their POS/KDS PIN. Unlock anyone locked out after too many wrong PINs — their PIN stays the same.",
+    "lockedOnly": "Locked only ({count})",
+    "loadError": "Could not load staff PINs.",
+    "noStaff": "No staff in this branch.",
+    "noneLocked": "Nobody is locked out.",
+    "staff": "Staff",
+    "role": "Role",
+    "status": "PIN",
+    "failedAttempts": "Wrong attempts",
+    "noPin": "No PIN",
+    "revoked": "Revoked",
+    "active": "Active",
+    "lockedUntil": "Locked until {time}",
+    "unlock": "Unlock",
+    "resetAttempts": "Reset attempts",
+    "unlocked": "{name} can sign in again.",
+    "hint": "On the local hub an unlock works offline and syncs to the cloud when the internet is back."
   }
 }

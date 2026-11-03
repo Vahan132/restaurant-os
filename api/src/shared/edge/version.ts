@@ -32,7 +32,10 @@ export const APP_VERSION = process.env.APP_BUILD?.trim()
 // material (devices + StaffPin hashes) and the operational push gained the
 // STAFF_PIN_AUTH aggregate — an older hub would not (de)serialize these, so the
 // bump forces a SCHEMA_MISMATCH until both sides update.
-export const SCHEMA_VERSION = '3';
+// '4' (PIN-UNLOCK-1): StaffPin rows carry `lockResetAt` in snapshot/config sync
+// and the STAFF_PIN_AUTH push — an older hub's Prisma client would reject the
+// unknown column, so it must update (it auto-updates) before syncing again.
+export const SCHEMA_VERSION = '4';
 
 /**
  * HTTP header the edge sends on every sync request carrying its reported edge

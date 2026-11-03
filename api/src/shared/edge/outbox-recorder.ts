@@ -121,6 +121,7 @@ export class PrismaOutboxRecorder implements OutboxRecorder {
             restaurantId: true,
             failedAttempts: true,
             lockedUntil: true,
+            lockResetAt: true,
           },
         });
         return row ? toJson(row) : null;

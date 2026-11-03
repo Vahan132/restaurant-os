@@ -15,6 +15,8 @@ export interface StaffPinRepository {
 
   /** Find a user's PIN row regardless of status (null if none). */
   findByUserId(userId: string): Promise<StaffPin | null>;
+  /** PIN-UNLOCK-1: PIN rows (any status) for these users. */
+  findByUserIds(userIds: string[]): Promise<StaffPin[]>;
 
   /**
    * Resolve the single ACTIVE PIN in a restaurant by its keyed fingerprint

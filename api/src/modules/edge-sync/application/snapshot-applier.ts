@@ -33,9 +33,28 @@ function applyDevice(tx: Prisma.TransactionClient, r: Record<string, unknown>): 
  * never resets an in-progress local lockout. pinHash/status/mustRotate (config)
  * ARE applied so a revoke or rotation propagates. New rows seed counters fresh.
  */
-function applyStaffPin(tx: Prisma.TransactionClient, r: Record<string, unknown>): Promise<unknown> {
+async function applyStaffPin(
+  tx: Prisma.TransactionClient,
+  r: Record<string, unknown>,
+): Promise<unknown> {
   const create = r as unknown as Prisma.StaffPinUncheckedCreateInput;
   const { failedAttempts: _failedAttempts, lockedUntil: _lockedUntil, ...update } = r;
+  // PIN-UNLOCK-1: a manager unlock done in the cloud (newer lockResetAt than the
+  // hub's) DOES reset the local counters — otherwise the hub would keep the PIN
+  // locked forever. Any other config sync still preserves local counters.
+  const incomingReset = r.lockResetAt ? new Date(r.lockResetAt as string) : null;
+  if (incomingReset) {
+    const local = await tx.staffPin.findUnique({
+      where: { id: r.id as string },
+      select: { lockResetAt: true },
+    });
+    if (local && (!local.lockResetAt || local.lockResetAt.getTime() < incomingReset.getTime())) {
+      return tx.staffPin.update({
+        where: { id: r.id as string },
+        data: r as unknown as Prisma.StaffPinUncheckedUpdateInput,
+      });
+    }
+  }
   return tx.staffPin.upsert({
     where: { id: r.id as string },
     create,

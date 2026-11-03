@@ -180,6 +180,24 @@ export class PrismaOperationalWriter implements OperationalWriter {
       return;
     }
     const edgeLockedUntil = payload.lockedUntil ? new Date(payload.lockedUntil) : null;
+    // PIN-UNLOCK-1: an unlock done ON THE HUB that is newer than the cloud's last
+    // unlock wins — take the hub's counters as-is (the max/later merge below would
+    // otherwise keep the cloud's stale lock forever).
+    const edgeReset = payload.lockResetAt ? new Date(payload.lockResetAt) : null;
+    if (
+      edgeReset &&
+      (!existing.lockResetAt || existing.lockResetAt.getTime() < edgeReset.getTime())
+    ) {
+      await tx.staffPin.update({
+        where: { id: payload.id },
+        data: {
+          failedAttempts: payload.failedAttempts,
+          lockedUntil: edgeLockedUntil,
+          lockResetAt: edgeReset,
+        },
+      });
+      return;
+    }
     await tx.staffPin.update({
       where: { id: payload.id },
       data: {

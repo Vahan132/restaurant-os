@@ -1,4 +1,4 @@
-import { Controller, HttpCode, Param, Post } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -8,6 +8,8 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { ActiveBranchId } from '../../../../shared/auth/active-branch.decorator';
+import { BranchScoped } from '../../../../shared/auth/branch-scoped.decorator';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
 import { CurrentUser } from '../../../../shared/tenancy/current-user.decorator';
@@ -15,6 +17,11 @@ import { CurrentUserContext, TenantContext } from '../../../../shared/tenancy/te
 import { CreateStaffPinUseCase } from '../../application/commands/create-staff-pin.usecase';
 import { ResetStaffPinUseCase } from '../../application/commands/reset-staff-pin.usecase';
 import { RevokeStaffPinUseCase } from '../../application/commands/revoke-staff-pin.usecase';
+import { UnlockStaffPinUseCase } from '../../application/commands/unlock-staff-pin.usecase';
+import {
+  ListStaffPinStatusUseCase,
+  StaffPinStatusEntry,
+} from '../../application/queries/list-staff-pin-status.usecase';
 import { StaffPinIssuedResponse } from '../../application/dto/device.responses';
 import { PERMISSIONS } from '../../domain/permissions.catalog';
 
@@ -31,7 +38,33 @@ export class StaffPinsController {
     private readonly createPin: CreateStaffPinUseCase,
     private readonly resetPin: ResetStaffPinUseCase,
     private readonly revokePin: RevokeStaffPinUseCase,
+    private readonly unlockPin: UnlockStaffPinUseCase,
   ) {}
+
+  /**
+   * PIN-UNLOCK-1: clear a locked-out PIN (too many wrong attempts) without
+   * changing it. Available on the cloud AND on the local hub; the newer unlock
+   * wins when the two reconcile.
+   */
+  @Post(':userId/unlock')
+  @RequirePermissions(PERMISSIONS.STAFF_PIN_MANAGE)
+  @HttpCode(200)
+  @ApiParam({ name: 'userId', description: 'The staff user whose PIN lockout to clear.' })
+  @ApiForbiddenResponse({ description: 'Missing staff.pin.manage permission.' })
+  @ApiOperation({ summary: 'Unlock a locked-out staff PIN (keeps the same PIN).' })
+  @ApiOkResponse({ schema: { example: { success: true } } })
+  async unlock(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() actor: CurrentUserContext,
+    @Param('userId') userId: string,
+  ): Promise<{ success: true }> {
+    await this.unlockPin.execute({
+      restaurantId: tenant.restaurantId,
+      actorUserId: actor.sub,
+      userId,
+    });
+    return { success: true };
+  }
 
   @Post(':userId')
   @RequirePermissions(PERMISSIONS.STAFF_PIN_MANAGE)
@@ -88,5 +121,28 @@ export class StaffPinsController {
       userId,
     });
     return { success: true };
+  }
+}
+
+/**
+ * PIN-UNLOCK-1: the ACTIVE branch's staff with their PIN state (who is locked
+ * out). Branch-scoped (X-Branch-Id), same staff set as the POS/KDS picker.
+ */
+@ApiTags('staff-pins')
+@ApiBearerAuth('access-token')
+@BranchScoped()
+@Controller('staff-pins')
+export class StaffPinStatusController {
+  constructor(private readonly list: ListStaffPinStatusUseCase) {}
+
+  @Get('status')
+  @RequirePermissions(PERMISSIONS.STAFF_PIN_MANAGE)
+  @ApiOperation({ summary: "This branch's staff and their PIN status (locked / failed attempts)." })
+  @ApiOkResponse({ schema: { example: [{ userId: 'u1', fullName: 'Ann', locked: true }] } })
+  async status(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+  ): Promise<StaffPinStatusEntry[]> {
+    return this.list.execute({ restaurantId: tenant.restaurantId, branchId });
   }
 }

@@ -4,6 +4,7 @@ import {
   StaffPinLockedOutEvent,
   StaffPinResetEvent,
   StaffPinRevokedEvent,
+  StaffPinUnlockedEvent,
 } from '../events/staff-pin-events';
 
 export enum StaffPinStatus {
@@ -22,6 +23,8 @@ export interface StaffPinProps {
   status: StaffPinStatus;
   failedAttempts: number;
   lockedUntil: Date | null;
+  /** PIN-UNLOCK-1: last manager unlock (null = never). Optional for old callers. */
+  lockResetAt?: Date | null;
   mustRotate: boolean;
   createdByUserId: string;
   createdAt: Date;
@@ -104,6 +107,9 @@ export class StaffPin extends AggregateRoot<string> {
   }
   get lockedUntil(): Date | null {
     return this.props.lockedUntil;
+  }
+  get lockResetAt(): Date | null {
+    return this.props.lockResetAt ?? null;
   }
   get mustRotate(): boolean {
     return this.props.mustRotate;
@@ -201,6 +207,22 @@ export class StaffPin extends AggregateRoot<string> {
       return true;
     }
     return false;
+  }
+
+  /**
+   * PIN-UNLOCK-1: manager clears the lockout + failure counter WITHOUT changing
+   * the PIN. Stamps lockResetAt so this deliberate unlock wins over the normal
+   * "max counters / later lock" merge when cloud and hub reconcile.
+   */
+  unlock(actorUserId: string | null = null): void {
+    const now = new Date();
+    this.props.failedAttempts = 0;
+    this.props.lockedUntil = null;
+    this.props.lockResetAt = now;
+    this.touch(now);
+    this.addDomainEvent(
+      new StaffPinUnlockedEvent(this.id, this.props.userId, this.props.restaurantId, actorUserId),
+    );
   }
 
   /** Record a successful verification — clears the failure counter + lockout. */

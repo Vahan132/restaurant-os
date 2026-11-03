@@ -23,6 +23,7 @@ export class PrismaStaffPinRepository implements StaffPinRepository {
         status: pin.status as StaffPinStatus,
         failedAttempts: pin.failedAttempts,
         lockedUntil: pin.lockedUntil,
+        lockResetAt: pin.lockResetAt,
         mustRotate: pin.mustRotate,
         createdByUserId: pin.createdByUserId,
         createdAt: pin.createdAt,
@@ -45,6 +46,7 @@ export class PrismaStaffPinRepository implements StaffPinRepository {
           status: pin.status as StaffPinStatus,
           failedAttempts: pin.failedAttempts,
           lockedUntil: pin.lockedUntil,
+          lockResetAt: pin.lockResetAt,
           mustRotate: pin.mustRotate,
           createdByUserId: pin.createdByUserId,
           updatedAt: pin.updatedAt,
@@ -54,6 +56,14 @@ export class PrismaStaffPinRepository implements StaffPinRepository {
         { aggregateType: 'STAFF_PIN_AUTH', aggregateId: pin.id, op: 'UPSERT' },
       ]);
     });
+  }
+
+  async findByUserIds(userIds: string[]): Promise<StaffPin[]> {
+    if (userIds.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.staffPin.findMany({ where: { userId: { in: userIds } } });
+    return rows.map((r) => this.toDomain(r));
   }
 
   async findByUserId(userId: string): Promise<StaffPin | null> {
@@ -83,6 +93,7 @@ export class PrismaStaffPinRepository implements StaffPinRepository {
       status: r.status as StaffPinStatus,
       failedAttempts: r.failedAttempts,
       lockedUntil: r.lockedUntil,
+      lockResetAt: r.lockResetAt,
       mustRotate: r.mustRotate,
       createdByUserId: r.createdByUserId,
       createdAt: r.createdAt,

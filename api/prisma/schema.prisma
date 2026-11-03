@@ -452,6 +452,9 @@ model StaffPin {
   status          StaffPinStatus @default(ACTIVE)
   failedAttempts  Int            @default(0)
   lockedUntil     DateTime?
+  // PIN-UNLOCK-1: when a manager last cleared the lockout ("Unlock PIN"). Synced
+  // both ways; the NEWER unlock overrides the max/later counter merge.
+  lockResetAt     DateTime?
   mustRotate      Boolean        @default(false)
   createdByUserId String
   createdAt       DateTime       @default(now())

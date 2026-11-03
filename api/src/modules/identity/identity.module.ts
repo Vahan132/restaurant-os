@@ -48,6 +48,8 @@ import { ListDevicesUseCase } from './application/queries/list-devices.usecase';
 import { CreateStaffPinUseCase } from './application/commands/create-staff-pin.usecase';
 import { ResetStaffPinUseCase } from './application/commands/reset-staff-pin.usecase';
 import { RevokeStaffPinUseCase } from './application/commands/revoke-staff-pin.usecase';
+import { UnlockStaffPinUseCase } from './application/commands/unlock-staff-pin.usecase';
+import { ListStaffPinStatusUseCase } from './application/queries/list-staff-pin-status.usecase';
 import { PinLoginUseCase } from './application/commands/pin-login.usecase';
 import { ListBranchStaffUseCase } from './application/queries/list-branch-staff.usecase';
 import { AccountStateChecker } from './application/services/account-state.checker';
@@ -85,7 +87,10 @@ import { BranchMembershipsController } from './presentation/http/branch-membersh
 import { RolesController } from './presentation/http/roles.controller';
 import { UsersController } from './presentation/http/users.controller';
 import { DevicesController } from './presentation/http/devices.controller';
-import { StaffPinsController } from './presentation/http/staff-pins.controller';
+import {
+  StaffPinStatusController,
+  StaffPinsController,
+} from './presentation/http/staff-pins.controller';
 import { PinAuthController } from './presentation/http/pin-auth.controller';
 import { DeviceSecretGuard } from './presentation/http/device-secret.guard';
 
@@ -104,6 +109,7 @@ import { DeviceSecretGuard } from './presentation/http/device-secret.guard';
     RolesController,
     DevicesController,
     StaffPinsController,
+    StaffPinStatusController,
     PinAuthController,
   ],
   providers: [
@@ -126,6 +132,8 @@ import { DeviceSecretGuard } from './presentation/http/device-secret.guard';
     CreateStaffPinUseCase,
     ResetStaffPinUseCase,
     RevokeStaffPinUseCase,
+    UnlockStaffPinUseCase,
+    ListStaffPinStatusUseCase,
     PinLoginUseCase,
     ListBranchStaffUseCase,
     DeviceSecretGuard,
