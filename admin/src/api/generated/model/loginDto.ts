@@ -10,4 +10,6 @@ export interface LoginDto {
   email: string;
   /** @minLength 8 */
   password: string;
+  /** 3A: ADMIN-surface device secret. Required for admin/manager login unless the caller is the Owner (break-glass) or the restaurant allows unanchored admin login. */
+  deviceSecret?: string;
 }

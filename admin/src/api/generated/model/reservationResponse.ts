@@ -5,6 +5,7 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { ReservationResponseSource } from './reservationResponseSource';
 import type { ReservationResponseStatus } from './reservationResponseStatus';
 
 export interface ReservationResponse {
@@ -22,8 +23,11 @@ export interface ReservationResponse {
   /** @nullable */
   tableId: string | null;
   status: ReservationResponseStatus;
+  source: ReservationResponseSource;
   /** @nullable */
   notes: string | null;
+  /** @nullable */
+  customerNote: string | null;
   /** @nullable */
   arrivedAt: string | null;
   /** @nullable */

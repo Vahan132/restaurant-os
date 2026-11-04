@@ -15,6 +15,7 @@ export function RangeControls({
   onPreset,
   onCustom,
   onGroupBy,
+  showGroupBy = true,
 }: {
   preset: RangePreset;
   groupBy: GroupBy;
@@ -22,6 +23,7 @@ export function RangeControls({
   onPreset: (p: RangePreset) => void;
   onCustom: (r: DateRange) => void;
   onGroupBy: (g: GroupBy) => void;
+  showGroupBy?: boolean;
 }) {
   const t = useTranslations('reports');
 
@@ -74,20 +76,22 @@ export function RangeControls({
         />
       </label>
 
-      <label className="text-xs text-gray-600">
-        <span className="mr-1">{t('groupBy')}</span>
-        <select
-          className={`${inputClass} w-auto`}
-          value={groupBy}
-          onChange={(e) => onGroupBy(e.target.value as GroupBy)}
-        >
-          {GROUP_BYS.map((g) => (
-            <option key={g} value={g}>
-              {t(`groupByOpt.${g}`)}
-            </option>
-          ))}
-        </select>
-      </label>
+      {showGroupBy && (
+        <label className="text-xs text-gray-600">
+          <span className="mr-1">{t('groupBy')}</span>
+          <select
+            className={`${inputClass} w-auto`}
+            value={groupBy}
+            onChange={(e) => onGroupBy(e.target.value as GroupBy)}
+          >
+            {GROUP_BYS.map((g) => (
+              <option key={g} value={g}>
+                {t(`groupByOpt.${g}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
     </div>
   );
 }

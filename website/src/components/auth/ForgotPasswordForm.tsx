@@ -10,13 +10,15 @@ import { AuthShell } from "./AuthShell";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { useForgotPassword } from "@/api/hooks";
-import { toastError } from "@/lib/toast";
+import { useApiError } from "@/hooks/useApiError";
+import { clearableRegister } from "@/lib/form";
 
 export function ForgotPasswordForm() {
   const t = useTranslations("auth.forgot");
   const tv = useTranslations("validation");
   const [sent, setSent] = useState(false);
   const forgot = useForgotPassword();
+  const { toastError } = useApiError();
 
   const schema = useMemo(
     () => z.object({ email: z.string().min(1, tv("email.required")).email(tv("email.invalid")) }),
@@ -27,8 +29,10 @@ export function ForgotPasswordForm() {
   const {
     register,
     handleSubmit,
+    clearErrors,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  } = useForm<Values>({ resolver: zodResolver(schema), reValidateMode: "onSubmit" });
+  const field = clearableRegister(register, errors, clearErrors);
 
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -77,7 +81,7 @@ export function ForgotPasswordForm() {
             type="email"
             autoComplete="email"
             invalid={!!errors.email}
-            {...register("email")}
+            {...field("email")}
           />
         </Field>
         <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>

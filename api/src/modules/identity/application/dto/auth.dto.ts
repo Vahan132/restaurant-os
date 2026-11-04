@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class LoginDto {
   @ApiProperty({ example: 'owner@demo.test' })
@@ -10,6 +10,15 @@ export class LoginDto {
   @IsString()
   @MinLength(8)
   password!: string;
+
+  @ApiPropertyOptional({
+    description:
+      '3A: ADMIN-surface device secret. Required for admin/manager login unless the caller is the Owner (break-glass) or the restaurant allows unanchored admin login.',
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(16)
+  deviceSecret?: string;
 }
 
 export class RefreshDto {

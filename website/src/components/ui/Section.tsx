@@ -32,6 +32,7 @@ type SectionHeadingProps = {
   intro?: ReactNode;
   align?: "left" | "center";
   className?: string;
+  titleClassName?: string;
 };
 
 export function SectionHeading({
@@ -40,6 +41,7 @@ export function SectionHeading({
   intro,
   align = "center",
   className,
+  titleClassName,
 }: SectionHeadingProps) {
   return (
     <Reveal
@@ -50,7 +52,7 @@ export function SectionHeading({
       )}
     >
       {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
-      <h2 className="text-3xl text-balance sm:text-4xl">{title}</h2>
+      <h2 className={cn("text-3xl text-balance sm:text-4xl", titleClassName)}>{title}</h2>
       {intro ? <p className="text-pretty text-lg text-muted">{intro}</p> : null}
     </Reveal>
   );

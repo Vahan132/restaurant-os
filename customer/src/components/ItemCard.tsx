@@ -29,6 +29,7 @@ export default function ItemCard({ item, currency, locale, onOpen }: Props) {
   return (
     <button
       type="button"
+      data-testid={`dish-card-${item.id}`}
       onClick={() => onOpen(item.id)}
       className={
         'flex w-full items-stretch gap-3 rounded-xl border border-gray-100 bg-white p-2.5 text-left transition-shadow hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-accent/40 ' +

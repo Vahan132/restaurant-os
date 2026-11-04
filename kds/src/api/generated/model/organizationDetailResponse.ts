@@ -7,6 +7,7 @@
  */
 import type { OrganizationDetailResponseSubscription } from './organizationDetailResponseSubscription';
 import type { OrganizationDetailResponseRestaurantsItem } from './organizationDetailResponseRestaurantsItem';
+import type { OrganizationDetailResponseBillingInfo } from './organizationDetailResponseBillingInfo';
 
 export interface OrganizationDetailResponse {
   id: string;
@@ -16,4 +17,8 @@ export interface OrganizationDetailResponse {
   /** @nullable */
   subscription: OrganizationDetailResponseSubscription;
   restaurants: OrganizationDetailResponseRestaurantsItem[];
+  /** @nullable */
+  billingInfo: OrganizationDetailResponseBillingInfo;
+  /** No payment processing yet — billing/payments integration pending. */
+  paymentsEnabled: boolean;
 }

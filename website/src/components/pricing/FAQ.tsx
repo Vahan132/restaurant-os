@@ -23,7 +23,7 @@ export function FAQ() {
               </svg>
             </span>
           </summary>
-          <p className="text-pretty pb-6 pr-10 text-muted">{t(`${key}.a`)}</p>
+          <p className="text-pretty pb-6 pr-6 text-muted sm:pr-10">{t(`${key}.a`)}</p>
         </details>
       ))}
     </div>

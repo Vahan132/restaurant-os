@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ApplyDiscountDtoType } from './applyDiscountDtoType';
+import type { DiscountAuthorizationDto } from './discountAuthorizationDto';
 
 export interface ApplyDiscountDto {
   type: ApplyDiscountDtoType;
@@ -16,4 +17,6 @@ export interface ApplyDiscountDto {
   value: number;
   /** Approver user id (required if approvals are enforced). */
   approvedByUserId?: string;
+  /** Manager step-up authorization. Required ONLY when the caller lacks DISCOUNT_APPLY — a capable manager authorizes the discount with their PIN on the enrolled POS device. Omit when the caller already holds DISCOUNT_APPLY. */
+  authorization?: DiscountAuthorizationDto;
 }

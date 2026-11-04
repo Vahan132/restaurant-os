@@ -98,6 +98,22 @@ export class OrderNotPaidError extends DomainError {
   }
 }
 
+export class OrderAlreadyPaidError extends DomainError {
+  readonly code = 'ORDER_ALREADY_PAID';
+  override readonly httpStatus = 409;
+  constructor() {
+    super('This order has already been paid.');
+  }
+}
+
+export class PrepaymentNotSettledError extends DomainError {
+  readonly code = 'PREPAYMENT_NOT_SETTLED';
+  override readonly httpStatus = 409;
+  constructor() {
+    super('A prepayment order cannot be sent to the kitchen until it is PAID.');
+  }
+}
+
 export class SplitItemsRequiredError extends DomainError {
   readonly code = 'SPLIT_ITEMS_REQUIRED';
   override readonly httpStatus = 400;

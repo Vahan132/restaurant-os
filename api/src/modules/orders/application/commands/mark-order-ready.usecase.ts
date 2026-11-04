@@ -7,6 +7,8 @@ import { NoRestaurantInScope, OrderNotFound } from '../application.errors';
 
 export interface MarkOrderReadyInput {
   restaurantId: string | null;
+  /** Active branch; null when invoked cross-module (KDS, not branch-scoped until BR-5). */
+  branchId?: string | null;
   orderId: string;
 }
 
@@ -22,7 +24,11 @@ export class MarkOrderReadyUseCase implements UseCase<MarkOrderReadyInput, Order
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findById(input.restaurantId, input.orderId);
+    const order = await this.orders.findById(
+      input.restaurantId,
+      input.branchId ?? null,
+      input.orderId,
+    );
     if (!order) {
       throw OrderNotFound();
     }

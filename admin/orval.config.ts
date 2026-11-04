@@ -15,6 +15,14 @@ export default defineConfig({
   restaurantOs: {
     input: {
       target: ORVAL_INPUT,
+      // The live Nest swagger can emit a path placeholder without declaring it
+      // as a parameter (e.g. /branches/{id}/my-access). Skip orval's strict
+      // validation and repair missing path params via the transformer so
+      // codegen succeeds. Remove both once the backend declares them.
+      unsafeDisableValidation: true,
+      override: {
+        transformer: './orval-transformer.cjs',
+      },
     },
     output: {
       mode: 'tags-split',

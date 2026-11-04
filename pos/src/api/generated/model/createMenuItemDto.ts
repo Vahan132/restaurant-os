@@ -8,16 +8,43 @@
 import type { CreateMenuItemDtoPreparationStation } from './createMenuItemDtoPreparationStation';
 
 export interface CreateMenuItemDto {
+  /**
+   * Armenian name translation.
+   * @nullable
+   */
+  nameHy?: string | null;
+  /**
+   * Russian name translation.
+   * @nullable
+   */
+  nameRu?: string | null;
+  /**
+   * English name translation.
+   * @nullable
+   */
+  nameEn?: string | null;
+  /**
+   * Armenian description translation.
+   * @nullable
+   */
+  descriptionHy?: string | null;
+  /**
+   * Russian description translation.
+   * @nullable
+   */
+  descriptionRu?: string | null;
+  /**
+   * English description translation.
+   * @nullable
+   */
+  descriptionEn?: string | null;
   name: string;
   /** Category id (must belong to your restaurant). */
   categoryId: string;
-  /**
-   * Price in integer minor units (>= 0).
-   * @minimum 0
-   */
-  priceAmount: number;
   description?: string;
   imageUrl?: string;
+  /** MEDIA-1: object key from a presigned upload (finalize). Overrides imageUrl. */
+  imageKey?: string;
   preparationStation?: CreateMenuItemDtoPreparationStation;
   /** @minimum 0 */
   prepTimeMinutes?: number;

@@ -8,6 +8,8 @@ export interface GetSalesSummaryInput {
   restaurantId: string | null;
   from: string;
   to: string;
+  /** BR-REPORTS-1: access-checked branch filter (omitted = restaurant-wide). */
+  branchIds?: string[];
 }
 
 @Injectable()
@@ -20,6 +22,6 @@ export class GetSalesSummaryUseCase implements UseCase<GetSalesSummaryInput, Sal
     }
     const tz = await this.q.timezone(input.restaurantId);
     const { start, end } = inclusiveDayRange(input.from, input.to, tz);
-    return this.q.salesSummary(input.restaurantId, start, end);
+    return this.q.salesSummary(input.restaurantId, start, end, input.branchIds);
   }
 }

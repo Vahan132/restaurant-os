@@ -31,6 +31,12 @@ export class RestaurantSettingsResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
   @ApiProperty({ nullable: true, type: String }) logoUrl!: string | null;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'MEDIA-1: object-storage key when the logo was uploaded (null for URL-paste).',
+  })
+  logoKey!: string | null;
   @ApiProperty({ nullable: true, type: String }) phone!: string | null;
   @ApiProperty({ nullable: true, type: String }) address!: string | null;
   @ApiProperty({ description: 'Tax rate, basis points.' }) taxRateBps!: number;
@@ -46,6 +52,8 @@ export class RestaurantSettingsResponse {
   @ApiProperty() allowManualTableStatus!: boolean;
   @ApiProperty() enableQrMenu!: boolean;
   @ApiProperty() enableCustomerOrdering!: boolean;
+  @ApiProperty({ description: '3A: admin login allowed from any device when true.' })
+  allowUnanchoredAdminLogin!: boolean;
 
   static from(s: RestaurantSettings): RestaurantSettingsResponse {
     const p = s.snapshot;
@@ -53,6 +61,7 @@ export class RestaurantSettingsResponse {
       id: s.id,
       restaurantId: p.restaurantId,
       logoUrl: p.logoUrl,
+      logoKey: p.logoKey,
       phone: p.phone,
       address: p.address,
       taxRateBps: p.taxRateBps,
@@ -68,17 +77,60 @@ export class RestaurantSettingsResponse {
       allowManualTableStatus: p.allowManualTableStatus,
       enableQrMenu: p.enableQrMenu,
       enableCustomerOrdering: p.enableCustomerOrdering,
+      allowUnanchoredAdminLogin: p.allowUnanchoredAdminLogin,
     };
   }
+}
+
+/** ORDER-1: a branch's ordering flow config (nested in BranchResponse). */
+export class BranchOrderingConfigResponse {
+  @ApiProperty() prepaymentEnabled!: boolean;
+  @ApiProperty() payAtEndEnabled!: boolean;
+  @ApiProperty({ description: 'QR-web channel may open sessions (always prepayment).' })
+  qrOrderingEnabled!: boolean;
+  @ApiProperty({ description: 'Idle auto-expiry threshold, minutes.' })
+  idleExpiryMinutes!: number;
 }
 
 export class BranchResponse {
   @ApiProperty() id!: string;
   @ApiProperty() restaurantId!: string;
   @ApiProperty() name!: string;
+  @ApiProperty({ description: 'BR-9: public-facing, per-restaurant unique slug.' })
+  slug!: string;
+  @ApiProperty({ description: 'Whether this is the restaurant default branch.' })
+  isDefault!: boolean;
   @ApiProperty({ enum: ['ACTIVE', 'INACTIVE'] }) status!: string;
+  @ApiProperty({ enum: ['STRICT', 'SOFT'], description: '3A: branch IP binding policy.' })
+  ipBindingMode!: string;
+  @ApiProperty({ type: [String], description: '3A: allowed source CIDRs (STRICT mode).' })
+  ipAllowlist!: string[];
+  @ApiProperty({ type: BranchOrderingConfigResponse, description: 'ORDER-1: ordering flow config.' })
+  orderingConfig!: BranchOrderingConfigResponse;
 
   static from(b: Branch): BranchResponse {
-    return { id: b.id, restaurantId: b.restaurantId, name: b.name, status: b.status };
+    return {
+      id: b.id,
+      restaurantId: b.restaurantId,
+      name: b.name,
+      slug: b.slug,
+      isDefault: b.isDefault,
+      status: b.status,
+      ipBindingMode: b.ipBindingMode,
+      ipAllowlist: b.ipAllowlist,
+      orderingConfig: {
+        prepaymentEnabled: b.orderingConfig.prepaymentEnabled,
+        payAtEndEnabled: b.orderingConfig.payAtEndEnabled,
+        qrOrderingEnabled: b.orderingConfig.qrOrderingEnabled,
+        idleExpiryMinutes: b.orderingConfig.idleExpiryMinutes,
+      },
+    };
   }
+}
+
+/** Response for GET /branches/:id/my-access — effective perms at the active branch. */
+export class MyBranchAccessResponse {
+  @ApiProperty({ description: 'The active branch (from X-Branch-Id).' }) branchId!: string;
+  @ApiProperty({ type: [String], description: 'Effective permissions at this branch.' })
+  permissions!: string[];
 }

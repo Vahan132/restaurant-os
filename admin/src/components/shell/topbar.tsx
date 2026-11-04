@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { LanguageSwitcher } from '@/components/i18n/language-switcher';
+import { BranchSwitcher } from '@/components/shell/branch-switcher';
 import { logout } from '@/lib/auth/auth-service';
 import { useRestaurant } from '@/lib/restaurant/use-restaurant';
 import { useAuthStore } from '@/stores/auth';
@@ -30,6 +31,7 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-4">
+        <BranchSwitcher />
         <LanguageSwitcher />
 
         <div className="relative">

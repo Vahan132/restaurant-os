@@ -7,7 +7,7 @@ import {
   getRestaurantControllerProfileQueryKey,
   getRestaurantControllerSettingsQueryKey,
 } from '@/api/generated/restaurant/restaurant';
-import { getBranchesControllerListQueryKey } from '@/api/generated/restaurant-branches/restaurant-branches';
+import { getBranchesControllerListQueryKey } from '@/api/generated/branches/branches';
 
 /** bps (basis points) -> percent string with up to 2 decimals. 250 -> "2.5". */
 export function bpsToPercent(bps: number): string {

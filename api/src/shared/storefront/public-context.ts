@@ -10,6 +10,14 @@ import { Request } from 'express';
 export interface PublicContext {
   restaurantId: string;
   organizationId: string;
+  /**
+   * BR-9: the active branch, resolved from the `:branchSlug` route param against
+   * the restaurant's ACTIVE branches (never a client-supplied id). Present only
+   * on branch-explicit public routes; undefined on restaurant-only routes.
+   */
+  branchId?: string;
+  branchName?: string;
+  branchSlug?: string;
 }
 
 declare global {

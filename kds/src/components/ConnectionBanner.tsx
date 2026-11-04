@@ -1,36 +1,45 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { ConnectionStatus } from '@/lib/realtime/client';
+import {
+  connectionMessageKey,
+  connectionTone,
+  showConnectionBanner,
+  type DisplayConnectionStatus,
+} from '@/lib/hub/status';
 
-/** Prominent banner shown whenever the realtime socket is not connected. */
-export function ConnectionBanner({ status }: { status: ConnectionStatus }) {
+const TONE_BG: Record<ReturnType<typeof connectionTone>, string> = {
+  ok: 'bg-status-ready',
+  warn: 'bg-status-preparing',
+  bad: 'bg-status-delayed',
+};
+
+const TONE_DOT = TONE_BG;
+
+/** Prominent banner shown for disruptive connection states (cloud or hub). */
+export function ConnectionBanner({ status }: { status: DisplayConnectionStatus }) {
   const t = useTranslations('connection');
-  if (status === 'connected') return null;
+  if (!showConnectionBanner(status)) return null;
 
   return (
     <div
       role="status"
-      className="w-full bg-status-delayed px-6 py-3 text-center text-kiosk-lg font-semibold text-white"
+      className={`w-full px-6 py-3 text-center text-kiosk-lg font-semibold text-white ${TONE_BG[connectionTone(status)]}`}
     >
-      {status === 'connecting' ? t('connecting') : t('disconnected')}
+      {t(connectionMessageKey(status))}
     </div>
   );
 }
 
 /** Small inline dot + label for the top strip. */
-export function ConnectionIndicator({ status }: { status: ConnectionStatus }) {
+export function ConnectionIndicator({ status }: { status: DisplayConnectionStatus }) {
   const t = useTranslations('connection');
-  const color =
-    status === 'connected'
-      ? 'bg-status-ready'
-      : status === 'connecting'
-        ? 'bg-status-preparing'
-        : 'bg-status-delayed';
   return (
     <span className="flex items-center gap-2 text-base text-kiosk-muted">
-      <span className={`inline-block h-3 w-3 rounded-full ${color}`} />
-      {t(status)}
+      <span
+        className={`inline-block h-3 w-3 rounded-full ${TONE_DOT[connectionTone(status)]}`}
+      />
+      {t(connectionMessageKey(status))}
     </span>
   );
 }

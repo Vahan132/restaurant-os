@@ -2,15 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
 import { OrdersTableReader } from '../../application/ports/table-reader.port';
 
-/** Verifies a table belongs to the restaurant (orders module's view). */
+/** Reads a table's branch (orders module's view of the tables context). */
 @Injectable()
 export class PrismaOrdersTableReader implements OrdersTableReader {
   constructor(private readonly prisma: PrismaService) {}
 
-  async tableExists(restaurantId: string, tableId: string): Promise<boolean> {
-    const count = await this.prisma.restaurantTable.count({
+  async getTableBranchId(restaurantId: string, tableId: string): Promise<string | null> {
+    const table = await this.prisma.restaurantTable.findFirst({
       where: { id: tableId, restaurantId, deletedAt: null },
+      select: { branchId: true },
     });
-    return count > 0;
+    return table ? table.branchId : null;
   }
 }

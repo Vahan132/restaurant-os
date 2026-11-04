@@ -5,25 +5,49 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { AttachedModifierGroupResponse } from './attachedModifierGroupResponse';
+import type { I18nTextResponse } from './i18nTextResponse';
 import type { MenuItemDetailResponseAvailability } from './menuItemDetailResponseAvailability';
 import type { MenuItemDetailResponsePreparationStation } from './menuItemDetailResponsePreparationStation';
 import type { MenuItemDetailResponseStatus } from './menuItemDetailResponseStatus';
-import type { ModifierGroupWithOptionsResponse } from './modifierGroupWithOptionsResponse';
 
 export interface MenuItemDetailResponse {
   id: string;
   restaurantId: string;
+  branchId: string;
+  code: string;
   categoryId: string;
   name: string;
   /** @nullable */
   description: string | null;
+  /** LOCALE-2A: hy/ru/en name translations (nulls where empty). */
+  nameI18n: I18nTextResponse;
+  /** LOCALE-2A: hy/ru/en description translations. */
+  descriptionI18n: I18nTextResponse;
   priceAmount: number;
   /** @nullable */
   imageUrl: string | null;
+  /**
+     * MEDIA-1: object-storage key when the image was uploaded (null for URL-paste).
+     * @nullable
+     */
+  imageKey: string | null;
   preparationStation: MenuItemDetailResponsePreparationStation;
   /** @nullable */
   prepTimeMinutes: number | null;
   status: MenuItemDetailResponseStatus;
   availability: MenuItemDetailResponseAvailability;
-  modifierGroups: ModifierGroupWithOptionsResponse[];
+  /** Hides the customer ingredient list. */
+  hideRecipe: boolean;
+  /**
+     * ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified).
+     * @nullable
+     */
+  adgCode: string | null;
+  /**
+     * FISCAL-DEPT-1: branch fiscal department code this dish sells under, for the receipt line's VAT regime (null = unassigned).
+     * @nullable
+     */
+  dep: string | null;
+  modifierGroups: AttachedModifierGroupResponse[];
 }

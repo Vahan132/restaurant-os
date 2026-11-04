@@ -15,6 +15,10 @@ export interface RealtimeEventMap {
     reservationId: string;
     status?: string;
   };
+  'missedcall.new': {
+    missedCallId: string;
+    phone?: string;
+  };
   'order.updated': {
     orderId: string;
     status?: string;

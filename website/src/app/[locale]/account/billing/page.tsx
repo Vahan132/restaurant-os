@@ -14,7 +14,8 @@ import { Card, QueryState } from "@/components/account/ui";
 import { HistoryList } from "@/components/account/HistoryList";
 import { Field, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
-import { toast, toastError } from "@/lib/toast";
+import { toast } from "@/lib/toast";
+import { useApiError } from "@/hooks/useApiError";
 
 const empty: BillingInfo = { billingName: "", billingEmail: "", billingAddress: "", taxId: "" };
 
@@ -23,6 +24,7 @@ export default function BillingPage() {
   const qc = useQueryClient();
   const billing = useAccountBilling();
   const update = useUpdateBilling();
+  const { toastError } = useApiError();
 
   const [form, setForm] = useState<BillingInfo>(empty);
   const [touched, setTouched] = useState(false);

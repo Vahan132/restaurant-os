@@ -16,5 +16,9 @@ from: string;
  * To date (YYYY-MM-DD, inclusive, restaurant tz).
  */
 to: string;
+/**
+ * Only this branch. Omitted = every branch the caller may report on (all branches for the owner).
+ */
+branchId?: string;
 groupBy?: ReportsControllerGetTimeSeriesGroupBy;
 };

@@ -17,3 +17,7 @@ export const TableNotFound = () =>
 
 export const OrderRequestNotFound = () =>
   new NotFoundException({ code: 'ORDER_REQUEST_NOT_FOUND', message: 'Order request not found.' });
+
+/** BR-5 §6: a request can only be handled within its own (its table's) branch. */
+export const CrossBranchReference = (message = 'This request belongs to a different branch.') =>
+  new BadRequestException({ code: 'VALIDATION_ERROR', message });

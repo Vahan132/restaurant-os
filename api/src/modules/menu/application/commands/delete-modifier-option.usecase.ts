@@ -8,6 +8,7 @@ import { ModifierOptionNotFound, NoRestaurantInScope } from '../application.erro
 
 export interface DeleteModifierOptionInput {
   restaurantId: string | null;
+  branchId: string;
   optionId: string;
 }
 
@@ -22,7 +23,7 @@ export class DeleteModifierOptionUseCase implements UseCase<DeleteModifierOption
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const option = await this.options.findById(input.restaurantId, input.optionId);
+    const option = await this.options.findById(input.restaurantId, input.branchId, input.optionId);
     if (!option) {
       throw ModifierOptionNotFound();
     }

@@ -38,6 +38,15 @@ export class PrismaAccountQueryService implements AccountQuery {
     return !!restaurant || !!organization;
   }
 
+  async isEmailTaken(email: string): Promise<boolean> {
+    const normalized = email.trim().toLowerCase();
+    const user = await this.prisma.user.findFirst({
+      where: { email: normalized, deletedAt: null },
+      select: { id: true },
+    });
+    return !!user;
+  }
+
   async overview(organizationId: string, ownerUserId: string): Promise<AccountOverview | null> {
     const organization = await this.prisma.organization.findFirst({
       where: { id: organizationId, deletedAt: null },

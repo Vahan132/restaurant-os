@@ -7,6 +7,8 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { ActiveBranchId } from '../../../../shared/auth/active-branch.decorator';
+import { BranchScoped } from '../../../../shared/auth/branch-scoped.decorator';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
 import { TenantContext } from '../../../../shared/tenancy/tenant-context';
@@ -23,6 +25,7 @@ const P = PERMISSIONS;
 
 @ApiTags('kds')
 @ApiBearerAuth('access-token')
+@BranchScoped()
 @Controller('kds')
 export class KdsController {
   constructor(
@@ -40,9 +43,10 @@ export class KdsController {
   @ApiOkResponse({ type: [KdsTicketResponse] })
   async tickets(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('station', new ParseEnumPipe(PreparationStation)) station: PreparationStation,
   ): Promise<KdsTicketResponse[]> {
-    return this.getTickets.execute({ restaurantId: tenant.restaurantId, station });
+    return this.getTickets.execute({ restaurantId: tenant.restaurantId, branchId, station });
   }
 
   @Post('order-items/:itemId/preparing')
@@ -53,10 +57,12 @@ export class KdsController {
   @ApiOkResponse({ type: OrderResponse })
   async preparing(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('itemId') itemId: string,
   ): Promise<OrderResponse> {
     const order = await this.markItemPreparing.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       itemId,
     });
     return OrderResponse.from(order);
@@ -70,10 +76,12 @@ export class KdsController {
   @ApiOkResponse({ type: OrderResponse })
   async itemReady(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('itemId') itemId: string,
   ): Promise<OrderResponse> {
     const order = await this.markItemReady.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       itemId,
     });
     return OrderResponse.from(order);
@@ -87,10 +95,12 @@ export class KdsController {
   @ApiOkResponse({ type: OrderResponse })
   async orderReady(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('orderId') orderId: string,
   ): Promise<OrderResponse> {
     const order = await this.markOrderReady.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId,
     });
     return OrderResponse.from(order);

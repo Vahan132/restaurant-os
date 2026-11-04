@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEmail, IsOptional, IsString, MinLength, ValidateNested } from 'class-validator';
+import { IsRestaurantTimeZone } from '../../../../shared/validation/time-zone.decorator';
 
 export class ProvisionOrgDto {
   @ApiProperty({ example: 'Acme Restaurants' })
@@ -37,7 +38,7 @@ export class ProvisionRestaurantDto {
 
   @ApiPropertyOptional({ example: 'America/New_York' })
   @IsOptional()
-  @IsString()
+  @IsRestaurantTimeZone()
   timezone?: string;
 }
 

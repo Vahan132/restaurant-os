@@ -4,9 +4,9 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import {
-  useModifiersControllerAddOptionToGroup,
-  useModifiersControllerPatchOption,
-} from '@/api/generated/menu-modifiers/menu-modifiers';
+  useModifierGroupsControllerAddOptionToGroup,
+  useModifierGroupsControllerPatchOption,
+} from '@/api/generated/menu-modifier-groups/menu-modifier-groups';
 import {
   ModifierOptionResponseStatus,
   type ModifierOptionResponse,
@@ -14,16 +14,29 @@ import {
 } from '@/api/generated/model';
 import { Button } from '@/components/ui/button';
 import { Field, inputClass } from '@/components/ui/form';
+import {
+  TranslationFields,
+  nameTranslationFields,
+  primaryLocaleName,
+  toI18nDraft,
+  type I18nDraft,
+} from '@/components/menu/translation-fields';
 import { Modal } from '@/components/ui/modal';
 import { getErrorMessage } from '@/lib/api-error';
 import { minorToInput, toMinor } from '@/lib/money';
+import { useRestaurant } from '@/lib/restaurant/use-restaurant';
 import { toast } from '@/stores/toast';
 
+/**
+ * Create or edit a single option inside a library modifier group. Prices are
+ * entered in major units and converted to integer minor units before sending.
+ */
 export function ModifierOptionFormModal({
   open,
   groupId,
   option,
   currency,
+  nextSortOrder,
   onClose,
   onSaved,
 }: {
@@ -31,25 +44,30 @@ export function ModifierOptionFormModal({
   groupId: string;
   option?: ModifierOptionResponse | null;
   currency: string;
+  /** Default sortOrder for a brand-new option (append to the end). */
+  nextSortOrder?: number;
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 }) {
   const t = useTranslations('menu');
   const tc = useTranslations('common');
+  const { data: restaurant } = useRestaurant();
+  const primaryLocale = restaurant?.defaultLanguage;
   const isEdit = !!option;
 
   const [name, setName] = useState(option?.name ?? '');
+  const [nameI18n, setNameI18n] = useState<I18nDraft>(toI18nDraft(option?.nameI18n));
   const [price, setPrice] = useState(
     option ? minorToInput(option.priceDeltaAmount, currency) : '0',
   );
-  const [displayOrder, setDisplayOrder] = useState(String(option?.displayOrder ?? 0));
+  const [isDefault, setIsDefault] = useState(option?.isDefault ?? false);
   const [status, setStatus] = useState<UpdateModifierOptionDtoStatus>(
     (option?.status as UpdateModifierOptionDtoStatus) ?? ModifierOptionResponseStatus.ACTIVE,
   );
   const [errors, setErrors] = useState<{ name?: string; price?: string }>({});
 
-  const add = useModifiersControllerAddOptionToGroup();
-  const patch = useModifiersControllerPatchOption();
+  const add = useModifierGroupsControllerAddOptionToGroup();
+  const patch = useModifierGroupsControllerPatchOption();
   const submitting = add.isPending || patch.isPending;
 
   const submit = async () => {
@@ -63,12 +81,14 @@ export function ModifierOptionFormModal({
     try {
       if (isEdit && option) {
         await patch.mutateAsync({
-          id: option.id,
+          groupId,
+          optionId: option.id,
           data: {
             name: name.trim(),
             priceDeltaAmount: priceMinor ?? 0,
-            displayOrder: Number(displayOrder) || 0,
+            isDefault,
             status,
+            ...nameTranslationFields(primaryLocale, nameI18n),
           },
         });
       } else {
@@ -77,7 +97,9 @@ export function ModifierOptionFormModal({
           data: {
             name: name.trim(),
             priceDeltaAmount: priceMinor ?? 0,
-            displayOrder: Number(displayOrder) || 0,
+            isDefault,
+            sortOrder: nextSortOrder ?? 0,
+            ...nameTranslationFields(primaryLocale, nameI18n),
           },
         });
       }
@@ -85,7 +107,7 @@ export function ModifierOptionFormModal({
       await onSaved();
       onClose();
     } catch (err) {
-      toast.error(getErrorMessage(err));
+      setErrors({ name: getErrorMessage(err) });
     }
   };
 
@@ -106,9 +128,24 @@ export function ModifierOptionFormModal({
       }
     >
       <div className="space-y-3">
-        <Field label={t('optionName')} required error={errors.name}>
-          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+        <Field
+          label={`${t('optionName')} (${primaryLocaleName(primaryLocale)})`}
+          required
+          error={errors.name}
+        >
+          <input
+            className={inputClass}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+          />
         </Field>
+        <TranslationFields
+          primaryLocale={primaryLocale}
+          label={t('optionName')}
+          value={nameI18n}
+          onChange={setNameI18n}
+        />
         <Field label={`${t('priceDelta')} (${currency})`} error={errors.price}>
           <input
             inputMode="decimal"
@@ -117,15 +154,14 @@ export function ModifierOptionFormModal({
             onChange={(e) => setPrice(e.target.value)}
           />
         </Field>
-        <Field label={t('displayOrder')}>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
           <input
-            type="number"
-            min={0}
-            className={inputClass}
-            value={displayOrder}
-            onChange={(e) => setDisplayOrder(e.target.value)}
+            type="checkbox"
+            checked={isDefault}
+            onChange={(e) => setIsDefault(e.target.checked)}
           />
-        </Field>
+          {t('isDefault')}
+        </label>
         {isEdit && (
           <Field label={t('status')}>
             <select

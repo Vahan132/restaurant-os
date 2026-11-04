@@ -7,6 +7,36 @@
  */
 
 export interface UpdateCategoryDto {
+  /**
+   * Armenian name translation.
+   * @nullable
+   */
+  nameHy?: string | null;
+  /**
+   * Russian name translation.
+   * @nullable
+   */
+  nameRu?: string | null;
+  /**
+   * English name translation.
+   * @nullable
+   */
+  nameEn?: string | null;
+  /**
+   * Armenian description translation.
+   * @nullable
+   */
+  descriptionHy?: string | null;
+  /**
+   * Russian description translation.
+   * @nullable
+   */
+  descriptionRu?: string | null;
+  /**
+   * English description translation.
+   * @nullable
+   */
+  descriptionEn?: string | null;
   name?: string;
   description?: string;
   /** @minimum 0 */

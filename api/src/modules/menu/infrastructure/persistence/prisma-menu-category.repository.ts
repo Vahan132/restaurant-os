@@ -17,6 +17,7 @@ export class PrismaMenuCategoryRepository implements MenuCategoryRepository {
     const records = await this.prisma.menuCategory.findMany({
       where: {
         restaurantId: filter.restaurantId,
+        branchId: filter.branchId,
         deletedAt: null,
         ...(status ? { status } : {}),
       },
@@ -25,16 +26,36 @@ export class PrismaMenuCategoryRepository implements MenuCategoryRepository {
     return records.map(CategoryMapper.toDomain);
   }
 
-  async findById(restaurantId: string, id: string): Promise<MenuCategory | null> {
+  async findById(restaurantId: string, branchId: string, id: string): Promise<MenuCategory | null> {
+    const r = await this.prisma.menuCategory.findFirst({
+      where: { id, restaurantId, branchId, deletedAt: null },
+    });
+    return r ? CategoryMapper.toDomain(r) : null;
+  }
+
+  async findInRestaurant(restaurantId: string, id: string): Promise<MenuCategory | null> {
     const r = await this.prisma.menuCategory.findFirst({
       where: { id, restaurantId, deletedAt: null },
     });
     return r ? CategoryMapper.toDomain(r) : null;
   }
 
-  async countActiveItems(restaurantId: string, categoryId: string): Promise<number> {
+  async existsByCode(restaurantId: string, branchId: string, code: string): Promise<boolean> {
+    // No deletedAt filter: the unique index spans soft-deleted rows, so a code
+    // is "taken" even if its row was soft-deleted (avoids a DB unique violation).
+    const count = await this.prisma.menuCategory.count({
+      where: { restaurantId, branchId, code },
+    });
+    return count > 0;
+  }
+
+  async countActiveItems(
+    restaurantId: string,
+    branchId: string,
+    categoryId: string,
+  ): Promise<number> {
     return this.prisma.menuItem.count({
-      where: { restaurantId, categoryId, deletedAt: null },
+      where: { restaurantId, branchId, categoryId, deletedAt: null },
     });
   }
 
@@ -44,7 +65,11 @@ export class PrismaMenuCategoryRepository implements MenuCategoryRepository {
 
   async update(category: MenuCategory): Promise<void> {
     await this.prisma.menuCategory.updateMany({
-      where: { id: category.id, restaurantId: category.restaurantId },
+      where: {
+        id: category.id,
+        restaurantId: category.restaurantId,
+        branchId: category.branchId,
+      },
       data: CategoryMapper.toUpdate(category),
     });
   }

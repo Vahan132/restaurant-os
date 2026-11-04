@@ -3,6 +3,7 @@ import { ID_GENERATOR, IdGenerator } from '../../../identity/application/ports/i
 import { OrderItem } from '../../domain/entities/order-item';
 import { OrderItemModifier } from '../../domain/entities/order-item-modifier';
 import {
+  CrossBranchReference,
   InvalidModifierSelection,
   MenuItemNotFound,
   MenuItemNotOrderable,
@@ -11,6 +12,8 @@ import { MENU_READER, MenuReader, ModifierGroupForOrder } from '../ports/menu-re
 
 export interface BuildOrderItemInput {
   restaurantId: string;
+  /** The owning order's branch; the menu item must belong to it. */
+  branchId: string;
   orderId: string;
   menuItemId: string;
   quantity: number;
@@ -50,9 +53,11 @@ export class OrderItemBuilder {
       if (!found) {
         throw InvalidModifierSelection(`Option ${optId} does not belong to this item.`);
       }
-      if (found.delta < 0) {
-        throw InvalidModifierSelection('Modifier option has an invalid price.');
-      }
+      // NOTE (Prompt 1A): a modifier option price delta may be 0 or NEGATIVE (a
+      // discount), so the builder no longer rejects negative deltas. The delta is
+      // snapshotted onto the order line unchanged; KDS tickets/receipts read it
+      // off the order line and should be sanity-checked separately to confirm they
+      // render negative deltas correctly.
     }
     const countByGroup = new Map<string, number>();
     for (const optId of selected) {
@@ -99,10 +104,15 @@ export class OrderItemBuilder {
 
   async build(input: BuildOrderItemInput): Promise<OrderItem> {
     const data = await this.loadOrderable(input.restaurantId, input.menuItemId);
+    // Intra-branch integrity: the menu item must live in the order's branch.
+    if (data.item.branchId !== input.branchId) {
+      throw CrossBranchReference('Menu item belongs to a different branch.');
+    }
     const modifiers = this.buildModifiersFor(data, input.selectedOptionIds);
     return OrderItem.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       orderId: input.orderId,
       menuItemId: data.item.id,
       nameSnapshot: data.item.name,
@@ -111,6 +121,14 @@ export class OrderItemBuilder {
       quantity: input.quantity,
       note: input.note ?? null,
       modifiers,
+      // ORDER-2 fiscal snapshot (harmless for POS lines; fiscal-ready for QR).
+      goodCode: data.item.code,
+      goodName: data.item.name,
+      // FISCAL-0: dish-level ATG code for fiscalization (null until classified).
+      adgCode: data.item.adgCode,
+      // FISCAL-DEPT-1: branch fiscal department for the receipt line's VAT regime
+      // (null until assigned; fiscal print fail-closes on a null-dep line).
+      dep: data.item.dep,
     });
   }
 }

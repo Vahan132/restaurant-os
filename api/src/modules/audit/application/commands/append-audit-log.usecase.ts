@@ -8,10 +8,12 @@ import {
   AuditLogRepository,
 } from '../../domain/repositories/audit-log.repository';
 import { ACTOR_NAME_READER, ActorNameReader } from '../ports/actor-name.reader';
+import { ACTOR_ROLE_READER, ActorRoleReader } from '../ports/actor-role.reader';
 
 export interface AppendAuditLogInput {
   organizationId?: string | null;
   restaurantId?: string | null;
+  branchId?: string | null;
   actorType: AuditActorType;
   actorId?: string | null;
   action: string;
@@ -29,18 +31,25 @@ export class AppendAuditLogUseCase implements UseCase<AppendAuditLogInput, Audit
   constructor(
     @Inject(AUDIT_LOG_REPOSITORY) private readonly repo: AuditLogRepository,
     @Inject(ACTOR_NAME_READER) private readonly actorNames: ActorNameReader,
+    @Inject(ACTOR_ROLE_READER) private readonly actorRoles: ActorRoleReader,
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
   ) {}
 
   async execute(input: AppendAuditLogInput): Promise<AuditLog> {
-    const actorName = await this.actorNames.resolve(input.actorType, input.actorId ?? null);
+    const actorId = input.actorId ?? null;
+    const [actorName, actorRoleCode] = await Promise.all([
+      this.actorNames.resolve(input.actorType, actorId),
+      this.actorRoles.resolve(input.actorType, actorId),
+    ]);
     const log = AuditLog.create({
       id: this.ids.generate(),
       organizationId: input.organizationId ?? null,
       restaurantId: input.restaurantId ?? null,
+      branchId: input.branchId ?? null,
       actorType: input.actorType,
-      actorId: input.actorId ?? null,
+      actorId,
       actorName,
+      actorRoleCode,
       action: input.action,
       entityType: input.entityType,
       entityId: input.entityId,

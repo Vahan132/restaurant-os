@@ -29,6 +29,7 @@ export function OrderRequestsPanel({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[60] flex justify-end bg-black/40" onClick={onClose}>
       <aside
+        data-testid="requests-panel"
         className="flex h-full w-full max-w-md flex-col bg-gray-100 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -110,6 +111,7 @@ export function OrderRequestsPanel({ onClose }: { onClose: () => void }) {
                   onClose();
                   router.push(`/orders/${id}`);
                 }}
+                data-testid="open-confirmed-order"
                 className="h-14 flex-1 select-none rounded-xl bg-gray-900 text-lg font-bold text-white active:scale-[0.98]"
               >
                 {t('openOrder')}

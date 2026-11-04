@@ -7,9 +7,8 @@
  */
 
 export interface PublicBranchResponse {
-  /** Url-safe per-restaurant slug used in public routes. */
-  slug: string;
+  id: string;
   name: string;
-  /** Whether this is the restaurant default branch. */
-  isDefault: boolean;
+  /** BR-9: public-facing branch slug. */
+  slug: string;
 }

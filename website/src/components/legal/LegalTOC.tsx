@@ -8,29 +8,67 @@ type TocItem = { id: string; title: string };
 /**
  * On-page table of contents for the legal pages. Unlike the docs TOC (which
  * scrapes the DOM), this one is driven by the section list so it renders
- * identically on the server; the IntersectionObserver only adds the
- * "active section" highlight as the reader scrolls.
+ * identically on the server.
+ *
+ * The active section is resolved from scroll position rather than an
+ * IntersectionObserver: we pick the last section whose heading has scrolled
+ * above a trigger line just below the sticky header. This is deterministic for
+ * sections of any length — including short, closely-spaced ones (1↔2, 2↔3),
+ * where an observer band tall enough to hold several headings at once would
+ * make the highlight stick on the wrong section or skip one entirely.
  */
 export function LegalTOC({ items, label }: { items: TocItem[]; label: string }) {
   const [activeId, setActiveId] = useState<string>(items[0]?.id ?? "");
 
   useEffect(() => {
-    const nodes = items
-      .map((it) => document.getElementById(it.id))
-      .filter((n): n is HTMLElement => n !== null);
-    if (nodes.length === 0) return;
+    const ids = items.map((it) => it.id);
+    if (ids.length === 0) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActiveId(visible[0].target.id);
-      },
-      { rootMargin: "-96px 0px -70% 0px", threshold: 0 },
-    );
-    nodes.forEach((n) => observer.observe(n));
-    return () => observer.disconnect();
+    let frame = 0;
+
+    const compute = () => {
+      frame = 0;
+      // Trigger line sits just below the sticky header — matched to the page's
+      // scroll-padding-top (--header-h + 24px) so a section that was just
+      // clicked, and therefore parked at that offset, reads as active.
+      const headerH =
+        parseInt(
+          getComputedStyle(document.documentElement).getPropertyValue("--header-h"),
+          10,
+        ) || 72;
+      const line = headerH + 24 + 16;
+
+      let current = ids[0];
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        if (el.getBoundingClientRect().top - line <= 1) current = id;
+        else break;
+      }
+
+      // At the very bottom of the page the final (often short) section can never
+      // reach the trigger line, so force-select it once we've hit the end.
+      const atBottom =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 2;
+      if (atBottom) current = ids[ids.length - 1];
+
+      setActiveId(current);
+    };
+
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(compute);
+    };
+
+    compute();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, [items]);
 
   if (items.length === 0) return null;

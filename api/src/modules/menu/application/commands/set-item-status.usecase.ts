@@ -10,6 +10,7 @@ import { MenuItemNotFound, NoRestaurantInScope } from '../application.errors';
 
 export interface SetItemStatusInput {
   restaurantId: string | null;
+  branchId: string;
   itemId: string;
   status: MenuStatus;
 }
@@ -23,7 +24,7 @@ export class SetItemStatusUseCase implements UseCase<SetItemStatusInput, MenuIte
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const item = await this.items.findById(input.restaurantId, input.itemId);
+    const item = await this.items.findById(input.restaurantId, input.branchId, input.itemId);
     if (!item) {
       throw MenuItemNotFound();
     }

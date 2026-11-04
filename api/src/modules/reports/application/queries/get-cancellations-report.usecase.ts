@@ -8,6 +8,8 @@ export interface GetCancellationsReportInput {
   restaurantId: string | null;
   from: string;
   to: string;
+  /** BR-REPORTS-1: access-checked branch filter (omitted = restaurant-wide). */
+  branchIds?: string[];
 }
 
 @Injectable()
@@ -23,6 +25,6 @@ export class GetCancellationsReportUseCase implements UseCase<
     }
     const tz = await this.q.timezone(input.restaurantId);
     const { start, end } = inclusiveDayRange(input.from, input.to, tz);
-    return this.q.cancellations(input.restaurantId, start, end);
+    return this.q.cancellations(input.restaurantId, start, end, input.branchIds);
   }
 }

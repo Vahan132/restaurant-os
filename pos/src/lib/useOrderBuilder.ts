@@ -19,8 +19,7 @@ import type {
 } from '@/api/generated/model';
 import type { ApiError } from '@/api/mutator';
 import { toast } from '@/lib/toast';
-import { useAuthMe } from '@/lib/useAuthMe';
-import { PERMISSIONS } from '@/lib/permissions';
+import { PERMISSIONS, useEffectivePermissions } from '@/lib/permissions';
 import { useFloorDataInvalidator } from '@/lib/useActiveOrders';
 
 /**
@@ -31,7 +30,7 @@ import { useFloorDataInvalidator } from '@/lib/useActiveOrders';
 export function useOrderBuilder(orderId: string) {
   const t = useTranslations('builder');
   const queryClient = useQueryClient();
-  const { data: me } = useAuthMe();
+  const permissions = useEffectivePermissions();
   const invalidateFloor = useFloorDataInvalidator();
 
   const addItem = useOrdersControllerAddOrderItem();
@@ -47,8 +46,8 @@ export function useOrderBuilder(orderId: string) {
   }, []);
 
   const can = useCallback(
-    (perm: string) => (me?.permissions ?? []).includes(perm),
-    [me],
+    (perm: string) => permissions.includes(perm),
+    [permissions],
   );
 
   const writeOrder = useCallback(

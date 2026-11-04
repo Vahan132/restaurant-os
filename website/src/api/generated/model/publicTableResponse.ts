@@ -11,4 +11,10 @@ export interface PublicTableResponse {
   name: string;
   /** @nullable */
   floorName: string | null;
+  /** BR-9: the table's branch id. */
+  branchId: string;
+  /** BR-9: the table's branch name. */
+  branchName: string;
+  /** BR-9: the table's branch slug (fetch this branch's menu). */
+  branchSlug: string;
 }

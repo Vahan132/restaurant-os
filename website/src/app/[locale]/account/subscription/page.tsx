@@ -19,7 +19,8 @@ import { Button } from "@/components/ui/Button";
 import { formatMoney } from "@/lib/money";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import { toast, toastError } from "@/lib/toast";
+import { toast } from "@/lib/toast";
+import { useApiError } from "@/hooks/useApiError";
 
 export default function SubscriptionPage() {
   const t = useTranslations("account.subscription");
@@ -30,10 +31,11 @@ export default function SubscriptionPage() {
   const history = useSubscriptionHistory({ page: 1, limit: 20 });
   const plansQuery = usePlans();
   const changePlan = useChangePlan();
+  const { toastError } = useApiError();
 
   const [pending, setPending] = useState<PublicPlanResponse | null>(null);
 
-  const current = sub.data?.subscription;
+  const current = sub.data;
 
   const unwrap = <T,>(value: unknown): T[] =>
     Array.isArray(value) ? (value as T[]) : ((value as { data?: T[] } | undefined)?.data ?? []);
@@ -71,7 +73,7 @@ export default function SubscriptionPage() {
         onRetry={() => sub.refetch()}
       >
         <Card title={t("currentTitle")} action={<StatusBadge status={current?.status} />}>
-          <dl className="grid gap-x-10 sm:grid-cols-2">
+          <dl className="grid gap-x-6 sm:grid-cols-2 lg:gap-x-10">
             <Row label={t("plan")}>{current?.planName ?? "—"}</Row>
             <Row label={t("price")}>
               {priceLabel(current?.priceAmount, current?.currency, current?.interval)}
@@ -88,7 +90,7 @@ export default function SubscriptionPage() {
           {plansQuery.isLoading ? (
             <p className="text-sm text-muted">{t("loadingPlans")}</p>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {plans.map((plan) => {
                 const isCurrent = plan.code === current?.planCode;
                 return (
@@ -100,10 +102,10 @@ export default function SubscriptionPage() {
                     )}
                   >
                     <div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-display text-lg text-ink">{plan.name}</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="min-w-0 font-display text-lg text-ink">{plan.name}</span>
                         {isCurrent ? (
-                          <span className="rounded-pill bg-terracotta px-2 py-0.5 text-2xs font-semibold text-white">
+                          <span className="shrink-0 rounded-pill bg-terracotta px-2 py-0.5 text-2xs font-semibold text-white">
                             {t("current")}
                           </span>
                         ) : null}

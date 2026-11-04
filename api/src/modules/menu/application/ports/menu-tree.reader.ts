@@ -46,5 +46,9 @@ export interface MenuTreeCategory {
  * tree (shown but flagged) when true. Implemented in infrastructure.
  */
 export interface MenuTreeReader {
-  getTree(restaurantId: string, includeUnavailable: boolean): Promise<MenuTreeCategory[]>;
+  getTree(
+    restaurantId: string,
+    branchId: string,
+    includeUnavailable: boolean,
+  ): Promise<MenuTreeCategory[]>;
 }

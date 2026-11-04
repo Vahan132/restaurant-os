@@ -20,7 +20,7 @@ typed hooks) · axios · zustand · socket.io-client · next-intl (hy/ru/en).
 
 ```bash
 pnpm install
-cp .env.example .env.local   # set NEXT_PUBLIC_API_BASE_URL if not localhost:3001
+cp .env.local.local.local.example .env.local.local.local.local   # set NEXT_PUBLIC_API_BASE_URL if not localhost:3001
 pnpm generate:api            # generate typed hooks from ./openapi.json
 pnpm dev                     # http://localhost:3002
 ```

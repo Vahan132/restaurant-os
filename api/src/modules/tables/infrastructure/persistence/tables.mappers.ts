@@ -7,6 +7,7 @@ export class FloorMapper {
   static toDomain(r: PrismaFloor): Floor {
     return Floor.reconstitute(r.id, {
       restaurantId: r.restaurantId,
+      branchId: r.branchId,
       name: r.name,
       description: r.description,
       displayOrder: r.displayOrder,
@@ -21,6 +22,7 @@ export class FloorMapper {
     return {
       id: f.id,
       restaurantId: f.restaurantId,
+      branchId: f.branchId,
       name: f.name,
       description: f.description,
       displayOrder: f.displayOrder,
@@ -47,6 +49,7 @@ export class TableMapper {
   static toDomain(r: PrismaTable): RestaurantTable {
     return RestaurantTable.reconstitute(r.id, {
       restaurantId: r.restaurantId,
+      branchId: r.branchId,
       floorId: r.floorId,
       name: r.name,
       seatCapacity: r.seatCapacity,
@@ -62,6 +65,7 @@ export class TableMapper {
     return {
       id: t.id,
       restaurantId: t.restaurantId,
+      branchId: t.branchId,
       floorId: t.floorId,
       name: t.name,
       seatCapacity: t.seatCapacity,

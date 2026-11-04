@@ -7,6 +7,7 @@ import { ORDER_SETTINGS_READER, OrderSettingsReader } from '../ports/order-setti
 
 export interface RemoveOrderItemInput {
   restaurantId: string | null;
+  branchId: string;
   orderId: string;
   itemId: string;
 }
@@ -23,7 +24,7 @@ export class RemoveOrderItemUseCase implements UseCase<RemoveOrderItemInput, Ord
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findById(input.restaurantId, input.orderId);
+    const order = await this.orders.findById(input.restaurantId, input.branchId, input.orderId);
     if (!order) {
       throw OrderNotFound();
     }

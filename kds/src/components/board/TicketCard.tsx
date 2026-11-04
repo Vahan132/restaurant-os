@@ -61,6 +61,10 @@ function TicketCardBase({
 
   return (
     <article
+      data-testid="kds-ticket"
+      data-order-id={ticket.orderId}
+      data-order-number={ticket.orderNumber}
+      data-all-ready={allReady ? 'true' : 'false'}
       className={[
         'flex flex-col gap-3 rounded-2xl border-4 bg-kiosk-panel p-4',
         border,
@@ -121,6 +125,7 @@ function TicketCardBase({
         ) : (
           <button
             type="button"
+            data-testid="kds-order-ready"
             disabled={orderPending}
             onClick={() => onReadyOrder(ticket.orderId)}
             className="w-full rounded-lg bg-status-ready px-4 py-3 text-kiosk font-bold text-black disabled:opacity-50"

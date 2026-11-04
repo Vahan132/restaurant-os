@@ -14,7 +14,30 @@ export default defineConfig({
         // Only the public, no-auth storefront surface.
         tags: ['public'],
         // Prune model files down to the public schemas only.
-        schemas: [/^Public/, /OrderRequest/],
+        // NOTE: this is a strict allowlist — orval does NOT auto-include schemas
+        // referenced by kept endpoints, so any DTO used by a public endpoint
+        // (signup, email/subdomain availability) must be listed explicitly or
+        // its import in public.ts will dangle and break the type-check.
+        schemas: [
+          /^Public/,
+          /OrderRequest/,
+          // ORDER-1: public QR-web table-session DTOs. /TableSession/ covers
+          // OpenTableSessionResponse (PublicTableSessionViewResponse is already
+          // caught by /^Public/); the two names cover the rest.
+          /TableSession/,
+          'AttachedOrderStatusResponse',
+          'OpenQrTableSessionDto',
+          'EmailAvailableResponse',
+          'SubdomainAvailableResponse',
+          'SignupDto',
+          'SignupResponse',
+          'UserResponse',
+          // ORDER-2: public QR-web ordering DTOs (cart, order, receipt + nested lines).
+          /^QrCart/,
+          /^ValidatedCart/,
+          /^OrderReceipt/,
+          'CreatedQrOrderResponse',
+        ],
       },
     },
     output: {

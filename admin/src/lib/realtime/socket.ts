@@ -1,6 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
 
-import { API_BASE_URL } from '@/api/mutator';
 import { useAuthStore } from '@/stores/auth';
 
 /**
@@ -9,8 +8,27 @@ import { useAuthStore } from '@/stores/auth';
  * client `path` is overridden to /res/socket.io — nginx maps that back to the
  * backend's default /socket.io/. Both fall back to dev defaults when unset.
  */
-const SOCKET_BASE_URL = process.env.NEXT_PUBLIC_SOCKET_BASE_URL ?? API_BASE_URL;
-const SOCKET_PATH = process.env.NEXT_PUBLIC_SOCKET_PATH || undefined;
+// Socket host:
+//  - explicit NEXT_PUBLIC_SOCKET_BASE_URL wins;
+//  - else SAME ORIGIN in production ('' lets socket.io use window.location), so
+//    the admin served by the cloud talks to the cloud and the admin served by
+//    the hub talks to the hub, with one build;
+//  - else the dev backend on :3001.
+const ENV_SOCKET_BASE = process.env.NEXT_PUBLIC_SOCKET_BASE_URL?.trim();
+const SOCKET_BASE_URL = ENV_SOCKET_BASE
+  ? ENV_SOCKET_BASE.replace(/\/$/, '')
+  : process.env.NODE_ENV === 'production'
+    ? '' // same origin (window.location)
+    : 'http://localhost:3001';
+// Path is the reverse-proxied socket.io path in production (/res/socket.io),
+// which nginx maps back to the backend's default /socket.io; dev uses default.
+const ENV_SOCKET_PATH = process.env.NEXT_PUBLIC_SOCKET_PATH;
+const SOCKET_PATH =
+  ENV_SOCKET_PATH !== undefined
+    ? ENV_SOCKET_PATH || undefined
+    : process.env.NODE_ENV === 'production'
+      ? '/res/socket.io'
+      : undefined;
 
 /**
  * Shared socket.io client for the app. Connects to the backend "/realtime"

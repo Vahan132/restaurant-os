@@ -5,6 +5,7 @@ import { FloorNotFound, NoRestaurantInScope } from '../application.errors';
 
 export interface DeleteFloorInput {
   restaurantId: string | null;
+  branchId: string;
   floorId: string;
 }
 
@@ -17,11 +18,15 @@ export class DeleteFloorUseCase implements UseCase<DeleteFloorInput, void> {
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const floor = await this.floors.findById(input.restaurantId, input.floorId);
+    const floor = await this.floors.findById(input.restaurantId, input.branchId, input.floorId);
     if (!floor) {
       throw FloorNotFound();
     }
-    const activeTables = await this.floors.countActiveTables(input.restaurantId, floor.id);
+    const activeTables = await this.floors.countActiveTables(
+      input.restaurantId,
+      input.branchId,
+      floor.id,
+    );
     floor.softDelete(activeTables); // throws FLOOR_HAS_TABLES if > 0
     await this.floors.update(floor);
   }

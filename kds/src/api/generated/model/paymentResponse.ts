@@ -10,6 +10,7 @@ import type { PaymentResponseState } from './paymentResponseState';
 
 export interface PaymentResponse {
   id: string;
+  branchId: string;
   method: PaymentResponseMethod;
   amount: number;
   /** @nullable */

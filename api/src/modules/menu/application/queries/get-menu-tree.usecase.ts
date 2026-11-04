@@ -5,6 +5,7 @@ import { MENU_TREE_READER, MenuTreeCategory, MenuTreeReader } from '../ports/men
 
 export interface GetMenuTreeInput {
   restaurantId: string | null;
+  branchId: string;
   includeUnavailable?: boolean;
 }
 
@@ -21,6 +22,10 @@ export class GetMenuTreeUseCase implements UseCase<GetMenuTreeInput, MenuTreeCat
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    return this.reader.getTree(input.restaurantId, input.includeUnavailable ?? true);
+    return this.reader.getTree(
+      input.restaurantId,
+      input.branchId,
+      input.includeUnavailable ?? true,
+    );
   }
 }

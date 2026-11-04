@@ -6,8 +6,7 @@ import {
   useOrderRequestsControllerList,
   getOrderRequestsControllerListQueryKey,
 } from '@/api/generated/order-requests/order-requests';
-import { useAuthMe } from '@/lib/useAuthMe';
-import { PERMISSIONS } from '@/lib/permissions';
+import { PERMISSIONS, useEffectivePermissions } from '@/lib/permissions';
 
 const PENDING_PARAMS = { status: 'PENDING' as const, limit: 100 };
 
@@ -16,8 +15,8 @@ const PENDING_PARAMS = { status: 'PENDING' as const, limit: 100 };
  * query only runs for users who hold it. Newest first.
  */
 export function usePendingOrderRequests() {
-  const { data: me } = useAuthMe();
-  const canList = (me?.permissions ?? []).includes(PERMISSIONS.ORDER_EDIT);
+  const permissions = useEffectivePermissions();
+  const canList = permissions.includes(PERMISSIONS.ORDER_EDIT);
 
   const query = useOrderRequestsControllerList(PENDING_PARAMS, {
     query: {

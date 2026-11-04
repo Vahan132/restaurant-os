@@ -5,6 +5,7 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
+import type { I18nTextResponse } from './i18nTextResponse';
 import type { MenuItemResponsePreparationStation } from './menuItemResponsePreparationStation';
 import type { MenuItemResponseStatus } from './menuItemResponseStatus';
 import type { MenuItemResponseAvailability } from './menuItemResponseAvailability';
@@ -12,16 +13,34 @@ import type { MenuItemResponseAvailability } from './menuItemResponseAvailabilit
 export interface MenuItemResponse {
   id: string;
   restaurantId: string;
+  branchId: string;
+  code: string;
   categoryId: string;
   name: string;
   /** @nullable */
   description: string | null;
+  /** LOCALE-2A: hy/ru/en name translations (nulls where empty). */
+  nameI18n: I18nTextResponse;
+  /** LOCALE-2A: hy/ru/en description translations. */
+  descriptionI18n: I18nTextResponse;
   priceAmount: number;
   /** @nullable */
   imageUrl: string | null;
+  /**
+   * MEDIA-1: object-storage key when the image was uploaded (null for URL-paste).
+   * @nullable
+   */
+  imageKey: string | null;
   preparationStation: MenuItemResponsePreparationStation;
   /** @nullable */
   prepTimeMinutes: number | null;
   status: MenuItemResponseStatus;
   availability: MenuItemResponseAvailability;
+  /** Hides the customer ingredient list. */
+  hideRecipe: boolean;
+  /**
+   * ADGCODE-UI: SRC ATG classification code for fiscalization (null = not yet classified).
+   * @nullable
+   */
+  adgCode: string | null;
 }

@@ -65,16 +65,20 @@ export class CreateOrderRequestUseCase implements UseCase<
     if (!settings.enableCustomerOrdering) {
       throw CustomerOrderingDisabled();
     }
-    const tableId = await this.tables.resolveTableIdByQr(input.restaurantId, input.qr);
-    if (!tableId) {
+    // TODO(BR-7): a QR code should carry its branch. For now the request's branch
+    // is the table's branch (resolved from the QR identifier).
+    const tableRef = await this.tables.resolveTableRefByQr(input.restaurantId, input.qr);
+    if (!tableRef) {
       throw TableNotFound();
     }
+    const { tableId, branchId } = tableRef;
 
     const items: RequestItem[] = [];
     for (const it of input.items) {
       // Validate + snapshot via the orders builder (reuses menu rules + price snapshot).
       const built = await this.builder.build({
         restaurantId: input.restaurantId,
+        branchId, // the request's branch = its table's branch (validates menu item is in-branch)
         orderId: 'request', // not an order yet; only snapshots are read off the result
         menuItemId: it.menuItemId,
         quantity: it.quantity,
@@ -105,6 +109,7 @@ export class CreateOrderRequestUseCase implements UseCase<
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
       tableId,
+      branchId,
       customerName: input.customerName ?? null,
       note: input.note ?? null,
       items,

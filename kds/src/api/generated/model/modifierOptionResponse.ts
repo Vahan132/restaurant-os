@@ -11,7 +11,9 @@ export interface ModifierOptionResponse {
   id: string;
   modifierGroupId: string;
   name: string;
+  /** May be 0 or negative (minor units). */
   priceDeltaAmount: number;
-  displayOrder: number;
+  sortOrder: number;
+  isDefault: boolean;
   status: ModifierOptionResponseStatus;
 }

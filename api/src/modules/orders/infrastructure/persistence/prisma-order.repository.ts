@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { Order as PrismaOrderRow } from '@prisma/client';
+import { Inject, Injectable } from '@nestjs/common';
+import { Order as PrismaOrderRow, Prisma } from '@prisma/client';
+import { OUTBOX_RECORDER, OutboxRecorder } from '../../../../shared/edge/outbox-recorder';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
 import { Order } from '../../domain/entities/order';
 import { NON_TERMINAL_ORDER_STATUSES, TERMINAL_ORDER_STATUSES } from '../../domain/enums';
@@ -11,7 +12,10 @@ type Db = PrismaService;
 
 @Injectable()
 export class PrismaOrderRepository implements OrderRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(OUTBOX_RECORDER) private readonly outbox: OutboxRecorder,
+  ) {}
 
   async create(order: Order): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
@@ -24,30 +28,90 @@ export class PrismaOrderRepository implements OrderRepository {
       order.assignOrderNumber(counter.lastNumber);
 
       await tx.order.create({
-        data: { id: order.id, orderNumber: order.orderNumber, ...OrderMapper.toOrderRow(order) },
+        data: {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          ...OrderMapper.toCreateOrderRow(order),
+        },
       });
       await this.insertChildren(tx as unknown as Db, order);
       await this.insertPayments(tx as unknown as Db, order);
+      // OFF-4: capture the whole order graph (items + KDS status + payments).
+      await this.outbox.record(tx, [
+        { aggregateType: 'ORDER', aggregateId: order.id, op: 'CREATE' },
+      ]);
     });
   }
 
   async save(order: Order): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      await tx.order.update({
-        where: { id: order.id },
-        data: OrderMapper.toOrderRow(order),
-      });
-      // Replace children (delete modifiers + items, then re-insert from aggregate).
-      const existing = await tx.orderItem.findMany({ where: { orderId: order.id } });
-      for (const it of existing) {
-        await tx.orderItemModifier.deleteMany({ where: { orderItemId: it.id } });
+    await this.prisma.$transaction((tx) => this.writeOrderTx(tx, order));
+  }
+
+  async withOrderLock<T>(
+    restaurantId: string,
+    branchId: string,
+    orderId: string,
+    mutate: (order: Order) => Promise<T> | T,
+  ): Promise<{ order: Order; result: T } | null> {
+    return this.prisma.$transaction(async (tx) => {
+      // Row-level lock: a concurrent caller for the SAME order blocks here until
+      // this transaction commits, then re-reads the just-written state. This is
+      // what makes the aggregate's check-then-write invariants (no overpayment,
+      // no double-close) hold under duplicate/racing requests.
+      const locked = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+        SELECT "id" FROM "orders"
+        WHERE "id" = ${orderId}
+          AND "restaurantId" = ${restaurantId}
+          AND "branchId" = ${branchId}
+        FOR UPDATE`);
+      if (locked.length === 0) {
+        return null;
       }
-      await tx.orderItem.deleteMany({ where: { orderId: order.id } });
-      await this.insertChildren(tx as unknown as Db, order);
-      // Replace payments (delete + re-insert from the aggregate).
-      await tx.payment.deleteMany({ where: { orderId: order.id } });
-      await this.insertPayments(tx as unknown as Db, order);
+      const order = await this.hydrateTx(tx, orderId);
+      if (!order) {
+        return null;
+      }
+      const result = await mutate(order);
+      await this.writeOrderTx(tx, order);
+      return { order, result };
     });
+  }
+
+  /** Update order + replace children/payments + record outbox, on the given tx. */
+  private async writeOrderTx(tx: Prisma.TransactionClient, order: Order): Promise<void> {
+    await tx.order.update({
+      where: { id: order.id },
+      data: OrderMapper.toOrderRow(order),
+    });
+    // Replace children (delete modifiers + items, then re-insert from aggregate).
+    const existing = await tx.orderItem.findMany({ where: { orderId: order.id } });
+    for (const it of existing) {
+      await tx.orderItemModifier.deleteMany({ where: { orderItemId: it.id } });
+    }
+    await tx.orderItem.deleteMany({ where: { orderId: order.id } });
+    await this.insertChildren(tx as unknown as Db, order);
+    // Replace payments (delete + re-insert from the aggregate).
+    await tx.payment.deleteMany({ where: { orderId: order.id } });
+    await this.insertPayments(tx as unknown as Db, order);
+    // OFF-4: capture the updated order graph (covers payments + KDS transitions).
+    await this.outbox.record(tx, [{ aggregateType: 'ORDER', aggregateId: order.id, op: 'UPSERT' }]);
+  }
+
+  /** Hydrate the full aggregate by id using the given (transaction) client. */
+  private async hydrateTx(tx: Prisma.TransactionClient, orderId: string): Promise<Order | null> {
+    const order = await tx.order.findUnique({ where: { id: orderId } });
+    if (!order) {
+      return null;
+    }
+    const items = await tx.orderItem.findMany({ where: { orderId } });
+    const withModifiers = await Promise.all(
+      items.map(async (it) => ({
+        ...it,
+        modifiers: await tx.orderItemModifier.findMany({ where: { orderItemId: it.id } }),
+      })),
+    );
+    const payments = await tx.payment.findMany({ where: { orderId } });
+    return OrderMapper.toDomain({ ...order, items: withModifiers, payments });
   }
 
   private async insertChildren(tx: Db, order: Order): Promise<void> {
@@ -65,26 +129,35 @@ export class PrismaOrderRepository implements OrderRepository {
     }
   }
 
-  async findById(restaurantId: string, id: string): Promise<Order | null> {
-    const order = await this.prisma.order.findFirst({ where: { id, restaurantId } });
+  async findById(restaurantId: string, branchId: string | null, id: string): Promise<Order | null> {
+    const order = await this.prisma.order.findFirst({
+      where: { id, restaurantId, ...(branchId !== null ? { branchId } : {}) },
+    });
     if (!order) {
       return null;
     }
     return this.hydrate(order);
   }
 
-  async findByItemId(restaurantId: string, itemId: string): Promise<Order | null> {
+  async findByItemId(
+    restaurantId: string,
+    branchId: string | null,
+    itemId: string,
+  ): Promise<Order | null> {
     const item = await this.prisma.orderItem.findFirst({
-      where: { id: itemId, restaurantId },
+      where: { id: itemId, restaurantId, ...(branchId !== null ? { branchId } : {}) },
     });
     if (!item) {
       return null;
     }
-    return this.findById(restaurantId, item.orderId);
+    return this.findById(restaurantId, branchId, item.orderId);
   }
 
   async list(filter: OrderListFilter): Promise<{ items: Order[]; total: number }> {
-    const where: Record<string, unknown> = { restaurantId: filter.restaurantId };
+    const where: Record<string, unknown> = {
+      restaurantId: filter.restaurantId,
+      branchId: filter.branchId,
+    };
     if (filter.status) where.status = filter.status;
     if (filter.tableId) where.tableId = filter.tableId;
     if (filter.waiterId) where.waiterId = filter.waiterId;
@@ -104,9 +177,18 @@ export class PrismaOrderRepository implements OrderRepository {
     return { items, total };
   }
 
-  async findOpenByTable(restaurantId: string, tableId: string): Promise<Order | null> {
+  async findOpenByTable(
+    restaurantId: string,
+    branchId: string | null,
+    tableId: string,
+  ): Promise<Order | null> {
     const order = await this.prisma.order.findFirst({
-      where: { restaurantId, tableId, status: { in: [...NON_TERMINAL_ORDER_STATUSES] } },
+      where: {
+        restaurantId,
+        ...(branchId !== null ? { branchId } : {}),
+        tableId,
+        status: { in: [...NON_TERMINAL_ORDER_STATUSES] },
+      },
     });
     if (!order) {
       return null;
@@ -116,12 +198,14 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async existsOtherOpenOnTable(
     restaurantId: string,
+    branchId: string | null,
     tableId: string,
     excludeOrderId: string,
   ): Promise<boolean> {
     const count = await this.prisma.order.count({
       where: {
         restaurantId,
+        ...(branchId !== null ? { branchId } : {}),
         tableId,
         id: { not: excludeOrderId },
         status: { in: [...NON_TERMINAL_ORDER_STATUSES] },

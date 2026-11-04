@@ -6,26 +6,38 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
+  BranchPaymentMethodsResponse,
   CancellationsResponse,
   DashboardResponse,
   DiscountsResponse,
+  ExportTableDto,
   ItemRowResponse,
   PaymentMethodResponse,
+  PosReportsControllerGetPaymentMethodsParams,
+  ProfitTotalsResponse,
+  ReportBranchResponse,
+  ReportExportControllerExportByItemParams,
+  ReportExportControllerExportProfitParams,
+  ReportExportControllerGetProfitParams,
   ReportsControllerGetByItemParams,
   ReportsControllerGetByPaymentMethodParams,
   ReportsControllerGetByTableParams,
@@ -44,6 +56,98 @@ import { customInstance } from '../../mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+
+
+/**
+ * @summary Branches the caller may filter reports by (owner: every branch; others: branches where they hold reports:view).
+ */
+export const reportsControllerGetBranches = (
+
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<ReportBranchResponse[]>(
+      {url: `/reports/branches`, method: 'GET', signal
+    },
+      options);
+    }
+
+
+
+
+export const getReportsControllerGetBranchesQueryKey = () => {
+    return [
+    `/reports/branches`
+    ] as const;
+    }
+
+
+export const getReportsControllerGetBranchesQueryOptions = <TData = Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError = void>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReportsControllerGetBranchesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportsControllerGetBranches>>> = ({ signal }) => reportsControllerGetBranches(requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReportsControllerGetBranchesQueryResult = NonNullable<Awaited<ReturnType<typeof reportsControllerGetBranches>>>
+export type ReportsControllerGetBranchesQueryError = void
+
+
+export function useReportsControllerGetBranches<TData = Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError = void>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reportsControllerGetBranches>>,
+          TError,
+          Awaited<ReturnType<typeof reportsControllerGetBranches>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReportsControllerGetBranches<TData = Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reportsControllerGetBranches>>,
+          TError,
+          Awaited<ReturnType<typeof reportsControllerGetBranches>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReportsControllerGetBranches<TData = Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Branches the caller may filter reports by (owner: every branch; others: branches where they hold reports:view).
+ */
+
+export function useReportsControllerGetBranches<TData = Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError = void>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportsControllerGetBranches>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReportsControllerGetBranchesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
 
 
 
@@ -872,6 +976,441 @@ export function useReportsControllerGetCancellations<TData = Awaited<ReturnType<
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getReportsControllerGetCancellationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * @summary Payment-method totals for the active branch's business day (cashier shift report).
+ */
+export const posReportsControllerGetPaymentMethods = (
+    params?: PosReportsControllerGetPaymentMethodsParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<BranchPaymentMethodsResponse>(
+      {url: `/reports/pos/payment-methods`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getPosReportsControllerGetPaymentMethodsQueryKey = (params?: PosReportsControllerGetPaymentMethodsParams,) => {
+    return [
+    `/reports/pos/payment-methods`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getPosReportsControllerGetPaymentMethodsQueryOptions = <TData = Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError = void>(params?: PosReportsControllerGetPaymentMethodsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPosReportsControllerGetPaymentMethodsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>> = ({ signal }) => posReportsControllerGetPaymentMethods(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PosReportsControllerGetPaymentMethodsQueryResult = NonNullable<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>>
+export type PosReportsControllerGetPaymentMethodsQueryError = void
+
+
+export function usePosReportsControllerGetPaymentMethods<TData = Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError = void>(
+ params: undefined |  PosReportsControllerGetPaymentMethodsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>,
+          TError,
+          Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePosReportsControllerGetPaymentMethods<TData = Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError = void>(
+ params?: PosReportsControllerGetPaymentMethodsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>,
+          TError,
+          Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePosReportsControllerGetPaymentMethods<TData = Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError = void>(
+ params?: PosReportsControllerGetPaymentMethodsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Payment-method totals for the active branch's business day (cashier shift report).
+ */
+
+export function usePosReportsControllerGetPaymentMethods<TData = Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError = void>(
+ params?: PosReportsControllerGetPaymentMethodsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof posReportsControllerGetPaymentMethods>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPosReportsControllerGetPaymentMethodsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * @summary Render an on-screen report table (already visible to the caller) into the standard Excel layout. Money cells are MAJOR units.
+ */
+export const reportExportControllerExportTable = (
+    exportTableDto: ExportTableDto,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/reports/export/xlsx`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: exportTableDto, signal
+    },
+      options);
+    }
+
+
+
+export const getReportExportControllerExportTableMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportExportControllerExportTable>>, TError,{data: ExportTableDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportExportControllerExportTable>>, TError,{data: ExportTableDto}, TContext> => {
+
+const mutationKey = ['reportExportControllerExportTable'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportExportControllerExportTable>>, {data: ExportTableDto}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reportExportControllerExportTable(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportExportControllerExportTableMutationResult = NonNullable<Awaited<ReturnType<typeof reportExportControllerExportTable>>>
+    export type ReportExportControllerExportTableMutationBody = ExportTableDto
+    export type ReportExportControllerExportTableMutationError = unknown
+
+    /**
+ * @summary Render an on-screen report table (already visible to the caller) into the standard Excel layout. Money cells are MAJOR units.
+ */
+export const useReportExportControllerExportTable = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportExportControllerExportTable>>, TError,{data: ExportTableDto}, TContext>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof reportExportControllerExportTable>>,
+        TError,
+        {data: ExportTableDto},
+        TContext
+      > => {
+      return useMutation(getReportExportControllerExportTableMutationOptions(options), queryClient);
+    }
+    /**
+ * @summary Period P&L: revenue, cost price of sold items, write-offs, expenses, net profit.
+ */
+export const reportExportControllerGetProfit = (
+    params: ReportExportControllerGetProfitParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<ProfitTotalsResponse>(
+      {url: `/reports/profit`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getReportExportControllerGetProfitQueryKey = (params?: ReportExportControllerGetProfitParams,) => {
+    return [
+    `/reports/profit`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getReportExportControllerGetProfitQueryOptions = <TData = Awaited<ReturnType<typeof reportExportControllerGetProfit>>, TError = void>(params: ReportExportControllerGetProfitParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerGetProfit>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReportExportControllerGetProfitQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportExportControllerGetProfit>>> = ({ signal }) => reportExportControllerGetProfit(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerGetProfit>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReportExportControllerGetProfitQueryResult = NonNullable<Awaited<ReturnType<typeof reportExportControllerGetProfit>>>
+export type ReportExportControllerGetProfitQueryError = void
+
+
+export function useReportExportControllerGetProfit<TData = Awaited<ReturnType<typeof reportExportControllerGetProfit>>, TError = void>(
+ params: ReportExportControllerGetProfitParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerGetProfit>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reportExportControllerGetProfit>>,
+          TError,
+          Awaited<ReturnType<typeof reportExportControllerGetProfit>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReportExportControllerGetProfit<TData = Awaited<ReturnType<typeof reportExportControllerGetProfit>>, TError = void>(
+ params: ReportExportControllerGetProfitParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerGetProfit>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reportExportControllerGetProfit>>,
+          TError,
+          Awaited<ReturnType<typeof reportExportControllerGetProfit>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReportExportControllerGetProfit<TData = Awaited<ReturnType<typeof reportExportControllerGetProfit>>, TError = void>(
+ params: ReportExportControllerGetProfitParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerGetProfit>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Period P&L: revenue, cost price of sold items, write-offs, expenses, net profit.
+ */
+
+export function useReportExportControllerGetProfit<TData = Awaited<ReturnType<typeof reportExportControllerGetProfit>>, TError = void>(
+ params: ReportExportControllerGetProfitParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerGetProfit>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReportExportControllerGetProfitQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * @summary Full Excel for a period: profit summary, sales by product with cost price / gross profit / markup, write-offs and expenses.
+ */
+export const reportExportControllerExportProfit = (
+    params: ReportExportControllerExportProfitParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/reports/profit/export`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getReportExportControllerExportProfitQueryKey = (params?: ReportExportControllerExportProfitParams,) => {
+    return [
+    `/reports/profit/export`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getReportExportControllerExportProfitQueryOptions = <TData = Awaited<ReturnType<typeof reportExportControllerExportProfit>>, TError = void>(params: ReportExportControllerExportProfitParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerExportProfit>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReportExportControllerExportProfitQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportExportControllerExportProfit>>> = ({ signal }) => reportExportControllerExportProfit(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerExportProfit>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReportExportControllerExportProfitQueryResult = NonNullable<Awaited<ReturnType<typeof reportExportControllerExportProfit>>>
+export type ReportExportControllerExportProfitQueryError = void
+
+
+export function useReportExportControllerExportProfit<TData = Awaited<ReturnType<typeof reportExportControllerExportProfit>>, TError = void>(
+ params: ReportExportControllerExportProfitParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerExportProfit>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reportExportControllerExportProfit>>,
+          TError,
+          Awaited<ReturnType<typeof reportExportControllerExportProfit>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReportExportControllerExportProfit<TData = Awaited<ReturnType<typeof reportExportControllerExportProfit>>, TError = void>(
+ params: ReportExportControllerExportProfitParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerExportProfit>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reportExportControllerExportProfit>>,
+          TError,
+          Awaited<ReturnType<typeof reportExportControllerExportProfit>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReportExportControllerExportProfit<TData = Awaited<ReturnType<typeof reportExportControllerExportProfit>>, TError = void>(
+ params: ReportExportControllerExportProfitParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerExportProfit>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Full Excel for a period: profit summary, sales by product with cost price / gross profit / markup, write-offs and expenses.
+ */
+
+export function useReportExportControllerExportProfit<TData = Awaited<ReturnType<typeof reportExportControllerExportProfit>>, TError = void>(
+ params: ReportExportControllerExportProfitParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerExportProfit>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReportExportControllerExportProfitQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+/**
+ * @summary Sales by product (with cost price) as Excel.
+ */
+export const reportExportControllerExportByItem = (
+    params: ReportExportControllerExportByItemParams,
+ options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
+) => {
+
+
+      return customInstance<void>(
+      {url: `/reports/sales/by-item/export`, method: 'GET',
+        params, signal
+    },
+      options);
+    }
+
+
+
+
+export const getReportExportControllerExportByItemQueryKey = (params?: ReportExportControllerExportByItemParams,) => {
+    return [
+    `/reports/sales/by-item/export`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getReportExportControllerExportByItemQueryOptions = <TData = Awaited<ReturnType<typeof reportExportControllerExportByItem>>, TError = void>(params: ReportExportControllerExportByItemParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerExportByItem>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getReportExportControllerExportByItemQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof reportExportControllerExportByItem>>> = ({ signal }) => reportExportControllerExportByItem(params, requestOptions, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerExportByItem>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ReportExportControllerExportByItemQueryResult = NonNullable<Awaited<ReturnType<typeof reportExportControllerExportByItem>>>
+export type ReportExportControllerExportByItemQueryError = void
+
+
+export function useReportExportControllerExportByItem<TData = Awaited<ReturnType<typeof reportExportControllerExportByItem>>, TError = void>(
+ params: ReportExportControllerExportByItemParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerExportByItem>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reportExportControllerExportByItem>>,
+          TError,
+          Awaited<ReturnType<typeof reportExportControllerExportByItem>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReportExportControllerExportByItem<TData = Awaited<ReturnType<typeof reportExportControllerExportByItem>>, TError = void>(
+ params: ReportExportControllerExportByItemParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerExportByItem>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof reportExportControllerExportByItem>>,
+          TError,
+          Awaited<ReturnType<typeof reportExportControllerExportByItem>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useReportExportControllerExportByItem<TData = Awaited<ReturnType<typeof reportExportControllerExportByItem>>, TError = void>(
+ params: ReportExportControllerExportByItemParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerExportByItem>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Sales by product (with cost price) as Excel.
+ */
+
+export function useReportExportControllerExportByItem<TData = Awaited<ReturnType<typeof reportExportControllerExportByItem>>, TError = void>(
+ params: ReportExportControllerExportByItemParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof reportExportControllerExportByItem>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getReportExportControllerExportByItemQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

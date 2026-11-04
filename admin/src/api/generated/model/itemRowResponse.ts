@@ -9,6 +9,16 @@
 export interface ItemRowResponse {
   menuItemId: string;
   name: string;
+  /** @nullable */
+  categoryId: string | null;
+  /** @nullable */
+  categoryName: string | null;
   quantity: number;
   revenueAmount: number;
+  /** Cost price of the sold quantity (minor units). */
+  costAmount: number;
+  /** revenue - cost (minor units). */
+  grossProfitAmount: number;
+  /** Part of the cost is a recipe estimate (no stock movement). */
+  costEstimated: boolean;
 }

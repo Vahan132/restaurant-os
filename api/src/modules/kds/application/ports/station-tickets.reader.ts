@@ -7,6 +7,9 @@ export interface StationTicketModifierData {
 
 export interface StationTicketItemData {
   orderItemId: string;
+  /** CATALOG-4 rollup inputs (used by the use-case, not surfaced verbatim). */
+  menuItemId: string;
+  selectedModifierOptionIds: string[];
   name: string;
   quantity: number;
   modifiers: StationTicketModifierData[];
@@ -27,8 +30,13 @@ export interface StationTicketData {
 
 /**
  * Read model for KDS station tickets — denormalized active items routed to a
- * station (status SENT/PREPARING/READY). Impl in infrastructure (tenant-scoped).
+ * station (status SENT/PREPARING/READY). Impl in infrastructure
+ * (restaurant- and branch-scoped).
  */
 export interface StationTicketsReader {
-  getActiveTickets(restaurantId: string, station: string): Promise<StationTicketData[]>;
+  getActiveTickets(
+    restaurantId: string,
+    branchId: string,
+    station: string,
+  ): Promise<StationTicketData[]>;
 }

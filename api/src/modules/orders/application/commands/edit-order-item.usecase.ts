@@ -9,6 +9,7 @@ import { OrderItemBuilder } from '../services/order-item-builder';
 
 export interface EditOrderItemInput {
   restaurantId: string | null;
+  branchId: string;
   orderId: string;
   itemId: string;
   quantity?: number;
@@ -29,7 +30,7 @@ export class EditOrderItemUseCase implements UseCase<EditOrderItemInput, Order> 
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findById(input.restaurantId, input.orderId);
+    const order = await this.orders.findById(input.restaurantId, input.branchId, input.orderId);
     if (!order) {
       throw OrderNotFound();
     }

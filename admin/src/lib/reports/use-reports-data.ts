@@ -24,32 +24,33 @@ import type {
 } from '@/api/generated/model';
 import { normalizeList } from '@/lib/normalize-list';
 import type { GroupBy } from '@/lib/reports/date-range';
+import { useReportBranchId } from '@/lib/reports/report-branch';
 
 const enabledFor = (from: string, to: string) => Boolean(from && to);
 
 export function useSummary(from: string, to: string) {
+  const branchId = useReportBranchId();
   const q = useReportsControllerGetSummary(
-    { from, to },
+    { from, to, branchId },
     { query: { enabled: enabledFor(from, to) } },
   );
   return { ...q, summary: q.data as SalesSummaryResponse | undefined };
 }
 
 export function useTimeSeries(from: string, to: string, groupBy: GroupBy) {
+  const branchId = useReportBranchId();
   const q = useReportsControllerGetTimeSeries(
-    { from, to, groupBy },
+    { from, to, groupBy, branchId },
     { query: { enabled: enabledFor(from, to) } },
   );
-  const buckets = useMemo(
-    () => normalizeList<TimeSeriesBucketResponse>(q.data).items,
-    [q.data],
-  );
+  const buckets = useMemo(() => normalizeList<TimeSeriesBucketResponse>(q.data).items, [q.data]);
   return { ...q, buckets };
 }
 
 export function useByPaymentMethod(from: string, to: string) {
+  const branchId = useReportBranchId();
   const q = useReportsControllerGetByPaymentMethod(
-    { from, to },
+    { from, to, branchId },
     { query: { enabled: enabledFor(from, to) } },
   );
   const rows = useMemo(() => normalizeList<PaymentMethodResponse>(q.data).items, [q.data]);
@@ -57,8 +58,9 @@ export function useByPaymentMethod(from: string, to: string) {
 }
 
 export function useByWaiter(from: string, to: string) {
+  const branchId = useReportBranchId();
   const q = useReportsControllerGetByWaiter(
-    { from, to },
+    { from, to, branchId },
     { query: { enabled: enabledFor(from, to) } },
   );
   const rows = useMemo(() => normalizeList<WaiterRowResponse>(q.data).items, [q.data]);
@@ -66,8 +68,9 @@ export function useByWaiter(from: string, to: string) {
 }
 
 export function useByTable(from: string, to: string) {
+  const branchId = useReportBranchId();
   const q = useReportsControllerGetByTable(
-    { from, to },
+    { from, to, branchId },
     { query: { enabled: enabledFor(from, to) } },
   );
   const rows = useMemo(() => normalizeList<TableRowResponse>(q.data).items, [q.data]);
@@ -75,8 +78,9 @@ export function useByTable(from: string, to: string) {
 }
 
 export function useByItem(from: string, to: string) {
+  const branchId = useReportBranchId();
   const q = useReportsControllerGetByItem(
-    { from, to },
+    { from, to, branchId },
     { query: { enabled: enabledFor(from, to) } },
   );
   const rows = useMemo(() => normalizeList<ItemRowResponse>(q.data).items, [q.data]);
@@ -84,16 +88,18 @@ export function useByItem(from: string, to: string) {
 }
 
 export function useDiscounts(from: string, to: string) {
+  const branchId = useReportBranchId();
   const q = useReportsControllerGetDiscounts(
-    { from, to },
+    { from, to, branchId },
     { query: { enabled: enabledFor(from, to) } },
   );
   return { ...q, discounts: q.data as DiscountsResponse | undefined };
 }
 
 export function useCancellations(from: string, to: string) {
+  const branchId = useReportBranchId();
   const q = useReportsControllerGetCancellations(
-    { from, to },
+    { from, to, branchId },
     { query: { enabled: enabledFor(from, to) } },
   );
   return { ...q, cancellations: q.data as CancellationsResponse | undefined };

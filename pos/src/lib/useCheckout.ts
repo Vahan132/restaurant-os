@@ -18,10 +18,9 @@ import type {
 } from '@/api/generated/model';
 import type { ApiError } from '@/api/mutator';
 import { toast } from '@/lib/toast';
-import { useAuthMe } from '@/lib/useAuthMe';
 import { useMoney } from '@/lib/useMoney';
 import { useFloorDataInvalidator } from '@/lib/useActiveOrders';
-import { PERMISSIONS } from '@/lib/permissions';
+import { PERMISSIONS, useEffectivePermissions } from '@/lib/permissions';
 
 /**
  * Checkout mutations for one order: record/void payments, even split (calc only),
@@ -32,7 +31,7 @@ import { PERMISSIONS } from '@/lib/permissions';
 export function useCheckout(orderId: string) {
   const t = useTranslations('pay');
   const queryClient = useQueryClient();
-  const { data: me } = useAuthMe();
+  const permissions = useEffectivePermissions();
   const { format } = useMoney();
   const invalidateFloor = useFloorDataInvalidator();
 
@@ -45,7 +44,7 @@ export function useCheckout(orderId: string) {
   const [splitResult, setSplitResult] = useState<SplitEvenResponse | null>(null);
   const [justClosed, setJustClosed] = useState(false);
 
-  const can = useCallback((perm: string) => (me?.permissions ?? []).includes(perm), [me]);
+  const can = useCallback((perm: string) => permissions.includes(perm), [permissions]);
 
   const writeOrder = useCallback(
     (order: OrderResponse) => queryClient.setQueryData(getOrdersControllerGetQueryKey(orderId), order),
@@ -83,7 +82,7 @@ export function useCheckout(orderId: string) {
 
   const voidPayment = useCallback(
     async (paymentId: string) => {
-      if (!can(PERMISSIONS.PAYMENT_PROCESS)) {
+      if (!can(PERMISSIONS.PAYMENT_VOID)) {
         toast.error(t('notAllowed'), t('noPermissionPay'));
         return;
       }
@@ -170,6 +169,7 @@ export function useCheckout(orderId: string) {
     justClosed,
     // gating
     canPay: can(PERMISSIONS.PAYMENT_PROCESS),
+    canVoid: can(PERMISSIONS.PAYMENT_VOID),
     canSplitItems: can(PERMISSIONS.ORDER_EDIT),
     // busy
     paying: addPaymentM.isPending,

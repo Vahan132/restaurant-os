@@ -7,6 +7,7 @@ export class TableStatusChangedEvent extends BaseDomainEvent {
   constructor(
     public readonly tableId: string,
     public readonly restaurantId: string,
+    public readonly branchId: string,
     public readonly fromStatus: string,
     public readonly toStatus: string,
     public readonly source: StatusChangeSource,

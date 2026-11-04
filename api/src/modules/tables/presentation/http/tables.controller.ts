@@ -7,6 +7,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { ActiveBranchId } from '../../../../shared/auth/active-branch.decorator';
+import { BranchScoped } from '../../../../shared/auth/branch-scoped.decorator';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
@@ -32,6 +34,7 @@ const TABLE_STATUS_UPDATE = PERMISSIONS.TABLE_STATUS_UPDATE;
 
 @ApiTags('tables')
 @ApiBearerAuth('access-token')
+@BranchScoped()
 @Controller('tables')
 export class TablesController {
   constructor(
@@ -48,8 +51,11 @@ export class TablesController {
   @Get('floor-plan')
   @ApiOperation({ summary: 'Get the floor plan (floors -> tables with status).' })
   @ApiOkResponse({ description: 'Active floors with their tables.' })
-  floorPlan(@CurrentTenant() tenant: TenantContext): Promise<FloorPlanFloor[]> {
-    return this.getFloorPlan.execute({ restaurantId: tenant.restaurantId });
+  floorPlan(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+  ): Promise<FloorPlanFloor[]> {
+    return this.getFloorPlan.execute({ restaurantId: tenant.restaurantId, branchId });
   }
 
   @Get()
@@ -57,10 +63,12 @@ export class TablesController {
   @ApiOkResponse({ type: [TableResponse] })
   async list(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Query() query: ListTablesQuery,
   ): Promise<TableResponse[]> {
     const tables = await this.listTables.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       floorId: query.floorId,
       status: query.status,
     });
@@ -72,9 +80,14 @@ export class TablesController {
   @ApiOkResponse({ type: TableResponse })
   async get(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<TableResponse> {
-    const table = await this.getTable.execute({ restaurantId: tenant.restaurantId, tableId: id });
+    const table = await this.getTable.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      tableId: id,
+    });
     return TableResponse.from(table);
   }
 
@@ -85,10 +98,12 @@ export class TablesController {
   @ApiCreatedResponse({ type: TableResponse })
   async create(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Body() dto: CreateTableDto,
   ): Promise<TableResponse> {
     const table = await this.createTable.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       floorId: dto.floorId,
       name: dto.name,
       seatCapacity: dto.seatCapacity,
@@ -104,11 +119,13 @@ export class TablesController {
   @ApiOkResponse({ type: TableResponse })
   async update(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: UpdateTableDto,
   ): Promise<TableResponse> {
     const table = await this.updateTable.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       tableId: id,
       name: dto.name,
       seatCapacity: dto.seatCapacity,
@@ -126,9 +143,10 @@ export class TablesController {
   @ApiOkResponse({ schema: { example: { success: true } } })
   async remove(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<{ success: true }> {
-    await this.deleteTable.execute({ restaurantId: tenant.restaurantId, tableId: id });
+    await this.deleteTable.execute({ restaurantId: tenant.restaurantId, branchId, tableId: id });
     return { success: true };
   }
 
@@ -139,11 +157,13 @@ export class TablesController {
   @ApiOkResponse({ type: TableResponse })
   async changeStatus(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: ChangeTableStatusDto,
   ): Promise<TableResponse> {
     const table = await this.changeStatusManual.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       tableId: id,
       status: dto.status,
     });

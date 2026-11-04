@@ -7,17 +7,18 @@ import {
   RESTAURANT_TABLE_REPOSITORY,
   RestaurantTableRepository,
 } from '../../domain/repositories/restaurant-table.repository';
-import { FloorNotFound, NoRestaurantInScope } from '../application.errors';
+import { CrossBranchReference, FloorNotFound, NoRestaurantInScope } from '../application.errors';
 
 export interface CreateTableInput {
   restaurantId: string | null;
+  branchId: string;
   floorId: string;
   name: string;
   seatCapacity: number;
   qrIdentifier?: string | null;
 }
 
-/** Create a table (verifies the floor belongs to the same restaurant). */
+/** Create a table (verifies the floor belongs to the same restaurant + active branch). */
 @Injectable()
 export class CreateTableUseCase implements UseCase<CreateTableInput, RestaurantTable> {
   constructor(
@@ -30,13 +31,18 @@ export class CreateTableUseCase implements UseCase<CreateTableInput, RestaurantT
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const floor = await this.floors.findById(input.restaurantId, input.floorId);
+    const floor = await this.floors.findById(input.restaurantId, input.branchId, input.floorId);
     if (!floor) {
       throw FloorNotFound();
+    }
+    // A table's floor must live in the same branch (intra-branch integrity).
+    if (floor.branchId !== input.branchId) {
+      throw CrossBranchReference('Floor belongs to a different branch.');
     }
     const table = RestaurantTable.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       floorId: input.floorId,
       name: input.name,
       seatCapacity: input.seatCapacity,

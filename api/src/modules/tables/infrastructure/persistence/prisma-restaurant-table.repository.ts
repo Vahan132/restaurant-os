@@ -15,6 +15,7 @@ export class PrismaRestaurantTableRepository implements RestaurantTableRepositor
     const records = await this.prisma.restaurantTable.findMany({
       where: {
         restaurantId: filter.restaurantId,
+        branchId: filter.branchId,
         deletedAt: null,
         ...(filter.floorId ? { floorId: filter.floorId } : {}),
         ...(filter.status ? { status: filter.status } : {}),
@@ -24,7 +25,18 @@ export class PrismaRestaurantTableRepository implements RestaurantTableRepositor
     return records.map(TableMapper.toDomain);
   }
 
-  async findById(restaurantId: string, id: string): Promise<RestaurantTable | null> {
+  async findById(
+    restaurantId: string,
+    branchId: string,
+    id: string,
+  ): Promise<RestaurantTable | null> {
+    const r = await this.prisma.restaurantTable.findFirst({
+      where: { id, restaurantId, branchId, deletedAt: null },
+    });
+    return r ? TableMapper.toDomain(r) : null;
+  }
+
+  async findByIdAnyBranch(restaurantId: string, id: string): Promise<RestaurantTable | null> {
     const r = await this.prisma.restaurantTable.findFirst({
       where: { id, restaurantId, deletedAt: null },
     });
@@ -37,7 +49,7 @@ export class PrismaRestaurantTableRepository implements RestaurantTableRepositor
 
   async update(table: RestaurantTable): Promise<void> {
     await this.prisma.restaurantTable.updateMany({
-      where: { id: table.id, restaurantId: table.restaurantId },
+      where: { id: table.id, restaurantId: table.restaurantId, branchId: table.branchId },
       data: TableMapper.toUpdate(table),
     });
   }

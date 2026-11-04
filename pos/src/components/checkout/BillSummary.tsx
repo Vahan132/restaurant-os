@@ -17,10 +17,12 @@ interface BillSummaryProps {
   canPay: boolean;
   voiding?: boolean;
   onVoid: (paymentId: string) => void;
+  /** Holds payment:void (IIKO-PERM-1). */
+  canVoid: boolean;
 }
 
 /** Left pane: itemized bill, totals (no tax), paid / remaining / status, payments. */
-export function BillSummary({ order, canPay, voiding, onVoid }: BillSummaryProps) {
+export function BillSummary({ order, canVoid, voiding, onVoid }: BillSummaryProps) {
   const t = useTranslations('pay');
   const tBuilder = useTranslations('builder');
   const tMethod = useTranslations('pay.method');
@@ -98,7 +100,7 @@ export function BillSummary({ order, canPay, voiding, onVoid }: BillSummaryProps
                 <span className="text-base font-semibold text-gray-900">{tMethod(p.method)}</span>
                 <span className="ml-2 text-base text-gray-600">{format(p.amount)}</span>
               </div>
-              {canPay ? (
+              {canVoid ? (
                 <button
                   type="button"
                   onClick={() => onVoid(p.id)}

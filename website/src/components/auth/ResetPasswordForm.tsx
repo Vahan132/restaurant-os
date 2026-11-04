@@ -8,11 +8,14 @@ import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { AuthShell } from "./AuthShell";
-import { Field, Input } from "@/components/ui/Field";
+import { Field } from "@/components/ui/Field";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
 import { PasswordStrength } from "./PasswordStrength";
 import { useResetPassword } from "@/api/hooks";
-import { toast, toastError } from "@/lib/toast";
+import { toast } from "@/lib/toast";
+import { useApiError } from "@/hooks/useApiError";
+import { clearableRegister } from "@/lib/form";
 
 export function ResetPasswordForm() {
   const t = useTranslations("auth.reset");
@@ -21,6 +24,7 @@ export function ResetPasswordForm() {
   const params = useSearchParams();
   const token = params.get("token") ?? "";
   const reset = useResetPassword();
+  const { toastError } = useApiError();
 
   const schema = useMemo(
     () =>
@@ -41,8 +45,10 @@ export function ResetPasswordForm() {
     register,
     handleSubmit,
     watch,
+    clearErrors,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  } = useForm<Values>({ resolver: zodResolver(schema), reValidateMode: "onSubmit" });
+  const field = clearableRegister(register, errors, clearErrors);
 
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -86,24 +92,22 @@ export function ResetPasswordForm() {
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
         <Field label={t("newPassword")} htmlFor="newPassword" error={errors.newPassword?.message} required>
-          <Input
+          <PasswordInput
             id="newPassword"
-            type="password"
             autoComplete="new-password"
             invalid={!!errors.newPassword}
-            {...register("newPassword")}
+            {...field("newPassword")}
           />
           <div className="mt-2">
             <PasswordStrength value={watch("newPassword") ?? ""} />
           </div>
         </Field>
         <Field label={t("confirm")} htmlFor="confirm" error={errors.confirm?.message} required>
-          <Input
+          <PasswordInput
             id="confirm"
-            type="password"
             autoComplete="new-password"
             invalid={!!errors.confirm}
-            {...register("confirm")}
+            {...field("confirm")}
           />
         </Field>
         <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>

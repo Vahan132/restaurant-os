@@ -1,5 +1,25 @@
 /** Reservations domain enums (string values mirror the Prisma enum). Pure domain. */
 
+/** How a reservation entered the system. Mirrors the Prisma ReservationSource enum. */
+export enum ReservationSource {
+  STAFF = 'STAFF',
+  PUBLIC = 'PUBLIC',
+  PHONE = 'PHONE',
+}
+
+/** Missed-call lifecycle. Mirrors the Prisma MissedCallStatus enum. */
+export enum MissedCallStatus {
+  NEW = 'NEW',
+  HANDLED = 'HANDLED',
+  DISMISSED = 'DISMISSED',
+}
+
+/** Registered call-device lifecycle. Mirrors the Prisma CallDeviceStatus enum. */
+export enum CallDeviceStatus {
+  ACTIVE = 'ACTIVE',
+  REVOKED = 'REVOKED',
+}
+
 export enum ReservationStatus {
   PENDING = 'PENDING',
   CONFIRMED = 'CONFIRMED',

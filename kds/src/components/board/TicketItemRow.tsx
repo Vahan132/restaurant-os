@@ -23,6 +23,9 @@ function TicketItemRowBase({ item, pending, onStart, onReady }: Props) {
 
   return (
     <li
+      data-testid="kds-item"
+      data-order-item-id={item.orderItemId}
+      data-status={item.status}
       className={[
         'flex items-start justify-between gap-3 rounded-lg px-3 py-2',
         ready ? 'bg-kiosk-bg/40 opacity-60' : 'bg-kiosk-bg',
@@ -47,12 +50,12 @@ function TicketItemRowBase({ item, pending, onStart, onReady }: Props) {
       <div className="flex shrink-0 items-center gap-2">
         <StatusPill status={item.status} delayed={delayed} />
         {item.status === ItemStatus.SENT && (
-          <ActionButton disabled={pending} tone="start" onClick={() => onStart(item.orderItemId)}>
+          <ActionButton testId="kds-item-start" disabled={pending} tone="start" onClick={() => onStart(item.orderItemId)}>
             {t('start')}
           </ActionButton>
         )}
         {item.status === ItemStatus.PREPARING && (
-          <ActionButton disabled={pending} tone="ready" onClick={() => onReady(item.orderItemId)}>
+          <ActionButton testId="kds-item-ready" disabled={pending} tone="ready" onClick={() => onReady(item.orderItemId)}>
             {t('ready')}
           </ActionButton>
         )}
@@ -81,16 +84,19 @@ function ActionButton({
   onClick,
   disabled,
   tone,
+  testId,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   disabled: boolean;
   tone: 'start' | 'ready';
+  testId?: string;
 }) {
   const bg = tone === 'start' ? 'bg-status-sent' : 'bg-status-ready text-black';
   return (
     <button
       type="button"
+      data-testid={testId}
       disabled={disabled}
       onClick={onClick}
       className={`rounded-lg px-4 py-2 text-kiosk font-bold text-white disabled:opacity-50 ${bg}`}

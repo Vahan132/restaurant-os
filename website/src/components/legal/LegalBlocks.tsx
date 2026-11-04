@@ -13,7 +13,7 @@ function Block({ block, idx }: { block: LegalBlock; idx: number }) {
       );
     case "sub":
       return (
-        <h3 className="mt-8 scroll-mt-28 font-sans text-lg font-semibold text-ink">
+        <h3 className="mt-8 font-sans text-lg font-semibold text-ink max-[539px]:text-base max-[429px]:text-[1rem]">
           {renderInline(block.text, `s${idx}`)}
         </h3>
       );
@@ -57,9 +57,9 @@ export function LegalSectionView({ section }: { section: LegalSection }) {
     <section
       id={section.id}
       aria-labelledby={`${section.id}-h`}
-      className="mt-12 scroll-mt-28 border-t border-line pt-10 first:mt-0 first:border-t-0 first:pt-0"
+      className="mt-12 border-t border-line pt-10 first:mt-0 first:border-t-0 first:pt-0"
     >
-      <h2 id={`${section.id}-h`} className="font-display text-2xl sm:text-3xl">
+      <h2 id={`${section.id}-h`} className="font-display text-2xl max-[539px]:text-xl max-[429px]:text-[1.25rem] sm:text-3xl">
         {renderInline(section.title, `h-${section.id}`)}
       </h2>
       {section.blocks.map((block, i) => (

@@ -18,7 +18,7 @@ export function AuthShell({
       <div className="w-full max-w-md">
         <div className="wash-warm relative overflow-hidden rounded-2xl border border-line bg-paper p-8 shadow-md sm:p-10">
           <div className="flex flex-col gap-2 text-center">
-            <h1 className="font-display text-3xl">{title}</h1>
+            <h1 className="font-display text-2xl min-[425px]:text-3xl">{title}</h1>
             {subtitle ? <p className="text-pretty text-muted">{subtitle}</p> : null}
           </div>
           <div className="mt-8">{children}</div>

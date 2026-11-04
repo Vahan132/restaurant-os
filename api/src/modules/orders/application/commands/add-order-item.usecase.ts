@@ -9,6 +9,7 @@ import { OrderItemBuilder } from '../services/order-item-builder';
 
 export interface AddOrderItemInput {
   restaurantId: string | null;
+  branchId: string;
   orderId: string;
   menuItemId: string;
   quantity: number;
@@ -30,13 +31,14 @@ export class AddOrderItemUseCase implements UseCase<AddOrderItemInput, Order> {
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findById(input.restaurantId, input.orderId);
+    const order = await this.orders.findById(input.restaurantId, input.branchId, input.orderId);
     if (!order) {
       throw OrderNotFound();
     }
     const settings = await this.settings.get(input.restaurantId);
     const item = await this.builder.build({
       restaurantId: input.restaurantId,
+      branchId: order.branchId, // line inherits the order's branch
       orderId: order.id,
       menuItemId: input.menuItemId,
       quantity: input.quantity,

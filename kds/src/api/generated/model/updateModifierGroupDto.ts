@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { UpdateModifierGroupDtoSelectionType } from './updateModifierGroupDtoSelectionType';
+import type { UpdateModifierGroupDtoStatus } from './updateModifierGroupDtoStatus';
 
 export interface UpdateModifierGroupDto {
   name?: string;
@@ -15,6 +16,6 @@ export interface UpdateModifierGroupDto {
   minSelect?: number;
   /** @minimum 1 */
   maxSelect?: number;
-  /** @minimum 0 */
-  displayOrder?: number;
+  /** Archive a group with INACTIVE. */
+  status?: UpdateModifierGroupDtoStatus;
 }

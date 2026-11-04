@@ -13,11 +13,12 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { MenuStatus } from '../../domain/enums';
+import { NameDescriptionI18nDto } from './i18n.dto';
 
 /** Coerce a query-string boolean ("true"/"false") correctly. */
 const toBool = () => Transform(({ value }) => value === true || value === 'true');
 
-export class CreateCategoryDto {
+export class CreateCategoryDto extends NameDescriptionI18nDto {
   @ApiProperty({ example: 'Burgers' })
   @IsString()
   @MinLength(1)
@@ -35,7 +36,7 @@ export class CreateCategoryDto {
   displayOrder?: number;
 }
 
-export class UpdateCategoryDto {
+export class UpdateCategoryDto extends NameDescriptionI18nDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

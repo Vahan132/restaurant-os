@@ -7,6 +7,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { ActiveBranchId } from '../../../../shared/auth/active-branch.decorator';
+import { BranchScoped } from '../../../../shared/auth/branch-scoped.decorator';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
@@ -23,6 +25,7 @@ import {
   SetCategoryStatusDto,
   UpdateCategoryDto,
 } from '../../application/dto/category.dto';
+import { pickNameDescriptionI18n } from '../../application/dto/i18n.dto';
 import { CategoryResponse } from '../../application/dto/responses';
 import { ListCategoriesUseCase } from '../../application/queries/list-categories.usecase';
 
@@ -30,6 +33,7 @@ const MENU_MANAGE = PERMISSIONS.MENU_MANAGE;
 
 @ApiTags('menu-categories')
 @ApiBearerAuth('access-token')
+@BranchScoped()
 @Controller('menu/categories')
 export class CategoriesController {
   constructor(
@@ -46,10 +50,12 @@ export class CategoriesController {
   @ApiOkResponse({ type: [CategoryResponse] })
   async list(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Query() query: ListCategoriesQuery,
   ): Promise<CategoryResponse[]> {
     const categories = await this.listCategories.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       status: query.status,
       includeInactive: query.includeInactive,
     });
@@ -63,12 +69,15 @@ export class CategoriesController {
   @ApiCreatedResponse({ type: CategoryResponse })
   async create(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Body() dto: CreateCategoryDto,
   ): Promise<CategoryResponse> {
     const c = await this.createCategory.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       name: dto.name,
       description: dto.description ?? null,
+      ...pickNameDescriptionI18n(dto),
       displayOrder: dto.displayOrder,
     });
     return CategoryResponse.from(c);
@@ -82,10 +91,12 @@ export class CategoriesController {
   @ApiOkResponse({ type: [CategoryResponse] })
   async reorderCategories(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Body() dto: ReorderCategoriesDto,
   ): Promise<CategoryResponse[]> {
     const updated = await this.reorder.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       order: dto.order,
     });
     return updated.map(CategoryResponse.from);
@@ -98,14 +109,17 @@ export class CategoriesController {
   @ApiOkResponse({ type: CategoryResponse })
   async update(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: UpdateCategoryDto,
   ): Promise<CategoryResponse> {
     const c = await this.updateCategory.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       categoryId: id,
       name: dto.name,
       description: dto.description,
+      ...pickNameDescriptionI18n(dto),
       displayOrder: dto.displayOrder,
     });
     return CategoryResponse.from(c);
@@ -118,11 +132,13 @@ export class CategoriesController {
   @ApiOkResponse({ type: CategoryResponse })
   async status(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: SetCategoryStatusDto,
   ): Promise<CategoryResponse> {
     const c = await this.setStatus.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       categoryId: id,
       status: dto.status,
     });
@@ -137,9 +153,14 @@ export class CategoriesController {
   @ApiOkResponse({ schema: { example: { success: true } } })
   async remove(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<{ success: true }> {
-    await this.deleteCategory.execute({ restaurantId: tenant.restaurantId, categoryId: id });
+    await this.deleteCategory.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      categoryId: id,
+    });
     return { success: true };
   }
 }

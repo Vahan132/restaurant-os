@@ -11,20 +11,59 @@
     "invalid": "Invalid email or password.",
     "error": "Could not sign in. Please try again."
   },
+  "enroll": {
+    "title": "Set up this kitchen screen",
+    "subtitle": "A manager signs in once to register this device. After that, kitchen staff sign in with a PIN.",
+    "deviceLabel": "Screen name",
+    "deviceLabelPlaceholder": "e.g. Hot line display",
+    "managerEmail": "Manager email",
+    "managerPassword": "Manager password",
+    "enroll": "Register this device",
+    "enrolling": "Registering…",
+    "invalid": "Invalid email or password.",
+    "forbidden": "This account can't register devices. Ask an administrator.",
+    "error": "Could not register this device. Please try again."
+  },
+  "staff": {
+    "title": "Who's signing in?",
+    "subtitle": "Tap your name, then enter your PIN.",
+    "loading": "Loading staff…",
+    "loadError": "Could not load staff. Check the connection.",
+    "retry": "Retry",
+    "empty": "No staff available for this branch.",
+    "back": "Back",
+    "enterPin": "Enter your 6-digit PIN",
+    "checking": "Checking…",
+    "wrongPin": "Wrong PIN. Try again.",
+    "locked": "Too many attempts. Locked — try again in {seconds}s.",
+    "mustRotate": "Your PIN was reset. Please set a new one soon.",
+    "cancel": "Cancel"
+  },
   "access": {
     "noAccessTitle": "No kitchen access",
     "noAccessBody": "This account does not have permission to use the Kitchen Display. Ask an administrator to grant KDS access.",
+    "noAccessHereBody": "This account does not have Kitchen Display access at this branch. Choose a branch where you have access, or ask an administrator.",
+    "changeBranch": "Change branch",
     "logout": "Log out"
   },
+  "setup": {
+    "title": "Set up this screen",
+    "hint": "Pin this display to a branch and a station. It will only show that branch's tickets for that station.",
+    "stationOnlyHint": "Choose the station this screen will show tickets for.",
+    "branchLabel": "Branch",
+    "stationLabel": "Station",
+    "confirm": "Start",
+    "change": "Change branch / station",
+    "loadingBranches": "Loading branches…",
+    "branchesError": "Could not load branches.",
+    "retry": "Retry",
+    "noBranches": "No branches available for this account."
+  },
   "station": {
-    "pickerTitle": "Choose your station",
-    "pickerHint": "Tickets for the selected station(s) will appear on this screen.",
     "KITCHEN": "Kitchen",
     "BAR": "Bar",
     "DESSERT": "Dessert",
-    "OTHER": "Other",
-    "confirm": "Start",
-    "change": "Change station"
+    "OTHER": "Other"
   },
   "board": {
     "empty": "No active tickets right now.",
@@ -44,6 +83,35 @@
       "delayed": "Delayed"
     }
   },
+  "nav": {
+    "tickets": "Tickets",
+    "processes": "Processes"
+  },
+  "processes": {
+    "loading": "Loading processes…",
+    "error": "Could not load processes.",
+    "empty": "No processes for this branch.",
+    "uses": "Uses",
+    "makes": "Makes",
+    "onHand": "on hand {qty}",
+    "short": "Short",
+    "low": "Low",
+    "primary": "Primary",
+    "noInputs": "No inputs.",
+    "unknownItem": "Item",
+    "run": "Run",
+    "running": "Running…",
+    "increase": "Increase batch",
+    "decrease": "Decrease batch",
+    "ranOk": "Process run complete.",
+    "ranNegative": "Run complete — an input went negative.",
+    "runError": "Could not run this process. Please try again.",
+    "units": {
+      "GRAM": "g",
+      "MILLILITER": "ml",
+      "PIECE": "pcs"
+    }
+  },
   "topbar": {
     "logout": "Log out",
     "fullscreen": "Fullscreen",
@@ -52,11 +120,24 @@
     "sound": "Sound",
     "muted": "Muted",
     "mute": "Mute new-ticket sound",
-    "unmute": "Unmute new-ticket sound"
+    "unmute": "Unmute new-ticket sound",
+    "switchUser": "Change account"
   },
   "connection": {
     "connected": "Connected",
     "connecting": "Connecting…",
-    "disconnected": "Connection lost — reconnecting. Tickets may be out of date."
+    "disconnected": "Connection lost — reconnecting. Tickets may be out of date.",
+    "hubSynced": "Local hub — synced",
+    "hubOffline": "Local hub — offline",
+    "hubReconnecting": "Reconnecting to hub…",
+    "hubUnreachable": "Hub unreachable"
+  },
+  "endpoint": {
+    "label": "Connection",
+    "cloud": "Cloud",
+    "localHub": "Local hub",
+    "hubUrlLabel": "Hub address (LAN)",
+    "hubUrlPlaceholder": "http://192.168.1.50:3001",
+    "hubUrlHint": "The hub's address on the local network. All tickets and updates will come from it."
   }
 }

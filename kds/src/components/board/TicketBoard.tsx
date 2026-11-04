@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo } from 'react';
+import { useBranchStore } from '@/lib/branch/store';
 import { useStationStore } from '@/lib/station/store';
 import { ClockProvider } from '@/lib/kds/clock';
 import { useBoardTickets } from '@/lib/kds/useBoardTickets';
@@ -10,13 +11,18 @@ import { useBumpStore } from '@/lib/kds/bumpStore';
 import { playNewTicketChime } from '@/lib/kds/sound';
 import { TicketCard } from './TicketCard';
 
-/** The real kitchen ticket board. Replaces K1's placeholder. */
+/** The kitchen ticket board, pinned to one branch + station. */
 export function TicketBoard() {
   const t = useTranslations('board');
-  const stations = useStationStore((s) => s.stations);
+  const station = useStationStore((s) => s.station);
+  const branchId = useBranchStore((s) => s.branchId);
 
-  const { tickets, isLoading, isError } = useBoardTickets(stations, playNewTicketChime);
-  const actions = useTicketActions(stations);
+  const { tickets, isLoading, isError } = useBoardTickets(
+    station!,
+    branchId!,
+    playNewTicketChime,
+  );
+  const actions = useTicketActions(station!, branchId!);
 
   const bumped = useBumpStore((s) => s.bumped);
   const bump = useBumpStore((s) => s.bump);
@@ -31,8 +37,6 @@ export function TicketBoard() {
     () => tickets.filter((tk) => !bumped.has(tk.key)),
     [tickets, bumped],
   );
-
-  const showStationBadge = stations.length > 1;
 
   if (isLoading && tickets.length === 0) {
     return <CenterMessage>{t('loading')}</CenterMessage>;
@@ -51,7 +55,7 @@ export function TicketBoard() {
           <TicketCard
             key={ticket.key}
             ticket={ticket}
-            showStationBadge={showStationBadge}
+            showStationBadge={false}
             pendingItemIds={actions.pendingItemIds}
             orderPending={actions.pendingOrderIds.has(ticket.orderId)}
             onStart={actions.startItem}

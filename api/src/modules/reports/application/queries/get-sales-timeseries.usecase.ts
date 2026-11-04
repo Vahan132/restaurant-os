@@ -9,6 +9,8 @@ export interface GetSalesTimeSeriesInput {
   from: string;
   to: string;
   groupBy: 'day' | 'week' | 'month';
+  /** BR-REPORTS-1: access-checked branch filter (omitted = restaurant-wide). */
+  branchIds?: string[];
 }
 
 /** Revenue + order count per bucket (date_trunc-equivalent in restaurant tz). */
@@ -25,6 +27,13 @@ export class GetSalesTimeSeriesUseCase implements UseCase<
     }
     const tz = await this.q.timezone(input.restaurantId);
     const { start, end } = inclusiveDayRange(input.from, input.to, tz);
-    return this.q.salesTimeSeries(input.restaurantId, start, end, input.groupBy, tz);
+    return this.q.salesTimeSeries(
+      input.restaurantId,
+      start,
+      end,
+      input.groupBy,
+      tz,
+      input.branchIds,
+    );
   }
 }

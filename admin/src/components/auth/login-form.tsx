@@ -4,9 +4,23 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 
+import type { ApiError } from '@/api/mutator';
+import { getAdminDeviceSecret } from '@/lib/auth/admin-device';
 import { login } from '@/lib/auth/auth-service';
-import { getErrorMessage } from '@/lib/api-error';
+import { getErrorMessage, isApiError } from '@/lib/api-error';
 import { toast } from '@/stores/toast';
+
+/**
+ * Heuristic: did login fail because this admin/manager needs an enrolled ADMIN
+ * device (3A anchoring)? The backend rejects with 403 and a device-anchoring
+ * code; we surface enrollment guidance rather than an "invalid credentials"
+ * toast. Owner logins are exempt server-side, so they never hit this path.
+ */
+function isDeviceRequiredError(error: unknown): error is ApiError {
+  if (!isApiError(error)) return false;
+  if (error.status === 403) return true;
+  return /device|anchor/i.test(`${error.code} ${error.message}`);
+}
 
 export function LoginForm() {
   const t = useTranslations('auth');
@@ -14,15 +28,23 @@ export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [deviceBlocked, setDeviceBlocked] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setDeviceBlocked(false);
     try {
-      await login(email, password);
+      // Send this machine's enrolled ADMIN device secret when present (3A).
+      const deviceSecret = (await getAdminDeviceSecret()) ?? undefined;
+      await login(email, password, deviceSecret);
       router.replace('/');
     } catch (error) {
-      toast.error(getErrorMessage(error, t('invalidCredentials')));
+      if (isDeviceRequiredError(error)) {
+        setDeviceBlocked(true);
+      } else {
+        toast.error(getErrorMessage(error, t('invalidCredentials')));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -59,6 +81,16 @@ export function LoginForm() {
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
         />
       </div>
+
+      {deviceBlocked && (
+        <div
+          role="alert"
+          className="space-y-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+        >
+          <p className="font-medium">{t('deviceBlockedTitle')}</p>
+          <p>{t('deviceBlockedBody')}</p>
+        </div>
+      )}
 
       <button
         type="submit"

@@ -27,6 +27,12 @@ export interface CreateCustomerOrderRequestInput {
   id: string;
   restaurantId: string;
   tableId: string;
+  /**
+   * The table's owning branch. TRANSIENT — used only to stamp domain events; it is
+   * NOT persisted on the request (a request's branch is always derived from its
+   * table). See BR-5.
+   */
+  branchId: string;
   customerName?: string | null;
   note?: string | null;
   items: RequestItem[];
@@ -68,6 +74,7 @@ export class CustomerOrderRequest extends AggregateRoot<string> {
       new OrderRequestCreatedEvent(
         request.id,
         input.restaurantId,
+        input.branchId,
         input.tableId,
         request.props.status,
       ),
@@ -122,8 +129,12 @@ export class CustomerOrderRequest extends AggregateRoot<string> {
     }
   }
 
-  /** Confirm: link to the (created/merged) order and stamp who handled it. */
-  confirm(linkedOrderId: string, userId: string, now: Date = new Date()): void {
+  /**
+   * Confirm: link to the (created/merged) order and stamp who handled it.
+   * `branchId` is TRANSIENT (the request's table branch) — used only to stamp the
+   * event, never persisted.
+   */
+  confirm(linkedOrderId: string, userId: string, branchId: string, now: Date = new Date()): void {
     this.assertPending();
     this.props.status = CustomerOrderRequestStatus.CONFIRMED;
     this.props.linkedOrderId = linkedOrderId;
@@ -134,13 +145,18 @@ export class CustomerOrderRequest extends AggregateRoot<string> {
       new OrderRequestConfirmedEvent(
         this.id,
         this.props.restaurantId,
+        branchId,
         linkedOrderId,
         this.props.status,
       ),
     );
   }
 
-  reject(reason: string | null, userId: string, now: Date = new Date()): void {
+  /**
+   * Reject a PENDING request. `branchId` is TRANSIENT (the request's table branch)
+   * — used only to stamp the event, never persisted.
+   */
+  reject(reason: string | null, userId: string, branchId: string, now: Date = new Date()): void {
     this.assertPending();
     this.props.status = CustomerOrderRequestStatus.REJECTED;
     this.props.rejectedReason = reason ?? null;
@@ -151,6 +167,7 @@ export class CustomerOrderRequest extends AggregateRoot<string> {
       new OrderRequestRejectedEvent(
         this.id,
         this.props.restaurantId,
+        branchId,
         reason ?? null,
         this.props.status,
       ),

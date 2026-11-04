@@ -12,10 +12,4 @@ export type PublicReservationConfirmationResponseStatus = typeof PublicReservati
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const PublicReservationConfirmationResponseStatus = {
   PENDING: 'PENDING',
-  CONFIRMED: 'CONFIRMED',
-  ARRIVED: 'ARRIVED',
-  SEATED: 'SEATED',
-  COMPLETED: 'COMPLETED',
-  CANCELLED: 'CANCELLED',
-  NO_SHOW: 'NO_SHOW',
 } as const;

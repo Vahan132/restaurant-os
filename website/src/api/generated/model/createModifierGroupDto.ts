@@ -8,6 +8,21 @@
 import type { CreateModifierGroupDtoSelectionType } from './createModifierGroupDtoSelectionType';
 
 export interface CreateModifierGroupDto {
+  /**
+   * Armenian name translation.
+   * @nullable
+   */
+  nameHy?: string | null;
+  /**
+   * Russian name translation.
+   * @nullable
+   */
+  nameRu?: string | null;
+  /**
+   * English name translation.
+   * @nullable
+   */
+  nameEn?: string | null;
   name: string;
   selectionType: CreateModifierGroupDtoSelectionType;
   required?: boolean;
@@ -15,6 +30,4 @@ export interface CreateModifierGroupDto {
   minSelect?: number;
   /** @minimum 1 */
   maxSelect?: number;
-  /** @minimum 0 */
-  displayOrder?: number;
 }

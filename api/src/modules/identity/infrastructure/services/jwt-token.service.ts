@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { AccessTokenPayload, RefreshTokenPayload } from '../../../../shared/auth/jwt-payload';
-import { AppConfig } from '../../../../shared/infrastructure/config/env.schema';
 import { IssuedRefreshToken, TokenService } from '../../application/ports/token.service';
 
 const ACCESS_TTL = '15m';
@@ -12,35 +10,44 @@ const REFRESH_TTL = '7d';
 const REFRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * TokenService backed by @nestjs/jwt.
+ * TokenService backed by @nestjs/jwt (OFF-5).
  *
- * Access tokens (15m) are signed with JWT_ACCESS_SECRET and carry a permissions
- * SNAPSHOT — so permission/role changes only take effect on the next refresh.
- * Refresh tokens (7d) are signed with JWT_REFRESH_SECRET; only sha256(token) is
- * ever persisted.
+ * Signing uses a PER-RESTAURANT root key. Separate access/refresh secrets are
+ * DERIVED from the root via HMAC-SHA256 (`HMAC(root, "access"|"refresh")`), so
+ * access/refresh separation is preserved AND any holder of the same root (cloud
+ * or the restaurant's edge) verifies the same tokens. Access tokens (15m) carry
+ * a permissions SNAPSHOT; refresh tokens (7d) carry restaurantId so a refresh can
+ * resolve the key before verifying. Only sha256(refresh) is ever persisted.
  */
 @Injectable()
 export class JwtTokenService implements TokenService {
-  private readonly accessSecret: string;
-  private readonly refreshSecret: string;
+  constructor(private readonly jwt: JwtService) {}
 
-  constructor(
-    private readonly jwt: JwtService,
-    config: ConfigService<AppConfig, true>,
-  ) {
-    this.accessSecret = config.get('JWT_ACCESS_SECRET', { infer: true });
-    this.refreshSecret = config.get('JWT_REFRESH_SECRET', { infer: true });
+  /** Derive the access/refresh signing secret from the restaurant root key. */
+  private deriveKey(rootKey: string, purpose: 'access' | 'refresh'): string {
+    return createHmac('sha256', rootKey).update(purpose).digest('hex');
   }
 
-  signAccessToken(payload: AccessTokenPayload): string {
-    return this.jwt.sign(payload, { secret: this.accessSecret, expiresIn: ACCESS_TTL });
+  signAccessToken(payload: AccessTokenPayload, signingKey: string): string {
+    return this.jwt.sign(payload, {
+      secret: this.deriveKey(signingKey, 'access'),
+      expiresIn: ACCESS_TTL,
+    });
   }
 
-  issueRefreshToken(payload: Omit<RefreshTokenPayload, 'jti'>): IssuedRefreshToken {
+  issueRefreshToken(
+    payload: Omit<RefreshTokenPayload, 'jti'>,
+    signingKey: string,
+  ): IssuedRefreshToken {
     const jti = randomUUID();
     const token = this.jwt.sign(
-      { sub: payload.sub, organizationId: payload.organizationId, jti },
-      { secret: this.refreshSecret, expiresIn: REFRESH_TTL },
+      {
+        sub: payload.sub,
+        organizationId: payload.organizationId,
+        restaurantId: payload.restaurantId,
+        jti,
+      },
+      { secret: this.deriveKey(signingKey, 'refresh'), expiresIn: REFRESH_TTL },
     );
     return {
       token,
@@ -50,12 +57,21 @@ export class JwtTokenService implements TokenService {
     };
   }
 
-  verifyAccessToken(token: string): AccessTokenPayload {
-    return this.jwt.verify<AccessTokenPayload>(token, { secret: this.accessSecret });
+  verifyAccessToken(token: string, signingKey: string): AccessTokenPayload {
+    return this.jwt.verify<AccessTokenPayload>(token, {
+      secret: this.deriveKey(signingKey, 'access'),
+    });
   }
 
-  verifyRefreshToken(token: string): RefreshTokenPayload {
-    return this.jwt.verify<RefreshTokenPayload>(token, { secret: this.refreshSecret });
+  verifyRefreshToken(token: string, signingKey: string): RefreshTokenPayload {
+    return this.jwt.verify<RefreshTokenPayload>(token, {
+      secret: this.deriveKey(signingKey, 'refresh'),
+    });
+  }
+
+  decodeRestaurantId(token: string): string | null {
+    const decoded = this.jwt.decode(token) as { restaurantId?: string | null } | null;
+    return decoded?.restaurantId ?? null;
   }
 
   hashRefreshToken(token: string): string {

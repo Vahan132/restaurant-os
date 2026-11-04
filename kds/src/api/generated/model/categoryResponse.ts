@@ -10,6 +10,8 @@ import type { CategoryResponseStatus } from './categoryResponseStatus';
 export interface CategoryResponse {
   id: string;
   restaurantId: string;
+  branchId: string;
+  code: string;
   name: string;
   /** @nullable */
   description: string | null;

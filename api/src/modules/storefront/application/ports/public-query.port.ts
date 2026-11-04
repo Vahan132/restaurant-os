@@ -1,3 +1,5 @@
+import { Locale } from '../../../../shared/i18n/locale';
+
 export const PUBLIC_STOREFRONT_QUERY = Symbol('PublicStorefrontQuery');
 
 export interface PublicRestaurantInfo {
@@ -45,6 +47,17 @@ export interface PublicTableInfo {
   tableId: string;
   name: string;
   floorName: string | null;
+  // BR-9: the table's branch (tables are branch-scoped). The QR app uses the
+  // branch slug to fetch that location's own menu/prices.
+  branchId: string;
+  branchName: string;
+  branchSlug: string;
+}
+
+export interface PublicBranchInfo {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 /**
@@ -55,6 +68,24 @@ export interface PublicTableInfo {
  */
 export interface PublicStorefrontQuery {
   restaurantInfo(restaurantId: string): Promise<PublicRestaurantInfo | null>;
-  menuTree(restaurantId: string): Promise<PublicMenuCategory[]>;
+  /**
+   * ORDER-4: the restaurant's display currency (Restaurant.currency) for the menu
+   * response. Same source the ORDER-2 cart/order uses, so menu == cart currency.
+   */
+  menuCurrency(restaurantId: string): Promise<string>;
+  /** LOCALE-1: the restaurant's default content language (fallback for the guest locale). */
+  defaultLanguage(restaurantId: string): Promise<string>;
+  /**
+   * BR-9: menu for a SPECIFIC branch (branch-owned catalog per BR-2).
+   * LOCALE-1: `locale` is the guest's effective locale. Carried for LOCALE-2B, which
+   * will resolve trilingual columns as `column(locale) ?? name`. Until then the menu
+   * is monolingual and `locale` does not change the output.
+   */
+  menuTree(restaurantId: string, branchId: string, locale: Locale): Promise<PublicMenuCategory[]>;
+  /** BR-9: the table's info INCLUDING its branch (tables are branch-scoped). */
   tableByQr(restaurantId: string, qrIdentifier: string): Promise<PublicTableInfo | null>;
+  /** BR-9: active (non-deleted) branches for the public location picker. */
+  activeBranches(restaurantId: string): Promise<PublicBranchInfo[]>;
+  /** BR-9: the restaurant's default branch id (fallback for branch-less entries). */
+  defaultBranchId(restaurantId: string): Promise<string | null>;
 }

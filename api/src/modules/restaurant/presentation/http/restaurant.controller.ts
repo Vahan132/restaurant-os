@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Req } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -6,10 +6,12 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
-import { TenantContext } from '../../../../shared/tenancy/tenant-context';
+import { CurrentUser } from '../../../../shared/tenancy/current-user.decorator';
+import { CurrentUserContext, TenantContext } from '../../../../shared/tenancy/tenant-context';
 import { UpdateRestaurantProfileUseCase } from '../../application/commands/update-restaurant-profile.usecase';
 import { UpdateRestaurantSettingsUseCase } from '../../application/commands/update-restaurant-settings.usecase';
 import { UpdateRestaurantProfileDto } from '../../application/dto/restaurant.dto';
@@ -83,12 +85,16 @@ export class RestaurantController {
   @ApiOkResponse({ type: RestaurantSettingsResponse })
   async setSettings(
     @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: CurrentUserContext,
     @Body() dto: UpdateRestaurantSettingsDto,
+    @Req() req: Request,
   ): Promise<RestaurantSettingsResponse> {
     const settings = await this.updateSettings.execute({
       organizationId: tenant.organizationId,
       restaurantId: tenant.restaurantId,
       patch: dto,
+      actorUserId: user.sub,
+      ip: req.ip ?? null,
     });
     return RestaurantSettingsResponse.from(settings);
   }

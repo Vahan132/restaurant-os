@@ -5,14 +5,16 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { AccountOverviewResponseOrganization } from './accountOverviewResponseOrganization';
+import type { AccountOrganizationSummary } from './accountOrganizationSummary';
 import type { AccountOverviewResponseRestaurant } from './accountOverviewResponseRestaurant';
-import type { AccountSubscriptionSummary } from './accountSubscriptionSummary';
-import type { AccountOverviewResponseOwner } from './accountOverviewResponseOwner';
+import type { AccountOverviewResponseSubscription } from './accountOverviewResponseSubscription';
+import type { AccountOwnerSummary } from './accountOwnerSummary';
 
 export interface AccountOverviewResponse {
-  organization: AccountOverviewResponseOrganization;
+  organization: AccountOrganizationSummary;
+  /** @nullable */
   restaurant: AccountOverviewResponseRestaurant;
-  subscription: AccountSubscriptionSummary;
-  owner: AccountOverviewResponseOwner;
+  /** @nullable */
+  subscription: AccountOverviewResponseSubscription;
+  owner: AccountOwnerSummary;
 }

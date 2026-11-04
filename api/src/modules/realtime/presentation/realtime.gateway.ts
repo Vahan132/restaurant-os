@@ -1,6 +1,4 @@
 import { Inject, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import {
   ConnectedSocket,
   MessageBody,
@@ -10,25 +8,55 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import type { Namespace, Socket } from 'socket.io';
+import {
+  BRANCH_ACCESS_RESOLVER,
+  BranchAccessResolver,
+} from '../../../shared/auth/branch-access.resolver';
 import { AccessTokenPayload } from '../../../shared/auth/jwt-payload';
-import { AppConfig } from '../../../shared/infrastructure/config/env.schema';
+import { EdgeConfigService } from '../../../shared/edge/edge-config.service';
+import {
+  RESTAURANT_KEY_PROVIDER,
+  RestaurantKeyProvider,
+} from '../../identity/application/ports/restaurant-key.provider';
+import { TOKEN_SERVICE, TokenService } from '../../identity/application/ports/token.service';
 import { PERMISSIONS } from '../../identity/domain/permissions.catalog';
 import { PreparationStation } from '../../menu/domain/enums';
 import {
   REALTIME_USER_READER,
   RealtimeUserReader,
 } from '../application/ports/realtime-user.reader';
-import { SocketAuthContext, restaurantRoom, stationRoom } from '../application/socket-context';
+import { SocketAuthContext, branchRoom, orgRoom, stationRoom } from '../application/socket-context';
 
 const VALID_STATIONS = new Set<string>(Object.values(PreparationStation));
+
+/** Body accepted by kds:subscribe / kds:unsubscribe. */
+interface StationSubscription {
+  stations?: string[];
+  /** Single-station kiosks (the KDS pins exactly one) may send this instead. */
+  station?: string;
+}
+
+/**
+ * Normalize a subscription body to the set of valid stations it names. Accepts
+ * both the plural `stations` array and a singular `station` string so a kiosk
+ * pinned to one station is never silently filtered down to an empty list.
+ */
+function readStations(body: StationSubscription | undefined): string[] {
+  const raw = [...(body?.stations ?? []), ...(body?.station ? [body.station] : [])];
+  return [...new Set(raw.filter((s) => VALID_STATIONS.has(s)))];
+}
 
 /**
  * Real-time gateway (namespace "/realtime"). Sockets are liveness only — the
  * authoritative data lives behind HTTP; clients refetch on (re)connect.
  *
  * Connection auth: TENANT access token from handshake.auth.token, verified with
- * JWT_ACCESS_SECRET. Platform tokens (different secret) and invalid/blocked users
- * are rejected. On success the socket joins its restaurant room.
+ * the per-restaurant key (OFF-5) so cloud- or edge-issued tokens both work.
+ * BR-5: the socket is bound to ONE active branch, read from
+ * handshake.auth.branchId (or ?branchId), defaulting to the caller's default
+ * branch when absent. Branch access is validated on connect (BRANCH_ACCESS_DENIED
+ * otherwise) and the socket's permissions are the EFFECTIVE permissions at that
+ * branch. The socket joins only its branch room (+ accessible station rooms).
  */
 @WebSocketGateway({
   namespace: '/realtime',
@@ -36,17 +64,16 @@ const VALID_STATIONS = new Set<string>(Object.values(PreparationStation));
 })
 export class RealtimeGateway implements OnGatewayConnection {
   private readonly logger = new Logger(RealtimeGateway.name);
-  private readonly accessSecret: string;
 
   @WebSocketServer() server!: Namespace;
 
   constructor(
-    private readonly jwt: JwtService,
-    config: ConfigService<AppConfig, true>,
+    @Inject(TOKEN_SERVICE) private readonly tokens: TokenService,
+    @Inject(RESTAURANT_KEY_PROVIDER) private readonly keys: RestaurantKeyProvider,
     @Inject(REALTIME_USER_READER) private readonly users: RealtimeUserReader,
-  ) {
-    this.accessSecret = config.get('JWT_ACCESS_SECRET', { infer: true });
-  }
+    @Inject(BRANCH_ACCESS_RESOLVER) private readonly branchAccess: BranchAccessResolver,
+    private readonly edge: EdgeConfigService,
+  ) {}
 
   async handleConnection(client: Socket): Promise<void> {
     try {
@@ -54,10 +81,16 @@ export class RealtimeGateway implements OnGatewayConnection {
       if (!token) {
         return this.reject(client, 'missing token');
       }
+      // OFF-5: resolve the per-restaurant key from the (unverified) claim, then
+      // verify. Verifying with the tenant key also rejects platform tokens.
+      const restaurantId = this.tokens.decodeRestaurantId(token);
+      const signingKey = await this.keys.getSigningKey(restaurantId);
+      if (!signingKey) {
+        return this.reject(client, 'invalid token');
+      }
       let payload: AccessTokenPayload;
       try {
-        // Verifying with the TENANT secret also rejects platform tokens.
-        payload = this.jwt.verify<AccessTokenPayload>(token, { secret: this.accessSecret });
+        payload = this.tokens.verifyAccessToken(token, signingKey);
       } catch {
         return this.reject(client, 'invalid token');
       }
@@ -68,15 +101,69 @@ export class RealtimeGateway implements OnGatewayConnection {
       if (!active) {
         return this.reject(client, 'blocked/unknown user');
       }
+
+      // EDGE mode (OFF-1): pin to this hub's single org/restaurant/branch. A
+      // token for another tenant is rejected; a requested branch must match the
+      // edge branch (else treated as no access).
+      let requested = this.extractBranchId(client);
+      if (this.edge.isEdge) {
+        const identity = this.edge.getIdentity();
+        if (
+          payload.organizationId !== identity.organizationId ||
+          payload.restaurantId !== identity.restaurantId
+        ) {
+          return this.reject(client, 'EDGE_TENANT_MISMATCH');
+        }
+        if (requested && requested !== identity.branchId) {
+          return this.reject(client, 'BRANCH_ACCESS_DENIED');
+        }
+        requested = identity.branchId;
+      }
+
+      // BR-5: resolve + validate the active branch.
+      let branchId: string;
+      let permissions: string[];
+      if (requested) {
+        const res = await this.branchAccess.resolveForBranch({
+          organizationId: payload.organizationId,
+          restaurantId: payload.restaurantId,
+          userId: payload.sub,
+          branchId: requested,
+        });
+        if (!res.branchExists || !res.hasAccess) {
+          return this.reject(client, 'BRANCH_ACCESS_DENIED');
+        }
+        branchId = requested;
+        permissions = res.permissions;
+      } else {
+        const fallback = await this.branchAccess.resolveDefaultBranchAccess({
+          organizationId: payload.organizationId,
+          restaurantId: payload.restaurantId,
+          userId: payload.sub,
+        });
+        if (!fallback) {
+          return this.reject(client, 'no accessible branch');
+        }
+        branchId = fallback.branchId;
+        permissions = fallback.permissions;
+      }
+
       const auth: SocketAuthContext = {
         userId: payload.sub,
         organizationId: payload.organizationId,
         restaurantId: payload.restaurantId,
-        permissions: payload.permissions ?? [],
+        branchId,
+        permissions,
       };
       client.data.auth = auth;
-      await client.join(restaurantRoom(auth.restaurantId));
-      client.emit('realtime:connected', { restaurantId: auth.restaurantId });
+      await client.join(branchRoom(auth.restaurantId, auth.branchId));
+      // Also join the org room so cross-branch, tenant-scoped events (e.g. a
+      // role's permissions changing) reach this session regardless of branch.
+      await client.join(orgRoom(auth.organizationId));
+      client.emit('realtime:connected', {
+        restaurantId: auth.restaurantId,
+        branchId: auth.branchId,
+      });
     } catch (err) {
       this.logger.warn(`WS connection error: ${(err as Error).message}`);
       this.reject(client, 'internal');
@@ -86,18 +173,19 @@ export class RealtimeGateway implements OnGatewayConnection {
   @SubscribeMessage('kds:subscribe')
   async subscribe(
     @ConnectedSocket() client: Socket,
-    @MessageBody() body: { stations?: string[] },
+    @MessageBody() body: StationSubscription,
   ): Promise<{ ok: boolean; stations?: string[]; error?: string }> {
     const auth = client.data.auth as SocketAuthContext | undefined;
     if (!auth) {
       return { ok: false, error: 'UNAUTHENTICATED' };
     }
+    // Effective permissions at the active branch gate KDS access.
     if (!auth.permissions.includes(PERMISSIONS.KDS_ACCESS)) {
       return { ok: false, error: 'KDS_ACCESS_REQUIRED' };
     }
-    const stations = (body?.stations ?? []).filter((s) => VALID_STATIONS.has(s));
+    const stations = readStations(body);
     for (const station of stations) {
-      await client.join(stationRoom(auth.restaurantId, station));
+      await client.join(stationRoom(auth.restaurantId, auth.branchId, station));
     }
     return { ok: true, stations };
   }
@@ -105,15 +193,15 @@ export class RealtimeGateway implements OnGatewayConnection {
   @SubscribeMessage('kds:unsubscribe')
   async unsubscribe(
     @ConnectedSocket() client: Socket,
-    @MessageBody() body: { stations?: string[] },
+    @MessageBody() body: StationSubscription,
   ): Promise<{ ok: boolean }> {
     const auth = client.data.auth as SocketAuthContext | undefined;
     if (!auth) {
       return { ok: false };
     }
-    const stations = (body?.stations ?? []).filter((s) => VALID_STATIONS.has(s));
+    const stations = readStations(body);
     for (const station of stations) {
-      await client.leave(stationRoom(auth.restaurantId, station));
+      await client.leave(stationRoom(auth.restaurantId, auth.branchId, station));
     }
     return { ok: true };
   }
@@ -126,6 +214,18 @@ export class RealtimeGateway implements OnGatewayConnection {
     const header = client.handshake.headers?.authorization;
     if (header?.startsWith('Bearer ')) {
       return header.slice('Bearer '.length);
+    }
+    return null;
+  }
+
+  private extractBranchId(client: Socket): string | null {
+    const fromAuth = (client.handshake.auth as { branchId?: string } | undefined)?.branchId;
+    if (fromAuth) {
+      return fromAuth;
+    }
+    const q = client.handshake.query?.branchId;
+    if (typeof q === 'string' && q) {
+      return q;
     }
     return null;
   }

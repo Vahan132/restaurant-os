@@ -10,6 +10,7 @@ import type { TableResponseStatus } from './tableResponseStatus';
 export interface TableResponse {
   id: string;
   restaurantId: string;
+  branchId: string;
   floorId: string;
   name: string;
   seatCapacity: number;

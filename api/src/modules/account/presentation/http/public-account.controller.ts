@@ -11,12 +11,14 @@ import { Public } from '../../../../shared/auth/public.decorator';
 import { UserResponse } from '../../../identity/application/dto/responses';
 import { SignupDto } from '../../application/dto/account.dto';
 import {
+  EmailAvailableResponse,
   PublicPlanResponse,
   SignupResponse,
   SubdomainAvailableResponse,
 } from '../../application/dto/responses';
 import { SignupUseCase } from '../../application/commands/signup.usecase';
 import { CheckSubdomainUseCase } from '../../application/queries/check-subdomain.usecase';
+import { CheckEmailUseCase } from '../../application/queries/check-email.usecase';
 import { GetPlansUseCase } from '../../application/queries/get-plans.usecase';
 
 /**
@@ -32,6 +34,7 @@ export class PublicAccountController {
   constructor(
     private readonly getPlans: GetPlansUseCase,
     private readonly checkSubdomain: CheckSubdomainUseCase,
+    private readonly checkEmail: CheckEmailUseCase,
     private readonly signup: SignupUseCase,
   ) {}
 
@@ -48,6 +51,14 @@ export class PublicAccountController {
   @ApiOkResponse({ type: SubdomainAvailableResponse })
   subdomain(@Query('slug') slug?: string): Promise<SubdomainAvailableResponse> {
     return this.checkSubdomain.execute({ slug: slug ?? '' });
+  }
+
+  @Get('email-available')
+  @ApiOperation({ summary: 'Check whether an email is valid + not already registered.' })
+  @ApiQuery({ name: 'email', required: true })
+  @ApiOkResponse({ type: EmailAvailableResponse })
+  emailAvailable(@Query('email') email?: string): Promise<EmailAvailableResponse> {
+    return this.checkEmail.execute({ email: email ?? '' });
   }
 
   @Post('signup')

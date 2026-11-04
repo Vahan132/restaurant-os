@@ -1,0 +1,43 @@
+# Keep the build context small and the image clean. node_modules is reinstalled
+# inside the image (the host copy is platform-specific), and secrets/build
+# artifacts must never be copied in.
+node_modules
+dist
+*.tsbuildinfo
+.pnpm-store
+
+.git
+.gitignore
+
+.env
+.env.*
+!.env.example
+!.env.edge.example
+
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+.idea
+.vscode
+.DS_Store
+
+# ── CLEANUP-1 hardening: keep the PUBLIC image lean & artifact-free ──────────
+# Process/spec/handoff markdown and docs (never needed at build or runtime)
+*.md
+**/*.md
+docs/
+# Tests & fixtures (nest build excludes specs; don't ship them in the image)
+**/*.spec.ts
+**/*.test.ts
+**/__tests__/
+**/__mocks__/
+test/
+# Host-only installer assets (not image contents), should they ever be added
+windows/
+ubuntu/
+# Editor/OS + coverage
+.vscode
+coverage
+*.tsbuildinfo

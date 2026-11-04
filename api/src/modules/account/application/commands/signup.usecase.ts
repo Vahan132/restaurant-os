@@ -39,6 +39,7 @@ export class SignupUseCase implements UseCase<SignupInput, SignupResult> {
 
   async execute(input: SignupInput): Promise<SignupResult> {
     const slug = input.slug.trim().toLowerCase();
+    const email = input.email.trim().toLowerCase();
     const formatReason = slugFormatReason(slug);
     if (formatReason) {
       throw new BadRequestException({ code: 'INVALID_SLUG', message: formatReason });
@@ -47,6 +48,12 @@ export class SignupUseCase implements UseCase<SignupInput, SignupResult> {
       throw new ConflictException({
         code: 'SLUG_TAKEN',
         message: 'This subdomain is already taken.',
+      });
+    }
+    if (await this.query.isEmailTaken(email)) {
+      throw new ConflictException({
+        code: 'EMAIL_TAKEN',
+        message: 'An account with this email already exists.',
       });
     }
 
@@ -62,7 +69,7 @@ export class SignupUseCase implements UseCase<SignupInput, SignupResult> {
         defaultLanguage: input.defaultLanguage,
         timezone: input.timezone,
       },
-      owner: { fullName: input.ownerName, email: input.email, password: input.password },
+      owner: { fullName: input.ownerName, email, password: input.password },
       // actorUserId omitted -> history records changedByType SYSTEM (self-serve).
     });
 

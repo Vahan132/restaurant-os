@@ -15,11 +15,15 @@ export interface AuditLogResponse {
   organizationId: string | null;
   /** @nullable */
   restaurantId: string | null;
+  /** @nullable */
+  branchId: string | null;
   actorType: AuditLogResponseActorType;
   /** @nullable */
   actorId: string | null;
   /** @nullable */
   actorName: string | null;
+  /** @nullable */
+  actorRoleCode: string | null;
   action: string;
   entityType: string;
   entityId: string;

@@ -5,13 +5,24 @@ import axios, {
   InternalAxiosRequestConfig,
 } from 'axios';
 import { API_BASE_URL } from '@/lib/env';
+import { resolveApiBaseUrl } from '@/lib/endpoint/store';
 import { authStore } from '@/lib/auth/store';
+import { readPersistedTokens, withRefreshLock } from '@/lib/auth/refresh-lock';
+import { getDeviceSecret } from '@/lib/device/store';
+
+/** Transport header carrying this device's enrollment secret (the 3A anchor). */
+const DEVICE_SECRET_HEADER = 'X-Device-Secret';
 
 /**
  * Axios mutator used by every orval-generated hook.
  *
  * Mirrors the POS/admin apps:
- *  - baseURL from env, Bearer token attached from the auth store
+ *  - baseURL resolved PER REQUEST from the device endpoint setting (cloud by
+ *    default, or the local hub when this device is hub-managed) — so login,
+ *    /auth/me, tickets and the refresh call all follow the same target. There is
+ *    intentionally no cloud fallback for a hub-managed branch (out of MVP scope).
+ *  - Bearer token attached from the auth store. The hub accepts the existing
+ *    (cloud-issued) token, so switching to a hub needs no re-login.
  *  - success envelope unwrapped so hooks receive the documented payload type
  *  - errors normalized to { code, message }
  *  - on 401: refresh once + retry, otherwise clear the store and go to /login
@@ -25,7 +36,8 @@ export interface NormalizedError {
   details?: unknown;
 }
 
-// Main instance — carries the interceptors below.
+// Main instance — carries the interceptors below. The baseURL default is only a
+// fallback; the request interceptor re-resolves it on every call.
 export const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
@@ -37,12 +49,26 @@ const rawAxios = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// --- request: attach Bearer -------------------------------------------------
+// --- request: target the active endpoint + attach Bearer + device anchor -----
 axiosInstance.interceptors.request.use((config) => {
+  config.baseURL = resolveApiBaseUrl();
   const token = authStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Attach the device anchor on every call from an enrolled device. This covers
+  // the device-authenticated staff picker (which has no bearer yet) and every
+  // anchored request once a PIN session exists, mirroring the bearer above.
+  const deviceSecret = getDeviceSecret();
+  if (deviceSecret) {
+    config.headers[DEVICE_SECRET_HEADER] = deviceSecret;
+  }
+  return config;
+});
+
+// The refresh call must hit the same endpoint (hub or cloud) as everything else.
+rawAxios.interceptors.request.use((config) => {
+  config.baseURL = resolveApiBaseUrl();
   return config;
 });
 
@@ -98,28 +124,46 @@ function redirectToLogin(): void {
 }
 
 async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = authStore.getState().refreshToken;
-  if (!refreshToken) return null;
+  const triggerToken = authStore.getState().refreshToken;
+  if (!triggerToken) return null;
 
   // De-dupe concurrent refreshes into a single in-flight request.
   if (!refreshPromise) {
-    refreshPromise = rawAxios
-      .post('/auth/refresh', { refreshToken })
-      .then((res: AxiosResponse) => {
+    refreshPromise = withRefreshLock(async () => {
+      const persisted = readPersistedTokens();
+      const current = persisted?.refreshToken ?? null;
+      if (current && current !== triggerToken && persisted?.accessToken) {
+        authStore.getState().setTokens({
+          accessToken: persisted.accessToken,
+          refreshToken: current,
+        });
+        return persisted.accessToken;
+      }
+      const tokenToUse = current ?? triggerToken;
+      try {
+        const res: AxiosResponse = await rawAxios.post('/auth/refresh', {
+          refreshToken: tokenToUse,
+        });
         const data = unwrap<{ accessToken: string; refreshToken: string }>(res.data);
         authStore.getState().setTokens({
           accessToken: data.accessToken,
           refreshToken: data.refreshToken,
         });
         return data.accessToken;
-      })
-      .catch(() => {
-        authStore.getState().clear();
+      } catch {
+        const after = readPersistedTokens();
+        if (after?.refreshToken && after.refreshToken !== tokenToUse && after.accessToken) {
+          authStore.getState().setTokens({
+            accessToken: after.accessToken,
+            refreshToken: after.refreshToken,
+          });
+          return after.accessToken;
+        }
         return null;
-      })
-      .finally(() => {
-        refreshPromise = null;
-      });
+      }
+    }).finally(() => {
+      refreshPromise = null;
+    });
   }
   return refreshPromise;
 }
@@ -133,6 +177,16 @@ axiosInstance.interceptors.response.use(
     const status = error.response?.status;
     const url = original?.url ?? '';
     const isAuthRoute = url.includes('/auth/refresh') || url.includes('/auth/login');
+    // Device-anchored sign-in routes: a 401 here means wrong PIN, a locked PIN,
+    // or a bad/expired device secret — all of which the sign-in screen shows the
+    // user. Never refresh, clear or redirect (there's no session to refresh and
+    // it would reload the screen mid-entry); just surface the normalized error.
+    const isDeviceAuthRoute =
+      url.includes('/auth/pin-login') || url.includes('/auth/staff-picker');
+
+    if (status === 401 && isDeviceAuthRoute) {
+      return Promise.reject(normalizeError(error));
+    }
 
     if (status === 401 && original && !original._retry && !isAuthRoute) {
       original._retry = true; // loop guard: only one retry per request

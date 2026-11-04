@@ -6,6 +6,7 @@ import { FloorNotFound, NoRestaurantInScope } from '../application.errors';
 
 export interface UpdateFloorInput {
   restaurantId: string | null;
+  branchId: string;
   floorId: string;
   name?: string;
   description?: string | null;
@@ -21,7 +22,7 @@ export class UpdateFloorUseCase implements UseCase<UpdateFloorInput, Floor> {
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const floor = await this.floors.findById(input.restaurantId, input.floorId);
+    const floor = await this.floors.findById(input.restaurantId, input.branchId, input.floorId);
     if (!floor) {
       throw FloorNotFound();
     }

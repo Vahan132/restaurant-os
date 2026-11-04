@@ -26,7 +26,12 @@ export function Pillars() {
   return (
     <section id="features" className="layer-up py-20 sm:py-28">
       <Container>
-        <SectionHeading eyebrow={t("eyebrow")} title={t("title")} intro={t("intro")} />
+        <SectionHeading
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          intro={t("intro")}
+          titleClassName="leading-[1.2] sm:leading-[1.2]"
+        />
 
         <div className="mt-20 flex flex-col gap-24 sm:gap-28">
           {pillarVisuals.map((p, i) => {
@@ -38,7 +43,7 @@ export function Pillars() {
                 <Reveal className={flip ? "lg:order-2" : ""}>
                   <div className="flex flex-col items-start gap-5">
                     <span className="eyebrow">{t(`${p.id}.eyebrow`)}</span>
-                    <h3 className="text-balance font-display text-3xl sm:text-4xl">
+                    <h3 className="text-balance font-display text-3xl/[1.2] sm:text-4xl/[1.2]">
                       {t(`${p.id}.title`)}
                     </h3>
                     <p className="text-pretty text-lg text-muted">{t(`${p.id}.body`)}</p>

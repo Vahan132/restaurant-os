@@ -8,7 +8,9 @@ import {
 } from '@nestjs/swagger';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
-import { TenantContext } from '../../../../shared/tenancy/tenant-context';
+import { CurrentUser } from '../../../../shared/tenancy/current-user.decorator';
+import { CurrentUserContext, TenantContext } from '../../../../shared/tenancy/tenant-context';
+import { ReportBranchScopeService } from '../../application/report-branch-scope.service';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { DateRangeQuery, TimeSeriesQuery } from '../../application/dto/queries';
 import {
@@ -17,6 +19,7 @@ import {
   DiscountsResponse,
   ItemRowResponse,
   PaymentMethodResponse,
+  ReportBranchResponse,
   SalesSummaryResponse,
   TableRowResponse,
   TimeSeriesBucketResponse,
@@ -48,7 +51,54 @@ export class ReportsController {
     private readonly byItem: GetSalesByItemUseCase,
     private readonly discountsReport: GetDiscountsReportUseCase,
     private readonly cancellationsReport: GetCancellationsReportUseCase,
+    private readonly branchScope: ReportBranchScopeService,
   ) {}
+
+  /** BR-REPORTS-1: access-checked branch ids for a report request. */
+  private async branchIds(
+    tenant: TenantContext,
+    user: CurrentUserContext,
+    branchId: string | undefined,
+  ): Promise<string[]> {
+    const scope = await this.branchScope.resolve({
+      organizationId: tenant.organizationId,
+      restaurantId: tenant.restaurantId,
+      userId: user.sub,
+      requestedBranchId: branchId ?? null,
+      permission: P.REPORTS_VIEW,
+    });
+    return scope.branchIds;
+  }
+
+  @Get('branches')
+  @RequirePermissions(P.REPORTS_VIEW)
+  @ApiForbiddenResponse({ description: 'Missing REPORTS_VIEW permission.' })
+  @ApiOperation({
+    summary:
+      'Branches the caller may filter reports by (owner: every branch; others: branches ' +
+      'where they hold reports:view).',
+  })
+  @ApiOkResponse({ type: [ReportBranchResponse] })
+  async getBranches(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: CurrentUserContext,
+  ): Promise<ReportBranchResponse[]> {
+    const base = {
+      organizationId: tenant.organizationId,
+      restaurantId: tenant.restaurantId,
+      userId: user.sub,
+    };
+    const view = await this.branchScope.resolve({ ...base, permission: P.REPORTS_VIEW });
+    const profit = await this.branchScope
+      .resolve({ ...base, permission: P.REPORTS_PROFIT_VIEW })
+      .then((s) => new Set(s.branchIds))
+      .catch(() => new Set<string>());
+    return view.branchIds.map((id) => ({
+      id,
+      name: view.branchNames.get(id) ?? id,
+      canViewProfit: profit.has(id),
+    }));
+  }
 
   @Get('dashboard')
   @RequirePermissions(P.DASHBOARD_VIEW)
@@ -64,11 +114,18 @@ export class ReportsController {
   @ApiForbiddenResponse({ description: 'Missing REPORTS_VIEW permission.' })
   @ApiOperation({ summary: 'Sales summary for a date range (CLOSED orders).' })
   @ApiOkResponse({ type: SalesSummaryResponse })
-  getSummary(
+  async getSummary(
     @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: CurrentUserContext,
     @Query() q: DateRangeQuery,
   ): Promise<SalesSummaryResponse> {
-    return this.salesSummary.execute({ restaurantId: tenant.restaurantId, from: q.from, to: q.to });
+    const branchIds = await this.branchIds(tenant, user, q.branchId);
+    return this.salesSummary.execute({
+      restaurantId: tenant.restaurantId,
+      from: q.from,
+      to: q.to,
+      branchIds,
+    });
   }
 
   @Get('sales/timeseries')
@@ -76,15 +133,18 @@ export class ReportsController {
   @ApiForbiddenResponse({ description: 'Missing REPORTS_VIEW permission.' })
   @ApiOperation({ summary: 'Revenue + order count per bucket (day/week/month, restaurant tz).' })
   @ApiOkResponse({ type: [TimeSeriesBucketResponse] })
-  getTimeSeries(
+  async getTimeSeries(
     @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: CurrentUserContext,
     @Query() q: TimeSeriesQuery,
   ): Promise<TimeSeriesBucketResponse[]> {
+    const branchIds = await this.branchIds(tenant, user, q.branchId);
     return this.timeseries.execute({
       restaurantId: tenant.restaurantId,
       from: q.from,
       to: q.to,
       groupBy: q.groupBy,
+      branchIds,
     });
   }
 
@@ -93,14 +153,17 @@ export class ReportsController {
   @ApiForbiddenResponse({ description: 'Missing REPORTS_VIEW permission.' })
   @ApiOperation({ summary: 'ACTIVE payment totals by method (orders closed in range).' })
   @ApiOkResponse({ type: [PaymentMethodResponse] })
-  getByPaymentMethod(
+  async getByPaymentMethod(
     @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: CurrentUserContext,
     @Query() q: DateRangeQuery,
   ): Promise<PaymentMethodResponse[]> {
+    const branchIds = await this.branchIds(tenant, user, q.branchId);
     return this.byPaymentMethod.execute({
       restaurantId: tenant.restaurantId,
       from: q.from,
       to: q.to,
+      branchIds,
     });
   }
 
@@ -109,11 +172,18 @@ export class ReportsController {
   @ApiForbiddenResponse({ description: 'Missing REPORTS_VIEW permission.' })
   @ApiOperation({ summary: 'Revenue + order count by waiter.' })
   @ApiOkResponse({ type: [WaiterRowResponse] })
-  getByWaiter(
+  async getByWaiter(
     @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: CurrentUserContext,
     @Query() q: DateRangeQuery,
   ): Promise<WaiterRowResponse[]> {
-    return this.byWaiter.execute({ restaurantId: tenant.restaurantId, from: q.from, to: q.to });
+    const branchIds = await this.branchIds(tenant, user, q.branchId);
+    return this.byWaiter.execute({
+      restaurantId: tenant.restaurantId,
+      from: q.from,
+      to: q.to,
+      branchIds,
+    });
   }
 
   @Get('sales/by-table')
@@ -121,11 +191,18 @@ export class ReportsController {
   @ApiForbiddenResponse({ description: 'Missing REPORTS_VIEW permission.' })
   @ApiOperation({ summary: 'Revenue + order count by table.' })
   @ApiOkResponse({ type: [TableRowResponse] })
-  getByTable(
+  async getByTable(
     @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: CurrentUserContext,
     @Query() q: DateRangeQuery,
   ): Promise<TableRowResponse[]> {
-    return this.byTable.execute({ restaurantId: tenant.restaurantId, from: q.from, to: q.to });
+    const branchIds = await this.branchIds(tenant, user, q.branchId);
+    return this.byTable.execute({
+      restaurantId: tenant.restaurantId,
+      from: q.from,
+      to: q.to,
+      branchIds,
+    });
   }
 
   @Get('sales/by-item')
@@ -133,11 +210,18 @@ export class ReportsController {
   @ApiForbiddenResponse({ description: 'Missing REPORTS_VIEW permission.' })
   @ApiOperation({ summary: 'Quantity + revenue by menu item (non-cancelled items).' })
   @ApiOkResponse({ type: [ItemRowResponse] })
-  getByItem(
+  async getByItem(
     @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: CurrentUserContext,
     @Query() q: DateRangeQuery,
   ): Promise<ItemRowResponse[]> {
-    return this.byItem.execute({ restaurantId: tenant.restaurantId, from: q.from, to: q.to });
+    const branchIds = await this.branchIds(tenant, user, q.branchId);
+    return this.byItem.execute({
+      restaurantId: tenant.restaurantId,
+      from: q.from,
+      to: q.to,
+      branchIds,
+    });
   }
 
   @Get('discounts')
@@ -145,14 +229,17 @@ export class ReportsController {
   @ApiForbiddenResponse({ description: 'Missing REPORTS_VIEW permission.' })
   @ApiOperation({ summary: 'Total discount given + per-order list.' })
   @ApiOkResponse({ type: DiscountsResponse })
-  getDiscounts(
+  async getDiscounts(
     @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: CurrentUserContext,
     @Query() q: DateRangeQuery,
   ): Promise<DiscountsResponse> {
+    const branchIds = await this.branchIds(tenant, user, q.branchId);
     return this.discountsReport.execute({
       restaurantId: tenant.restaurantId,
       from: q.from,
       to: q.to,
+      branchIds,
     });
   }
 
@@ -161,14 +248,17 @@ export class ReportsController {
   @ApiForbiddenResponse({ description: 'Missing REPORTS_VIEW permission.' })
   @ApiOperation({ summary: 'Cancelled orders + cancelled items with reasons/values.' })
   @ApiOkResponse({ type: CancellationsResponse })
-  getCancellations(
+  async getCancellations(
     @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: CurrentUserContext,
     @Query() q: DateRangeQuery,
   ): Promise<CancellationsResponse> {
+    const branchIds = await this.branchIds(tenant, user, q.branchId);
     return this.cancellationsReport.execute({
       restaurantId: tenant.restaurantId,
       from: q.from,
       to: q.to,
+      branchIds,
     });
   }
 }

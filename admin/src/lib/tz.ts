@@ -4,10 +4,31 @@
  * GET /restaurant). No external date library is used — just Intl.
  */
 
+/**
+ * Return a time zone Intl accepts. Repairs the legacy signup value
+ * "Etc/GMT+ 8" (stray space) and falls back to the browser zone, then UTC.
+ */
+export function safeTimeZone(timeZone: string | null | undefined): string {
+  const candidates = [
+    timeZone?.replace(/\s+/g, ''),
+    typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : undefined,
+  ];
+  for (const tz of candidates) {
+    if (!tz) continue;
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: tz });
+      return tz;
+    } catch {
+      /* try next */
+    }
+  }
+  return 'UTC';
+}
+
 /** Offset (minutes) of a timezone from UTC at a given instant. */
 function tzOffsetMinutes(timeZone: string, at: Date): number {
   const dtf = new Intl.DateTimeFormat('en-US', {
-    timeZone,
+    timeZone: safeTimeZone(timeZone),
     hour12: false,
     year: 'numeric',
     month: '2-digit',
@@ -38,7 +59,7 @@ export function todayInTz(timeZone: string): string {
 /** Calendar day (YYYY-MM-DD) of an instant, in the given timezone. */
 export function ymdInTz(date: Date, timeZone: string): string {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
+    timeZone: safeTimeZone(timeZone),
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -61,7 +82,7 @@ export function zonedToUtcISO(ymd: string, hm: string, timeZone: string): string
 /** "HH:mm" wall-clock time of a UTC ISO string in `timeZone` (for inputs). */
 export function isoToZonedTime(iso: string, timeZone: string): string {
   const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone,
+    timeZone: safeTimeZone(timeZone),
     hour12: false,
     hour: '2-digit',
     minute: '2-digit',
@@ -75,7 +96,7 @@ export function isoToZonedTime(iso: string, timeZone: string): string {
 /** Format an instant as a localized time in the restaurant timezone. */
 export function formatTimeInTz(iso: string, timeZone: string): string {
   return new Intl.DateTimeFormat(undefined, {
-    timeZone,
+    timeZone: safeTimeZone(timeZone),
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(iso));
@@ -84,7 +105,7 @@ export function formatTimeInTz(iso: string, timeZone: string): string {
 /** Format an instant as date + time in the restaurant timezone. */
 export function formatDateTimeInTz(iso: string, timeZone: string): string {
   return new Intl.DateTimeFormat(undefined, {
-    timeZone,
+    timeZone: safeTimeZone(timeZone),
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(iso));

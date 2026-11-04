@@ -30,7 +30,7 @@ function DocsIndex() {
   return (
     <div>
       <span className="eyebrow">{t("index.eyebrow")}</span>
-      <h1 className="mb-4 mt-3 font-display text-4xl sm:text-5xl">{t("index.title")}</h1>
+      <h1 className="mb-4 mt-3 font-display text-2xl leading-[1.2] min-[400px]:text-3xl/[1.2] sm:text-4xl/[1.2] md:text-5xl/[1.2]">{t("index.title")}</h1>
       <p className="max-w-2xl text-pretty text-lg text-muted">
         {t.rich("index.intro", {
           link: (chunks) => (
@@ -47,7 +47,7 @@ function DocsIndex() {
       <div className="mt-12 flex flex-col gap-10">
         {docsNav.map((section) => (
           <section key={section.key}>
-            <h2 className="font-display text-xl text-ink-soft">{t(`sections.${section.key}`)}</h2>
+            <h2 className="font-display text-xl leading-[1.2] text-ink-soft">{t(`sections.${section.key}`)}</h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {section.items.map((item) => (
                 <Link

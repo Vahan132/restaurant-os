@@ -8,6 +8,7 @@ import { OrderTableSync } from '../services/order-table-sync';
 
 export interface CloseOrderInput {
   restaurantId: string | null;
+  branchId: string;
   orderId: string;
   actorUserId?: string | null;
 }
@@ -29,7 +30,7 @@ export class CloseOrderUseCase implements UseCase<CloseOrderInput, Order> {
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findById(input.restaurantId, input.orderId);
+    const order = await this.orders.findById(input.restaurantId, input.branchId, input.orderId);
     if (!order) {
       throw OrderNotFound();
     }
@@ -40,6 +41,7 @@ export class CloseOrderUseCase implements UseCase<CloseOrderInput, Order> {
     if (tableId) {
       const otherOpen = await this.orders.existsOtherOpenOnTable(
         input.restaurantId,
+        order.branchId,
         tableId,
         order.id,
       );

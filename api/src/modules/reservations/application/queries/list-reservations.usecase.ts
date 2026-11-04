@@ -21,6 +21,7 @@ import { zonedDayRange } from '../timezone.util';
 
 export interface ListReservationsInput {
   restaurantId: string | null;
+  branchId: string;
   date?: string; // YYYY-MM-DD (restaurant timezone)
   status?: ReservationStatus;
   tableId?: string;
@@ -57,6 +58,7 @@ export class ListReservationsUseCase implements UseCase<
 
     const { items, total } = await this.reservations.list({
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       status: input.status,
       tableId: input.tableId,
       reservedFrom,

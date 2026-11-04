@@ -7,11 +7,20 @@ import {
   MenuCategoryRepository,
 } from '../../domain/repositories/menu-category.repository';
 import { NoRestaurantInScope } from '../application.errors';
+import { slugify } from '../menu-code.util';
 
 export interface CreateCategoryInput {
   restaurantId: string | null;
+  branchId: string;
   name: string;
   description?: string | null;
+  /** LOCALE-2A: optional hy/ru/en translations of name + description. */
+  nameHy?: string | null;
+  nameRu?: string | null;
+  nameEn?: string | null;
+  descriptionHy?: string | null;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
   displayOrder?: number;
 }
 
@@ -27,14 +36,42 @@ export class CreateCategoryUseCase implements UseCase<CreateCategoryInput, MenuC
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
+    const code = await this.generateUniqueCode(
+      input.restaurantId,
+      input.branchId,
+      slugify(input.name, 'category'),
+    );
     const category = MenuCategory.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
+      code,
       name: input.name,
       description: input.description ?? null,
+      nameHy: input.nameHy,
+      nameRu: input.nameRu,
+      nameEn: input.nameEn,
+      descriptionHy: input.descriptionHy,
+      descriptionRu: input.descriptionRu,
+      descriptionEn: input.descriptionEn,
       displayOrder: input.displayOrder,
     });
     await this.categories.create(category);
     return category;
+  }
+
+  /** Ensure per-branch uniqueness by appending -2, -3, ... to the base slug. */
+  private async generateUniqueCode(
+    restaurantId: string,
+    branchId: string,
+    base: string,
+  ): Promise<string> {
+    let candidate = base;
+    let suffix = 2;
+    while (await this.categories.existsByCode(restaurantId, branchId, candidate)) {
+      candidate = `${base}-${suffix}`;
+      suffix += 1;
+    }
+    return candidate;
   }
 }

@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -8,7 +20,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Paginated } from '../../../../shared/application/pagination';
+import { ActiveBranchId } from '../../../../shared/auth/active-branch.decorator';
+import { BranchScoped } from '../../../../shared/auth/branch-scoped.decorator';
 import { RequirePermissions } from '../../../../shared/auth/permissions.decorator';
+import { OwnOrderOrEditOthers } from './order-ownership.guard';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { CurrentTenant } from '../../../../shared/tenancy/current-tenant.decorator';
 import { CurrentUser } from '../../../../shared/tenancy/current-user.decorator';
@@ -31,6 +46,8 @@ import { CloseOrderUseCase } from '../../application/commands/close-order.usecas
 import { SplitEvenUseCase } from '../../application/commands/split-even.usecase';
 import { SplitItemsToNewCheckUseCase } from '../../application/commands/split-items-to-new-check.usecase';
 import { GetReceiptUseCase } from '../../application/queries/get-receipt.usecase';
+import { FiscalizeOrderManuallyUseCase } from '../../application/commands/fiscalize-order-manually.usecase';
+import { GetFiscalReceiptUseCase } from '../../application/queries/get-fiscal-receipt.usecase';
 import {
   AddOrderItemDto,
   ApplyDiscountDto,
@@ -46,6 +63,7 @@ import {
   VoidPaymentDto,
 } from '../../application/dto/order.dto';
 import {
+  FiscalReceiptResponse,
   OrderResponse,
   PaymentResponse,
   RecordPaymentResponse,
@@ -60,6 +78,7 @@ const P = PERMISSIONS;
 
 @ApiTags('orders')
 @ApiBearerAuth('access-token')
+@BranchScoped()
 @Controller('orders')
 export class OrdersController {
   constructor(
@@ -83,6 +102,8 @@ export class OrdersController {
     private readonly splitEven: SplitEvenUseCase,
     private readonly splitItems: SplitItemsToNewCheckUseCase,
     private readonly getReceipt: GetReceiptUseCase,
+    private readonly fiscalizeManually: FiscalizeOrderManuallyUseCase,
+    private readonly getFiscalReceipt: GetFiscalReceiptUseCase,
   ) {}
 
   @Post()
@@ -92,12 +113,13 @@ export class OrdersController {
   @ApiCreatedResponse({ type: OrderResponse })
   async create(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Body() dto: CreateOrderDto,
   ): Promise<OrderResponse> {
     const order = await this.createOrder.execute({
       restaurantId: tenant.restaurantId,
-      branchId: tenant.branchId ?? null,
+      branchId,
       waiterId: user.sub,
       type: dto.type,
       tableId: dto.tableId ?? null,
@@ -110,11 +132,13 @@ export class OrdersController {
   @ApiOkResponse({ type: [OrderResponse] })
   async list(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Query() query: ListOrdersQuery,
   ): Promise<Paginated<OrderResponse>> {
     const page = await this.listOrders.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       status: query.status,
       tableId: query.tableId,
       mineUserId: query.mine === 'true' ? user.sub : undefined,
@@ -122,7 +146,10 @@ export class OrdersController {
       page: query.page,
       limit: query.limit,
     });
-    return { data: page.data.map(OrderResponse.from), pagination: page.pagination };
+    return {
+      data: page.data.map((o) => OrderResponse.from(o)),
+      pagination: page.pagination,
+    };
   }
 
   @Get(':id')
@@ -130,24 +157,32 @@ export class OrdersController {
   @ApiOkResponse({ type: OrderResponse })
   async get(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<OrderResponse> {
-    const order = await this.getOrder.execute({ restaurantId: tenant.restaurantId, orderId: id });
+    const order = await this.getOrder.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      orderId: id,
+    });
     return OrderResponse.from(order);
   }
 
   @Patch(':id')
   @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
   @ApiOperation({ summary: 'Update order note.' })
   @ApiOkResponse({ type: OrderResponse })
   async update(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: UpdateOrderDto,
   ): Promise<OrderResponse> {
     const order = await this.updateNote.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       note: dto.note ?? null,
     });
@@ -156,16 +191,19 @@ export class OrdersController {
 
   @Post(':id/items')
   @RequirePermissions(P.ORDER_CREATE)
+  @OwnOrderOrEditOthers()
   @ApiForbiddenResponse({ description: 'Missing ORDER_CREATE permission.' })
   @ApiOperation({ summary: 'Add an item to an order.' })
   @ApiCreatedResponse({ type: OrderResponse })
   async addOrderItem(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: AddOrderItemDto,
   ): Promise<OrderResponse> {
     const order = await this.addItem.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       menuItemId: dto.menuItemId,
       quantity: dto.quantity,
@@ -177,17 +215,20 @@ export class OrdersController {
 
   @Patch(':id/items/:itemId')
   @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
   @ApiOperation({ summary: 'Edit a NEW item (before send-to-kitchen).' })
   @ApiOkResponse({ type: OrderResponse })
   async editOrderItem(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Param('itemId') itemId: string,
     @Body() dto: EditOrderItemDto,
   ): Promise<OrderResponse> {
     const order = await this.editItem.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       itemId,
       quantity: dto.quantity,
@@ -199,17 +240,20 @@ export class OrdersController {
 
   @Delete(':id/items/:itemId')
   @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
   @ApiOperation({ summary: 'Remove a NEW item (before send-to-kitchen).' })
   @ApiOkResponse({ type: OrderResponse })
   async removeOrderItem(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Param('itemId') itemId: string,
   ): Promise<OrderResponse> {
     const order = await this.removeItem.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       itemId,
     });
@@ -218,57 +262,80 @@ export class OrdersController {
 
   @Post(':id/send-to-kitchen')
   @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
   @ApiOperation({ summary: 'Send NEW items to the kitchen.' })
   @ApiOkResponse({ type: OrderResponse })
   async send(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<OrderResponse> {
     const order = await this.sendToKitchen.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
     });
     return OrderResponse.from(order);
   }
 
   @Post(':id/discount')
-  @RequirePermissions(P.DISCOUNT_APPLY)
+  @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
-  @ApiForbiddenResponse({ description: 'Missing DISCOUNT_APPLY permission.' })
-  @ApiOperation({ summary: 'Apply a discount.' })
+  @ApiForbiddenResponse({
+    description:
+      'Missing ORDER_EDIT permission; or the caller lacks DISCOUNT_APPLY and ' +
+      'supplied no/invalid manager step-up authorization (generic failure).',
+  })
+  @ApiOperation({
+    summary: 'Apply a discount.',
+    description:
+      'Discount authority is DISCOUNT_APPLY. A caller holding it applies directly. ' +
+      'A caller without it must include an `authorization` block (enrolled POS ' +
+      'device secret + a capable manager’s 6-digit PIN); the manager is then ' +
+      'recorded as the approver. The requesting user is never logged out.',
+  })
   @ApiOkResponse({ type: OrderResponse })
   async discount(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Body() dto: ApplyDiscountDto,
+    @Req() req: Request,
   ): Promise<OrderResponse> {
     const order = await this.applyDiscount.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       organizationId: tenant.organizationId,
       orderId: id,
       type: dto.type,
       value: dto.value,
       approvedByUserId: dto.approvedByUserId ?? null,
       actorUserId: user.sub,
+      authorization: dto.authorization ?? null,
+      ip: req.ip ?? null,
     });
     return OrderResponse.from(order);
   }
 
   @Delete(':id/discount')
   @RequirePermissions(P.DISCOUNT_APPLY)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing DISCOUNT_APPLY permission.' })
   @ApiOperation({ summary: 'Remove the discount.' })
   @ApiOkResponse({ type: OrderResponse })
   async clearDiscount(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<OrderResponse> {
     const order = await this.removeDiscount.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
     });
     return OrderResponse.from(order);
@@ -276,12 +343,14 @@ export class OrdersController {
 
   @Post(':id/items/:itemId/cancel')
   @RequirePermissions(P.ORDER_CANCEL)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing ORDER_CANCEL permission.' })
   @ApiOperation({ summary: 'Cancel a single item (reason required).' })
   @ApiOkResponse({ type: OrderResponse })
   async cancelOrderItem(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Param('itemId') itemId: string,
@@ -289,6 +358,7 @@ export class OrdersController {
   ): Promise<OrderResponse> {
     const order = await this.cancelItem.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       organizationId: tenant.organizationId,
       orderId: id,
       itemId,
@@ -301,18 +371,21 @@ export class OrdersController {
 
   @Post(':id/cancel')
   @RequirePermissions(P.ORDER_CANCEL)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing ORDER_CANCEL permission.' })
   @ApiOperation({ summary: 'Cancel the order (reason required); releases the table (auto mode).' })
   @ApiOkResponse({ type: OrderResponse })
   async cancel(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Body() dto: CancelDto,
   ): Promise<OrderResponse> {
     const order = await this.cancelOrder.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       organizationId: tenant.organizationId,
       orderId: id,
       reason: dto.reason,
@@ -323,18 +396,21 @@ export class OrdersController {
   }
 
   @Post(':id/move-table')
-  @RequirePermissions(P.ORDER_EDIT)
+  @RequirePermissions(P.ORDER_MOVE_TABLE)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
-  @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
+  @ApiForbiddenResponse({ description: 'Missing order:move_table permission.' })
   @ApiOperation({ summary: 'Move the order to another table.' })
   @ApiOkResponse({ type: OrderResponse })
   async move(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: MoveTableDto,
   ): Promise<OrderResponse> {
     const order = await this.moveTable.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       tableId: dto.tableId,
     });
@@ -343,32 +419,41 @@ export class OrdersController {
 
   @Post(':id/serve')
   @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
   @ApiOperation({ summary: 'Mark the order as SERVED.' })
   @ApiOkResponse({ type: OrderResponse })
   async serve(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<OrderResponse> {
-    const order = await this.markServed.execute({ restaurantId: tenant.restaurantId, orderId: id });
+    const order = await this.markServed.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      orderId: id,
+    });
     return OrderResponse.from(order);
   }
 
   @Post(':id/payments')
   @RequirePermissions(P.PAYMENT_PROCESS)
+  @OwnOrderOrEditOthers()
   @HttpCode(201)
   @ApiForbiddenResponse({ description: 'Missing PAYMENT_PROCESS permission.' })
   @ApiOperation({ summary: 'Record a manual payment (partial/multiple allowed).' })
   @ApiCreatedResponse({ type: RecordPaymentResponse })
   async addPayment(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Body() dto: RecordPaymentDto,
   ): Promise<RecordPaymentResponse> {
     const result = await this.recordPayment.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       method: dto.method,
       amount: dto.amount,
@@ -383,13 +468,18 @@ export class OrdersController {
   }
 
   @Post(':id/payments/:paymentId/void')
-  @RequirePermissions(P.PAYMENT_PROCESS)
+  @RequirePermissions(P.PAYMENT_VOID)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
-  @ApiForbiddenResponse({ description: 'Missing PAYMENT_PROCESS permission.' })
+  @ApiForbiddenResponse({
+    description:
+      'Missing payment:void permission, or the order belongs to another waiter (order:edit_others).',
+  })
   @ApiOperation({ summary: 'Void an active payment.' })
   @ApiOkResponse({ type: OrderResponse })
   async voidOrderPayment(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
     @Param('paymentId') paymentId: string,
@@ -397,6 +487,7 @@ export class OrdersController {
   ): Promise<OrderResponse> {
     const order = await this.voidPayment.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       paymentId,
       reason: dto.reason ?? null,
@@ -407,17 +498,20 @@ export class OrdersController {
 
   @Post(':id/close')
   @RequirePermissions(P.PAYMENT_PROCESS)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing PAYMENT_PROCESS permission.' })
   @ApiOperation({ summary: 'Close a fully-paid order; table -> CLEANING (auto mode, last check).' })
   @ApiOkResponse({ type: OrderResponse })
   async close(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @CurrentUser() user: CurrentUserContext,
     @Param('id') id: string,
   ): Promise<OrderResponse> {
     const order = await this.closeOrder.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       actorUserId: user.sub,
     });
@@ -426,17 +520,20 @@ export class OrdersController {
 
   @Post(':id/split-even')
   @RequirePermissions(P.PAYMENT_PROCESS)
+  @OwnOrderOrEditOthers()
   @HttpCode(200)
   @ApiForbiddenResponse({ description: 'Missing PAYMENT_PROCESS permission.' })
   @ApiOperation({ summary: 'Even-split calculator (shares sum exactly to total). Stateless.' })
   @ApiOkResponse({ type: SplitEvenResponse })
   async splitEvenShares(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: SplitEvenDto,
   ): Promise<SplitEvenResponse> {
     return this.splitEven.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       parts: dto.parts,
     });
@@ -444,17 +541,20 @@ export class OrdersController {
 
   @Post(':id/split-items')
   @RequirePermissions(P.ORDER_EDIT)
+  @OwnOrderOrEditOthers()
   @HttpCode(201)
   @ApiForbiddenResponse({ description: 'Missing ORDER_EDIT permission.' })
   @ApiOperation({ summary: 'Move items to a new linked child check (shares the table).' })
   @ApiCreatedResponse({ type: SplitItemsResponse })
   async splitToNewCheck(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
     @Body() dto: SplitItemsDto,
   ): Promise<SplitItemsResponse> {
     const result = await this.splitItems.execute({
       restaurantId: tenant.restaurantId,
+      branchId,
       orderId: id,
       itemIds: dto.itemIds,
     });
@@ -469,8 +569,62 @@ export class OrdersController {
   @ApiOkResponse({ type: ReceiptResponse })
   async receipt(
     @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
     @Param('id') id: string,
   ): Promise<ReceiptResponse> {
-    return this.getReceipt.execute({ restaurantId: tenant.restaurantId, orderId: id });
+    return this.getReceipt.execute({ restaurantId: tenant.restaurantId, branchId, orderId: id });
+  }
+
+  @Post(':id/fiscalize')
+  @RequirePermissions(P.FISCAL_RECEIPT_PRINT)
+  @OwnOrderOrEditOthers()
+  @HttpCode(200)
+  @ApiForbiddenResponse({ description: 'Missing fiscal:receipt:print permission.' })
+  @ApiOperation({
+    summary:
+      'FISCAL-EDGE-4: manually fiscalize a paid dine-in order (MANUAL mode or retry). Hub-only.',
+  })
+  @ApiOkResponse({ type: OrderResponse })
+  async fiscalize(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+    @Param('id') id: string,
+  ): Promise<OrderResponse> {
+    const order = await this.fiscalizeManually.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      orderId: id,
+    });
+    return OrderResponse.from(order);
+  }
+
+  @Get(':id/fiscal-receipt')
+  @RequirePermissions(P.FISCAL_RECEIPT_PRINT)
+  @ApiForbiddenResponse({ description: 'Missing fiscal:receipt:print permission.' })
+  @ApiOperation({
+    summary:
+      'FISCAL-EDGE-4: stored fiscal receipt data (number/QR/receiptId) for reprint — no device call.',
+  })
+  @ApiOkResponse({ type: FiscalReceiptResponse })
+  async fiscalReceipt(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+    @Param('id') id: string,
+  ): Promise<FiscalReceiptResponse> {
+    const view = await this.getFiscalReceipt.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      orderId: id,
+    });
+    return {
+      orderId: view.orderId,
+      orderNumber: view.orderNumber,
+      currency: view.currency,
+      totalAmount: view.totalAmount,
+      receiptId: view.fiscal.receiptId,
+      fiscalNumber: view.fiscal.fiscalNumber,
+      qr: view.fiscal.qr,
+      fiscalizedAt: view.fiscal.fiscalizedAt,
+    };
   }
 }

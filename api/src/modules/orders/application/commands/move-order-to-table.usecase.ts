@@ -3,16 +3,23 @@ import { UseCase } from '../../../../shared/application/use-case';
 import { Order } from '../../domain/entities/order';
 import { ORDER_REPOSITORY, OrderRepository } from '../../domain/repositories/order.repository';
 import {
+  CrossBranchReference,
   NoRestaurantInScope,
   OrderNotFound,
   TableHasOpenOrder,
   TableNotInRestaurant,
+  TableReservedForReservation,
 } from '../application.errors';
+import {
+  ORDERS_RESERVATION_READER,
+  OrdersReservationReader,
+} from '../ports/reservation-conflict.reader';
 import { ORDERS_TABLE_READER, OrdersTableReader } from '../ports/table-reader.port';
 import { OrderTableSync } from '../services/order-table-sync';
 
 export interface MoveOrderToTableInput {
   restaurantId: string | null;
+  branchId: string;
   orderId: string;
   tableId: string;
 }
@@ -23,6 +30,7 @@ export class MoveOrderToTableUseCase implements UseCase<MoveOrderToTableInput, O
   constructor(
     @Inject(ORDER_REPOSITORY) private readonly orders: OrderRepository,
     @Inject(ORDERS_TABLE_READER) private readonly tables: OrdersTableReader,
+    @Inject(ORDERS_RESERVATION_READER) private readonly reservations: OrdersReservationReader,
     private readonly tableSync: OrderTableSync,
   ) {}
 
@@ -30,17 +38,38 @@ export class MoveOrderToTableUseCase implements UseCase<MoveOrderToTableInput, O
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findById(input.restaurantId, input.orderId);
+    const order = await this.orders.findById(input.restaurantId, input.branchId, input.orderId);
     if (!order) {
       throw OrderNotFound();
     }
-    if (!(await this.tables.tableExists(input.restaurantId, input.tableId))) {
+    const tableBranchId = await this.tables.getTableBranchId(input.restaurantId, input.tableId);
+    if (tableBranchId === null) {
       throw TableNotInRestaurant();
     }
+    // Intra-branch integrity: the target table must be in the order's branch.
+    if (tableBranchId !== order.branchId) {
+      throw CrossBranchReference('Table belongs to a different branch.');
+    }
     if (input.tableId !== order.tableId) {
-      const open = await this.orders.findOpenByTable(input.restaurantId, input.tableId);
+      const open = await this.orders.findOpenByTable(
+        input.restaurantId,
+        order.branchId,
+        input.tableId,
+      );
       if (open && open.id !== order.id) {
         throw TableHasOpenOrder();
+      }
+      // Reject moving onto a table currently held by an active reservation,
+      // mirroring the open-order guard above. Prevents double-use of a reserved
+      // table (and the tableSync.occupy() below silently overwriting its hold).
+      const reserved = await this.reservations.hasActiveReservationHold(
+        input.restaurantId,
+        order.branchId,
+        input.tableId,
+        new Date(),
+      );
+      if (reserved) {
+        throw TableReservedForReservation();
       }
     }
 

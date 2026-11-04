@@ -5,16 +5,19 @@ import { useTranslations } from "next-intl";
 import { useChangePassword } from "@/api/hooks";
 import { useSession } from "@/hooks/useSession";
 import { Card } from "@/components/account/ui";
-import { Field, Input } from "@/components/ui/Field";
+import { Field } from "@/components/ui/Field";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
-import { toast, toastError } from "@/lib/toast";
+import { toast } from "@/lib/toast";
+import { useApiError } from "@/hooks/useApiError";
 
 export default function SettingsPage() {
   const t = useTranslations("account.settings");
   const tv = useTranslations("validation");
   const { user } = useSession();
   const changePassword = useChangePassword();
+  const { toastError } = useApiError();
 
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -57,9 +60,8 @@ export default function SettingsPage() {
       <Card title={t("passwordTitle")} description={t("passwordDesc")}>
         <form onSubmit={onSubmit} className="flex max-w-md flex-col gap-5">
           <Field label={t("newPassword")} htmlFor="newPassword" error={error} required>
-            <Input
+            <PasswordInput
               id="newPassword"
-              type="password"
               autoComplete="new-password"
               value={newPassword}
               invalid={!!error}
@@ -70,9 +72,8 @@ export default function SettingsPage() {
             </div>
           </Field>
           <Field label={t("confirm")} htmlFor="confirm" required>
-            <Input
+            <PasswordInput
               id="confirm"
-              type="password"
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
@@ -91,12 +92,12 @@ export default function SettingsPage() {
           {prefs.map((pref) => (
             <li
               key={pref.label}
-              className="flex items-center justify-between rounded-xl border border-line bg-cream/60 px-4 py-3"
+              className="flex items-center justify-between gap-3 rounded-xl border border-line bg-cream/60 px-4 py-3"
             >
-              <span className="text-sm text-ink-soft">{pref.label}</span>
+              <span className="min-w-0 text-sm text-ink-soft">{pref.label}</span>
               <span
                 aria-hidden
-                className={`relative h-5 w-9 rounded-pill transition-colors ${
+                className={`relative h-5 w-9 shrink-0 rounded-pill transition-colors ${
                   pref.on ? "bg-terracotta/60" : "bg-line"
                 }`}
               >

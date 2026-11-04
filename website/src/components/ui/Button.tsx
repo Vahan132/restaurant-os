@@ -7,7 +7,8 @@ type Size = "sm" | "md" | "lg";
 
 const base =
   "inline-flex items-center justify-center gap-2 font-sans font-semibold rounded-pill " +
-  "transition-all duration-base ease-out-expo select-none " +
+  "transform-gpu will-change-transform [backface-visibility:hidden] " +
+  "transition-[color,background-color,box-shadow,transform,outline-color] duration-base ease-out-expo select-none " +
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terracotta " +
   "disabled:opacity-50 disabled:pointer-events-none";
 

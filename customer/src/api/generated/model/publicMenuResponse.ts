@@ -8,5 +8,7 @@
 import type { PublicMenuCategoryResponse } from './publicMenuCategoryResponse';
 
 export interface PublicMenuResponse {
+  /** ISO currency of the menu prices (from Restaurant.currency; same source as the cart/order). Display metadata only — amounts are integer minor units. */
+  currency: string;
   categories: PublicMenuCategoryResponse[];
 }

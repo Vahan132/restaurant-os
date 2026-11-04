@@ -19,6 +19,7 @@ import { ReservationTableSync } from '../services/reservation-table-sync';
 
 export interface CancelReservationInput {
   restaurantId: string | null;
+  branchId: string;
   reservationId: string;
   reason?: string | null;
   actorUserId?: string | null;
@@ -42,7 +43,11 @@ export class CancelReservationUseCase implements UseCase<CancelReservationInput,
     if (!settings.enableReservations) {
       throw ReservationsDisabled();
     }
-    const reservation = await this.reservations.findById(input.restaurantId, input.reservationId);
+    const reservation = await this.reservations.findById(
+      input.restaurantId,
+      input.branchId,
+      input.reservationId,
+    );
     if (!reservation) {
       throw ReservationNotFound();
     }

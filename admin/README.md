@@ -18,7 +18,7 @@ Orders, …) are placeholders to be built later.
 
 ```bash
 pnpm install
-cp .env.example .env        # adjust NEXT_PUBLIC_API_BASE_URL if needed
+cp .env.local.local.local.example .env.local.local.local        # adjust NEXT_PUBLIC_API_BASE_URL if needed
 pnpm generate:api           # generate typed hooks from ./openapi.json
 pnpm dev                    # http://localhost:3000
 ```

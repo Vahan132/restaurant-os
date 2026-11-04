@@ -1,9 +1,12 @@
+import { useTranslations } from "next-intl";
+
 /**
  * Hero composition: a warm "plated" food placeholder with floating product
  * chips layered over it. Photography would drop into the .photo block; until
  * then it reads as an intentional warm gradient scene, not a broken image.
  */
 export function HeroVisual() {
+  const t = useTranslations("home.visuals.hero");
   return (
     <div className="relative mx-auto aspect-[5/6] w-full max-w-md sm:max-w-lg">
       {/* soft halo */}
@@ -18,7 +21,7 @@ export function HeroVisual() {
               "radial-gradient(120% 90% at 30% 20%, #f6dcc0 0%, #eab784 38%, #c9612f 78%, #a44a22 100%)",
           }}
           role="img"
-          aria-label="A warm plate of food ready for service"
+          aria-label={t("alt")}
         >
           {/* abstract plate */}
           <div className="flex h-full items-center justify-center">
@@ -33,9 +36,9 @@ export function HeroVisual() {
       </div>
 
       {/* floating order ticket */}
-      <div className="absolute -left-4 top-10 w-44 rounded-2xl border border-line bg-paper/95 p-3.5 shadow-md backdrop-blur-sm animate-subtle-float sm:-left-8">
+      <div className="absolute -left-4 top-10 w-44 rounded-2xl border border-line bg-paper/95 p-4 shadow-md backdrop-blur-sm animate-subtle-float sm:-left-8">
         <p className="text-2xs font-semibold uppercase tracking-eyebrow text-muted">
-          New order · Table 7
+          {t("newOrder")} · {t("table", { n: 7 })}
         </p>
         <div className="mt-2 flex flex-col gap-1.5 text-xs text-ink-soft">
           <span>
@@ -46,7 +49,7 @@ export function HeroVisual() {
           </span>
         </div>
         <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-pill bg-sage-soft px-2 py-0.5 text-2xs font-semibold text-sage-deep">
-          <span className="h-1.5 w-1.5 rounded-full bg-sage" /> Sent to kitchen
+          <span className="h-1.5 w-1.5 rounded-full bg-sage" /> {t("sentToKitchen")}
         </div>
       </div>
 
@@ -55,7 +58,7 @@ export function HeroVisual() {
         className="absolute -right-3 bottom-12 w-40 rounded-2xl border border-line bg-paper/95 p-3.5 shadow-md backdrop-blur-sm animate-subtle-float sm:-right-7"
         style={{ animationDelay: "1.4s" }}
       >
-        <p className="text-2xs uppercase tracking-eyebrow text-muted">Today</p>
+        <p className="text-2xs uppercase tracking-eyebrow text-muted">{t("today")}</p>
         <p className="font-display text-2xl text-ink">$4,280</p>
         <div className="mt-1 flex h-6 items-end gap-1">
           {[40, 55, 48, 70, 62, 88].map((h, i) => (

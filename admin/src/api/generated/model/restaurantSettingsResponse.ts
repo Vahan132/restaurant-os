@@ -12,6 +12,11 @@ export interface RestaurantSettingsResponse {
   restaurantId: string;
   /** @nullable */
   logoUrl: string | null;
+  /**
+     * MEDIA-1: object-storage key when the logo was uploaded (null for URL-paste).
+     * @nullable
+     */
+  logoKey: string | null;
   /** @nullable */
   phone: string | null;
   /** @nullable */
@@ -33,4 +38,6 @@ export interface RestaurantSettingsResponse {
   allowManualTableStatus: boolean;
   enableQrMenu: boolean;
   enableCustomerOrdering: boolean;
+  /** 3A: admin login allowed from any device when true. */
+  allowUnanchoredAdminLogin: boolean;
 }

@@ -7,9 +7,13 @@ import { PublicContext } from './public-context';
 /**
  * PublicRestaurantResolverGuard — guards /public/* routes (which are @Public()
  * so the tenant JWT/Tenant guards skip them). Resolves the restaurant STRICTLY
- * from the request, never from a client-supplied id:
- *   1) Host header  -> customDomain, else subdomain slug under PLATFORM_ROOT_DOMAIN
- *   2) fallback     -> X-Restaurant-Slug header OR ?restaurant=<slug>
+ * from the request, never from a client-supplied id. An EXPLICIT slug wins over
+ * the host so a shared host can't shadow it:
+ *   1) Explicit slug -> :restaurantSlug/:slug route param, else X-Restaurant-Slug
+ *      header, else ?restaurant=<slug>; matched against Restaurant.slug (an
+ *      unknown explicit slug 404s — it is never backfilled from the host).
+ *   2) No slug       -> Host header: customDomain, else subdomain slug under
+ *      PLATFORM_ROOT_DOMAIN.
  * Returns 404 (opaque) when there is no match, the restaurant is not ACTIVE, the
  * organization is suspended, or RestaurantSettings.enableQrMenu is false.
  */
@@ -23,18 +27,33 @@ export class PublicRestaurantResolverGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
 
-    // 1) host-based resolution (custom domain or subdomain slug)
-    const host = request.headers.host ?? '';
-    let resolved = host ? await this.tenantResolver.fromHost(host) : null;
+    // Tenant resolution precedence (FIX-API-STOREFRONT-TENANT-SCOPE).
+    // An EXPLICIT slug in the request is authoritative and MUST take precedence
+    // over host resolution. Otherwise a shared host that happens to resolve to
+    // some restaurant (custom domain or subdomain slug) shadows the URL slug, so
+    // every /public/:restaurantSlug/... and /res/m/<slug> request returns that
+    // one restaurant regardless of the slug — breaking multi-tenant isolation.
+    // Priority: route-param slug (/public/:restaurantSlug/...) > X-Restaurant-Slug
+    // header > ?restaurant= query. Each is matched against Restaurant.slug, never
+    // used as an id.
+    const headerSlug = request.headers['x-restaurant-slug'];
+    const explicitSlug =
+      (request.params?.restaurantSlug as string | undefined) ??
+      (request.params?.slug as string | undefined) ??
+      (Array.isArray(headerSlug) ? headerSlug[0] : headerSlug) ??
+      (request.query?.restaurant as string | undefined) ??
+      undefined;
 
-    // 2) dev/flexibility fallback: explicit slug via header or query
-    if (!resolved) {
-      const headerSlug = request.headers['x-restaurant-slug'];
-      const querySlug = (request.query?.restaurant as string | undefined) ?? undefined;
-      const slug = (Array.isArray(headerSlug) ? headerSlug[0] : headerSlug) || querySlug;
-      if (slug) {
-        resolved = await this.tenantResolver.fromSlug(slug);
-      }
+    // When an explicit slug is present, resolve STRICTLY from it. An unknown slug
+    // must 404 (below) — it is never backfilled from the host, which would serve
+    // a default tenant and silently ignore the slug.
+    let resolved = explicitSlug ? await this.tenantResolver.fromSlug(explicitSlug) : null;
+
+    // Only when NO explicit slug is given do we fall back to host-based
+    // resolution (custom domain, else subdomain slug under PLATFORM_ROOT_DOMAIN).
+    if (!explicitSlug) {
+      const host = request.headers.host ?? '';
+      resolved = host ? await this.tenantResolver.fromHost(host) : null;
     }
 
     if (!resolved?.restaurantId) {
@@ -71,6 +90,32 @@ export class PublicRestaurantResolverGuard implements CanActivate {
       restaurantId: restaurant.id,
       organizationId: restaurant.organizationId,
     };
+
+    // BR-9: branch-explicit routes carry a `:branchSlug`. Resolve it against this
+    // restaurant's ACTIVE branches only (never a client-supplied id); an unknown
+    // slug is a 404. Restaurant-only routes have no branchSlug and skip this.
+    const branchSlugParam = request.params?.branchSlug as string | undefined;
+    if (branchSlugParam) {
+      const branch = await this.prisma.branch.findFirst({
+        where: {
+          restaurantId: restaurant.id,
+          slug: branchSlugParam.trim().toLowerCase(),
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+        select: { id: true, name: true, slug: true },
+      });
+      if (!branch) {
+        throw new NotFoundException({
+          code: 'BRANCH_NOT_FOUND',
+          message: 'No such branch for this restaurant.',
+        });
+      }
+      publicContext.branchId = branch.id;
+      publicContext.branchName = branch.name;
+      publicContext.branchSlug = branch.slug;
+    }
+
     request.public = publicContext;
     return true;
   }

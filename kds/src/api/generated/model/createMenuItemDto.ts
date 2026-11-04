@@ -11,13 +11,10 @@ export interface CreateMenuItemDto {
   name: string;
   /** Category id (must belong to your restaurant). */
   categoryId: string;
-  /**
-   * Price in integer minor units (>= 0).
-   * @minimum 0
-   */
-  priceAmount: number;
   description?: string;
   imageUrl?: string;
+  /** MEDIA-1: object key from a presigned upload (finalize). Overrides imageUrl. */
+  imageKey?: string;
   preparationStation?: CreateMenuItemDtoPreparationStation;
   /** @minimum 0 */
   prepTimeMinutes?: number;

@@ -5,9 +5,8 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { UpdateOrderDtoNote } from './updateOrderDtoNote';
 
 export interface UpdateOrderDto {
   /** @nullable */
-  note?: UpdateOrderDtoNote;
+  note?: string | null;
 }

@@ -10,15 +10,20 @@ import { useAuthStore } from '@/stores/auth';
  * first client render (tokens still null) would bounce a logged-in user.
  */
 export function useStoreHydrated(): boolean {
-  const [hydrated, setHydrated] = useState(() =>
-    useAuthStore.persist.hasHydrated(),
+  // `persist` is attached by the zustand middleware, but it can be momentarily
+  // unavailable during server render — guard so SSR never throws.
+  const [hydrated, setHydrated] = useState(
+    () => useAuthStore.persist?.hasHydrated() ?? false,
   );
 
   useEffect(() => {
-    const unsub = useAuthStore.persist.onFinishHydration(() =>
-      setHydrated(true),
-    );
-    setHydrated(useAuthStore.persist.hasHydrated());
+    const persist = useAuthStore.persist;
+    if (!persist) {
+      setHydrated(true);
+      return;
+    }
+    const unsub = persist.onFinishHydration(() => setHydrated(true));
+    setHydrated(persist.hasHydrated());
     return unsub;
   }, []);
 

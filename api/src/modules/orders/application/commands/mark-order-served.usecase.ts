@@ -7,6 +7,7 @@ import { NoRestaurantInScope, OrderNotFound } from '../application.errors';
 
 export interface MarkOrderServedInput {
   restaurantId: string | null;
+  branchId: string;
   orderId: string;
 }
 
@@ -22,7 +23,7 @@ export class MarkOrderServedUseCase implements UseCase<MarkOrderServedInput, Ord
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findById(input.restaurantId, input.orderId);
+    const order = await this.orders.findById(input.restaurantId, input.branchId, input.orderId);
     if (!order) {
       throw OrderNotFound();
     }

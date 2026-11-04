@@ -5,21 +5,15 @@
  * Multi-tenant SaaS restaurant platform — backend API.
  * OpenAPI spec version: 0.1.0
  */
-import type { AccountSubscriptionSummaryStatus } from './accountSubscriptionSummaryStatus';
 
 export interface AccountSubscriptionSummary {
-  id?: string;
-  status: AccountSubscriptionSummaryStatus;
-  planCode: string;
-  planName: string;
+  status: string;
   /** @nullable */
-  priceAmount?: number | null;
+  planCode: string | null;
   /** @nullable */
-  currency?: string | null;
+  planName: string | null;
   /** @nullable */
-  interval?: string | null;
+  currentPeriodEnd: string | null;
   /** @nullable */
-  currentPeriodEnd?: string | null;
-  /** @nullable */
-  trialEndsAt?: string | null;
+  trialEndsAt: string | null;
 }

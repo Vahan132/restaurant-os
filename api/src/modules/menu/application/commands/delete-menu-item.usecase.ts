@@ -9,6 +9,7 @@ import { MenuItemNotFound, NoRestaurantInScope } from '../application.errors';
 
 export interface DeleteMenuItemInput {
   restaurantId: string | null;
+  branchId: string;
   itemId: string;
   actorUserId?: string | null;
 }
@@ -25,7 +26,7 @@ export class DeleteMenuItemUseCase implements UseCase<DeleteMenuItemInput, void>
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const item = await this.items.findById(input.restaurantId, input.itemId);
+    const item = await this.items.findById(input.restaurantId, input.branchId, input.itemId);
     if (!item) {
       throw MenuItemNotFound();
     }

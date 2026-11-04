@@ -7,18 +7,28 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
+import { RolePermissionsCache } from '../../modules/identity/infrastructure/services/role-permissions.cache';
 import { REQUIRED_PERMISSIONS_KEY } from './permissions.decorator';
 
 /**
  * Global authorization guard (runs after auth + tenant). Enforces
- * @RequirePermissions(...) by checking the user's permission snapshot.
+ * @RequirePermissions(...) against the caller's SERVER-RESOLVED permissions.
  * Requires ALL listed permissions; otherwise responds 403 in the standard shape.
+ *
+ * Authorization never trusts the JWT permission snapshot (frozen at login). On
+ * @BranchScoped routes BranchAccessGuard has already resolved the caller's
+ * effective permissions for the active branch; otherwise we resolve the caller's
+ * restaurant-wide role permissions fresh (Redis-cached, invalidated on role
+ * update) so a permission change takes effect without re-login.
  */
 @Injectable()
 export class PermissionsGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly rolePermissions: RolePermissionsCache,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const required = this.reflector.getAllAndOverride<string[]>(REQUIRED_PERMISSIONS_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -37,7 +47,10 @@ export class PermissionsGuard implements CanActivate {
       });
     }
 
-    const granted = new Set(user.permissions ?? []);
+    const effective =
+      request.effectivePermissions ??
+      (await this.rolePermissions.get(user.organizationId, user.roleId));
+    const granted = new Set(effective);
     const missing = required.filter((p) => !granted.has(p));
     if (missing.length > 0) {
       throw new ForbiddenException({

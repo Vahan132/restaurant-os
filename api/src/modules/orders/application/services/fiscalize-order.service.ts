@@ -1,0 +1,132 @@
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { Quantity } from '../../../../shared/domain/value-objects/quantity';
+import {
+  FISCALIZATION_PORT,
+  FiscalizationPort,
+  FiscalizationResult,
+  FiscalMode,
+} from '../../../fiscalization/application/ports/fiscalization.port';
+import { Order } from '../../domain/entities/order';
+import { PaymentMethod } from '../../domain/enums';
+import { MENU_READER, MenuReader } from '../ports/menu-reader.port';
+
+/**
+ * Builds the {@link FiscalizationInput} from a PAID order and invokes the
+ * FiscalizationPort (stubbed). This is the per-transition FISCALIZATION HOOK for
+ * the QR-web prepayment flow: it is called once on the paymentStatus→PAID
+ * transition. A second emission at a later FULFILLED transition (see the
+ * accountant decision NOTE below) can be added by calling this again with a
+ * different `mode` — no flow rework needed.
+ *
+ * NOTE (accountant decision, pending): QR-web v1 fiscalises a single mode-2
+ * (products) receipt at PAID. The alternative the accountants may choose is a
+ * mode-3 (prepayment) receipt at PAID plus a mode-2 (products) receipt at
+ * fulfilment. Because this service is a hook (mode is a parameter) and
+ * Order.applyFiscalResult is idempotent+additive, switching to the two-receipt
+ * model is additive — do not refactor the flow for it.
+ */
+@Injectable()
+export class FiscalizeOrderService {
+  constructor(
+    @Inject(FISCALIZATION_PORT) private readonly fiscalization: FiscalizationPort,
+    @Optional() @Inject(MENU_READER) private readonly menus?: MenuReader,
+  ) {}
+
+  /**
+   * HDM-EDGE-3: order lines snapshot the dish's ADG code + fiscal department when
+   * the order is taken. If the dish wasn't classified yet, the line has none and
+   * the receipt fails closed (192 / DEP_REQUIRED). Fill those gaps from the
+   * dish's CURRENT menu data, so fixing the menu and pressing Retry works for
+   * orders already taken. Never overrides a value that was snapshotted.
+   */
+  private async currentFiscalCodes(
+    order: Order,
+  ): Promise<Map<string, { adgCode: string | null; dep: string | null }>> {
+    const out = new Map<string, { adgCode: string | null; dep: string | null }>();
+    if (!this.menus) {
+      return out;
+    }
+    const missing = new Set(
+      order.items
+        .filter((i) => !i.isCancelled() && (!i.adgCode?.trim() || !i.dep?.trim()))
+        .map((i) => i.menuItemId),
+    );
+    for (const menuItemId of missing) {
+      try {
+        const m = await this.menus.getItemWithModifiers(order.restaurantId, menuItemId);
+        if (m) {
+          out.set(menuItemId, { adgCode: m.item.adgCode, dep: m.item.dep });
+        }
+      } catch {
+        // best-effort: the pre-flight check still fails closed with a clear code
+      }
+    }
+    return out;
+  }
+
+  /** Fiscalise the order's products receipt (mode 2). Channel is QR_WEB (e-HDM). */
+  /**
+   * HDM-EDGE-4: the tender split for the receipt. QR prepayments fill
+   * order.cash/cardAmount explicitly; POS (table) bills record PAYMENTS instead
+   * and left those fields 0 — the HDM then got paidAmount 0 and answered 188
+   * "Bad amounts". Derive it from the ACTIVE payments (applied amounts, not the
+   * cash tendered) when the explicit split is empty. Non-cash methods count as
+   * cashless.
+   */
+  private tenderSplit(order: Order): { cash: number; card: number } {
+    if (order.cashAmount + order.cardAmount > 0) {
+      return { cash: order.cashAmount, card: order.cardAmount };
+    }
+    let cash = 0;
+    let card = 0;
+    for (const p of order.payments) {
+      if (!p.isActive()) continue;
+      if (p.method === PaymentMethod.CASH) cash += p.amount;
+      else card += p.amount;
+    }
+    return { cash, card };
+  }
+
+  async fiscalizeProducts(order: Order): Promise<FiscalizationResult> {
+    const tender = this.tenderSplit(order);
+    const current = await this.currentFiscalCodes(order);
+    const lines = order.items
+      .filter((i) => !i.isCancelled())
+      .map((i) => ({
+        name: i.nameSnapshot,
+        goodName: i.goodName ?? i.nameSnapshot,
+        goodCode: i.goodCode,
+        quantityThousandths: Quantity.fromUnits(i.quantity).thousandthsValue,
+        unit: i.unit,
+        // HDM-EDGE-4: the receipt price must include modifier deltas (lineTotal =
+        // (unit + modifiers) * qty), or the item sum is lower than what was paid.
+        unitPriceAmount:
+          i.quantity > 0 && Number.isInteger(i.lineTotalAmount / i.quantity)
+            ? i.lineTotalAmount / i.quantity
+            : i.unitPriceAmount,
+        lineTotalAmount: i.lineTotalAmount,
+        adgCode: i.adgCode?.trim() ? i.adgCode : (current.get(i.menuItemId)?.adgCode ?? null),
+        dep: i.dep?.trim() ? i.dep : (current.get(i.menuItemId)?.dep ?? null),
+      }));
+
+    return this.fiscalization.fiscalize({
+      restaurantId: order.restaurantId,
+      branchId: order.branchId,
+      orderRef: order.id,
+      currency: order.currency,
+      channel: 'QR_WEB',
+      mode: FiscalMode.PRODUCTS,
+      partnerTin: order.partnerTin,
+      lines,
+      subtotalAmount: order.subtotalAmount,
+      discountAmount: order.discountAmount,
+      serviceFeeAmount: order.serviceFeeAmount,
+      totalAmount: order.totalAmount,
+      cardAmount: tender.card,
+      cashAmount: tender.cash,
+      partialAmount: order.partialAmount,
+      prePaymentAmount: order.prePaymentAmount,
+      changeAmount: order.changeAmount,
+    });
+  }
+}

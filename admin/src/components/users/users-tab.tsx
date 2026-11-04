@@ -10,12 +10,17 @@ import {
 import { UserResponseStatus, type UserResponse } from '@/api/generated/model';
 import { PasswordRevealModal } from '@/components/users/password-reveal-modal';
 import { ResetPasswordModal } from '@/components/users/reset-password-modal';
+import { StaffPinModal } from '@/components/users/staff-pin-modal';
+import { UserBranchAccessCell } from '@/components/users/user-branch-access-cell';
 import { UserFormModal } from '@/components/users/user-form-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { inputClass } from '@/components/ui/form';
 import { useConfirm } from '@/components/ui/use-confirm';
 import { getErrorMessage } from '@/lib/api-error';
+import { usePermission } from '@/lib/auth/use-permission';
+import { PERMISSIONS } from '@/lib/permissions';
+import { useRoleLabel } from '@/lib/users/role-label';
 import {
   useCurrentUser,
   usePaginatedUsers,
@@ -32,6 +37,10 @@ export function UsersTab() {
   const invalidate = useUsersInvalidation();
   const { ask, dialog } = useConfirm();
   const currentUser = useCurrentUser();
+  // Staff PIN management (3B) is branch-scoped: gate on the active branch.
+  const canManagePins = usePermission(PERMISSIONS.STAFF_PIN_MANAGE);
+  // IIKO-PERM-1: user:view sees the list; editing still needs USER_MANAGE.
+  const canManageUsers = usePermission(PERMISSIONS.USER_MANAGE, 'restaurant');
 
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -50,14 +59,16 @@ export function UsersTab() {
   const { users, pagination, isLoading, isFetching } = usePaginatedUsers(params);
   const { roles } = useRoles();
 
+  const roleLabel = useRoleLabel();
   const roleName = useMemo(() => {
-    const map = new Map(roles.map((r) => [r.id, r.name]));
+    const map = new Map(roles.map((r) => [r.id, roleLabel(r)]));
     return (id: string) => map.get(id) ?? id;
-  }, [roles]);
+  }, [roles, roleLabel]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
   const [resetUser, setResetUser] = useState<UserResponse | null>(null);
+  const [pinUser, setPinUser] = useState<UserResponse | null>(null);
   const [revealPassword, setRevealPassword] = useState<string | null>(null);
 
   const block = useUsersControllerBlock();
@@ -106,17 +117,19 @@ export function UsersTab() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <div className="ml-auto">
-          <Button
-            variant="primary"
-            onClick={() => {
-              setEditingUser(null);
-              setFormOpen(true);
-            }}
-          >
-            + {t('addUser')}
-          </Button>
-        </div>
+        {canManageUsers && (
+          <div className="ml-auto">
+            <Button
+              variant="primary"
+              onClick={() => {
+                setEditingUser(null);
+                setFormOpen(true);
+              }}
+            >
+              + {t('addUser')}
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -136,6 +149,7 @@ export function UsersTab() {
                 <th className="px-4 py-2 font-medium">{t('email')}</th>
                 <th className="px-4 py-2 font-medium">{t('role')}</th>
                 <th className="px-4 py-2 font-medium">{t('scope')}</th>
+                <th className="px-4 py-2 font-medium">{t('branchAccessTitle')}</th>
                 <th className="px-4 py-2 font-medium">{t('status')}</th>
                 <th className="px-4 py-2" />
               </tr>
@@ -153,6 +167,9 @@ export function UsersTab() {
                       {user.restaurantId ? t('scopeRestaurant') : t('scopeOrg')}
                     </td>
                     <td className="px-4 py-2">
+                      <UserBranchAccessCell userId={user.id} />
+                    </td>
+                    <td className="px-4 py-2">
                       {blocked ? (
                         <Badge tone="red">{t('blocked')}</Badge>
                       ) : (
@@ -161,20 +178,29 @@ export function UsersTab() {
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex justify-end gap-1">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            setEditingUser(user);
-                            setFormOpen(true);
-                          }}
-                        >
-                          {tc('edit')}
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setResetUser(user)}>
-                          {t('resetPassword')}
-                        </Button>
-                        {blocked ? (
+                        {canManageUsers && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => {
+                                setEditingUser(user);
+                                setFormOpen(true);
+                              }}
+                            >
+                              {tc('edit')}
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setResetUser(user)}>
+                              {t('resetPassword')}
+                            </Button>
+                          </>
+                        )}
+                        {canManagePins && (
+                          <Button size="sm" variant="ghost" onClick={() => setPinUser(user)}>
+                            {t('pin.action')}
+                          </Button>
+                        )}
+                        {!canManageUsers ? null : blocked ? (
                           <Button size="sm" variant="ghost" onClick={() => onUnblock(user)}>
                             {t('unblock')}
                           </Button>
@@ -246,6 +272,7 @@ export function UsersTab() {
           onClose={() => setRevealPassword(null)}
         />
       )}
+      {pinUser && <StaffPinModal user={pinUser} onClose={() => setPinUser(null)} />}
       {dialog}
     </div>
   );

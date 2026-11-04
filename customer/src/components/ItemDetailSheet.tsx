@@ -66,6 +66,7 @@ function SheetInner({
       role="dialog"
       aria-modal="true"
       aria-label={item.name}
+      data-testid="item-sheet"
     >
       <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden />
       <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-t-2xl bg-white shadow-xl animate-[slideUp_.2s_ease-out]">
@@ -140,6 +141,7 @@ function SheetInner({
             <QuantityStepper value={quantity} onChange={setQuantity} ariaLabel={t('item.quantity')} />
             <button
               type="button"
+              data-testid="add-to-cart"
               onClick={handleAdd}
               disabled={!allValid}
               className="flex flex-1 items-center justify-between gap-2 rounded-xl bg-brand px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"

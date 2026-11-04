@@ -6,47 +6,34 @@ import {
   paginate,
   toSkipTake,
 } from '../../../../shared/application/pagination';
-import { NoRestaurantInScope } from '../application.errors';
 import { AuditLog } from '../../domain/entities/audit-log';
 import {
   AUDIT_LOG_REPOSITORY,
   AuditLogRepository,
 } from '../../domain/repositories/audit-log.repository';
+import { AuditFilterRequest, AuditQueryService } from '../services/audit-query.service';
 
-export interface ListAuditLogsInput {
-  restaurantId: string | null;
-  from?: Date;
-  to?: Date;
-  action?: string;
-  entityType?: string;
-  entityId?: string;
-  actorId?: string;
+export interface ListAuditLogsInput extends AuditFilterRequest {
   page: number;
   limit: number;
 }
 
-/** List audit logs for the current restaurant (newest first), with filters. */
+/**
+ * List audit logs for the current restaurant (newest first), with the shared
+ * combinable filter set and branch isolation. Filters are resolved through the
+ * SAME {@link AuditQueryService} the export uses, so list and export never drift.
+ */
 @Injectable()
 export class ListAuditLogsUseCase implements UseCase<ListAuditLogsInput, Paginated<AuditLog>> {
-  constructor(@Inject(AUDIT_LOG_REPOSITORY) private readonly repo: AuditLogRepository) {}
+  constructor(
+    @Inject(AUDIT_LOG_REPOSITORY) private readonly repo: AuditLogRepository,
+    private readonly queryService: AuditQueryService,
+  ) {}
 
   async execute(input: ListAuditLogsInput): Promise<Paginated<AuditLog>> {
-    if (!input.restaurantId) {
-      throw NoRestaurantInScope();
-    }
+    const filter = await this.queryService.resolveFilter(input);
     const pagination = normalizePagination({ page: input.page, limit: input.limit });
-    const { skip, take } = toSkipTake(pagination);
-    const { items, total } = await this.repo.list({
-      restaurantId: input.restaurantId,
-      from: input.from,
-      to: input.to,
-      action: input.action,
-      entityType: input.entityType,
-      entityId: input.entityId,
-      actorId: input.actorId,
-      skip,
-      take,
-    });
+    const { items, total } = await this.repo.list(filter, toSkipTake(pagination));
     return paginate(items, total, pagination);
   }
 }

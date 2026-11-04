@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
 import { ModifierGroup } from '../../domain/entities/modifier-group';
-import { ModifierSelectionType } from '../../domain/enums';
+import { MenuStatus, ModifierSelectionType } from '../../domain/enums';
 import {
   MODIFIER_GROUP_REPOSITORY,
   ModifierGroupRepository,
@@ -14,13 +14,18 @@ import { ModifierGroupNotFound, NoRestaurantInScope } from '../application.error
 
 export interface UpdateModifierGroupInput {
   restaurantId: string | null;
+  branchId: string;
   groupId: string;
   name?: string;
+  /** LOCALE-2A: translations — present (incl. null) sets/clears; absent unchanged. */
+  nameHy?: string | null;
+  nameRu?: string | null;
+  nameEn?: string | null;
   selectionType?: ModifierSelectionType;
   required?: boolean;
   minSelect?: number | null;
   maxSelect?: number | null;
-  displayOrder?: number;
+  status?: MenuStatus;
 }
 
 /** Update a modifier group; validates maxSelect against the current option count. */
@@ -38,19 +43,26 @@ export class UpdateModifierGroupUseCase implements UseCase<
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const group = await this.groups.findById(input.restaurantId, input.groupId);
+    const group = await this.groups.findById(input.restaurantId, input.branchId, input.groupId);
     if (!group) {
       throw ModifierGroupNotFound();
     }
     group.update({
       name: input.name,
+      nameHy: input.nameHy,
+      nameRu: input.nameRu,
+      nameEn: input.nameEn,
       selectionType: input.selectionType,
       required: input.required,
       minSelect: input.minSelect,
       maxSelect: input.maxSelect,
-      displayOrder: input.displayOrder,
+      status: input.status,
     });
-    const optionCount = await this.options.countByGroup(input.restaurantId, group.id);
+    const optionCount = await this.options.countByGroup(
+      input.restaurantId,
+      input.branchId,
+      group.id,
+    );
     group.assertConsistentWithOptionCount(optionCount); // throws if maxSelect > options
     await this.groups.update(group);
     return group;

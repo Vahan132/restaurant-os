@@ -56,6 +56,11 @@ export class CreateReservationDto {
   @IsString()
   notes?: string;
 
+  @ApiPropertyOptional({ description: 'Optional free-text note from the customer.' })
+  @IsOptional()
+  @IsString()
+  customerNote?: string;
+
   @ApiPropertyOptional({ enum: ['PENDING', 'CONFIRMED'], default: 'PENDING' })
   @IsOptional()
   @IsIn(['PENDING', 'CONFIRMED'])

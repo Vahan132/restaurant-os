@@ -5,28 +5,29 @@ import type { Station } from '@/lib/realtime/client';
 export const ALL_STATIONS: Station[] = ['KITCHEN', 'BAR', 'DESSERT', 'OTHER'];
 
 interface StationState {
-  /** Stations this kiosk is showing. Empty = not yet chosen (show picker). */
-  stations: Station[];
+  /** The single station this kiosk is pinned to. null = not yet chosen. */
+  station: Station | null;
   hydrated: boolean;
-  setStations: (stations: Station[]) => void;
+  setStation: (station: Station) => void;
   clear: () => void;
 }
 
 /**
- * Remembers the kiosk's station selection across reloads so a kitchen screen
- * comes back to the same board after a power cycle.
+ * Pins this kiosk to exactly one station and remembers it across reloads so a
+ * kitchen screen comes back to the same board after a power cycle. Paired with
+ * the branch store ({@link useBranchStore}) to form the device pin.
  */
 export const useStationStore = create<StationState>()(
   persist(
     (set) => ({
-      stations: [],
+      station: null,
       hydrated: false,
-      setStations: (stations) => set({ stations }),
-      clear: () => set({ stations: [] }),
+      setStation: (station) => set({ station }),
+      clear: () => set({ station: null }),
     }),
     {
       name: 'kds-station',
-      partialize: (s) => ({ stations: s.stations }),
+      partialize: (s) => ({ station: s.station }),
       onRehydrateStorage: () => (state) => {
         if (state) state.hydrated = true;
       },

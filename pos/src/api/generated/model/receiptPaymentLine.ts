@@ -10,4 +10,11 @@ import type { ReceiptPaymentLineMethod } from './receiptPaymentLineMethod';
 export interface ReceiptPaymentLine {
   method: ReceiptPaymentLineMethod;
   amount: number;
+  /**
+   * Cash tendered by the customer; null for non-cash or when not recorded.
+   * @nullable
+   */
+  tenderedAmount: number | null;
+  /** Cash change (tendered - amount); 0 otherwise. */
+  changeAmount: number;
 }

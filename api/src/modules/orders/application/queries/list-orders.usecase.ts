@@ -13,6 +13,7 @@ import { NoRestaurantInScope } from '../application.errors';
 
 export interface ListOrdersInput {
   restaurantId: string | null;
+  branchId: string;
   status?: OrderStatus;
   tableId?: string;
   mineUserId?: string; // when "mine" requested
@@ -34,6 +35,7 @@ export class ListOrdersUseCase implements UseCase<ListOrdersInput, Paginated<Ord
     const { skip, take } = toSkipTake(query);
     const { items, total } = await this.orders.list({
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       status: input.status,
       tableId: input.tableId,
       waiterId: input.mineUserId,

@@ -11,6 +11,8 @@ import { OrderTableSync } from '../services/order-table-sync';
 
 export interface CancelOrderInput {
   restaurantId: string | null;
+  /** Active branch; null when invoked cross-module (don't branch-scope). */
+  branchId?: string | null;
   organizationId: string;
   orderId: string;
   reason: string;
@@ -33,7 +35,8 @@ export class CancelOrderUseCase implements UseCase<CancelOrderInput, Order> {
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const order = await this.orders.findById(input.restaurantId, input.orderId);
+    const branchId = input.branchId ?? null;
+    const order = await this.orders.findById(input.restaurantId, branchId, input.orderId);
     if (!order) {
       throw OrderNotFound();
     }
@@ -56,6 +59,7 @@ export class CancelOrderUseCase implements UseCase<CancelOrderInput, Order> {
     if (tableId) {
       const otherOpen = await this.orders.existsOtherOpenOnTable(
         input.restaurantId,
+        branchId,
         tableId,
         order.id,
       );

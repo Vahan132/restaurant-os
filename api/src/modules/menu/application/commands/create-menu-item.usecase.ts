@@ -2,6 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
 import { DomainEventPublisher } from '../../../../shared/infrastructure/events/domain-event-publisher';
 import { ID_GENERATOR, IdGenerator } from '../../../identity/application/ports/id-generator';
+import {
+  OBJECT_STORAGE_PORT,
+  ObjectStoragePort,
+} from '../../../media/application/ports/object-storage.port';
+import { resolveImageRef } from '../image-ref.util';
 import { MenuItem } from '../../domain/entities/menu-item';
 import { PreparationStation } from '../../domain/enums';
 import {
@@ -12,17 +17,35 @@ import {
   MENU_ITEM_REPOSITORY,
   MenuItemRepository,
 } from '../../domain/repositories/menu-item.repository';
-import { CategoryNotFound, NoRestaurantInScope } from '../application.errors';
+import { CategoryNotFound, CrossBranchReference, NoRestaurantInScope } from '../application.errors';
+import { normalizeAndValidateDep } from '../dep-assignment.util';
+import {
+  FISCAL_DEPARTMENT_READER,
+  FiscalDepartmentReader,
+} from '../ports/fiscal-department.reader';
+import { slugify } from '../menu-code.util';
 
 export interface CreateMenuItemInput {
   restaurantId: string | null;
+  branchId: string;
   categoryId: string;
   name: string;
   description?: string | null;
+  /** LOCALE-2A: optional hy/ru/en translations of name + description. */
+  nameHy?: string | null;
+  nameRu?: string | null;
+  nameEn?: string | null;
+  descriptionHy?: string | null;
+  descriptionRu?: string | null;
+  descriptionEn?: string | null;
   priceAmount: number;
   imageUrl?: string | null;
+  /** MEDIA-1: an uploaded object key (finalize). When present, overrides imageUrl. */
+  imageKey?: string | null;
   preparationStation?: PreparationStation;
   prepTimeMinutes?: number | null;
+  /** FISCAL-DEPT-1: branch fiscal department code; validated against the branch's set. */
+  dep?: string | null;
   actorUserId?: string | null;
 }
 
@@ -33,6 +56,8 @@ export class CreateMenuItemUseCase implements UseCase<CreateMenuItemInput, MenuI
     @Inject(MENU_ITEM_REPOSITORY) private readonly items: MenuItemRepository,
     @Inject(MENU_CATEGORY_REPOSITORY) private readonly categories: MenuCategoryRepository,
     @Inject(ID_GENERATOR) private readonly ids: IdGenerator,
+    @Inject(OBJECT_STORAGE_PORT) private readonly storage: ObjectStoragePort,
+    @Inject(FISCAL_DEPARTMENT_READER) private readonly fiscalDepartments: FiscalDepartmentReader,
     private readonly events: DomainEventPublisher,
   ) {}
 
@@ -40,24 +65,72 @@ export class CreateMenuItemUseCase implements UseCase<CreateMenuItemInput, MenuI
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const category = await this.categories.findById(input.restaurantId, input.categoryId);
+    // MEDIA-1: an uploaded key wins over URL-paste. Verify it sits under this
+    // tenant's prefix (defence-in-depth) and record the resolved public URL.
+    const image = resolveImageRef(this.storage, input.restaurantId, input.imageUrl, input.imageKey);
+    const category = await this.categories.findInRestaurant(input.restaurantId, input.categoryId);
     if (!category) {
       throw CategoryNotFound();
     }
+    if (category.branchId !== input.branchId) {
+      throw CrossBranchReference();
+    }
+    const code = await this.generateUniqueCode(
+      input.restaurantId,
+      input.branchId,
+      slugify(input.name, 'item'),
+    );
+    // FISCAL-DEPT-1: normalize + validate the assigned dep against this branch's
+    // FiscalDepartment set (absent → unassigned; blank → cleared). Rejects an
+    // unknown dep with INVALID_FISCAL_DEPARTMENT before the item is created.
+    const dep =
+      input.dep === undefined
+        ? null
+        : await normalizeAndValidateDep(
+            this.fiscalDepartments,
+            input.restaurantId,
+            input.branchId,
+            input.dep,
+          );
     const item = MenuItem.create({
       id: this.ids.generate(),
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
+      code,
       categoryId: input.categoryId,
       name: input.name,
       description: input.description ?? null,
+      nameHy: input.nameHy,
+      nameRu: input.nameRu,
+      nameEn: input.nameEn,
+      descriptionHy: input.descriptionHy,
+      descriptionRu: input.descriptionRu,
+      descriptionEn: input.descriptionEn,
       priceAmount: input.priceAmount, // aggregate rejects negatives
-      imageUrl: input.imageUrl ?? null,
+      imageUrl: image.imageUrl,
+      imageKey: image.imageKey,
       preparationStation: input.preparationStation,
       prepTimeMinutes: input.prepTimeMinutes ?? null,
+      dep,
       actorUserId: input.actorUserId ?? null,
     });
     await this.items.create(item);
     await this.events.publishFromAggregate(item);
     return item;
+  }
+
+  /** Ensure per-branch uniqueness by appending -2, -3, ... to the base slug. */
+  private async generateUniqueCode(
+    restaurantId: string,
+    branchId: string,
+    base: string,
+  ): Promise<string> {
+    let candidate = base;
+    let suffix = 2;
+    while (await this.items.existsByCode(restaurantId, branchId, candidate)) {
+      candidate = `${base}-${suffix}`;
+      suffix += 1;
+    }
+    return candidate;
   }
 }

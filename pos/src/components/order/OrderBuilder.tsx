@@ -17,6 +17,7 @@ import { MenuPane } from './MenuPane';
 import { OrderPane } from './OrderPane';
 import { ModifierSheet } from './ModifierSheet';
 import { useManagerApproval } from './ManagerApproval';
+import { useDiscountStepUp } from './ManagerPinModal';
 
 /**
  * Core POS screen: two-pane order builder. Menu on the left, current order on the
@@ -32,7 +33,8 @@ export function OrderBuilder({ orderId }: { orderId: string }) {
   });
   const builder = useOrderBuilder(orderId);
   const { requestApproval, ApprovalModal } = useManagerApproval();
-  const actions = useOrderActions(orderId, requestApproval);
+  const { requestStepUp, StepUpModal } = useDiscountStepUp();
+  const actions = useOrderActions(orderId, requestApproval, requestStepUp);
   const { data: floors } = useFloorPlan();
 
   const [picked, setPicked] = useState<MenuItemDetailResponse | null>(null);
@@ -95,6 +97,7 @@ export function OrderBuilder({ orderId }: { orderId: string }) {
       ) : null}
 
       {ApprovalModal}
+      {StepUpModal}
     </div>
   );
 }

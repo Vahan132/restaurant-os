@@ -7,7 +7,11 @@ import { OrderItem } from '../../domain/entities/order-item';
 import { OrderItemModifier } from '../../domain/entities/order-item-modifier';
 import { OrderType } from '../../domain/enums';
 import { ORDER_REPOSITORY, OrderRepository } from '../../domain/repositories/order.repository';
-import { NoRestaurantInScope, TableNotInRestaurant } from '../application.errors';
+import {
+  CrossBranchReference,
+  NoRestaurantInScope,
+  TableNotInRestaurant,
+} from '../application.errors';
 import { MENU_READER, MenuReader } from '../ports/menu-reader.port';
 import { ORDER_SETTINGS_READER, OrderSettingsReader } from '../ports/order-settings.reader';
 import { ORDERS_TABLE_READER, OrdersTableReader } from '../ports/table-reader.port';
@@ -29,6 +33,12 @@ export interface RequestedItemSnapshot {
 }
 export interface SubmitRequestedItemsInput {
   restaurantId: string | null;
+  /**
+   * Active branch; null when invoked cross-module (order-requests, not
+   * branch-scoped until BR-5). When null, the order's branch is derived from the
+   * target table's branch. When provided, it must match the table's branch.
+   */
+  branchId?: string | null;
   tableId: string;
   waiterId: string;
   items: RequestedItemSnapshot[];
@@ -56,18 +66,25 @@ export class SubmitRequestedItemsUseCase implements UseCase<SubmitRequestedItems
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    if (!(await this.tables.tableExists(input.restaurantId, input.tableId))) {
+    // A DINE_IN order's branch IS its table's branch — resolve it up front.
+    const tableBranchId = await this.tables.getTableBranchId(input.restaurantId, input.tableId);
+    if (tableBranchId === null) {
       throw TableNotInRestaurant();
     }
+    // If an active branch was supplied (branch-scoped caller), it must match.
+    if (input.branchId != null && input.branchId !== tableBranchId) {
+      throw CrossBranchReference('Table belongs to a different branch.');
+    }
+    const branchId = tableBranchId;
     const settings = await this.settings.get(input.restaurantId);
 
-    let order = await this.orders.findOpenByTable(input.restaurantId, input.tableId);
+    let order = await this.orders.findOpenByTable(input.restaurantId, branchId, input.tableId);
     let created = false;
     if (!order) {
       order = Order.create({
         id: this.ids.generate(),
         restaurantId: input.restaurantId,
-        branchId: null,
+        branchId,
         type: OrderType.DINE_IN,
         tableId: input.tableId,
         waiterId: input.waiterId,
@@ -91,6 +108,7 @@ export class SubmitRequestedItemsUseCase implements UseCase<SubmitRequestedItems
       const item = OrderItem.create({
         id: this.ids.generate(),
         restaurantId: input.restaurantId,
+        branchId: order.branchId, // line inherits the order's branch
         orderId: order.id,
         menuItemId: it.menuItemId,
         nameSnapshot: it.nameSnapshot,
@@ -99,6 +117,10 @@ export class SubmitRequestedItemsUseCase implements UseCase<SubmitRequestedItems
         quantity: it.quantity,
         note: it.note ?? null,
         modifiers,
+        // FISCAL-0: snapshot the dish-level ATG code onto the line (null until classified).
+        adgCode: data?.item.adgCode ?? null,
+        // FISCAL-DEPT-1: snapshot the branch fiscal department onto the line (null until assigned).
+        dep: data?.item.dep ?? null,
       });
       order.addItem(item, settings.serviceFeeRateBps);
     }

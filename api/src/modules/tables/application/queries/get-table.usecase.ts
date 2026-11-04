@@ -9,6 +9,7 @@ import { NoRestaurantInScope, TableNotFound } from '../application.errors';
 
 export interface GetTableInput {
   restaurantId: string | null;
+  branchId: string;
   tableId: string;
 }
 
@@ -23,7 +24,7 @@ export class GetTableUseCase implements UseCase<GetTableInput, RestaurantTable> 
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const table = await this.tables.findById(input.restaurantId, input.tableId);
+    const table = await this.tables.findById(input.restaurantId, input.branchId, input.tableId);
     if (!table) {
       throw TableNotFound();
     }

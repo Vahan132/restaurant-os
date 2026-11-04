@@ -5,6 +5,7 @@ import { FLOOR_PLAN_READER, FloorPlanFloor, FloorPlanReader } from '../ports/flo
 
 export interface GetFloorPlanInput {
   restaurantId: string | null;
+  branchId: string;
 }
 
 /** Read model: ACTIVE floors (ordered) -> their tables with current status. */
@@ -16,6 +17,6 @@ export class GetFloorPlanUseCase implements UseCase<GetFloorPlanInput, FloorPlan
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    return this.reader.getFloorPlan(input.restaurantId);
+    return this.reader.getFloorPlan(input.restaurantId, input.branchId);
   }
 }

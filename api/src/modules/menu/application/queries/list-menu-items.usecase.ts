@@ -16,6 +16,7 @@ import { NoRestaurantInScope } from '../application.errors';
 
 export interface ListMenuItemsInput {
   restaurantId: string | null;
+  branchId: string;
   categoryId?: string;
   status?: MenuStatus;
   availability?: ItemAvailability;
@@ -37,6 +38,7 @@ export class ListMenuItemsUseCase implements UseCase<ListMenuItemsInput, Paginat
     const { skip, take } = toSkipTake(query);
     const { items, total } = await this.items.list({
       restaurantId: input.restaurantId,
+      branchId: input.branchId,
       categoryId: input.categoryId,
       status: input.status,
       availability: input.availability,

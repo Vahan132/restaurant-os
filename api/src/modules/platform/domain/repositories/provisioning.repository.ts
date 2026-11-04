@@ -8,6 +8,8 @@ export interface ProvisionRoleRow {
   code: string;
   permissions: string[];
   isSystem: boolean;
+  /** ALL-BRANCH reach (FIX-E): only OWNER is true. */
+  allBranches: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

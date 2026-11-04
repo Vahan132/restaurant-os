@@ -6,10 +6,16 @@ import {
   RESTAURANT_TABLE_REPOSITORY,
   RestaurantTableRepository,
 } from '../../domain/repositories/restaurant-table.repository';
-import { FloorNotFound, NoRestaurantInScope, TableNotFound } from '../application.errors';
+import {
+  CrossBranchReference,
+  FloorNotFound,
+  NoRestaurantInScope,
+  TableNotFound,
+} from '../application.errors';
 
 export interface UpdateTableInput {
   restaurantId: string | null;
+  branchId: string;
   tableId: string;
   name?: string;
   seatCapacity?: number;
@@ -29,14 +35,18 @@ export class UpdateTableUseCase implements UseCase<UpdateTableInput, RestaurantT
     if (!input.restaurantId) {
       throw NoRestaurantInScope();
     }
-    const table = await this.tables.findById(input.restaurantId, input.tableId);
+    const table = await this.tables.findById(input.restaurantId, input.branchId, input.tableId);
     if (!table) {
       throw TableNotFound();
     }
     if (input.floorId !== undefined && input.floorId !== table.floorId) {
-      const floor = await this.floors.findById(input.restaurantId, input.floorId);
+      const floor = await this.floors.findById(input.restaurantId, input.branchId, input.floorId);
       if (!floor) {
         throw FloorNotFound();
+      }
+      // The target floor must live in the same branch as the table.
+      if (floor.branchId !== table.branchId) {
+        throw CrossBranchReference('Floor belongs to a different branch.');
       }
     }
     table.updateDetails({

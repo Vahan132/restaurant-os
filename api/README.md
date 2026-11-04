@@ -27,7 +27,7 @@ contains the **foundation + tenancy backbone** (prompt 1). Business modules
 pnpm install
 
 # 2. configure env
-cp .env.example .env
+cp .env.local.local.local.example .env.local.local.local
 
 # 3. start PostgreSQL
 pnpm docker:up           # docker compose up -d

@@ -8,24 +8,51 @@ import { OptionMapper } from './menu.mappers';
 export class PrismaModifierOptionRepository implements ModifierOptionRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listByGroup(restaurantId: string, modifierGroupId: string): Promise<ModifierOption[]> {
+  async listByGroup(
+    restaurantId: string,
+    branchId: string,
+    modifierGroupId: string,
+  ): Promise<ModifierOption[]> {
     const records = await this.prisma.modifierOption.findMany({
-      where: { restaurantId, modifierGroupId, deletedAt: null },
-      orderBy: { displayOrder: 'asc' },
+      where: { restaurantId, branchId, modifierGroupId, deletedAt: null },
+      orderBy: { sortOrder: 'asc' },
     });
     return records.map(OptionMapper.toDomain);
   }
 
-  async findById(restaurantId: string, id: string): Promise<ModifierOption | null> {
+  async listByGroupIds(
+    restaurantId: string,
+    branchId: string,
+    modifierGroupIds: string[],
+  ): Promise<ModifierOption[]> {
+    if (modifierGroupIds.length === 0) {
+      return [];
+    }
+    const records = await this.prisma.modifierOption.findMany({
+      where: { restaurantId, branchId, modifierGroupId: { in: modifierGroupIds }, deletedAt: null },
+      orderBy: { sortOrder: 'asc' },
+    });
+    return records.map(OptionMapper.toDomain);
+  }
+
+  async findById(
+    restaurantId: string,
+    branchId: string,
+    id: string,
+  ): Promise<ModifierOption | null> {
     const r = await this.prisma.modifierOption.findFirst({
-      where: { id, restaurantId, deletedAt: null },
+      where: { id, restaurantId, branchId, deletedAt: null },
     });
     return r ? OptionMapper.toDomain(r) : null;
   }
 
-  async countByGroup(restaurantId: string, modifierGroupId: string): Promise<number> {
+  async countByGroup(
+    restaurantId: string,
+    branchId: string,
+    modifierGroupId: string,
+  ): Promise<number> {
     return this.prisma.modifierOption.count({
-      where: { restaurantId, modifierGroupId, deletedAt: null },
+      where: { restaurantId, branchId, modifierGroupId, deletedAt: null },
     });
   }
 
@@ -35,7 +62,7 @@ export class PrismaModifierOptionRepository implements ModifierOptionRepository 
 
   async update(option: ModifierOption): Promise<void> {
     await this.prisma.modifierOption.updateMany({
-      where: { id: option.id, restaurantId: option.restaurantId },
+      where: { id: option.id, restaurantId: option.restaurantId, branchId: option.branchId },
       data: OptionMapper.toUpdate(option),
     });
   }
