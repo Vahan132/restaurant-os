@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { usePlatformCatalogItemsControllerList } from "@/api/generated/endpoints/platform-catalog-items/platform-catalog-items";
+import { usePlatformCatalogTaxonomyControllerGet } from "@/api/generated/endpoints/platform-catalog-taxonomy/platform-catalog-taxonomy";
+import type { CatalogItemResponse } from "@/api/generated/model/catalogItemResponse";
+import { Pagination } from "@/components/ui/pagination";
+import { toList } from "@/lib/format";
 import { PageHeader } from "@/components/layout/app-shell";
 import {
   Button,
@@ -9,6 +13,7 @@ import {
   EmptyState,
   ErrorState,
   Input,
+  Select,
   Spinner,
   StatusBadge,
 } from "@/components/ui/primitives";
@@ -16,15 +21,36 @@ import { getErrorMessage } from "@/lib/errors";
 import { STRINGS } from "@/components/platform-catalog/strings";
 import { CatalogImportPanel } from "@/components/platform-catalog/catalog-import-panel";
 
+const PAGE_SIZE = 50;
+
 export function CatalogManager() {
   const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [page, setPage] = useState(1);
   const [importing, setImporting] = useState(false);
 
   const q = search.trim();
-  const { data, isLoading, isError, error, refetch } = usePlatformCatalogItemsControllerList(
-    q ? { q } : undefined,
+  // The API returns a PAGED list ({ items, pagination } after the client unwraps
+  // the envelope) — not a bare array — so read it through toList().
+  const { data, isLoading, isError, error, refetch } = usePlatformCatalogItemsControllerList({
+    page,
+    limit: PAGE_SIZE,
+    ...(q ? { q } : {}),
+    ...(categoryId ? { categoryId } : {}),
+  });
+  const list = useMemo(() => toList<CatalogItemResponse>(data), [data]);
+  const items = list.items;
+
+  const taxonomy = usePlatformCatalogTaxonomyControllerGet();
+  const categories = useMemo(
+    () => [...(taxonomy.data?.categories ?? [])].sort((a, b) => a.position - b.position),
+    [taxonomy.data],
   );
-  const items = Array.isArray(data) ? data : [];
+  const categoryLabel = useMemo(
+    () => new Map(categories.map((c) => [c.id, c.labelEn] as const)),
+    [categories],
+  );
+  const filtered = Boolean(q || categoryId);
 
   return (
     <div>
@@ -34,12 +60,33 @@ export function CatalogManager() {
         action={<Button onClick={() => setImporting(true)}>{STRINGS.importCsv}</Button>}
       />
 
-      <div className="mb-3 max-w-sm">
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={STRINGS.searchPlaceholder}
-        />
+      <div className="mb-3 flex flex-wrap gap-2">
+        <div className="w-full max-w-sm">
+          <Input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder={STRINGS.searchPlaceholder}
+          />
+        </div>
+        <div className="w-full max-w-xs">
+          <Select
+            value={categoryId}
+            onChange={(e) => {
+              setCategoryId(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">All categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.labelEn} · {c.labelRu} · {c.labelHy}
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
 
       {isLoading ? (
@@ -55,10 +102,10 @@ export function CatalogManager() {
       ) : items.length === 0 ? (
         <Card>
           <EmptyState
-            title={q ? STRINGS.emptyFilteredTitle : STRINGS.emptyTitle}
-            description={q ? STRINGS.emptyFilteredDescription : STRINGS.emptyDescription}
+            title={filtered ? STRINGS.emptyFilteredTitle : STRINGS.emptyTitle}
+            description={filtered ? STRINGS.emptyFilteredDescription : STRINGS.emptyDescription}
             action={
-              q ? undefined : <Button onClick={() => setImporting(true)}>{STRINGS.importCsv}</Button>
+              filtered ? undefined : <Button onClick={() => setImporting(true)}>{STRINGS.importCsv}</Button>
             }
           />
         </Card>
@@ -84,7 +131,9 @@ export function CatalogManager() {
                         {item.nameRu} · {item.nameHy}
                       </div>
                     </td>
-                    <td className="px-4 py-2 text-gray-600">{item.categoryId ? String(item.categoryId) : "—"}</td>
+                    <td className="px-4 py-2 text-gray-600">{item.categoryId
+                        ? (categoryLabel.get(String(item.categoryId)) ?? String(item.categoryId))
+                        : "—"}</td>
                     <td className="px-4 py-2">
                       <StatusBadge status={item.status} />
                     </td>
@@ -93,6 +142,13 @@ export function CatalogManager() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            pageSize={PAGE_SIZE}
+            itemCount={items.length}
+            meta={list.pagination}
+            onPageChange={setPage}
+          />
         </Card>
       )}
 
