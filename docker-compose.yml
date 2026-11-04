@@ -44,11 +44,12 @@ services:
       - '127.0.0.1:5200:5200'
     # api image ENTRYPOINT (edge-entrypoint.sh) calls `node dist/main.js`, but
     # `nest build` emits dist/src/main.js (tsconfig includes prisma/**/*.ts). Override
-    # with a cloud entrypoint: migrate, then start whichever main.js exists.
+    # with a cloud entrypoint: migrate, ensure platform plans (PLANS-1, create-missing
+    # only — never overwrites plans edited in Platform Admin), then start main.js.
     entrypoint:
       - sh
       - -c
-      - 'node node_modules/prisma/build/index.js migrate deploy && exec node "$(ls dist/src/main.js dist/main.js 2>/dev/null | head -1)"'
+      - 'node node_modules/prisma/build/index.js migrate deploy && { node node_modules/ts-node/dist/bin.js --transpile-only prisma/seed-platform.ts || echo "platform seed failed (non-fatal)"; } && exec node "$(ls dist/src/main.js dist/main.js 2>/dev/null | head -1)"'
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       APP_MODE: CLOUD
@@ -130,6 +131,15 @@ services:
       - '127.0.0.1:4004:4004'
     depends_on: [api]
 
+  # Platform admin (internal super-admin panel, Res-SysAdmin/platform-admin) —
+  # served at /res/platform-admin, talks to /res/api/platform/*.
+  platform-admin:
+    image: ghcr.io/vahan132/restaurant-os-platform-admin:${IMAGE_TAG:-develop}
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:4005:4005'
+    depends_on: [api]
+
   # Bundled HTTP proxy — starts only when COMPOSE_PROFILES includes "bundled-proxy"
   # (or `--profile bundled-proxy`). Omit when a host nginx fronts the app ports.
   proxy:
@@ -140,7 +150,7 @@ services:
       - '${HTTP_PORT:-80}:80'
     volumes:
       - ./proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on: [api, website, admin, pos, kds, customer]
+    depends_on: [api, website, admin, pos, kds, customer, platform-admin]
 
 volumes:
   pgdata:

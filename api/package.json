@@ -27,6 +27,7 @@
     "db:seed": "ts-node --transpile-only prisma/seed.ts",
     "db:seed:e2e": "ts-node --transpile-only prisma/seed-e2e.ts",
     "db:seed:edge": "ts-node --transpile-only prisma/seed.edge.ts",
+    "db:seed:platform": "ts-node --transpile-only prisma/seed-platform.ts",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "edge:up": "docker compose -f docker-compose.edge.yml -f docker-compose.edge.build.yml --env-file .env.edge up -d --build",

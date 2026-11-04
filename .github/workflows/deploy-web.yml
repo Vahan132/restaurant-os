@@ -2,11 +2,12 @@
 # Mirrors edge-image-old.yml conventions (GITHUB_TOKEN + packages: write, buildx, GHA
 # cache). Path-filtered (DEPLOY-4): only changed app folders rebuild; unchanged apps
 # get their `develop` manifest COPIED to the new sha- tag (server-side, no rebuild),
-# so IMAGE_TAG=sha-<commit> always addresses a COMPLETE, consistent six-image stack.
+# so IMAGE_TAG=sha-<commit> always addresses a COMPLETE, consistent seven-image stack.
 #
 #   - trigger: push to `develop` (auto-deploy) or manual workflow_dispatch (builds all)
 #   - amd64-only; two tags per image: sha-<short> (immutable, rollback) + develop
-#   - images: ghcr.io/vahan132/restaurant-os-<app> for api/website/admin/pos/kds/customer
+#   - images: ghcr.io/vahan132/restaurant-os-<app> for api/website/admin/pos/kds/customer/platform-admin
+#     (platform-admin builds from Res-SysAdmin/platform-admin)
 #   - relative NEXT_PUBLIC_* baked HERE (CI), never on the droplet
 #
 # Shared-path rule: a change to THIS workflow rebuilds ALL apps. Root compose /
@@ -55,7 +56,7 @@ jobs:
 
       - id: decide
         env:
-          APPS: 'api website admin pos kds customer'
+          APPS: 'api website admin pos kds customer platform-admin'
           BEFORE: ${{ github.event.before }}
           EVENT: ${{ github.event_name }}
         run: |
@@ -73,12 +74,15 @@ jobs:
             fi
           fi
 
+          # Source folder per app (platform-admin lives outside the repo root).
+          app_dir() { case "$1" in platform-admin) echo 'Res-SysAdmin/platform-admin' ;; *) echo "$1" ;; esac; }
+
           changed=(); unchanged=()
           for app in $APPS; do
             build=0
             if [ "$force_all" = "1" ]; then
               build=1
-            elif git diff --name-only "$base" "$GITHUB_SHA" | grep -qE "^${app}/"; then
+            elif git diff --name-only "$base" "$GITHUB_SHA" | grep -qE "^$(app_dir "$app")/"; then
               build=1
             fi
             # no prior :develop image -> nothing to retag from -> must build
@@ -141,7 +145,7 @@ jobs:
                 echo 'NEXT_PUBLIC_SOCKET_BASE_URL='
                 echo 'NEXT_PUBLIC_SOCKET_PATH=/res/socket.io'
                 ;;
-              customer)
+              customer|platform-admin)
                 echo 'NEXT_PUBLIC_API_BASE_URL=/res/api'
                 ;;
               api)
@@ -165,7 +169,7 @@ jobs:
       - name: Build and push (${{ matrix.app }}, amd64)
         uses: docker/build-push-action@v6
         with:
-          context: ./${{ matrix.app }}
+          context: ${{ matrix.app == 'platform-admin' && './Res-SysAdmin/platform-admin' || format('./{0}', matrix.app) }}
           platforms: linux/amd64
           push: true
           build-args: ${{ steps.bargs.outputs.args }}

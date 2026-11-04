@@ -77,8 +77,10 @@ function normalizeError(error: AxiosError): NormalizedError {
 
 function forceLogout(): void {
   useAuthStore.getState().clear();
-  if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-    window.location.href = "/login";
+  // Hard redirect bypasses next/router, so prefix the basePath (/res/platform-admin).
+  const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  if (typeof window !== "undefined" && !window.location.pathname.startsWith(`${base}/login`)) {
+    window.location.href = `${base}/login`;
   }
 }
 

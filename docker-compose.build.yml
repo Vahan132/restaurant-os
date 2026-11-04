@@ -48,3 +48,9 @@ services:
       context: ./customer
       args:
         NEXT_PUBLIC_API_BASE_URL: /res/api
+
+  platform-admin:
+    build:
+      context: ./Res-SysAdmin/platform-admin
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /res/api

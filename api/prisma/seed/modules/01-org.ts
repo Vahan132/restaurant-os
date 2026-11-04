@@ -1,30 +1,18 @@
-/** Phase 01 — Organization → Plan → Subscription (inert config, Prisma upsert). */
+/** Phase 01 — Plans (PLANS-1) → Organization → Subscription (inert config, Prisma upsert). */
 import type { SeedContext } from '../context';
 import type { SeedState } from '../state';
 import { seedId } from '../ids';
 import { ORG } from '../data/core';
+import { DEMO_ORG_PLAN_CODE } from '../data/plans';
+import { seedPlans } from '../plans';
 
 export async function seedOrg(ctx: SeedContext, _state: SeedState): Promise<void> {
   const { prisma } = ctx;
 
-  const plan = await prisma.plan.upsert({
-    where: { code: 'starter' },
-    update: {},
-    create: {
-      code: 'starter',
-      name: 'Starter',
-      priceAmount: 0,
-      currency: 'AMD',
-      interval: 'MONTH',
-      features: {
-        maxRestaurants: 1,
-        maxBranchesPerRestaurant: 2,
-        maxUsers: 20,
-        enabledModules: ['identity', 'restaurant', 'menu', 'orders', 'inventory'],
-      },
-      isActive: true,
-    },
-  });
+  // PLANS-1: the Start / Pro / Chain packages (monthly + annual). The full seed
+  // always syncs them to the definitions; the demo org (2 branches) is on Chain.
+  const planIds = await seedPlans(prisma, { sync: true });
+  const plan = { id: planIds[DEMO_ORG_PLAN_CODE]! };
 
   await prisma.organization.upsert({
     where: { id: ORG.id },
