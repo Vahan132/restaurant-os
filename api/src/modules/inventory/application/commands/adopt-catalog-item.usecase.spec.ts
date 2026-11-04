@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { DomainEventPublisher } from '../../../../shared/infrastructure/events/domain-event-publisher';
 import { IdGenerator } from '../../../identity/application/ports/id-generator';
-import { CatalogItemStatus } from '../../../platform-catalog/domain/entities/catalog-item';
+import { CatalogItemStatus, CatalogUnit } from '../../../platform-catalog/domain/entities/catalog-item';
 import {
   CatalogBrowseReader,
   CatalogBrowseView,
@@ -18,6 +18,7 @@ const activeView = (over: Partial<CatalogBrowseView> = {}): CatalogBrowseView =>
   name: { hy: 'Լոլիկ', ru: 'Помидор', en: 'Tomato' },
   categoryId: null,
   category: null,
+  baseUnit: CatalogUnit.GRAM,
   status: CatalogItemStatus.ACTIVE,
   ...over,
 });
@@ -56,6 +57,9 @@ class FakeCatalog implements CatalogBrowseReader {
   async searchActiveIds(): Promise<string[]> {
     return [];
   }
+  async listAllActive(): Promise<CatalogBrowseView[]> {
+    return [];
+  }
 }
 
 const ids: IdGenerator = { generate: () => 'inv-1' };
@@ -87,6 +91,12 @@ const base = {
 };
 
 describe('AdoptCatalogItemUseCase', () => {
+  it("defaults the base unit to the catalog item's own unit when none is given", async () => {
+    const { useCase, items } = makeUseCase({ view: activeView({ baseUnit: CatalogUnit.PIECE }) });
+    await useCase.execute({ ...base, baseUnit: undefined });
+    expect(items.created[0]!.baseUnit).toBe(InventoryBaseUnit.PIECE);
+  });
+
   it('creates an InventoryItem with catalogItemId set and NO local name (name resolves live)', async () => {
     // PLATCAT-ADOPT-1B: the platform owns an adopted item's name; adopt persists none.
     const { useCase, items } = makeUseCase({});

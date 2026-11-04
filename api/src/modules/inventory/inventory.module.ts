@@ -30,6 +30,7 @@ import { INVENTORY_REPORT_READER } from './application/ports/inventory-report.re
 import { CreateAdjustmentUseCase } from './application/commands/create-adjustment.usecase';
 import { CreateGoodsReceiptUseCase } from './application/commands/create-goods-receipt.usecase';
 import { AdoptCatalogItemUseCase } from './application/commands/adopt-catalog-item.usecase';
+import { BulkAdoptCatalogItemsUseCase } from './application/commands/bulk-adopt-catalog-items.usecase';
 import { CreateInventoryItemUseCase } from './application/commands/create-inventory-item.usecase';
 import { DeleteInventoryItemUseCase } from './application/commands/delete-inventory-item.usecase';
 import { SetItemConsumptionLocationUseCase } from './application/commands/set-item-consumption-location.usecase';
@@ -218,6 +219,7 @@ import { InventoryReportsController } from './presentation/http/inventory-report
     GetInventoryItemUseCase,
     CreateInventoryItemUseCase,
     AdoptCatalogItemUseCase,
+    BulkAdoptCatalogItemsUseCase,
     UpdateInventoryItemUseCase,
     DeleteInventoryItemUseCase,
     SetItemConsumptionLocationUseCase,

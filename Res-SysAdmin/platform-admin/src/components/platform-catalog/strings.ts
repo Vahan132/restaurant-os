@@ -11,7 +11,7 @@ export const STRINGS = {
   // Page
   title: "Catalog",
   description:
-    "Platform-wide catalog items — the shared dish vocabulary restaurants adopt from. Curated centrally; bulk-imported from CSV.",
+    "Platform-wide kitchen ingredients restaurants adopt into their inventory. Curated centrally; bulk-imported from CSV.",
   importCsv: "Import CSV",
   searchPlaceholder: "Search slug or name…",
 
@@ -26,6 +26,7 @@ export const STRINGS = {
   colSlug: "Slug",
   colName: "Name",
   colCategory: "Category",
+  colUnit: "Unit",
   colStatus: "Status",
 
   // Import panel
@@ -88,6 +89,7 @@ export const TEMPLATE_COLUMNS = [
   "nameEn",
   "category",
   "status",
+  "unit",
 ] as const;
 
 /**
@@ -98,7 +100,7 @@ export const TEMPLATE_COLUMNS = [
 export function buildTemplateCsv(): string {
   const header = TEMPLATE_COLUMNS.join(",");
   const example =
-    "# khorovats,Խորոved,Хоровац,Grilled pork,mains,ACTIVE";
+    "# tomato,Լոլիկ,Помидоры,Tomatoes,vegetables,ACTIVE,GRAM";
   return `${header}\n${example}\n`;
 }
 

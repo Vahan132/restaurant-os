@@ -15,6 +15,7 @@ import { Modal } from '@/components/ui/modal';
 import { isApiError } from '@/lib/api-error';
 import { pickName } from '@/lib/inventory/display-name';
 import { useAdoptCatalogItem } from '@/lib/inventory/use-catalog-browse';
+import type { CatalogBrowseItemWithUnit } from '@/lib/inventory/use-catalog-bulk';
 import { useInventoryInvalidation } from '@/lib/inventory/use-inventory-data';
 import { toast } from '@/stores/toast';
 
@@ -32,7 +33,8 @@ const BASE_UNITS = [
 /**
  * Operational-only adopt modal (PLATCAT-ADOPT-2). No name input: adopted items
  * carry no local name and display the live catalog name. Collects base unit
- * (required, no default) + optional inventory category / SKU / alternate units.
+ * (pre-filled with the catalog item's own unit — CATALOG-UNIT-1) + optional
+ * inventory category / SKU / alternate units.
  */
 export function AdoptItemModal({
   item,
@@ -54,7 +56,9 @@ export function AdoptItemModal({
   const locale = useLocale();
   const invalidate = useInventoryInvalidation();
 
-  const [baseUnit, setBaseUnit] = useState<string>('');
+  const [baseUnit, setBaseUnit] = useState<string>(
+    (item as CatalogBrowseItemWithUnit).baseUnit ?? '',
+  );
   const [categoryId, setCategoryId] = useState('');
   const [sku, setSku] = useState('');
   const [alts, setAlts] = useState<AltRow[]>([]);

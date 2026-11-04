@@ -30,7 +30,8 @@ export interface AdoptCatalogItemInput {
   restaurantId: string | null;
   branchId: string;
   catalogItemId: string;
-  baseUnit: InventoryBaseUnit;
+  /** Omitted → the catalog item's own unit (CATALOG-UNIT-1). */
+  baseUnit?: InventoryBaseUnit;
   alternateUnits?: ReadonlyArray<{ name: string; factor: number }>;
   categoryId?: string | null;
   sku?: string | null;
@@ -101,7 +102,7 @@ export class AdoptCatalogItemUseCase implements UseCase<AdoptCatalogItemInput, I
       restaurantId,
       branchId: input.branchId,
       name: null,
-      baseUnit: input.baseUnit,
+      baseUnit: input.baseUnit ?? (catalogItem.baseUnit as unknown as InventoryBaseUnit),
       categoryId: input.categoryId ?? null,
       sku: input.sku ?? null,
       alternateUnits: input.alternateUnits,

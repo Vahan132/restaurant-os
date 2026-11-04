@@ -82,6 +82,14 @@ export class PrismaInventoryItemRepository implements InventoryItemRepository {
     return r ? InventoryItemMapper.toDomain(r) : null;
   }
 
+  async listAdoptedCatalogItemIds(restaurantId: string, branchId: string): Promise<string[]> {
+    const rows = await this.prisma.inventoryItem.findMany({
+      where: { restaurantId, branchId, deletedAt: null, catalogItemId: { not: null } },
+      select: { catalogItemId: true },
+    });
+    return rows.map((r) => r.catalogItemId!).filter(Boolean);
+  }
+
   async existsBySku(
     restaurantId: string,
     branchId: string,

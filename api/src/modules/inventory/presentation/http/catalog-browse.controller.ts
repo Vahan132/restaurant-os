@@ -6,8 +6,10 @@ import { RequirePermissions } from '../../../../shared/auth/permissions.decorato
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { BrowseCatalogItemsUseCase } from '../../../platform-catalog/application/queries/browse-catalog-items.usecase';
 import { GetCatalogBrowseItemUseCase } from '../../../platform-catalog/application/queries/get-catalog-browse-item.usecase';
+import { GetCatalogTaxonomyUseCase } from '../../../platform-catalog/application/queries/get-catalog-taxonomy.usecase';
 import {
   BrowseCatalogItemsQuery,
+  CatalogBrowseCategoryOptionResponse,
   CatalogBrowseItemResponse,
 } from '../../application/dto/catalog-browse.dto';
 
@@ -26,6 +28,7 @@ export class CatalogBrowseController {
   constructor(
     private readonly browseItems: BrowseCatalogItemsUseCase,
     private readonly getItem: GetCatalogBrowseItemUseCase,
+    private readonly taxonomy: GetCatalogTaxonomyUseCase,
   ) {}
 
   @Get()
@@ -42,6 +45,23 @@ export class CatalogBrowseController {
       categoryId: query.categoryId,
     });
     return { data: page.data.map(CatalogBrowseItemResponse.from), pagination: page.pagination };
+  }
+
+  // Declared before ':id' so "categories" is not captured as an id.
+  @Get('categories')
+  @RequirePermissions(READ)
+  @ApiOperation({ summary: 'Catalog categories (for the browse filter), in display order.' })
+  @ApiOkResponse({ type: [CatalogBrowseCategoryOptionResponse] })
+  async categories(): Promise<CatalogBrowseCategoryOptionResponse[]> {
+    const { categories } = await this.taxonomy.execute();
+    return [...categories]
+      .sort((a, b) => a.position - b.position)
+      .map((c) => ({
+        id: c.id,
+        slug: c.slug,
+        name: { hy: c.labelHy, ru: c.labelRu, en: c.labelEn },
+        position: c.position,
+      }));
   }
 
   @Get(':id')

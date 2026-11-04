@@ -26,6 +26,7 @@ export class CatalogBrowseItemResponse {
   @ApiProperty({ nullable: true, type: String }) categoryId!: string | null;
   @ApiProperty({ nullable: true, type: CatalogBrowseCategoryResponse })
   category!: CatalogBrowseCategoryResponse | null;
+  @ApiProperty({ enum: ['GRAM', 'MILLILITER', 'PIECE'] }) baseUnit!: string;
   @ApiProperty({ enum: ['ACTIVE', 'ARCHIVED'] }) status!: string;
 
   static from(v: CatalogBrowseView): CatalogBrowseItemResponse {
@@ -35,6 +36,7 @@ export class CatalogBrowseItemResponse {
       name: v.name,
       categoryId: v.categoryId,
       category: v.category,
+      baseUnit: v.baseUnit,
       status: v.status,
     };
   }
@@ -65,4 +67,12 @@ export class BrowseCatalogItemsQuery {
   @IsOptional()
   @IsString()
   categoryId?: string;
+}
+
+/** CATALOG-BULK-ADOPT-1: a catalog category for the tenant browse filter. */
+export class CatalogBrowseCategoryOptionResponse {
+  @ApiProperty() id!: string;
+  @ApiProperty() slug!: string;
+  @ApiProperty({ type: CatalogBrowseNameResponse }) name!: CatalogBrowseNameResponse;
+  @ApiProperty() position!: number;
 }

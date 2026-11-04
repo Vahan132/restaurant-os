@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
-import { CatalogItem } from '../../domain/entities/catalog-item';
+import { CatalogItem, CatalogUnit } from '../../domain/entities/catalog-item';
 import {
   CATALOG_ITEM_REPOSITORY,
   CatalogItemRepository,
@@ -19,6 +19,7 @@ export interface UpdateCatalogItemInput {
   nameEn?: string;
   /** undefined = unchanged; null = clear. */
   categoryId?: string | null;
+  baseUnit?: CatalogUnit;
 }
 
 /** Update a platform CatalogItem's fields / category. */
@@ -41,6 +42,7 @@ export class UpdateCatalogItemUseCase implements UseCase<UpdateCatalogItemInput,
       nameRu: input.nameRu,
       nameEn: input.nameEn,
       categoryId: input.categoryId,
+      baseUnit: input.baseUnit,
     });
     await this.repo.update(item);
     return item;

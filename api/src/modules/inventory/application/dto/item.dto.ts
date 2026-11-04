@@ -94,9 +94,13 @@ export class AdoptCatalogItemDto {
   @MinLength(1)
   catalogItemId!: string;
 
-  @ApiProperty({ enum: InventoryBaseUnit, description: 'Base unit (catalog has none).' })
+  @ApiPropertyOptional({
+    enum: InventoryBaseUnit,
+    description: "Base unit. Omit to use the catalog item's own unit.",
+  })
+  @IsOptional()
   @IsEnum(InventoryBaseUnit)
-  baseUnit!: InventoryBaseUnit;
+  baseUnit?: InventoryBaseUnit;
 
   @ApiPropertyOptional({ type: [AlternateUnitDto] })
   @IsOptional()
@@ -214,4 +218,46 @@ export class SetItemConsumptionLocationDto {
   @IsOptional()
   @IsString()
   locationId?: string | null;
+}
+
+/**
+ * CATALOG-BULK-ADOPT-1: adopt many catalog items at once. Either an explicit
+ * `catalogItemIds` list, or `all: true` = every ACTIVE catalog item matching the
+ * optional `search` / `catalogCategoryId` filter. Each item gets the catalog's own
+ * unit; items already adopted in the branch are skipped.
+ */
+export class BulkAdoptCatalogItemsDto {
+  @ApiPropertyOptional({ type: [String], maxItems: 2000 })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(2000)
+  @IsString({ each: true })
+  catalogItemIds?: string[];
+
+  @ApiPropertyOptional({ description: 'Adopt every ACTIVE catalog item matching the filters.' })
+  @IsOptional()
+  @IsBoolean()
+  all?: boolean;
+
+  @ApiPropertyOptional({ description: 'With all=true: search over slug + names.' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ description: 'With all=true: limit to one CATALOG category.' })
+  @IsOptional()
+  @IsString()
+  catalogCategoryId?: string;
+
+  @ApiPropertyOptional({ description: 'Inventory category to put the new items in.' })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+}
+
+export class BulkAdoptCatalogItemsResponse {
+  @ApiProperty() requested!: number;
+  @ApiProperty() adopted!: number;
+  @ApiProperty({ description: 'Already adopted in this branch.' }) skipped!: number;
+  @ApiProperty({ description: 'Archived / unknown catalog ids.' }) unavailable!: number;
 }

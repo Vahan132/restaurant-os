@@ -21,6 +21,7 @@ export const KNOWN_COLUMNS = [
   'nameen',
   'category',
   'status',
+  'unit',
 ] as const;
 
 const REQUIRED_HEADERS = ['slug', 'namehy', 'nameru', 'nameen'] as const;

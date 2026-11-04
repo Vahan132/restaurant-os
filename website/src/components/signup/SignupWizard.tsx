@@ -787,7 +787,9 @@ function detectTimezone(): string {
 
 function offsetToZone(hours: number): string {
   if (hours === 0) return "UTC";
-  return `Etc/GMT${hours > 0 ? "- " : "+ "}${Math.abs(hours)}`;
+  // IANA "Etc/GMT±N" (sign inverted by POSIX convention) — NO spaces, or every
+  // Intl/DB time-zone use of the restaurant fails ("Invalid time zone").
+  return `Etc/GMT${hours > 0 ? "-" : "+"}${Math.abs(hours)}`;
 }
 
 const TIMEZONE_OPTIONS: [string, string][] = (() => {

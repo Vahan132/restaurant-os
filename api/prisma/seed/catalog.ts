@@ -39,6 +39,7 @@ export async function seedKitchenCatalog(
       nameRu: it.nameRu,
       nameEn: it.nameEn,
       categoryId: categoryIds.get(it.categorySlug)!,
+      baseUnit: it.baseUnit,
     };
     await prisma.catalogItem.upsert({
       where: { slug: it.slug },

@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsEmail, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import { IsRestaurantTimeZone } from '../../../../shared/validation/time-zone.decorator';
 import { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT } from '../../../../shared/application/pagination';
 
 export class SignupDto {
@@ -13,7 +14,7 @@ export class SignupDto {
   @ApiProperty({ description: 'Desired subdomain (a-z0-9-, 3–63).' }) @IsString() slug!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() currency?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() defaultLanguage?: string;
-  @ApiPropertyOptional() @IsOptional() @IsString() timezone?: string;
+  @ApiPropertyOptional() @IsOptional() @IsRestaurantTimeZone() timezone?: string;
 }
 
 export class ChangePlanDto {

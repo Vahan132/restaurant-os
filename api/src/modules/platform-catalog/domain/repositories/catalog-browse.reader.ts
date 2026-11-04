@@ -1,4 +1,4 @@
-import { CatalogItemStatus } from '../entities/catalog-item';
+import { CatalogItemStatus, CatalogUnit } from '../entities/catalog-item';
 
 export const CATALOG_BROWSE_READER = Symbol('CatalogBrowseReader');
 
@@ -27,6 +27,8 @@ export interface CatalogBrowseView {
   name: CatalogBrowseName;
   categoryId: string | null;
   category: CatalogBrowseCategory | null;
+  /** CATALOG-UNIT-1: the catalog's measurement unit (adopt defaults to it). */
+  baseUnit: CatalogUnit;
   status: CatalogItemStatus;
 }
 
@@ -47,6 +49,15 @@ export interface CatalogBrowseFilter {
 export interface CatalogBrowseReader {
   listActive(filter: CatalogBrowseFilter): Promise<{ items: CatalogBrowseView[]; total: number }>;
   findById(catalogItemId: string): Promise<CatalogBrowseView | null>;
+  /**
+   * CATALOG-BULK-ADOPT-1: every ACTIVE item matching the filter, UNPAGINATED and
+   * capped at `limit` (bulk "adopt all matching").
+   */
+  listAllActive(filter: {
+    search?: string;
+    categoryId?: string;
+    limit: number;
+  }): Promise<CatalogBrowseView[]>;
   /**
    * INV-SEARCH-1: every ACTIVE catalog item id whose slug or any of the three locale
    * names matches `term` (case-insensitive, any-of-three) — ids only, UNPAGINATED.

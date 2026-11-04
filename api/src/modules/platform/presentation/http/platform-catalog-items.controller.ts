@@ -71,6 +71,7 @@ export class PlatformCatalogItemsController {
       nameRu: dto.nameRu,
       nameEn: dto.nameEn,
       categoryId: dto.categoryId ?? null,
+      baseUnit: dto.baseUnit,
     });
     return CatalogItemResponse.from(item);
   }
@@ -102,6 +103,7 @@ export class PlatformCatalogItemsController {
       nameRu: dto.nameRu,
       nameEn: dto.nameEn,
       categoryId: dto.categoryId,
+      baseUnit: dto.baseUnit,
     });
     return CatalogItemResponse.from(item);
   }

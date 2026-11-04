@@ -5,12 +5,23 @@ export enum CatalogItemStatus {
   ARCHIVED = 'ARCHIVED',
 }
 
+/**
+ * CATALOG-UNIT-1: measurement unit of a catalog item (mirrors the inventory base
+ * units: weight in grams, volume in millilitres, or counted pieces).
+ */
+export enum CatalogUnit {
+  GRAM = 'GRAM',
+  MILLILITER = 'MILLILITER',
+  PIECE = 'PIECE',
+}
+
 export interface CatalogItemProps {
   slug: string;
   nameHy: string;
   nameRu: string;
   nameEn: string;
   categoryId: string | null;
+  baseUnit: CatalogUnit;
   status: CatalogItemStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -24,6 +35,8 @@ export interface CreateCatalogItemProps {
   nameRu: string;
   nameEn: string;
   categoryId: string | null;
+  /** Defaults to GRAM. */
+  baseUnit?: CatalogUnit;
 }
 
 /**
@@ -47,6 +60,7 @@ export class CatalogItem extends AggregateRoot<string> {
       nameRu: input.nameRu,
       nameEn: input.nameEn,
       categoryId: input.categoryId,
+      baseUnit: input.baseUnit ?? CatalogUnit.GRAM,
       status: CatalogItemStatus.ACTIVE,
       createdAt: now,
       updatedAt: now,
@@ -72,6 +86,9 @@ export class CatalogItem extends AggregateRoot<string> {
   }
   get categoryId(): string | null {
     return this.props.categoryId;
+  }
+  get baseUnit(): CatalogUnit {
+    return this.props.baseUnit;
   }
   get status(): CatalogItemStatus {
     return this.props.status;
@@ -102,11 +119,13 @@ export class CatalogItem extends AggregateRoot<string> {
     nameRu?: string;
     nameEn?: string;
     categoryId?: string | null;
+    baseUnit?: CatalogUnit;
   }): void {
     if (input.nameHy !== undefined) this.props.nameHy = input.nameHy;
     if (input.nameRu !== undefined) this.props.nameRu = input.nameRu;
     if (input.nameEn !== undefined) this.props.nameEn = input.nameEn;
     if (input.categoryId !== undefined) this.props.categoryId = input.categoryId;
+    if (input.baseUnit !== undefined) this.props.baseUnit = input.baseUnit;
     this.touch();
   }
 

@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
 import { ID_GENERATOR, IdGenerator } from '../../../identity/application/ports/id-generator';
-import { CatalogItem } from '../../domain/entities/catalog-item';
+import { CatalogItem, CatalogUnit } from '../../domain/entities/catalog-item';
 import {
   CATALOG_ITEM_REPOSITORY,
   CatalogItemRepository,
@@ -19,6 +19,7 @@ export interface CreateCatalogItemInput {
   nameRu: string;
   nameEn: string;
   categoryId: string | null;
+  baseUnit?: CatalogUnit;
 }
 
 /** Create a platform CatalogItem (runtime id via cuid2 IdGenerator). */
@@ -44,6 +45,7 @@ export class CreateCatalogItemUseCase implements UseCase<CreateCatalogItemInput,
       nameRu: input.nameRu,
       nameEn: input.nameEn,
       categoryId: input.categoryId,
+      baseUnit: input.baseUnit,
     });
     await this.repo.create(item);
     return item;

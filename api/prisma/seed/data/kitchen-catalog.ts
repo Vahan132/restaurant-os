@@ -7,6 +7,7 @@
  * overwrites names/categories) and by the full seed (phase 14).
  *
  * Row format inside each category block:   slug | Հայերեն | Русский | English
+ * Units: CATEGORY_UNIT gives each category's default, UNIT_OVERRIDES the exceptions.
  * Slugs are permanent identifiers (tenant InventoryItems reference catalog items),
  * so never rename a slug — fix the names instead.
  */
@@ -18,13 +19,87 @@ export interface KitchenCategory {
   labelEn: string;
 }
 
+/** Stocking unit — same values as InventoryBaseUnit / CatalogUnit. */
+export type KitchenUnit = 'GRAM' | 'MILLILITER' | 'PIECE';
+
 export interface KitchenItem {
   slug: string;
   nameHy: string;
   nameRu: string;
   nameEn: string;
   categorySlug: string;
+  baseUnit: KitchenUnit;
 }
+
+/** CATALOG-UNIT-1: default unit per category (anything not listed = GRAM). */
+const CATEGORY_UNIT: Record<string, KitchenUnit> = {
+  eggs: 'PIECE',
+  bakery: 'PIECE',
+};
+
+/** Per-item exceptions to the category default: liquids in ml, counted items in pieces. */
+const UNIT_OVERRIDES: Record<string, KitchenUnit> = {
+  // liquids
+  milk: 'MILLILITER',
+  'cooking-cream': 'MILLILITER',
+  'whipping-cream': 'MILLILITER',
+  'cream-10': 'MILLILITER',
+  'vegetable-cream': 'MILLILITER',
+  kefir: 'MILLILITER',
+  'sunflower-oil': 'MILLILITER',
+  'olive-oil-extra-virgin': 'MILLILITER',
+  'olive-oil-refined': 'MILLILITER',
+  'corn-oil': 'MILLILITER',
+  'rapeseed-oil': 'MILLILITER',
+  'sesame-oil': 'MILLILITER',
+  'frying-oil': 'MILLILITER',
+  'truffle-oil': 'MILLILITER',
+  'walnut-oil': 'MILLILITER',
+  'soy-sauce': 'MILLILITER',
+  'teriyaki-sauce': 'MILLILITER',
+  'worcestershire-sauce': 'MILLILITER',
+  tabasco: 'MILLILITER',
+  'balsamic-vinegar': 'MILLILITER',
+  'red-wine-vinegar': 'MILLILITER',
+  'white-wine-vinegar': 'MILLILITER',
+  'apple-cider-vinegar': 'MILLILITER',
+  'table-vinegar': 'MILLILITER',
+  'lemon-juice': 'MILLILITER',
+  'chicken-stock': 'MILLILITER',
+  'beef-stock': 'MILLILITER',
+  'vegetable-stock': 'MILLILITER',
+  'glucose-syrup': 'MILLILITER',
+  'maple-syrup': 'MILLILITER',
+  'caramel-sauce': 'MILLILITER',
+  'chocolate-topping': 'MILLILITER',
+  'rose-water': 'MILLILITER',
+  'vanilla-extract': 'MILLILITER',
+  'food-coloring': 'MILLILITER',
+  'rice-vinegar': 'MILLILITER',
+  mirin: 'MILLILITER',
+  'fish-sauce': 'MILLILITER',
+  'coconut-milk': 'MILLILITER',
+  'sesame-dressing': 'MILLILITER',
+  // counted
+  'corn-cob': 'PIECE',
+  artichoke: 'PIECE',
+  avocado: 'PIECE',
+  coconut: 'PIECE',
+  quail: 'PIECE',
+  oysters: 'PIECE',
+  'vanilla-pod': 'PIECE',
+  'bouillon-cubes': 'PIECE',
+  nori: 'PIECE',
+  'spring-roll-wrappers': 'PIECE',
+  'rice-paper': 'PIECE',
+  'gyoza-wrappers': 'PIECE',
+  'burger-patties': 'PIECE',
+  // bakery items sold/stocked by weight
+  'puff-pastry': 'GRAM',
+  'yeast-dough': 'GRAM',
+  'phyllo-dough': 'GRAM',
+  kataifi: 'GRAM',
+};
 
 interface Block {
   category: KitchenCategory;
@@ -919,7 +994,8 @@ function parse(blocks: Block[]): { categories: KitchenCategory[]; items: Kitchen
         throw new Error(`kitchen-catalog: bad row in "${b.category.slug}": ${line}`);
       }
       const [slug, nameHy, nameRu, nameEn] = parts as [string, string, string, string];
-      items.push({ slug, nameHy, nameRu, nameEn, categorySlug: b.category.slug });
+      const baseUnit = UNIT_OVERRIDES[slug] ?? CATEGORY_UNIT[b.category.slug] ?? 'GRAM';
+      items.push({ slug, nameHy, nameRu, nameEn, categorySlug: b.category.slug, baseUnit });
     }
   }
   return { categories, items };

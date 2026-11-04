@@ -1,7 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
+import { CatalogUnit } from '../../domain/entities/catalog-item';
 import {
   IsBoolean,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -27,6 +29,10 @@ export class CreateCatalogItemDto {
   @IsString()
   categoryId?: string | null;
 
+  @ApiPropertyOptional({ enum: CatalogUnit, description: 'Measurement unit (default GRAM).' })
+  @IsOptional()
+  @IsEnum(CatalogUnit)
+  baseUnit?: CatalogUnit;
 }
 
 export class UpdateCatalogItemDto {
@@ -40,6 +46,10 @@ export class UpdateCatalogItemDto {
   @IsString()
   categoryId?: string | null;
 
+  @ApiPropertyOptional({ enum: CatalogUnit, description: 'Measurement unit (default GRAM).' })
+  @IsOptional()
+  @IsEnum(CatalogUnit)
+  baseUnit?: CatalogUnit;
 }
 
 export class ListCatalogItemsQuery {

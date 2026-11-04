@@ -23,6 +23,9 @@ import { CatalogImportPanel } from "@/components/platform-catalog/catalog-import
 
 const PAGE_SIZE = 50;
 
+/** CATALOG-UNIT-1 (field newer than the generated client). */
+const UNIT_LABEL: Record<string, string> = { GRAM: "g", MILLILITER: "ml", PIECE: "pcs" };
+
 export function CatalogManager() {
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -118,6 +121,7 @@ export function CatalogManager() {
                   <th className="px-4 py-2">{STRINGS.colSlug}</th>
                   <th className="px-4 py-2">{STRINGS.colName}</th>
                   <th className="px-4 py-2">{STRINGS.colCategory}</th>
+                  <th className="px-4 py-2">{STRINGS.colUnit}</th>
                   <th className="px-4 py-2">{STRINGS.colStatus}</th>
                 </tr>
               </thead>
@@ -134,6 +138,9 @@ export function CatalogManager() {
                     <td className="px-4 py-2 text-gray-600">{item.categoryId
                         ? (categoryLabel.get(String(item.categoryId)) ?? String(item.categoryId))
                         : "—"}</td>
+                    <td className="px-4 py-2 text-gray-600">
+                      {UNIT_LABEL[(item as { baseUnit?: string }).baseUnit ?? ""] ?? "—"}
+                    </td>
                     <td className="px-4 py-2">
                       <StatusBadge status={item.status} />
                     </td>

@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { UseCase } from '../../../../shared/application/use-case';
 import { ID_GENERATOR, IdGenerator } from '../../../identity/application/ports/id-generator';
-import { CatalogItem, CatalogItemStatus } from '../../domain/entities/catalog-item';
+import { CatalogItem, CatalogItemStatus, CatalogUnit } from '../../domain/entities/catalog-item';
 import {
   CATALOG_ITEM_REPOSITORY,
   CatalogItemRepository,
@@ -40,6 +40,7 @@ interface RowPlan {
     nameRu: string;
     nameEn: string;
     categoryId: string | null;
+    baseUnit: CatalogUnit;
     status: CatalogItemStatus;
     /** Present when the slug already exists (UPDATE / UNCHANGED / SKIP). */
     existing?: CatalogItem;
@@ -177,6 +178,19 @@ export class ImportCatalogItemsUseCase
       }
     }
 
+    // unit (CATALOG-UNIT-1): GRAM / MILLILITER / PIECE, plus friendly aliases.
+    // Blank keeps the existing item's unit (or GRAM for a new item).
+    const unitRaw = (c.unit ?? '').trim();
+    let baseUnit: CatalogUnit | undefined;
+    if (unitRaw !== '') {
+      baseUnit = parseUnit(unitRaw);
+      if (baseUnit === undefined) {
+        messages.push(
+          err('INVALID_VALUE', 'unit', `Not a valid unit: "${unitRaw}" (use GRAM, MILLILITER or PIECE).`),
+        );
+      }
+    }
+
     const reportSlug = slug !== '' ? slug : rawSlug;
     if (messages.length > 0) {
       return { line: row.line, slug: reportSlug, action: 'ERROR', messages };
@@ -190,6 +204,7 @@ export class ImportCatalogItemsUseCase
       nameRu,
       nameEn,
       categoryId,
+      baseUnit: baseUnit ?? existing?.baseUnit ?? CatalogUnit.GRAM,
       status,
       existing,
     };
@@ -224,6 +239,7 @@ export class ImportCatalogItemsUseCase
           nameRu: r.nameRu,
           nameEn: r.nameEn,
           categoryId: r.categoryId,
+          baseUnit: r.baseUnit,
         });
         if (r.status === CatalogItemStatus.ARCHIVED) {
           item.archive();
@@ -235,6 +251,7 @@ export class ImportCatalogItemsUseCase
           nameRu: r.nameRu,
           nameEn: r.nameEn,
           categoryId: r.categoryId,
+          baseUnit: r.baseUnit,
         });
         updates.push(r.existing);
       }
@@ -280,12 +297,24 @@ function isUnchanged(
     nameRu: string;
     nameEn: string;
     categoryId: string | null;
+    baseUnit: CatalogUnit;
   },
 ): boolean {
   return (
     existing.nameHy === r.nameHy &&
     existing.nameRu === r.nameRu &&
     existing.nameEn === r.nameEn &&
-    existing.categoryId === r.categoryId
+    existing.categoryId === r.categoryId &&
+    existing.baseUnit === r.baseUnit
   );
+}
+
+/** Accept GRAM / MILLILITER / PIECE plus common aliases (g, kg, ml, l, pcs, …). */
+function parseUnit(raw: string): CatalogUnit | undefined {
+  const v = raw.trim().toLowerCase();
+  if (['gram', 'grams', 'g', 'kg', 'гр', 'кг', 'գ', 'կգ'].includes(v)) return CatalogUnit.GRAM;
+  if (['milliliter', 'millilitre', 'ml', 'l', 'liter', 'litre', 'мл', 'л', 'մլ', 'լ'].includes(v))
+    return CatalogUnit.MILLILITER;
+  if (['piece', 'pieces', 'pcs', 'pc', 'шт', 'հատ'].includes(v)) return CatalogUnit.PIECE;
+  return undefined;
 }

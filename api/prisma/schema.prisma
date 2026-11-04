@@ -2115,6 +2115,9 @@ model CatalogItem {
   nameRu     String
   nameEn     String
   categoryId String?
+  // CATALOG-UNIT-1: the measurement unit an item is stocked in. Adopt (single and
+  // bulk) defaults the tenant InventoryItem.baseUnit to it.
+  baseUnit   InventoryBaseUnit @default(GRAM)
   // CATALOG-2 archive (soft-delete): a hard delete would strand tenant references
   // (catalogItemId is a plain scalar with no FK). Curation archives instead.
   status     CatalogItemStatus @default(ACTIVE)

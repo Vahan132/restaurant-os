@@ -16,12 +16,15 @@ import { CurrentUser } from '../../../../shared/tenancy/current-user.decorator';
 import { CurrentUserContext, TenantContext } from '../../../../shared/tenancy/tenant-context';
 import { PERMISSIONS } from '../../../identity/domain/permissions.catalog';
 import { AdoptCatalogItemUseCase } from '../../application/commands/adopt-catalog-item.usecase';
+import { BulkAdoptCatalogItemsUseCase } from '../../application/commands/bulk-adopt-catalog-items.usecase';
 import { CreateInventoryItemUseCase } from '../../application/commands/create-inventory-item.usecase';
 import { DeleteInventoryItemUseCase } from '../../application/commands/delete-inventory-item.usecase';
 import { SetItemConsumptionLocationUseCase } from '../../application/commands/set-item-consumption-location.usecase';
 import { UpdateInventoryItemUseCase } from '../../application/commands/update-inventory-item.usecase';
 import {
   AdoptCatalogItemDto,
+  BulkAdoptCatalogItemsDto,
+  BulkAdoptCatalogItemsResponse,
   CreateInventoryItemDto,
   ListInventoryItemsQuery,
   SetItemConsumptionLocationDto,
@@ -53,6 +56,7 @@ export class InventoryItemsController {
     private readonly getItem: GetInventoryItemUseCase,
     private readonly createItem: CreateInventoryItemUseCase,
     private readonly adoptItem: AdoptCatalogItemUseCase,
+    private readonly bulkAdopt: BulkAdoptCatalogItemsUseCase,
     private readonly updateItem: UpdateInventoryItemUseCase,
     private readonly deleteItem: DeleteInventoryItemUseCase,
     private readonly setConsumptionLocation: SetItemConsumptionLocationUseCase,
@@ -163,6 +167,33 @@ export class InventoryItemsController {
       actorUserId: actor.sub,
     });
     return this.toResponse(item);
+  }
+
+  @Post('adopt-bulk')
+  @HttpCode(200)
+  @RequirePermissions(MANAGE)
+  @ApiForbiddenResponse({ description: 'Missing inventory:item:manage permission.' })
+  @ApiOperation({
+    summary:
+      'Adopt many catalog items into this branch (selected ids, or all matching). Already-adopted items are skipped.',
+  })
+  @ApiOkResponse({ type: BulkAdoptCatalogItemsResponse })
+  async adoptBulk(
+    @CurrentTenant() tenant: TenantContext,
+    @ActiveBranchId() branchId: string,
+    @CurrentUser() actor: CurrentUserContext,
+    @Body() dto: BulkAdoptCatalogItemsDto,
+  ): Promise<BulkAdoptCatalogItemsResponse> {
+    return this.bulkAdopt.execute({
+      restaurantId: tenant.restaurantId,
+      branchId,
+      catalogItemIds: dto.catalogItemIds,
+      all: dto.all,
+      search: dto.search,
+      catalogCategoryId: dto.catalogCategoryId,
+      categoryId: dto.categoryId ?? null,
+      actorUserId: actor.sub,
+    });
   }
 
   @Patch(':id')

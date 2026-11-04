@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CatalogItemStatus as PrismaCatalogItemStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
-import { CatalogItem, CatalogItemStatus } from '../../domain/entities/catalog-item';
+import { CatalogItem, CatalogItemStatus, CatalogUnit } from '../../domain/entities/catalog-item';
 import {
   CatalogItemListFilter,
   CatalogItemListResult,
@@ -23,6 +23,7 @@ function toDomain(r: ItemRecord): CatalogItem {
     nameRu: r.nameRu,
     nameEn: r.nameEn,
     categoryId: r.categoryId,
+    baseUnit: r.baseUnit as CatalogUnit,
     status:
       r.status === PrismaCatalogItemStatus.ARCHIVED
         ? CatalogItemStatus.ARCHIVED
@@ -42,6 +43,7 @@ function toCreateData(item: CatalogItem): Prisma.CatalogItemUncheckedCreateInput
     nameRu: item.nameRu,
     nameEn: item.nameEn,
     categoryId: item.categoryId,
+    baseUnit: item.baseUnit,
     status: toPrismaStatus(item.status),
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
@@ -57,6 +59,7 @@ function toUpdateData(item: CatalogItem): Prisma.CatalogItemUncheckedUpdateInput
     nameRu: item.nameRu,
     nameEn: item.nameEn,
     categoryId: item.categoryId,
+    baseUnit: item.baseUnit,
     status: toPrismaStatus(item.status),
     updatedAt: item.updatedAt,
     deletedAt: item.deletedAt,

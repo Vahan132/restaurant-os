@@ -47,6 +47,8 @@ export interface InventoryItemRepository {
     branchId: string,
     catalogItemId: string,
   ): Promise<InventoryItem | null>;
+  /** CATALOG-BULK-ADOPT-1: catalogItemIds already adopted (non-deleted) in the branch. */
+  listAdoptedCatalogItemIds(restaurantId: string, branchId: string): Promise<string[]>;
   /**
    * True if a non-soft-delete-aware row already uses this sku in the branch.
    * Counts WITHOUT a deletedAt filter because the unique index spans soft-deleted

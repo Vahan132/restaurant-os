@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CatalogItemStatus as PrismaCatalogItemStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
-import { CatalogItemStatus } from '../../domain/entities/catalog-item';
+import { CatalogItemStatus, CatalogUnit } from '../../domain/entities/catalog-item';
 import {
   CatalogBrowseFilter,
   CatalogBrowseReader,
@@ -15,6 +15,7 @@ const BROWSE_SELECT = {
   nameRu: true,
   nameEn: true,
   categoryId: true,
+  baseUnit: true,
   status: true,
   category: { select: { id: true, slug: true, labelHy: true, labelRu: true, labelEn: true } },
 } as const;
@@ -34,6 +35,7 @@ function toView(r: BrowseRow): CatalogBrowseView {
           name: { hy: r.category.labelHy, ru: r.category.labelRu, en: r.category.labelEn },
         }
       : null,
+    baseUnit: r.baseUnit as CatalogUnit,
     status:
       r.status === PrismaCatalogItemStatus.ARCHIVED
         ? CatalogItemStatus.ARCHIVED
@@ -78,6 +80,33 @@ export class PrismaCatalogBrowseReader implements CatalogBrowseReader {
       this.prisma.catalogItem.count({ where }),
     ]);
     return { items: rows.map(toView), total };
+  }
+
+  async listAllActive(filter: {
+    search?: string;
+    categoryId?: string;
+    limit: number;
+  }): Promise<CatalogBrowseView[]> {
+    const where: Prisma.CatalogItemWhereInput = { status: PrismaCatalogItemStatus.ACTIVE };
+    if (filter.categoryId) {
+      where.categoryId = filter.categoryId;
+    }
+    const q = filter.search?.trim();
+    if (q) {
+      where.OR = [
+        { slug: { contains: q, mode: 'insensitive' } },
+        { nameHy: { contains: q, mode: 'insensitive' } },
+        { nameRu: { contains: q, mode: 'insensitive' } },
+        { nameEn: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+    const rows = await this.prisma.catalogItem.findMany({
+      where,
+      select: BROWSE_SELECT,
+      orderBy: { nameEn: 'asc' },
+      take: filter.limit,
+    });
+    return rows.map(toView);
   }
 
   async searchActiveIds(term: string): Promise<string[]> {

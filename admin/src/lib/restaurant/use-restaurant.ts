@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { api } from '@/api/mutator';
+import { safeTimeZone } from '@/lib/tz';
 
 export interface Restaurant {
   id: string;
@@ -20,7 +21,8 @@ export function useRestaurant() {
     queryKey: ['restaurant'],
     queryFn: async () => {
       const { data } = await api.get<Restaurant>('/restaurant');
-      return data;
+      // Never hand an invalid IANA zone to Intl (it throws and crashes the page).
+      return { ...data, timezone: safeTimeZone(data.timezone) };
     },
     staleTime: 5 * 60_000,
     // Shell-level convenience fetch; failures shouldn't pop a global toast.

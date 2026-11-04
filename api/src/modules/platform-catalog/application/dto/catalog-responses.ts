@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { CatalogItem, CatalogItemStatus } from '../../domain/entities/catalog-item';
+import { CatalogItem, CatalogItemStatus, CatalogUnit } from '../../domain/entities/catalog-item';
 import { CatalogCategoryView } from '../../domain/repositories/catalog-taxonomy.reader';
 
 export class CatalogItemResponse {
@@ -9,6 +9,7 @@ export class CatalogItemResponse {
   @ApiProperty() nameRu!: string;
   @ApiProperty() nameEn!: string;
   @ApiProperty({ nullable: true }) categoryId!: string | null;
+  @ApiProperty({ enum: CatalogUnit }) baseUnit!: CatalogUnit;
   @ApiProperty({ enum: CatalogItemStatus }) status!: CatalogItemStatus;
   @ApiProperty() createdAt!: string;
   @ApiProperty() updatedAt!: string;
@@ -21,6 +22,7 @@ export class CatalogItemResponse {
       nameRu: item.nameRu,
       nameEn: item.nameEn,
       categoryId: item.categoryId,
+      baseUnit: item.baseUnit,
       status: item.status,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString(),
