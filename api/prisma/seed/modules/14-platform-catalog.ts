@@ -23,13 +23,17 @@ import {
 } from '../data/catalog';
 import type { BranchKey } from '../data/iam';
 import { seedId } from '../ids';
+import { seedKitchenCatalog } from '../catalog';
 
 const BRANCH_KEYS: BranchKey[] = ['flagship', 'second'];
 
 export async function seedPlatformCatalog(ctx: SeedContext, _state: SeedState): Promise<void> {
   const { prisma } = ctx;
 
-  // ── 1) Catalog categories (deterministic upserts) ───────────────────────────
+  // ── 0) Kitchen catalog (CATALOG-4): all food categories/items, upsert by slug ─
+  await seedKitchenCatalog(prisma, { sync: true });
+
+  // ── 1) Demo-only catalog categories (deterministic upserts) ──────────────────
   for (const c of CATALOG_CATEGORIES) {
     const fields = {
       slug: c.slug,

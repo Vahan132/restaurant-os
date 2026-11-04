@@ -38,21 +38,20 @@ export function catalogItemSeedId(slug: string): string {
   return seedId(`catalogitem:${slug}`);
 }
 
-/** Curator categories items group under. */
+/**
+ * Demo-only categories NOT covered by the kitchen catalog (CATALOG-4). Every food
+ * category/item now lives in ./kitchen-catalog.ts (seeded by seedKitchenCatalog);
+ * drinks are intentionally not part of the kitchen catalog.
+ */
 export const CATALOG_CATEGORIES: CatalogCategorySeed[] = [
-  ['produce', 'Բանջարեղեն և մրգեր', 'Овощи и фрукты', 'Produce'],
-  ['dairy', 'Կաթնամթերք', 'Молочные продукты', 'Dairy'],
-  ['meat', 'Միս', 'Мясо', 'Meat'],
-  ['pantry', 'Մթերանոց', 'Бакалея', 'Pantry'],
   ['beverage', 'Ըմպելիքներ', 'Напитки', 'Beverages'],
-  ['nuts-seeds', 'Ընկուզեղեն և սերմեր', 'Орехи и семена', 'Nuts & seeds'],
-].map(([slug, labelHy, labelRu, labelEn], i) => ({
-  id: catalogCategorySeedId(slug),
-  slug,
-  labelHy,
-  labelRu,
-  labelEn,
-  position: i,
+].map(([slug, labelHy, labelRu, labelEn]) => ({
+  id: catalogCategorySeedId(slug!),
+  slug: slug!,
+  labelHy: labelHy!,
+  labelRu: labelRu!,
+  labelEn: labelEn!,
+  position: 100,
 }));
 
 function item(
@@ -65,24 +64,10 @@ function item(
   return { id: catalogItemSeedId(slug), slug, nameHy, nameRu, nameEn, categorySlug };
 }
 
-/** Starter curated templates (platform-admin curates the full set in CATALOG-2). */
+/** Demo-only items outside the kitchen catalog (drinks used by the demo restaurant). */
 export const CATALOG_ITEMS: CatalogItemSeed[] = [
-  item('wheat-flour', 'Ցորենի ալյուր', 'Пшеничная мука', 'Wheat flour', 'pantry'),
-  item('rice', 'Բրինձ', 'Рис', 'Rice', 'pantry'),
-  item('vermicelli', 'Արիշտա', 'Вермишель', 'Vermicelli', 'pantry'),
-  item('tomato-paste', 'Տոմատի մածուկ', 'Томатная паста', 'Tomato paste', 'pantry'),
-  item('sunflower-oil', 'Արևածաղկի յուղ', 'Подсолнечное масло', 'Sunflower oil', 'pantry'),
-  item('chickpeas', 'Սիսեռ', 'Нут', 'Chickpeas', 'pantry'),
-  item('butter', 'Կարագ', 'Сливочное масло', 'Butter', 'dairy'),
-  item('matsun', 'Մածուն', 'Мацун', 'Matsun (yogurt)', 'dairy'),
-  item('lori-cheese', 'Լոռի պանիր', 'Сыр Лори', 'Lori cheese', 'dairy'),
-  item('string-cheese', 'Չեչիլ պանիր', 'Сыр чечил', 'String cheese', 'dairy'),
-  item('egg', 'Ձու', 'Яйцо', 'Egg', 'produce'),
-  item('walnuts', 'Ընկույզ', 'Грецкие орехи', 'Walnuts', 'nuts-seeds'),
   item('coffee-beans', 'Սուրճի հատիկ', 'Кофейные зёрна', 'Coffee beans', 'beverage'),
   item('areni-red-wine', 'Արենի կարմիր գինի', 'Красное вино Арени', 'Areni red wine', 'beverage'),
-  // CATALOG-3 verification: a leaf reached via a produced item.
-  item('pork-leg', 'Խոզի բուդ', 'Свиная нога', 'Pork leg', 'meat'),
 ];
 
 /**

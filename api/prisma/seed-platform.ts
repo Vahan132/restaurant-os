@@ -4,12 +4,13 @@
  * Unlike `pnpm db:seed` (SEED-1, which wipes and rebuilds the demo restaurant),
  * this touches ONLY platform reference data:
  *   1) Subscription plans Start / Pro / Chain (monthly + annual) — see seed/data/plans.ts
+ *   1b) Kitchen ingredient catalog (hy/ru/en) — see seed/data/kitchen-catalog.ts
  *   2) The first platform SUPER_ADMIN — only when NO platform user exists yet and
  *      SEED_ADMIN_PASSWORD is set (no default password on a public server).
  *
  * Idempotent. By default existing plans are left as-is (create-missing only);
  * pass `--sync` (or PLATFORM_SEED_SYNC=true) to overwrite them with the package
- * definitions and deactivate the legacy `starter` plan.
+ * definitions (and catalog names/categories) and deactivate the legacy `starter` plan.
  *
  * Run:  pnpm db:seed:platform [-- --sync]
  * In the cloud api container (compose):
@@ -19,6 +20,7 @@
 import { PrismaClient } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { seedPlans } from './seed/plans';
+import { seedKitchenCatalog } from './seed/catalog';
 
 /* eslint-disable no-console */
 async function main(): Promise<void> {
@@ -27,6 +29,11 @@ async function main(): Promise<void> {
     const sync = process.argv.includes('--sync') || process.env.PLATFORM_SEED_SYNC === 'true';
     const ids = await seedPlans(prisma, { sync });
     console.log(`PLATFORM-SEED: plans ${sync ? 'synced' : 'ensured'}: ${Object.keys(ids).join(', ')}`);
+
+    const cat = await seedKitchenCatalog(prisma, { sync });
+    console.log(
+      `PLATFORM-SEED: kitchen catalog ${sync ? 'synced' : 'ensured'}: ${cat.categories} categories, ${cat.items} items (${cat.created} new).`,
+    );
 
     const existing = await prisma.platformUser.count({ where: { deletedAt: null } });
     const password = process.env.SEED_ADMIN_PASSWORD;
